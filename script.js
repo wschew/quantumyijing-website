@@ -24,3 +24,15 @@ courseTabs.forEach(tab=>tab.addEventListener('click',()=>{
   const filter=tab.dataset.courseFilter;
   courseCards.forEach(card=>card.classList.toggle('is-hidden',filter!=='all'&&card.dataset.courseLevel!==filter));
 }));
+
+
+// Version 1.6 — engagement interactions
+const progressBar=document.getElementById('scroll-progress');
+function updateScrollProgress(){const max=document.documentElement.scrollHeight-innerHeight;progressBar.style.width=(max>0?(scrollY/max)*100:0)+'%'}
+addEventListener('scroll',updateScrollProgress,{passive:true});addEventListener('resize',updateScrollProgress);updateScrollProgress();
+document.querySelectorAll('.faq-item button').forEach(button=>button.addEventListener('click',()=>{const item=button.closest('.faq-item');const opening=!item.classList.contains('open');document.querySelectorAll('.faq-item.open').forEach(openItem=>{openItem.classList.remove('open');openItem.querySelector('button').setAttribute('aria-expanded','false')});if(opening){item.classList.add('open');button.setAttribute('aria-expanded','true')}}));
+const sections=[...document.querySelectorAll('main section[id]')];
+const navLinks=[...document.querySelectorAll('.main-nav a[href^="#"]')];
+const activeNavObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){navLinks.forEach(link=>link.classList.toggle('active',link.getAttribute('href')==='#'+entry.target.id))}}),{rootMargin:'-35% 0px -55% 0px'});
+sections.forEach(section=>activeNavObserver.observe(section));
+
