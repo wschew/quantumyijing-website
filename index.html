@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en" data-lang="en">
 <head>
@@ -12,9 +13,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700;800&family=Noto+Serif+SC:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css?v=1.5.1">
+  <link rel="stylesheet" href="/styles.css?v=1.6.0">
 </head>
 <body>
+  <div id="scroll-progress" class="scroll-progress" aria-hidden="true"></div>
   <canvas id="quantum-canvas" aria-hidden="true"></canvas>
 
   <div class="top-ribbon" aria-label="Academy themes">
@@ -25,7 +27,7 @@
 
   <header class="site-header">
     <a class="brand" href="#top" aria-label="Quantum YiJing home">
-      <span class="brand-logo-wrap"><img src="/images/quantum-yijing-3d-logo.png?v=1.5.1" alt="Quantum YiJing emblem"></span>
+      <span class="brand-logo-wrap"><img src="/images/quantum-yijing-3d-logo.png?v=1.6.0" alt="Quantum YiJing emblem"></span>
       <span class="brand-copy"><strong>Quantum YiJing</strong><small data-en="International Academy" data-zh="国际学院">International Academy</small></span>
     </a>
     <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false">☰</button>
@@ -35,7 +37,7 @@
       <a href="#academy" data-en="Academy" data-zh="学院">Academy</a>
       <a href="#research" data-en="Research" data-zh="研究">Research</a>
       <a href="#learning" data-en="Learning Centre" data-zh="学习中心">Learning Centre</a>
-      <a href="#consultation" data-en="Consultation" data-zh="咨询">Consultation</a>
+      <a href="#engagement" data-en="Engage" data-zh="参与合作">Engage</a>
       <a href="#publications" data-en="Publications" data-zh="出版">Publications</a>
       <a href="#contact" data-en="Contact" data-zh="联系">Contact</a>
     </nav>
@@ -59,7 +61,7 @@
       <div class="hero-visual intro-sequence">
         <div class="science-orbit orbit-one"></div><div class="science-orbit orbit-two"></div><div class="science-orbit orbit-three"></div>
         <div class="portrait-glow"></div>
-        <img class="hero-portrait hero-step" src="/images/master-chew.png?v=1.5.1" alt="Master Chew Wai Soon">
+        <img class="hero-portrait hero-step" src="/images/master-chew.png?v=1.6.0" alt="Master Chew Wai Soon">
         <article class="profile-card hero-step">
           <h3 data-en="Master Chew Wai Soon" data-zh="赵辉顺导师">Master Chew Wai Soon</h3>
           <p class="founder" data-en="Founder & Chief Instructor" data-zh="创办人与首席导师">Founder & Chief Instructor</p>
@@ -182,7 +184,69 @@
       <div class="language-panel"><div><span class="language-icon">文</span><div><h3 data-en="Bilingual Learning Environment" data-zh="双语学习环境">Bilingual Learning Environment</h3><p data-en="Programmes and learning resources are developed in English and Chinese for a wider international community." data-zh="课程与学习资源以中英文发展，服务更广泛的国际学习社群。">Programmes and learning resources are developed in English and Chinese for a wider international community.</p></div></div><a class="btn btn-primary" href="mailto:info@quantumyijing.com?subject=Course%20Enquiry" data-en="Enquire About Courses" data-zh="咨询课程">Enquire About Courses</a></div>
     </section>
 
-    <section id="consultation" class="content-section soft-panel reveal"><div class="section-shell"><p class="eyebrow" data-en="Professional Consultation" data-zh="专业咨询">Professional Consultation</p><div class="service-grid"><article><h3>Bazi</h3><p data-en="Life-pattern analysis and strategic timing." data-zh="命理分析与时机规划。">Life-pattern analysis and strategic timing.</p></article><article><h3>Feng Shui</h3><p data-en="Residential and business environment assessment." data-zh="住宅与商业环境评估。">Residential and business environment assessment.</p></article><article><h3 data-en="Naming" data-zh="命名">Naming</h3><p data-en="Personal, baby and business naming." data-zh="个人、宝宝与企业命名。">Personal, baby and business naming.</p></article><article><h3 data-en="Date Selection" data-zh="择日">Date Selection</h3><p data-en="Suitable timing for important milestones." data-zh="为重要事项选择适宜时机。">Suitable timing for important milestones.</p></article></div></div></section>
+    <section id="engagement" class="engagement-centre content-section reveal">
+      <div class="engagement-hero section-shell">
+        <div class="engagement-hero-copy">
+          <p class="eyebrow light" data-en="Engagement Centre" data-zh="参与合作中心">Engagement Centre</p>
+          <h2 data-en="Engage with Quantum YiJing" data-zh="与量子易经同行">Engage with Quantum YiJing</h2>
+          <p data-en="Discover meaningful pathways to learning, professional guidance, environmental assessment and interdisciplinary collaboration." data-zh="探索系统学习、专业指导、环境评估与跨学科合作的多元路径。">Discover meaningful pathways to learning, professional guidance, environmental assessment and interdisciplinary collaboration.</p>
+          <div class="engagement-actions">
+            <a class="btn btn-light" href="#engagement-pathways" data-en="Explore Opportunities" data-zh="探索参与方式">Explore Opportunities</a>
+            <a class="btn btn-outline-light" href="mailto:info@quantumyijing.com?subject=Engagement%20Enquiry" data-en="Contact the Academy" data-zh="联系学院">Contact the Academy</a>
+          </div>
+        </div>
+        <div class="engagement-network" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><i></i></div>
+      </div>
+
+      <div id="engagement-pathways" class="section-shell engagement-body">
+        <p class="eyebrow centered" data-en="Choose Your Path" data-zh="选择您的参与路径">Choose Your Path</p>
+        <h2 class="section-title" data-en="Four ways to begin a meaningful journey" data-zh="四种方式，开启一段有意义的旅程">Four ways to begin a meaningful journey</h2>
+        <div class="engagement-grid">
+          <article class="engagement-card"><div class="engagement-icon">🎓</div><span class="engagement-index">01</span><h3 data-en="Learn" data-zh="学习">Learn</h3><p data-en="Structured educational pathways from foundational principles to advanced professional practice." data-zh="从基础原理到高阶专业实践的系统学习路径。">Structured educational pathways from foundational principles to advanced professional practice.</p><ul><li data-en="Foundation courses" data-zh="基础课程">Foundation courses</li><li data-en="Advanced studies" data-zh="高阶研习">Advanced studies</li><li data-en="Professional development" data-zh="专业发展">Professional development</li></ul><a href="#learning" data-en="Explore Learning →" data-zh="探索课程 →">Explore Learning →</a></article>
+          <article class="engagement-card"><div class="engagement-icon">🧭</div><span class="engagement-index">02</span><h3 data-en="Seek Guidance" data-zh="寻求指导">Seek Guidance</h3><p data-en="Structured consultation for personal direction, family matters, career planning and major decisions." data-zh="为人生方向、家庭事务、事业规划与重要决策提供系统咨询。">Structured consultation for personal direction, family matters, career planning and major decisions.</p><ul><li data-en="Personal consultation" data-zh="个人咨询">Personal consultation</li><li data-en="Career direction" data-zh="事业方向">Career direction</li><li data-en="Decision support" data-zh="决策支持">Decision support</li></ul><a href="mailto:info@quantumyijing.com?subject=Consultation%20Enquiry" data-en="Request Consultation →" data-zh="预约咨询 →">Request Consultation →</a></article>
+          <article class="engagement-card"><div class="engagement-icon">🏛</div><span class="engagement-index">03</span><h3 data-en="Environmental Harmony" data-zh="环境和谐">Environmental Harmony</h3><p data-en="Classical environmental principles applied through systematic observation and practical assessment." data-zh="以系统观察与实务评估，应用经典环境智慧。">Classical environmental principles applied through systematic observation and practical assessment.</p><ul><li data-en="Residential spaces" data-zh="住宅空间">Residential spaces</li><li data-en="Commercial premises" data-zh="商业场所">Commercial premises</li><li data-en="Property assessment" data-zh="物业评估">Property assessment</li></ul><a href="mailto:info@quantumyijing.com?subject=Environmental%20Assessment" data-en="Discover More →" data-zh="了解更多 →">Discover More →</a></article>
+          <article class="engagement-card"><div class="engagement-icon">🔬</div><span class="engagement-index">04</span><h3 data-en="Research & Collaboration" data-zh="研究与合作">Research & Collaboration</h3><p data-en="Connecting researchers, institutions and organizations through responsible interdisciplinary exchange." data-zh="通过严谨的跨学科交流，连接研究者、机构与组织。">Connecting researchers, institutions and organizations through responsible interdisciplinary exchange.</p><ul><li data-en="Academic exchange" data-zh="学术交流">Academic exchange</li><li data-en="Educational collaboration" data-zh="教育合作">Educational collaboration</li><li data-en="Speaking invitations" data-zh="演讲邀请">Speaking invitations</li></ul><a href="mailto:info@quantumyijing.com?subject=Research%20Collaboration" data-en="Connect With Us →" data-zh="与我们合作 →">Connect With Us →</a></article>
+        </div>
+
+        <div class="engagement-process">
+          <p class="eyebrow centered" data-en="How We Work" data-zh="合作流程">How We Work</p>
+          <h2 class="section-title" data-en="A clear and professional engagement process" data-zh="清晰而专业的合作流程">A clear and professional engagement process</h2>
+          <div class="process-track">
+            <div class="process-step"><span>1</span><strong data-en="Discover" data-zh="了解">Discover</strong></div>
+            <div class="process-step"><span>2</span><strong data-en="Enquiry" data-zh="咨询">Enquiry</strong></div>
+            <div class="process-step"><span>3</span><strong data-en="Discussion" data-zh="沟通">Discussion</strong></div>
+            <div class="process-step"><span>4</span><strong data-en="Analysis" data-zh="分析">Analysis</strong></div>
+            <div class="process-step"><span>5</span><strong data-en="Recommendation" data-zh="建议">Recommendation</strong></div>
+            <div class="process-step"><span>6</span><strong data-en="Continued Support" data-zh="持续支持">Continued Support</strong></div>
+          </div>
+        </div>
+
+        <div class="why-engage">
+          <p class="eyebrow centered" data-en="Why Quantum YiJing" data-zh="为何选择量子易经">Why Quantum YiJing</p>
+          <div class="why-grid">
+            <article><span>⚙</span><h3 data-en="Structured Thinking" data-zh="系统思维">Structured Thinking</h3><p data-en="Analytical approaches informed by engineering and disciplined reasoning." data-zh="以工程背景与严谨推理形成系统分析方法。">Analytical approaches informed by engineering and disciplined reasoning.</p></article>
+            <article><span>📚</span><h3 data-en="Three Decades of Study" data-zh="三十余年研习">Three Decades of Study</h3><p data-en="Built upon sustained study, teaching and practical experience." data-zh="建立于长期研习、教学与实践经验之上。">Built upon sustained study, teaching and practical experience.</p></article>
+            <article><span>🔬</span><h3 data-en="Research-Oriented" data-zh="研究导向">Research-Oriented</h3><p data-en="Encouraging responsible dialogue between classical knowledge and modern inquiry." data-zh="推动经典知识与现代探索之间负责任的对话。">Encouraging responsible dialogue between classical knowledge and modern inquiry.</p></article>
+            <article><span>🌏</span><h3 data-en="International Perspective" data-zh="国际视野">International Perspective</h3><p data-en="Supporting learners and collaborators across cultures and borders." data-zh="服务跨文化、跨地域的学习者与合作伙伴。">Supporting learners and collaborators across cultures and borders.</p></article>
+            <article><span>文</span><h3 data-en="Bilingual Education" data-zh="双语教育">Bilingual Education</h3><p data-en="Learning and communication pathways in both English and Chinese." data-zh="提供中英文学习与沟通路径。">Learning and communication pathways in both English and Chinese.</p></article>
+            <article><span>✓</span><h3 data-en="Practical Application" data-zh="实践应用">Practical Application</h3><p data-en="Transforming knowledge into clear and actionable guidance." data-zh="把知识转化为清晰、可实践的建议。">Transforming knowledge into clear and actionable guidance.</p></article>
+          </div>
+        </div>
+
+        <div class="faq-section">
+          <p class="eyebrow centered" data-en="Frequently Asked Questions" data-zh="常见问题">Frequently Asked Questions</p>
+          <div class="faq-list">
+            <article class="faq-item"><button type="button" aria-expanded="false"><span data-en="Can I learn online?" data-zh="可以线上学习吗？">Can I learn online?</span><i>+</i></button><div class="faq-answer"><p data-en="Yes. Selected programmes and learning sessions can be conducted online for local and international learners." data-zh="可以。部分课程与学习活动可通过线上方式进行，服务本地与国际学员。">Yes. Selected programmes and learning sessions can be conducted online for local and international learners.</p></div></article>
+            <article class="faq-item"><button type="button" aria-expanded="false"><span data-en="Do I need previous knowledge of the Yijing?" data-zh="需要具备易经基础吗？">Do I need previous knowledge of the Yijing?</span><i>+</i></button><div class="faq-answer"><p data-en="No. Foundation pathways are designed for beginners and progress systematically toward advanced study." data-zh="不需要。基础课程专为初学者设计，并循序渐进衔接高阶研习。">No. Foundation pathways are designed for beginners and progress systematically toward advanced study.</p></div></article>
+            <article class="faq-item"><button type="button" aria-expanded="false"><span data-en="Are consultations available internationally?" data-zh="是否接受国际咨询？">Are consultations available internationally?</span><i>+</i></button><div class="faq-answer"><p data-en="Yes. Online consultations can be arranged subject to the nature and requirements of the enquiry." data-zh="可以。线上咨询可根据咨询性质与具体需求另行安排。">Yes. Online consultations can be arranged subject to the nature and requirements of the enquiry.</p></div></article>
+            <article class="faq-item"><button type="button" aria-expanded="false"><span data-en="Can organizations arrange private programmes?" data-zh="机构可以安排专属课程吗？">Can organizations arrange private programmes?</span><i>+</i></button><div class="faq-answer"><p data-en="Yes. Private workshops, talks and tailored educational programmes may be discussed with the Academy." data-zh="可以。学院可洽谈专属工作坊、讲座及定制教育项目。">Yes. Private workshops, talks and tailored educational programmes may be discussed with the Academy.</p></div></article>
+            <article class="faq-item"><button type="button" aria-expanded="false"><span data-en="How do I begin?" data-zh="我该如何开始？">How do I begin?</span><i>+</i></button><div class="faq-answer"><p data-en="Send a brief enquiry describing your interest or objective. The Academy will respond with the most suitable next step." data-zh="请简要说明您的兴趣或目标，学院将回复最合适的下一步安排。">Send a brief enquiry describing your interest or objective. The Academy will respond with the most suitable next step.</p></div></article>
+          </div>
+        </div>
+      </div>
+
+      <div class="engagement-cta"><div class="section-shell"><p data-en="Every meaningful journey begins with a conversation." data-zh="每一段有意义的旅程，都始于一次真诚的交流。">Every meaningful journey begins with a conversation.</p><div><a class="btn btn-light" href="mailto:info@quantumyijing.com?subject=Start%20My%20Journey" data-en="Start Your Journey" data-zh="开启您的旅程">Start Your Journey</a><a class="btn btn-outline-light" href="#academy" data-en="Explore the Academy" data-zh="探索学院">Explore the Academy</a></div></div></div>
+    </section>
 
     <section id="publications" class="content-section section-shell reveal"><p class="eyebrow" data-en="Publications & Resources" data-zh="出版与资源">Publications & Resources</p><div class="split-heading"><h2 data-en="Books, research papers and digital learning resources" data-zh="书籍、研究论文与数字学习资源">Books, research papers and digital learning resources</h2><p data-en="A growing library for students, practitioners and readers interested in Yijing wisdom and contemporary science." data-zh="为易经智慧与现代科学的学习者、实践者与读者建立持续扩充的资料库。">A growing library for students, practitioners and readers interested in Yijing wisdom and contemporary science.</p></div></section>
 
@@ -190,10 +254,10 @@
   </main>
 
   <footer class="site-footer">
-    <div class="footer-brand"><img src="/images/quantum-yijing-3d-logo.png?v=1.5.1" alt="Quantum YiJing emblem"><div><strong>Quantum YiJing</strong><span data-en="International Academy" data-zh="国际学院">International Academy</span><small data-en="Where Ancient Wisdom Meets Modern Scientific Thinking" data-zh="让千年智慧与现代科学思维相遇">Where Ancient Wisdom Meets Modern Scientific Thinking</small></div></div>
-    <div class="footer-columns"><div><strong data-en="Academy" data-zh="学院">Academy</strong><a href="#mission" data-en="About Us" data-zh="关于我们">About Us</a><a href="#learning" data-en="Learning Centre" data-zh="学习中心">Learning Centre</a><a href="#consultation" data-en="Consultation" data-zh="咨询">Consultation</a></div><div><strong data-en="Research" data-zh="研究">Research</strong><a href="#research" data-en="Research Centre" data-zh="研究中心">Research Centre</a><a href="#publications" data-en="Publications" data-zh="出版物">Publications</a></div><div><strong data-en="Contact" data-zh="联系">Contact</strong><a href="mailto:info@quantumyijing.com">info@quantumyijing.com</a><span>Penang, Malaysia</span></div></div>
+    <div class="footer-brand"><img src="/images/quantum-yijing-3d-logo.png?v=1.6.0" alt="Quantum YiJing emblem"><div><strong>Quantum YiJing</strong><span data-en="International Academy" data-zh="国际学院">International Academy</span><small data-en="Where Ancient Wisdom Meets Modern Scientific Thinking" data-zh="让千年智慧与现代科学思维相遇">Where Ancient Wisdom Meets Modern Scientific Thinking</small></div></div>
+    <div class="footer-columns"><div><strong data-en="Academy" data-zh="学院">Academy</strong><a href="#mission" data-en="About Us" data-zh="关于我们">About Us</a><a href="#learning" data-en="Learning Centre" data-zh="学习中心">Learning Centre</a><a href="#engagement" data-en="Engage" data-zh="参与合作">Engage</a></div><div><strong data-en="Research" data-zh="研究">Research</strong><a href="#research" data-en="Research Centre" data-zh="研究中心">Research Centre</a><a href="#publications" data-en="Publications" data-zh="出版物">Publications</a></div><div><strong data-en="Contact" data-zh="联系">Contact</strong><a href="mailto:info@quantumyijing.com">info@quantumyijing.com</a><span>Penang, Malaysia</span></div></div>
     <div class="copyright">© <span id="year"></span> Quantum YiJing International Academy.</div>
   </footer>
-  <script src="/script.js?v=1.5.1"></script>
+  <script src="/script.js?v=1.6.0"></script>
 </body>
 </html>
