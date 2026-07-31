@@ -3,7 +3,7 @@ const langToggle=document.getElementById('lang-toggle');
 const menuToggle=document.getElementById('menu-toggle');
 const nav=document.getElementById('main-nav');
 document.getElementById('year').textContent=new Date().getFullYear();
-function setLanguage(lang){root.dataset.lang=lang;root.lang=lang==='zh'?'zh-CN':'en';document.querySelectorAll('[data-en][data-zh]').forEach(el=>el.textContent=el.dataset[lang]);langToggle.innerHTML=lang==='en'?'<span>🌐</span> 中文':'<span>🌐</span> EN';localStorage.setItem('qy-language',lang)}
+function setLanguage(lang){root.dataset.lang=lang;root.lang=lang==='zh'?'zh-CN':'en';document.querySelectorAll('[data-en][data-zh]').forEach(el=>el.textContent=el.dataset[lang]);langToggle.textContent=lang==='en'?'中文':'EN';localStorage.setItem('qy-language',lang)}
 setLanguage(localStorage.getItem('qy-language')||'en');
 langToggle.addEventListener('click',()=>setLanguage(root.dataset.lang==='en'?'zh':'en'));
 menuToggle.addEventListener('click',()=>{const open=nav.classList.toggle('open');menuToggle.setAttribute('aria-expanded',String(open));menuToggle.textContent=open?'✕':'☰'});
@@ -36,3 +36,15 @@ const navLinks=[...document.querySelectorAll('.main-nav a[href^="#"]')];
 const activeNavObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){navLinks.forEach(link=>link.classList.toggle('active',link.getAttribute('href')==='#'+entry.target.id))}}),{rootMargin:'-35% 0px -55% 0px'});
 sections.forEach(section=>activeNavObserver.observe(section));
 
+
+// Version 1.6.2 — Google Form lead capture
+// Paste your Google Form public link between the quotation marks below.
+const GOOGLE_FORM_URL='';
+document.querySelectorAll('.google-form-link').forEach(link=>{
+  link.addEventListener('click',event=>{
+    if(!GOOGLE_FORM_URL)return; // keep email fallback until a form URL is configured
+    event.preventDefault();
+    const separator=GOOGLE_FORM_URL.includes('?')?'&':'?';
+    window.open(GOOGLE_FORM_URL+separator+'usp=pp_url','_blank','noopener,noreferrer');
+  });
+});
