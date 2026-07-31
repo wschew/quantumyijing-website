@@ -1,39 +1,20 @@
-# Connect Your Google Form to Version 1.6.3
+# Connect the Academy Google Form — Version 1.6.4
 
-The website is complete, but it cannot know your Google Form address until you create the form.
-
-## Step 1 — Create the form
-
-1. Open Google Forms and choose **Blank form**.
-2. Title it **Quantum YiJing Academy Enquiry Form**.
-3. Add the questions listed in `GOOGLE-FORM-TEMPLATE.md`.
-4. In the **Responses** tab, click the green Google Sheets icon to create your lead database.
-
-## Step 2 — Copy the public form link
-
-1. Click **Send** in Google Forms.
-2. Select the link icon.
-3. Copy the link. It will look similar to:
-
-```text
-https://forms.gle/AbCdEf123456
-```
-
-## Step 3 — Put the link into the website
-
-Open `script.js` and find:
+1. Create the form using `GOOGLE-FORM-TEMPLATE.md`.
+2. In Google Forms, open **Responses** and click **Link to Sheets**. This creates the Google Sheets lead register.
+3. Click **Send** → **Link** and copy the published form URL. It normally begins with `https://forms.gle/` or `https://docs.google.com/forms/`.
+4. Open `script.js` and find:
 
 ```javascript
-const GOOGLE\_FORM\_URL='';
+const GOOGLE_FORM_URL='';
 ```
 
-Paste your link between the quotation marks:
+5. Paste the URL between the quotation marks, for example:
 
 ```javascript
-const GOOGLE\_FORM\_URL='https://forms.gle/AbCdEf123456';
+const GOOGLE_FORM_URL='https://forms.gle/YourFormLink';
 ```
 
-Save the file and upload it to GitHub. All enquiry buttons will then open the same form.
+6. Save `script.js`, upload it to GitHub, and wait for Cloudflare Pages to deploy.
 
-Until a link is added, the buttons continue to open an email enquiry, so the website will not break.
-
+All buttons labelled **Complete Enquiry Form**, **Start Your Journey**, **Request Consultation**, and related enquiry links will then open the Google Form. Responses will be stored in the linked Google Sheet.
