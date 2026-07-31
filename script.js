@@ -39,51 +39,21 @@ sections.forEach(section=>activeNavObserver.observe(section));
 
 
 
-// Version 1.6.3 — enquiry links and lead form
-// Optional: paste a published Google Form URL below. When present, enquiry links open it.
+// Version 1.6.4 — Google Forms lead capture
+// Paste the published Google Form URL between the quotation marks after creating the form.
 const GOOGLE_FORM_URL='';
-const enquirySection=document.getElementById('academy-enquiry');
+
 document.querySelectorAll('.google-form-link').forEach(link=>{
   link.addEventListener('click',event=>{
+    event.preventDefault();
     if(GOOGLE_FORM_URL){
-      event.preventDefault();
       const separator=GOOGLE_FORM_URL.includes('?')?'&':'?';
       window.open(GOOGLE_FORM_URL+separator+'usp=pp_url','_blank','noopener,noreferrer');
       return;
     }
-    event.preventDefault();
-    if(enquirySection){
-      enquirySection.scrollIntoView({behavior:'smooth',block:'start'});
-      const interest=link.dataset.interest;
-      if(interest){
-        const field=document.querySelector('#academy-enquiry-form [name="interest"]');
-        if(field && [...field.options].some(option=>option.value===interest))field.value=interest;
-      }
-      setTimeout(()=>document.querySelector('#academy-enquiry-form [name="name"]')?.focus(),450);
-    }
+    const zh=document.documentElement.dataset.lang==='zh';
+    alert(zh
+      ? 'Google 咨询表格尚未连接。请暂时电邮 info@quantumyijing.com。'
+      : 'The Google enquiry form is being connected. Please email info@quantumyijing.com in the meantime.');
   });
 });
-
-const enquiryForm=document.getElementById('academy-enquiry-form');
-const enquiryStatus=document.getElementById('enquiry-status');
-if(enquiryForm){
-  enquiryForm.addEventListener('submit',event=>{
-    event.preventDefault();
-    const data=new FormData(enquiryForm);
-    const subject=`Academy Enquiry — ${data.get('interest')||'General'}`;
-    const body=[
-      `Name: ${data.get('name')||''}`,
-      `Email: ${data.get('email')||''}`,
-      `WhatsApp / Mobile: ${data.get('phone')||''}`,
-      `Country: ${data.get('country')||''}`,
-      `Communication Language: ${data.get('communication_language')||''}`,
-      `Course / Consultation Language: ${data.get('course_language')||''}`,
-      `Interest: ${data.get('interest')||''}`,
-      '',
-      `${data.get('message')||''}`
-    ].join('\n');
-    const mailto=`mailto:info@quantumyijing.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    if(enquiryStatus)enquiryStatus.textContent=document.documentElement.dataset.lang==='zh'?'您的电邮应用程序即将打开。':'Your email application will now open.';
-    window.location.href=mailto;
-  });
-}
