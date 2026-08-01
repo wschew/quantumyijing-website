@@ -1,20 +1,17 @@
-# Connect the Academy Google Form — Version 1.6.4
+# Google Form Connection — Version 1.6.5
 
-1. Create the form using `GOOGLE-FORM-TEMPLATE.md`.
-2. In Google Forms, open **Responses** and click **Link to Sheets**. This creates the Google Sheets lead register.
-3. Click **Send** → **Link** and copy the published form URL. It normally begins with `https://forms.gle/` or `https://docs.google.com/forms/`.
-4. Open `script.js` and find:
+The Academy Google Form is now connected.
 
-```javascript
-const GOOGLE_FORM_URL='';
-```
+## Live form URL
 
-5. Paste the URL between the quotation marks, for example:
+`https://forms.gle/xctmqDnfrKSntuNR8`
+
+The URL is configured in `script.js`:
 
 ```javascript
-const GOOGLE_FORM_URL='https://forms.gle/YourFormLink';
+const GOOGLE_FORM_URL='https://forms.gle/xctmqDnfrKSntuNR8';
 ```
 
-6. Save `script.js`, upload it to GitHub, and wait for Cloudflare Pages to deploy.
+All links with the `google-form-link` class open the form in a new browser tab. The direct **Enquire About Courses** button is also connected to the same form.
 
-All buttons labelled **Complete Enquiry Form**, **Start Your Journey**, **Request Consultation**, and related enquiry links will then open the Google Form. Responses will be stored in the linked Google Sheet.
+Keep this file as a maintenance reference. If the Google Form URL changes later, replace the URL in `script.js` and any direct form link in `index.html`.
