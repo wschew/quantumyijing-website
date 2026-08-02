@@ -1,4 +1,4 @@
-# Quantum YiJing Website Version 1.8
+# Quantum YiJing Website Version 1.9.0
 
 ## Installation
 1. Extract the ZIP file.
@@ -16,3 +16,7 @@
 
 ## Version
 Asset cache references: `v=1.8.3`.
+
+
+## Version 1.9.0 additional file
+Upload `publications.css` to the repository root together with the other CSS files.

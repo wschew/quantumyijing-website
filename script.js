@@ -39,7 +39,7 @@ sections.forEach(section=>activeNavObserver.observe(section));
 
 
 
-// Version 1.7.0 — live Google Forms lead capture
+// Version 1.9.0 — live Google Forms lead capture
 // Paste the published Google Form URL between the quotation marks after creating the form.
 const GOOGLE_FORM_URL='https://forms.gle/xctmqDnfrKSntuNR8';
 
