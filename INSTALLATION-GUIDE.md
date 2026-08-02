@@ -15,4 +15,4 @@
 - Confirm both publication cover images appear.
 
 ## Version
-Asset cache references: `v=1.8.2`.
+Asset cache references: `v=1.8.3`.

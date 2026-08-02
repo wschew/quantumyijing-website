@@ -374,7 +374,7 @@ html[data-lang="zh"] .school-kicker{text-transform:none;letter-spacing:.08em}
 @media(max-width:1050px){.programmes-heading,.pathway-copy,.learning-philosophy-panel{grid-template-columns:1fr;gap:26px}.school-wide{grid-template-columns:1fr 1fr}.school-wide .school-link{grid-column:1/-1}.progression-track{grid-template-columns:1fr}.progression-track::before{left:24px;right:auto;top:20px;bottom:20px;width:1px;height:auto}.progression-track li{display:grid;grid-template-columns:48px 1fr;column-gap:18px;align-items:center;text-align:left}.progression-track strong{margin:0}.progression-track small{grid-column:2;max-width:none}}
 @media(max-width:760px){.programmes-section{padding:78px 0}.programmes-heading{margin-bottom:28px}.programmes-heading h2{font-size:2.45rem}.schools-grid{grid-template-columns:1fr}.school-card{min-height:0;padding:32px 26px}.school-wide{grid-column:auto;grid-template-columns:1fr;gap:20px}.school-wide .school-link{grid-column:auto}.academic-pathway,.learning-philosophy-panel{padding:32px 24px}.learning-philosophy-title{align-items:flex-start}.learning-philosophy-title>span{width:60px;height:60px;border-radius:18px}}
 
-/* v1.8.2 research fallback: essential layout if research.css is delayed */
+/* v1.8.3 research fallback: essential layout if research.css is delayed */
 .research-v182-hero-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr)}
 .research-v182-pillars{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
 .research-v182-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}

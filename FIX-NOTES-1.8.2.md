@@ -1,6 +1,6 @@
-# Version 1.8.2 Fix Notes
+# Version 1.8.3 Fix Notes
 
-Version 1.8.2 rebuilds the Research & Innovation Centre with a new, self-contained component system.
+Version 1.8.3 rebuilds the Research & Innovation Centre with a new, self-contained component system.
 
 ## Main corrections
 
@@ -10,7 +10,7 @@ Version 1.8.2 rebuilds the Research & Innovation Centre with a new, self-contain
 - Added a minimal layout fallback to `styles.css`.
 - Corrected spacing between roadmap labels and titles.
 - Kept both publication images and bilingual switching.
-- Updated all cache references to `v=1.8.2`.
+- Updated all cache references to `v=1.8.3`.
 - Preserved the Google Form connection.
 
 Upload all files from this release, including the complete `images` folder.
