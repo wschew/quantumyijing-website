@@ -1,4 +1,4 @@
-# Quantum YiJing Website Version 1.9.1
+# Quantum YiJing Website Version 1.9.2
 
 ## Publications & Digital Library update
 
@@ -8,4 +8,4 @@
 - Added page counts and language information.
 - Added worldwide availability labels.
 - Updated publication count to three.
-- Updated cache references to `v=1.9.1`.
+- Updated cache references to `v=1.9.2`.
