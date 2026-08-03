@@ -34,3 +34,10 @@
 @media(max-width:1180px){.library-v192-hero{grid-template-columns:1.1fr .8fr;padding:70px 52px}.library-v192-hero-stat{grid-column:1/-1;display:grid;grid-template-columns:auto auto 1fr;gap:20px;align-items:center;max-width:none}.library-v192-stat-icon{margin:0}.library-v192-hero-stat strong{text-align:left}.library-v192-hero-stat>span:not(.library-v192-stat-icon),.library-v192-hero-stat small{text-align:left;margin:0}.library-v192-hero-stat i{display:none}.library-v19-books{grid-template-columns:1fr}.library-v19-book{grid-template-columns:190px 1fr}.library-v19-actions{grid-column:auto;display:flex}.library-v19-actions .btn{width:auto}.library-v191-worldwide{justify-content:flex-start}}
 @media(max-width:780px){.library-v192-hero{grid-template-columns:1fr;padding:58px 26px;border-radius:0 0 28px 28px}.library-v192-hero-art{min-height:auto}.library-v192-hero-art img{max-width:430px}.library-v192-hero-stat{grid-template-columns:auto 1fr}.library-v192-hero-stat small{grid-column:1/-1}.library-v19-book{grid-template-columns:120px 1fr;padding:24px 18px}.library-v19-actions{grid-column:1/-1;display:grid}.library-v19-actions .btn{width:100%}}
 @media(max-width:520px){.library-v192-hero-copy h2{font-size:2.45rem}.library-v192-hero-art{display:none}.library-v192-hero-stat{display:block}.library-v192-stat-icon{margin:0 auto 18px}.library-v192-hero-stat strong,.library-v192-hero-stat>span:not(.library-v192-stat-icon),.library-v192-hero-stat small{text-align:center}.library-v19-book{grid-template-columns:1fr}.library-v19-cover{max-width:190px;margin:30px auto 0}.library-v19-book-copy{padding-top:4px}.library-v192-card-no{left:20px}.library-v19-book h3{text-align:center}.library-v19-book-copy>p:not(.library-v19-kicker){text-align:center}}
+
+
+/* Version 1.9.3 — clean publications hero artwork */
+.library-v192-hero-art{overflow:visible}
+.library-v192-hero-art img{width:min(100%,470px);max-height:520px;object-fit:contain;mix-blend-mode:normal;filter:drop-shadow(0 28px 32px rgba(0,15,65,.42))}
+@media(max-width:1180px){.library-v192-hero-art img{width:min(100%,420px)}}
+@media(max-width:780px){.library-v192-hero-art img{width:min(100%,380px)}}
