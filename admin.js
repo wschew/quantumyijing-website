@@ -38,7 +38,7 @@
   }
 
   async function loadStats() {
-    const response = await api('/api/admin/stats');
+    const response = await api('/api/admin?action=stats');
     const data = await response.json();
     $('statTotal').textContent = data.summary.total;
     $('statToday').textContent = data.summary.today;
@@ -53,7 +53,7 @@
 
   async function loadRecords() {
     setMessage('dashboardMessage', 'Loading…', true);
-    const response = await api(`/api/admin/enquiries?${filters()}`);
+    const response = await api(`/api/admin?action=enquiries&${filters()}`);
     const data = await response.json();
     state.total = data.total;
     const body = $('recordsBody'); body.innerHTML = '';
@@ -86,7 +86,7 @@
   $('loginForm').addEventListener('submit', async event => {
     event.preventDefault(); state.token = $('adminToken').value.trim();
     if (!state.token) return;
-    try { await api('/api/admin/stats'); sessionStorage.setItem('qyAdminToken', state.token); showDashboard(); await loadAll(); }
+    try { await api('/api/admin?action=stats'); sessionStorage.setItem('qyAdminToken', state.token); showDashboard(); await loadAll(); }
     catch (error) { setMessage('loginMessage', error.status === 401 ? 'Incorrect administrator token.' : error.message); }
   });
   $('logoutButton').addEventListener('click', () => { sessionStorage.removeItem('qyAdminToken'); state.token=''; $('adminToken').value=''; showLogin(); });
@@ -101,13 +101,13 @@
   $('saveRecord').addEventListener('click', async () => {
     if (!state.selected) return;
     try {
-      await api(`/api/admin/enquiries/${state.selected.id}`, { method:'PATCH', body:JSON.stringify({ status:$('editStatus').value, followUpDate:$('editFollowUp').value, notes:$('editNotes').value }) });
+      await api(`/api/admin?action=update&id=${state.selected.id}`, { method:'PATCH', body:JSON.stringify({ status:$('editStatus').value, followUpDate:$('editFollowUp').value, notes:$('editNotes').value }) });
       setMessage('dialogMessage','Record saved.',true); await loadAll(); setTimeout(()=>$('recordDialog').close(),500);
     } catch(error){ setMessage('dialogMessage',error.message); }
   });
   $('exportButton').addEventListener('click', async () => {
     try {
-      const response = await api(`/api/admin/export?${filters()}`);
+      const response = await api(`/api/admin?action=export&${filters()}`);
       const blob = await response.blob(); const url=URL.createObjectURL(blob); const a=document.createElement('a');
       a.href=url; a.download=`quantum-yijing-crm-${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url);
     } catch(error){ handleError(error); }
