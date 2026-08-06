@@ -39,21 +39,30 @@ sections.forEach(section=>activeNavObserver.observe(section));
 
 
 
-// Version 1.9.0 — live Google Forms lead capture
-// Paste the published Google Form URL between the quotation marks after creating the form.
-const GOOGLE_FORM_URL='https://forms.gle/xctmqDnfrKSntuNR8';
-
+// Version 2.1 — direct links into the smart enquiry form
+const enquirySection=document.getElementById('contact');
+const enquiryInterest=document.getElementById('enquiry-interest');
 document.querySelectorAll('.google-form-link').forEach(link=>{
   link.addEventListener('click',event=>{
     event.preventDefault();
-    if(GOOGLE_FORM_URL){
-      const separator=GOOGLE_FORM_URL.includes('?')?'&':'?';
-      window.open(GOOGLE_FORM_URL+separator+'usp=pp_url','_blank','noopener,noreferrer');
-      return;
+    const interest=link.dataset.interest||'General Enquiry';
+    if(enquiryInterest){
+      const options=[...enquiryInterest.options];
+      const direct=options.find(option=>option.value===interest);
+      const mappings={
+        'School of YiJing Studies':'Academy Course',
+        'School of Chinese Metaphysics':'Academy Course',
+        'Mind Consciousness Spiritual Development':'Academy Course',
+        'Scientific Research':'Research Collaboration',
+        'Professional Consultation':'General Enquiry',
+        'Speaking Engagement':'Media / Speaking',
+        'Feng Shui / Environmental Assessment':'Feng Shui Consultation',
+        'Digital Courses':'Academy Course'
+      };
+      enquiryInterest.value=direct?interest:(mappings[interest]||'General Enquiry');
+      enquiryInterest.dispatchEvent(new Event('change',{bubbles:true}));
     }
-    const zh=document.documentElement.dataset.lang==='zh';
-    alert(zh
-      ? 'Google 咨询表格尚未连接。请暂时电邮 info@quantumyijing.com。'
-      : 'The Google enquiry form is being connected. Please email info@quantumyijing.com in the meantime.');
+    enquirySection?.scrollIntoView({behavior:'smooth',block:'start'});
+    setTimeout(()=>document.querySelector('#academy-enquiry-form input[name="name"]')?.focus({preventScroll:true}),550);
   });
 });
