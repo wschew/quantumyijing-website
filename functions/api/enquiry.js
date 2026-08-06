@@ -22,6 +22,21 @@ const escapeHtml = value => String(value ?? '')
 const clean = (value, max) => String(value ?? '').trim().slice(0, max);
 const validEmail = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 160;
 
+async function saveEnquiry(db, data, meta) {
+  if (!db) throw new Error('ENQUIRIES_DB binding is not configured.');
+
+  return db.prepare(`
+    INSERT INTO enquiries (
+      reference, submitted_at_utc, submitted_at_malaysia, submitted_date,
+      name, email, phone, country, interest, message, language, status, source
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'New', 'Website')
+  `).bind(
+    meta.reference, meta.submittedAtUtc, meta.submitted, meta.submittedDate,
+    data.name, data.email, data.phone, data.country, data.interest,
+    data.message, data.language
+  ).run();
+}
+
 async function sendEmail(apiKey, payload) {
   const response = await fetch(RESEND_ENDPOINT, {
     method: 'POST',
@@ -36,14 +51,80 @@ async function sendEmail(apiKey, payload) {
   return body;
 }
 
-function acknowledgementHtml(name) {
+function acknowledgementHtml(name, reference, interest, submitted) {
   const safeName = escapeHtml(name);
-  return `<!doctype html><html><body style="margin:0;background:#f3f7fc;font-family:Arial,'Noto Sans SC',sans-serif;color:#17243a"><div style="max-width:680px;margin:0 auto;padding:28px 14px"><div style="background:linear-gradient(135deg,#061b42,#0b5bd3);border-radius:18px 18px 0 0;padding:30px;color:#fff"><div style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#9fd0ff">Quantum YiJing</div><h1 style="margin:8px 0 0;font-size:26px">Enquiry Received</h1></div><div style="background:#fff;border-radius:0 0 18px 18px;padding:34px;box-shadow:0 14px 40px rgba(6,33,77,.10)"><p>Dear ${safeName},</p><p>Thank you for contacting <strong>${ACADEMY_NAME}</strong>. We have received your enquiry and will normally reply within <strong>1–2 working days</strong>.</p><p>Your interest in our courses, professional services and research activities is sincerely appreciated.</p><p style="margin-top:28px">Warm regards,<br><strong>Master Chew Wai Soon</strong><br>Founder &amp; Chief Instructor</p><hr style="border:0;border-top:1px solid #dce7f4;margin:30px 0"><p>尊敬的 ${safeName}：</p><p>感谢您联系<strong>量子易经国际学院</strong>。我们已收到您的咨询，一般会在 <strong>1–2 个工作日内</strong>回复。</p><p>感谢您对本学院课程、专业服务与研究工作的关注。</p><p style="margin-top:28px">敬祝安好！<br><strong>赵辉顺导师</strong><br>创办人｜首席导师</p><div style="margin-top:30px;padding:18px;background:#f5f9ff;border-radius:12px;font-size:13px;color:#50657e"><strong>info@quantumyijing.com</strong><br><a href="https://quantumyijing.com" style="color:#0b5bd3">quantumyijing.com</a><br><em>Where Ancient Wisdom Meets Modern Scientific Thinking</em></div></div></div></body></html>`;
+  const safeReference = escapeHtml(reference);
+  const safeInterest = escapeHtml(interest);
+  const safeSubmitted = escapeHtml(submitted);
+  const logoUrl = 'https://quantumyijing.com/images/quantum-yijing-3d-logo.png';
+
+  return `<!doctype html>
+<html lang="en">
+  <body style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,'Noto Sans SC','Microsoft YaHei',sans-serif;color:#17243a">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7fb">
+      <tr>
+        <td align="center" style="padding:28px 12px">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:680px;background:#ffffff;border:1px solid #dce7f4;border-radius:20px;overflow:hidden;box-shadow:0 12px 34px rgba(19,55,96,.10)">
+            <tr>
+              <td style="padding:26px 30px;background:#edf5ff;border-bottom:4px solid #d3a62c">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td width="82" valign="middle">
+                      <img src="${logoUrl}" width="68" height="68" alt="Quantum YiJing International Academy" style="display:block;width:68px;height:68px;object-fit:contain;border:0">
+                    </td>
+                    <td valign="middle">
+                      <div style="font-size:21px;line-height:1.2;font-weight:800;color:#082b63">Quantum YiJing</div>
+                      <div style="margin-top:4px;font-size:11px;line-height:1.4;font-weight:700;letter-spacing:2px;color:#45688f">INTERNATIONAL ACADEMY</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:34px 34px 18px">
+                <div style="font-size:12px;font-weight:800;letter-spacing:1.7px;color:#1768c4;text-transform:uppercase">Enquiry confirmation</div>
+                <h1 style="margin:10px 0 22px;font-size:27px;line-height:1.28;color:#0b2f66">Thank you for contacting us</h1>
+                <p style="margin:0 0 16px;font-size:15px;line-height:1.75">Dear ${safeName},</p>
+                <p style="margin:0 0 16px;font-size:15px;line-height:1.75">Thank you for contacting <strong>${ACADEMY_NAME}</strong>. Your enquiry has been received successfully, and we will normally reply within <strong>1–2 working days</strong>.</p>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0;background:#f7faff;border:1px solid #dce8f6;border-radius:12px">
+                  <tr><td style="padding:13px 16px;color:#58708d;font-size:13px;width:145px">Reference</td><td style="padding:13px 16px;font-size:13px;font-weight:700;color:#173b63">${safeReference}</td></tr>
+                  <tr><td style="padding:13px 16px;color:#58708d;font-size:13px;border-top:1px solid #e3edf8">Area of interest</td><td style="padding:13px 16px;font-size:13px;font-weight:700;color:#173b63;border-top:1px solid #e3edf8">${safeInterest}</td></tr>
+                  <tr><td style="padding:13px 16px;color:#58708d;font-size:13px;border-top:1px solid #e3edf8">Received</td><td style="padding:13px 16px;font-size:13px;font-weight:700;color:#173b63;border-top:1px solid #e3edf8">${safeSubmitted}</td></tr>
+                </table>
+                <p style="margin:24px 0 0;font-size:15px;line-height:1.75">Warm regards,<br><strong>Master Chew Wai Soon</strong><br><span style="color:#526a85">Founder &amp; Chief Instructor</span></p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 34px 26px">
+                <div style="border-top:1px solid #dce7f4;padding-top:26px">
+                  <div style="font-size:12px;font-weight:800;letter-spacing:1.4px;color:#1768c4">咨询确认</div>
+                  <h2 style="margin:10px 0 20px;font-size:23px;line-height:1.4;color:#0b2f66">感谢您联系我们</h2>
+                  <p style="margin:0 0 16px;font-size:15px;line-height:1.85">尊敬的 ${safeName}：</p>
+                  <p style="margin:0 0 16px;font-size:15px;line-height:1.85">感谢您联系<strong>量子易经国际学院</strong>。我们已成功收到您的咨询，一般会在 <strong>1–2 个工作日内</strong>回复。</p>
+                  <p style="margin:24px 0 0;font-size:15px;line-height:1.85">敬祝安好！<br><strong>赵辉顺导师</strong><br><span style="color:#526a85">创办人｜首席导师</span></p>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:22px 26px;background:#f7f9fc;border-top:1px solid #e0e8f2;color:#5d7189;font-size:12px;line-height:1.8">
+                <a href="https://quantumyijing.com" style="color:#1768c4;text-decoration:none;font-weight:700">quantumyijing.com</a>
+                &nbsp;&nbsp;•&nbsp;&nbsp;
+                <a href="mailto:info@quantumyijing.com" style="color:#1768c4;text-decoration:none;font-weight:700">info@quantumyijing.com</a><br>
+                <span style="color:#7a8ca2">Where Ancient Wisdom Meets Modern Scientific Thinking</span><br>
+                <span style="color:#9aa8b8">© ${new Date().getFullYear()} Quantum YiJing International Academy</span>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
 }
 
 function internalHtml(data, meta) {
-  const row = (label, value) => `<tr><td style="padding:9px 12px;background:#f3f7fc;font-weight:bold;width:150px">${label}</td><td style="padding:9px 12px;border-bottom:1px solid #e4ecf6">${escapeHtml(value || '—')}</td></tr>`;
-  return `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#17243a"><h2 style="color:#073b8c">New Website Enquiry</h2><table style="border-collapse:collapse;width:100%;max-width:760px">${row('Name',data.name)}${row('Email',data.email)}${row('WhatsApp / Phone',data.phone)}${row('Country',data.country)}${row('Interest',data.interest)}${row('Language',data.language === 'zh' ? 'Chinese' : 'English')}${row('Submitted',meta.submitted)}${row('Message',data.message)}</table><p style="font-size:12px;color:#71839a">Submitted through quantumyijing.com. Reply directly to this message to contact the enquirer.</p></body></html>`;
+  const row = (label, value) => `<tr><td style="padding:10px 13px;background:#f5f8fc;font-weight:700;width:155px;color:#315274;border-bottom:1px solid #e2eaf3">${label}</td><td style="padding:10px 13px;border-bottom:1px solid #e2eaf3;color:#17243a">${escapeHtml(value || '—')}</td></tr>`;
+  return `<!doctype html><html><body style="margin:0;padding:24px;background:#f4f7fb;font-family:Arial,'Noto Sans SC',sans-serif;color:#17243a"><div style="max-width:760px;margin:0 auto;background:#fff;border:1px solid #dce7f4;border-radius:16px;overflow:hidden"><div style="padding:22px 26px;background:#edf5ff;border-bottom:4px solid #d3a62c"><div style="font-size:12px;font-weight:800;letter-spacing:1.6px;color:#1768c4">QUANTUM YIJING INTERNATIONAL ACADEMY</div><h2 style="margin:8px 0 0;color:#0b2f66">New Website Enquiry</h2></div><div style="padding:26px"><p style="margin:0 0 18px;color:#526a85">Reference: <strong style="color:#173b63">${escapeHtml(meta.reference)}</strong></p><table style="border-collapse:separate;border-spacing:0;width:100%;border:1px solid #e2eaf3;border-radius:10px;overflow:hidden">${row('Name',data.name)}${row('Email',data.email)}${row('WhatsApp / Phone',data.phone)}${row('Country',data.country)}${row('Interest',data.interest)}${row('Language',data.language === 'zh' ? 'Chinese' : 'English')}${row('Submitted',meta.submitted)}${row('Message',data.message)}</table><p style="margin:20px 0 0;font-size:12px;color:#71839a">Submitted through quantumyijing.com. Reply directly to this email to contact the enquirer.</p></div></div></body></html>`;
 }
 
 export async function onRequestPost(context) {
@@ -80,26 +161,36 @@ export async function onRequestPost(context) {
     return json({ error: 'Please reload the form and try again.' }, 400);
   }
 
-  const submitted = new Date().toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur', dateStyle: 'medium', timeStyle: 'short' });
+  const now = new Date();
+  const submittedAtUtc = now.toISOString();
+  const submitted = now.toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur', dateStyle: 'medium', timeStyle: 'short' });
+  const submittedDate = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kuala_Lumpur', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(now);
   const subjectTag = data.interest.replace(/[^a-zA-Z0-9 /&-]/g, '');
+  const reference = `QY-${submittedDate.replaceAll('-', '')}-${crypto.randomUUID().slice(0,6).toUpperCase()}`;
+  const meta = { submitted, submittedAtUtc, submittedDate, reference };
 
   try {
+    // Save first so the enquiry remains recorded even if email delivery later fails.
+    await saveEnquiry(context.env.ENQUIRIES_DB, data, meta);
+
     await Promise.all([
       sendEmail(context.env.RESEND_API_KEY, {
         from: FROM_ADDRESS,
         to: [INTERNAL_ADDRESS],
         reply_to: data.email,
         subject: `[Website Enquiry] ${subjectTag} — ${data.name}`,
-        html: internalHtml(data, { submitted }),
-        text: `New website enquiry\nName: ${data.name}\nEmail: ${data.email}\nPhone: ${data.phone}\nCountry: ${data.country}\nInterest: ${data.interest}\nMessage: ${data.message}`
+        html: internalHtml(data, meta),
+        text: `New website enquiry\nReference: ${reference}\nName: ${data.name}\nEmail: ${data.email}\nPhone: ${data.phone}\nCountry: ${data.country}\nInterest: ${data.interest}\nMessage: ${data.message}`
       }),
       sendEmail(context.env.RESEND_API_KEY, {
         from: FROM_ADDRESS,
         to: [data.email],
         reply_to: INTERNAL_ADDRESS,
         subject: 'Enquiry Received | 已收到您的咨询',
-        html: acknowledgementHtml(data.name),
-        text: `Dear ${data.name},\n\nThank you for contacting ${ACADEMY_NAME}. We have received your enquiry and will normally reply within 1–2 working days.\n\n尊敬的 ${data.name}：\n\n感谢您联系量子易经国际学院。我们已收到您的咨询，一般会在 1–2 个工作日内回复。\n\ninfo@quantumyijing.com`
+        html: acknowledgementHtml(data.name, reference, data.interest, submitted),
+        text: `Dear ${data.name},\n\nThank you for contacting ${ACADEMY_NAME}. Reference: ${reference}.  We have received your enquiry and will normally reply within 1–2 working days.\n\n尊敬的 ${data.name}：\n\n感谢您联系量子易经国际学院。我们已收到您的咨询，一般会在 1–2 个工作日内回复。\n\ninfo@quantumyijing.com`
       })
     ]);
     return json({ ok: true });
