@@ -1,0 +1,8 @@
+After copying this update, delete these obsolete paths from the repository if they still exist:
+
+functions/api/admin/
+functions/api/export-enquiries.js
+
+Keep:
+functions/api/admin.js
+functions/api/enquiry.js
