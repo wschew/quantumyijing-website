@@ -1,0 +1,4 @@
+-- Quantum YiJing v2.6 — Student Management Phase 1
+-- No schema changes are required.
+-- v2.6 uses the students and crm_activities tables created by migrate-v2.4.sql.
+-- Required historical order: v2.3 schema -> migrate-v2.4.sql -> migrate-v2.5.sql.

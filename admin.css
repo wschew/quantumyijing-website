@@ -45,3 +45,15 @@
 .filters-v24{grid-template-columns:repeat(4,minmax(150px,1fr))}
 @media(max-width:900px){.edit-grid-v25{grid-template-columns:1fr 1fr}.filters-v24{grid-template-columns:1fr 1fr}}
 @media(max-width:620px){.edit-grid-v25,.filters-v24{grid-template-columns:1fr}.quick-followup{align-items:stretch}.quick-followup button{flex:1 1 42%}}
+
+/* v2.6 Student Management */
+.module-tabs{width:min(1400px,calc(100% - 40px));margin:18px auto 0;display:flex;gap:8px;padding:6px;background:#eaf1f9;border:1px solid var(--line);border-radius:14px}
+.module-tab{border:0;background:transparent;color:#315274;font-weight:800;padding:10px 16px;border-radius:10px;cursor:pointer}.module-tab.active{background:#fff;color:var(--navy);box-shadow:0 4px 14px rgba(13,48,92,.08)}
+.student-stats-grid{grid-template-columns:repeat(5,1fr)}
+.student-insights{grid-template-columns:repeat(2,1fr)}
+.student-filters{grid-template-columns:2fr 1fr 1.5fr auto auto}
+#studentsModule[hidden],#crmModule[hidden]{display:none}
+#studentDialog label{display:grid;gap:7px;font-size:13px;font-weight:700;color:#315274}
+#studentDialog textarea,#studentDialog input,#studentDialog select{width:100%}
+@media(max-width:1000px){.student-stats-grid{grid-template-columns:repeat(3,1fr)}.student-filters{grid-template-columns:1fr 1fr}.student-insights{grid-template-columns:1fr}}
+@media(max-width:620px){.module-tabs{width:calc(100% - 24px)}.module-tab{flex:1}.student-stats-grid{grid-template-columns:1fr 1fr}.student-filters{grid-template-columns:1fr}}

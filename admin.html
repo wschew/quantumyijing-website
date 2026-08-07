@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Academy Operating System | Quantum YiJing International Academy</title>
   <link rel="icon" href="images/quantum-yijing-logo.png">
-  <link rel="stylesheet" href="admin.css?v=2.5.0">
+  <link rel="stylesheet" href="admin.css?v=2.6.0">
 </head>
 <body>
   <main class="crm-shell">
@@ -27,7 +27,7 @@
       <header class="topbar">
         <div class="brand-lockup">
           <img src="images/quantum-yijing-logo.png" alt="" class="topbar-logo">
-          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v2.5</span></div>
+          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v2.6</span></div>
         </div>
         <div class="topbar-actions">
           <a href="index.html" class="text-link">View website</a>
@@ -35,6 +35,12 @@
         </div>
       </header>
 
+      <nav class="module-tabs" aria-label="Academy modules">
+        <button id="crmTab" class="module-tab active" type="button">CRM & Follow-up</button>
+        <button id="studentsTab" class="module-tab" type="button">Students</button>
+      </nav>
+
+      <div id="crmModule">
       <section class="page-heading">
         <div>
           <p class="eyebrow">QY-AOS · CRM INTELLIGENCE</p>
@@ -97,6 +103,53 @@
         <div class="pagination"><button id="prevPage" type="button">Previous</button><span id="pageInfo">Page 1</span><button id="nextPage" type="button">Next</button></div>
         <p id="dashboardMessage" class="form-message" aria-live="polite"></p>
       </section>
+      </div>
+
+      <div id="studentsModule" hidden>
+        <section class="page-heading">
+          <div>
+            <p class="eyebrow">QY-AOS · STUDENT MANAGEMENT</p>
+            <h1>Student Management Dashboard</h1>
+            <p>Manage registered students, programmes, lifecycle stages, enrolment dates and private academic notes.</p>
+          </div>
+          <button id="studentExportButton" class="primary-button" type="button">Export Students to Excel (CSV)</button>
+        </section>
+
+        <section class="stats-grid student-stats-grid" aria-label="Student summary">
+          <article><span>Total students</span><strong id="studentStatTotal">0</strong></article>
+          <article><span>Registered</span><strong id="studentStatRegistered">0</strong></article>
+          <article><span>Active students</span><strong id="studentStatActive">0</strong></article>
+          <article><span>Graduates</span><strong id="studentStatGraduates">0</strong></article>
+          <article><span>Alumni</span><strong id="studentStatAlumni">0</strong></article>
+        </section>
+
+        <section class="insights-grid student-insights">
+          <article class="panel"><div class="panel-heading"><h2>Students by programme</h2></div><div id="studentProgrammeChart" class="bar-list"></div></article>
+          <article class="panel"><div class="panel-heading"><h2>Students by country</h2></div><div id="studentCountryChart" class="bar-list"></div></article>
+        </section>
+
+        <section class="panel records-panel">
+          <div class="panel-heading records-heading">
+            <div><h2>Student records</h2><p id="studentRecordCount">0 students</p></div>
+            <button id="studentRefreshButton" class="secondary-button" type="button">Refresh</button>
+          </div>
+          <form id="studentFilterForm" class="filters student-filters">
+            <label>Search<input id="studentFilterQ" type="search" placeholder="Student ID, name, email, phone…"></label>
+            <label>Lifecycle<select id="studentFilterLifecycle"><option value="">All stages</option><option>Registered</option><option>Active Student</option><option>Graduate</option><option>Alumni</option></select></label>
+            <label>Programme<input id="studentFilterProgramme" type="search" placeholder="Programme / course"></label>
+            <button class="primary-button" type="submit">Apply filters</button>
+            <button id="studentClearFilters" class="secondary-button" type="button">Clear</button>
+          </form>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Student ID</th><th>Student</th><th>Country</th><th>Programme</th><th>Lifecycle</th><th>Enrolled</th><th>Graduated</th><th></th></tr></thead>
+              <tbody id="studentsBody"></tbody>
+            </table>
+          </div>
+          <div class="pagination"><button id="studentPrevPage" type="button">Previous</button><span id="studentPageInfo">Page 1</span><button id="studentNextPage" type="button">Next</button></div>
+          <p id="studentDashboardMessage" class="form-message" aria-live="polite"></p>
+        </section>
+      </div>
     </section>
   </main>
 
@@ -139,6 +192,32 @@
       <div id="timeline" class="timeline"></div>
     </form>
   </dialog>
-  <script src="admin.js?v=2.5.0" defer></script>
+
+  <dialog id="studentDialog" class="record-dialog record-dialog-v24">
+    <form method="dialog">
+      <div class="dialog-header">
+        <div><p class="eyebrow">STUDENT RECORD</p><h2 id="studentDialogName">Student</h2><p id="studentDialogId" class="student-id-line"></p></div>
+        <button id="studentDialogClose" class="icon-button" type="button" aria-label="Close">×</button>
+      </div>
+      <div id="studentDetails" class="record-details"></div>
+      <div class="section-title"><h3>Academic record</h3></div>
+      <div class="edit-grid edit-grid-v25">
+        <label>Programme<input id="studentEditProgramme" type="text" maxlength="160" placeholder="Course / programme"></label>
+        <label>Lifecycle stage<select id="studentEditLifecycle"><option>Registered</option><option>Active Student</option><option>Graduate</option><option>Alumni</option></select></label>
+        <label>Enrolled date<input id="studentEditEnrolled" type="date"></label>
+        <label>Graduated date<input id="studentEditGraduated" type="date"></label>
+      </div>
+      <label>Private student notes<textarea id="studentEditNotes" rows="5" maxlength="4000" placeholder="Learning preferences, progress notes, administrative context…"></textarea></label>
+      <div class="dialog-actions">
+        <button id="studentSave" class="primary-button" type="button">Save student</button>
+        <button id="studentClose" class="secondary-button" type="button">Close</button>
+      </div>
+      <p id="studentDialogMessage" class="form-message" aria-live="polite"></p>
+      <div class="section-title"><h3>Student activity timeline</h3></div>
+      <div id="studentTimeline" class="timeline"></div>
+    </form>
+  </dialog>
+
+  <script src="admin.js?v=2.6.0" defer></script>
 </body>
 </html>

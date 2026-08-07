@@ -1,7 +1,12 @@
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
-  const state = { token: sessionStorage.getItem('qyAdminToken') || '', page: 1, pageSize: 25, total: 0, selected: null };
+  const state = {
+    token: sessionStorage.getItem('qyAdminToken') || '',
+    page: 1, pageSize: 25, total: 0, selected: null,
+    studentPage: 1, studentPageSize: 25, studentTotal: 0, selectedStudent: null,
+    activeModule: 'crm'
+  };
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 
   const api = async (path, options = {}) => {
@@ -172,6 +177,120 @@
     } catch(error){ setMessage('dialogMessage',error.message); }
   }
 
+
+  const studentFilters = () => {
+    const params = new URLSearchParams({ page: state.studentPage, pageSize: state.studentPageSize });
+    [['q','studentFilterQ'],['lifecycle','studentFilterLifecycle'],['programme','studentFilterProgramme']].forEach(([key,id]) => {
+      const value = $(id).value.trim(); if (value) params.set(key, value);
+    });
+    return params;
+  };
+
+  function switchModule(module) {
+    state.activeModule = module;
+    const studentMode = module === 'students';
+    $('crmModule').hidden = studentMode;
+    $('studentsModule').hidden = !studentMode;
+    $('crmTab').classList.toggle('active', !studentMode);
+    $('studentsTab').classList.toggle('active', studentMode);
+    if (studentMode) loadStudentAll().catch(handleStudentError);
+  }
+
+  async function loadStudentStats() {
+    const response = await api('/api/admin?action=studentstats');
+    const data = await response.json();
+    $('studentStatTotal').textContent = data.summary.total;
+    $('studentStatRegistered').textContent = data.summary.registered;
+    $('studentStatActive').textContent = data.summary.active;
+    $('studentStatGraduates').textContent = data.summary.graduates;
+    $('studentStatAlumni').textContent = data.summary.alumni;
+    renderBars('studentProgrammeChart', data.byProgramme || [], 'programme');
+    renderBars('studentCountryChart', data.byCountry || [], 'country');
+  }
+
+  async function loadStudents() {
+    setMessage('studentDashboardMessage','Loading…',true);
+    const response = await api(`/api/admin?action=students&${studentFilters()}`);
+    const data = await response.json();
+    state.studentTotal = data.total;
+    const body = $('studentsBody'); body.innerHTML = '';
+    data.results.forEach(row => {
+      body.insertAdjacentHTML('beforeend', `<tr>
+        <td><strong>${esc(row.student_id)}</strong><br><small>${esc(row.reference || '')}</small></td>
+        <td><strong>${esc(row.name)}</strong><br><a href="mailto:${esc(row.email)}">${esc(row.email)}</a><br><small>${esc(row.phone || '')}</small></td>
+        <td>${esc(row.country || '—')}</td>
+        <td>${esc(row.programme || '—')}</td>
+        <td><span class="lifecycle ${esc(row.lifecycle_stage).replace(/\s+/g,'-')}">${esc(row.lifecycle_stage)}</span></td>
+        <td>${esc(row.enrolled_date || '—')}</td>
+        <td>${esc(row.graduated_date || '—')}</td>
+        <td><button class="view-button" data-open-student="${row.id}" type="button">Open</button></td>
+      </tr>`);
+    });
+    if (!data.results.length) body.innerHTML = '<tr><td colspan="8">No matching students.</td></tr>';
+    $('studentRecordCount').textContent = `${data.total} student${data.total===1?'':'s'}`;
+    const pages=Math.max(Math.ceil(data.total/state.studentPageSize),1);
+    $('studentPageInfo').textContent=`Page ${state.studentPage} of ${pages}`;
+    $('studentPrevPage').disabled=state.studentPage<=1;
+    $('studentNextPage').disabled=state.studentPage>=pages;
+    setMessage('studentDashboardMessage','',true);
+  }
+
+  async function loadStudentAll() {
+    await Promise.all([loadStudentStats(), loadStudents()]);
+  }
+
+  function renderStudentTimeline(rows) {
+    const host=$('studentTimeline'); host.innerHTML='';
+    if(!rows.length){host.innerHTML='<div class="empty-state">No student activity has been recorded yet.</div>';return;}
+    rows.forEach(row=>host.insertAdjacentHTML('beforeend',`<article class="timeline-item"><strong>${esc(row.activity_type)}</strong><p>${esc(row.description)}</p><time>${esc(row.activity_date)}</time></article>`));
+  }
+
+  async function openStudentById(id) {
+    try {
+      const response=await api(`/api/admin?action=studentdetail&id=${id}`);
+      const data=await response.json();
+      const row=data.student;
+      state.selectedStudent=row;
+      $('studentDialogName').textContent=row.name;
+      $('studentDialogId').textContent=`Student ID: ${row.student_id}`;
+      $('studentDetails').innerHTML =
+        detail('Email',row.email)+detail('WhatsApp / Phone',row.phone)+detail('Country',row.country)+
+        detail('Original enquiry',row.reference)+detail('Priority',row.priority)+detail('Preferred contact',row.contact_preference)+
+        detail('Original area of interest',row.interest)+detail('Last contacted',row.last_contacted_at);
+      $('studentEditProgramme').value=row.programme||'';
+      $('studentEditLifecycle').value=row.lifecycle_stage||'Registered';
+      $('studentEditEnrolled').value=row.enrolled_date||'';
+      $('studentEditGraduated').value=row.graduated_date||'';
+      $('studentEditNotes').value=row.private_notes||'';
+      renderStudentTimeline(data.activities||[]);
+      setMessage('studentDialogMessage','',true);
+      if(!$('studentDialog').open) $('studentDialog').showModal();
+    } catch(error){handleStudentError(error);}
+  }
+
+  async function saveStudent() {
+    if(!state.selectedStudent) return;
+    try {
+      await api(`/api/admin?action=studentupdate&id=${state.selectedStudent.id}`,{
+        method:'PATCH',
+        body:JSON.stringify({
+          programme:$('studentEditProgramme').value,
+          lifecycleStage:$('studentEditLifecycle').value,
+          enrolledDate:$('studentEditEnrolled').value,
+          graduatedDate:$('studentEditGraduated').value,
+          privateNotes:$('studentEditNotes').value
+        })
+      });
+      setMessage('studentDialogMessage','Student record saved.',true);
+      await Promise.all([loadStudentAll(), loadStats(), openStudentById(state.selectedStudent.id)]);
+    } catch(error){setMessage('studentDialogMessage',error.message);}
+  }
+
+  function handleStudentError(error){
+    if(error.status===401){sessionStorage.removeItem('qyAdminToken');showLogin();setMessage('loginMessage','Your session is not authorized. Please log in again.');}
+    else setMessage('studentDashboardMessage',error.message);
+  }
+
   $('loginForm').addEventListener('submit', async event => {
     event.preventDefault(); state.token = $('adminToken').value.trim();
     if (!state.token) return;
@@ -179,6 +298,23 @@
     catch (error) { setMessage('loginMessage', error.status === 401 ? 'Incorrect administrator token.' : error.message); }
   });
   $('logoutButton').addEventListener('click', () => { sessionStorage.removeItem('qyAdminToken'); state.token=''; $('adminToken').value=''; showLogin(); });
+  $('crmTab').addEventListener('click', () => switchModule('crm'));
+  $('studentsTab').addEventListener('click', () => switchModule('students'));
+  $('studentFilterForm').addEventListener('submit', async e => { e.preventDefault(); state.studentPage=1; await loadStudents().catch(handleStudentError); });
+  $('studentClearFilters').addEventListener('click', async () => { $('studentFilterForm').reset(); state.studentPage=1; await loadStudents().catch(handleStudentError); });
+  $('studentRefreshButton').addEventListener('click', () => loadStudentAll().catch(handleStudentError));
+  $('studentPrevPage').addEventListener('click', async () => { if(state.studentPage>1){state.studentPage--;await loadStudents().catch(handleStudentError);} });
+  $('studentNextPage').addEventListener('click', async () => { if(state.studentPage*state.studentPageSize<state.studentTotal){state.studentPage++;await loadStudents().catch(handleStudentError);} });
+  $('studentDialogClose').addEventListener('click', () => $('studentDialog').close());
+  $('studentClose').addEventListener('click', () => $('studentDialog').close());
+  $('studentSave').addEventListener('click', saveStudent);
+  $('studentExportButton').addEventListener('click', async () => {
+    try {
+      const response=await api(`/api/admin?action=studentexport&${studentFilters()}`);
+      const blob=await response.blob(); const url=URL.createObjectURL(blob); const a=document.createElement('a');
+      a.href=url; a.download=`quantum-yijing-students-${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url);
+    } catch(error){handleStudentError(error);}
+  });
   $('filterForm').addEventListener('submit', async e => { e.preventDefault(); state.page=1; await loadRecords().catch(handleError); });
   $('clearFilters').addEventListener('click', async () => { $('filterForm').reset(); state.page=1; await loadRecords().catch(handleError); });
   $('refreshButton').addEventListener('click', () => loadAll().catch(handleError));
@@ -187,6 +323,7 @@
   document.addEventListener('click', e => {
     const openButton=e.target.closest('[data-open-id]'); if(openButton) openRecordById(Number(openButton.dataset.openId));
     const followButton=e.target.closest('[data-follow-days]'); if(followButton) quickFollowUp(Number(followButton.dataset.followDays));
+    const studentButton=e.target.closest('[data-open-student]'); if(studentButton) openStudentById(Number(studentButton.dataset.openStudent));
   });
   $('dialogClose').addEventListener('click', () => $('recordDialog').close());
   $('cancelRecord').addEventListener('click', () => $('recordDialog').close());

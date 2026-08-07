@@ -248,6 +248,142 @@ async function exportCsv(context, url) {
   return new Response(csv, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="quantum-yijing-aos-${stamp}.csv"`, 'cache-control': 'no-store' } });
 }
 
+
+async function studentStats(context) {
+  const db = context.env.ENQUIRIES_DB;
+  const summary = await db.prepare(`
+    SELECT COUNT(*) AS total,
+      SUM(CASE WHEN lifecycle_stage='Registered' THEN 1 ELSE 0 END) AS registered,
+      SUM(CASE WHEN lifecycle_stage='Active Student' THEN 1 ELSE 0 END) AS active,
+      SUM(CASE WHEN lifecycle_stage='Graduate' THEN 1 ELSE 0 END) AS graduates,
+      SUM(CASE WHEN lifecycle_stage='Alumni' THEN 1 ELSE 0 END) AS alumni
+    FROM students
+  `).first();
+  const byProgramme = await db.prepare(`
+    SELECT CASE WHEN trim(programme)='' THEN 'Not specified' ELSE programme END AS programme, COUNT(*) AS count
+    FROM students GROUP BY CASE WHEN trim(programme)='' THEN 'Not specified' ELSE programme END
+    ORDER BY count DESC, programme ASC LIMIT 12
+  `).all();
+  const byCountry = await db.prepare(`
+    SELECT CASE WHEN trim(country)='' THEN 'Not specified' ELSE country END AS country, COUNT(*) AS count
+    FROM students GROUP BY CASE WHEN trim(country)='' THEN 'Not specified' ELSE country END
+    ORDER BY count DESC, country ASC LIMIT 12
+  `).all();
+  return json({
+    ok:true,
+    summary:{
+      total:Number(summary?.total||0),
+      registered:Number(summary?.registered||0),
+      active:Number(summary?.active||0),
+      graduates:Number(summary?.graduates||0),
+      alumni:Number(summary?.alumni||0)
+    },
+    byProgramme:byProgramme.results||[],
+    byCountry:byCountry.results||[]
+  });
+}
+
+function buildStudentFilters(url) {
+  const q = clean(url.searchParams.get('q'));
+  const lifecycle = clean(url.searchParams.get('lifecycle'), 40);
+  const programme = clean(url.searchParams.get('programme'), 120);
+  const conditions = [];
+  const values = [];
+  if (q) {
+    conditions.push('(s.student_id LIKE ? OR s.name LIKE ? OR s.email LIKE ? OR s.phone LIKE ? OR s.country LIKE ? OR s.programme LIKE ?)');
+    const like = `%${q}%`;
+    values.push(like,like,like,like,like,like);
+  }
+  if (lifecycle) { conditions.push('s.lifecycle_stage=?'); values.push(lifecycle); }
+  if (programme) { conditions.push('s.programme=?'); values.push(programme); }
+  return { where: conditions.length ? `WHERE ${conditions.join(' AND ')}` : '', values };
+}
+
+async function students(context, url) {
+  const page = Math.max(Number(url.searchParams.get('page')||1),1);
+  const pageSize = Math.min(Math.max(Number(url.searchParams.get('pageSize')||25),10),100);
+  const offset = (page-1)*pageSize;
+  const {where,values}=buildStudentFilters(url);
+  const db=context.env.ENQUIRIES_DB;
+  const count=await db.prepare(`SELECT COUNT(*) AS total FROM students s ${where}`).bind(...values).first();
+  const result=await db.prepare(`
+    SELECT s.id,s.enquiry_id,s.student_id,s.name,s.email,s.phone,s.country,s.programme,s.lifecycle_stage,
+      s.enrolled_date,s.graduated_date,s.private_notes,s.created_at,s.updated_at,
+      e.reference,e.priority,e.contact_preference,e.last_contacted_at
+    FROM students s LEFT JOIN enquiries e ON e.id=s.enquiry_id
+    ${where}
+    ORDER BY s.id DESC LIMIT ? OFFSET ?
+  `).bind(...values,pageSize,offset).all();
+  return json({ok:true,page,pageSize,total:Number(count?.total||0),results:result.results||[]});
+}
+
+async function studentDetail(context, url) {
+  const id=Number(url.searchParams.get('id'));
+  if(!Number.isInteger(id)||id<1) return json({error:'Invalid student ID.'},400);
+  const db=context.env.ENQUIRIES_DB;
+  const student=await db.prepare(`
+    SELECT s.*,e.reference,e.interest,e.message,e.priority,e.contact_preference,e.last_contacted_at,e.notes AS crm_notes
+    FROM students s LEFT JOIN enquiries e ON e.id=s.enquiry_id WHERE s.id=?
+  `).bind(id).first();
+  if(!student) return json({error:'Student not found.'},404);
+  const activities=await db.prepare(`
+    SELECT id,activity_type,description,activity_date,created_at
+    FROM crm_activities WHERE enquiry_id=? ORDER BY id DESC LIMIT 100
+  `).bind(student.enquiry_id).all();
+  return json({ok:true,student,activities:activities.results||[]});
+}
+
+async function studentUpdate(context, url) {
+  const id=Number(url.searchParams.get('id'));
+  if(!Number.isInteger(id)||id<1) return json({error:'Invalid student ID.'},400);
+  let body;
+  try{body=await context.request.json();}catch{return json({error:'Invalid request.'},400);}
+  const programme=clean(body.programme,160);
+  const lifecycleStage=clean(body.lifecycleStage,40);
+  const enrolledDate=clean(body.enrolledDate,10);
+  const graduatedDate=clean(body.graduatedDate,10);
+  const privateNotes=clean(body.privateNotes,4000);
+  const allowed=new Set(['Registered','Active Student','Graduate','Alumni']);
+  if(!allowed.has(lifecycleStage)) return json({error:'Invalid student lifecycle stage.'},400);
+  if(enrolledDate&&!/^\d{4}-\d{2}-\d{2}$/.test(enrolledDate)) return json({error:'Invalid enrolled date.'},400);
+  if(graduatedDate&&!/^\d{4}-\d{2}-\d{2}$/.test(graduatedDate)) return json({error:'Invalid graduated date.'},400);
+  const db=context.env.ENQUIRIES_DB;
+  const current=await db.prepare(`SELECT * FROM students WHERE id=?`).bind(id).first();
+  if(!current) return json({error:'Student not found.'},404);
+  await db.batch([
+    db.prepare(`UPDATE students SET programme=?,lifecycle_stage=?,enrolled_date=?,graduated_date=?,private_notes=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`)
+      .bind(programme,lifecycleStage,enrolledDate,graduatedDate,privateNotes,id),
+    db.prepare(`UPDATE enquiries SET lifecycle_stage=?,status='Converted',updated_at=CURRENT_TIMESTAMP WHERE id=?`)
+      .bind(lifecycleStage,current.enquiry_id)
+  ]);
+  const changes=[];
+  if((current.programme||'')!==programme) changes.push(`Programme updated to ${programme||'Not specified'}.`);
+  if(current.lifecycle_stage!==lifecycleStage) changes.push(`Student lifecycle changed from ${current.lifecycle_stage} to ${lifecycleStage}.`);
+  if((current.enrolled_date||'')!==enrolledDate) changes.push(enrolledDate?`Enrolled date set to ${enrolledDate}.`:'Enrolled date cleared.');
+  if((current.graduated_date||'')!==graduatedDate) changes.push(graduatedDate?`Graduated date set to ${graduatedDate}.`:'Graduated date cleared.');
+  if((current.private_notes||'')!==privateNotes) changes.push('Student private notes updated.');
+  if(changes.length){
+    await db.prepare(`INSERT INTO crm_activities (enquiry_id,activity_type,description,activity_date) VALUES (?,'Course',?,?)`)
+      .bind(current.enquiry_id,changes.join(' '),malaysiaNow()).run();
+  }
+  return json({ok:true});
+}
+
+async function studentExport(context, url) {
+  const {where,values}=buildStudentFilters(url);
+  const result=await context.env.ENQUIRIES_DB.prepare(`
+    SELECT s.student_id,s.name,s.email,s.phone,s.country,s.programme,s.lifecycle_stage,s.enrolled_date,s.graduated_date,
+      s.private_notes,e.reference,e.priority,e.contact_preference
+    FROM students s LEFT JOIN enquiries e ON e.id=s.enquiry_id
+    ${where} ORDER BY s.id DESC LIMIT 10000
+  `).bind(...values).all();
+  const headers=['Student ID','Name','Email','WhatsApp / Phone','Country','Programme','Lifecycle Stage','Enrolled Date','Graduated Date','Private Notes','Original Enquiry','Priority','Preferred Contact'];
+  const rows=(result.results||[]).map(r=>[r.student_id,r.name,r.email,r.phone,r.country,r.programme,r.lifecycle_stage,r.enrolled_date,r.graduated_date,r.private_notes,r.reference,r.priority,r.contact_preference]);
+  const csv='\uFEFF'+[headers,...rows].map(row=>row.map(csvCell).join(',')).join('\r\n');
+  const stamp=new Date().toISOString().slice(0,10);
+  return new Response(csv,{headers:{'content-type':'text/csv; charset=utf-8','content-disposition':`attachment; filename="quantum-yijing-students-${stamp}.csv"`,'cache-control':'no-store'}});
+}
+
 export async function onRequest(context) {
   const blocked = requireConfigured(context);
   if (blocked) return blocked;
@@ -262,6 +398,11 @@ export async function onRequest(context) {
     if (context.request.method === 'POST' && action === 'quickfollowup') return await quickFollowUp(context, url);
     if (context.request.method === 'POST' && action === 'convert') return await convert(context, url);
     if (context.request.method === 'POST' && action === 'activity') return await addActivity(context, url);
+    if (context.request.method === 'GET' && action === 'studentstats') return await studentStats(context);
+    if (context.request.method === 'GET' && action === 'students') return await students(context, url);
+    if (context.request.method === 'GET' && action === 'studentdetail') return await studentDetail(context, url);
+    if (context.request.method === 'PATCH' && action === 'studentupdate') return await studentUpdate(context, url);
+    if (context.request.method === 'GET' && action === 'studentexport') return await studentExport(context, url);
     return json({ error: 'Unknown admin action.' }, 404);
   } catch (error) {
     console.error('Admin API failed', error);
