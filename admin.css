@@ -35,3 +35,13 @@
 .empty-state{padding:24px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px;background:#fbfdff}
 @media(max-width:1100px){.stats-grid-v24{grid-template-columns:repeat(3,1fr)}.today-grid{grid-template-columns:1fr}.filters-v24{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:760px){.stats-grid-v24{grid-template-columns:repeat(2,1fr)}.filters-v24{grid-template-columns:1fr}.edit-grid-v24{grid-template-columns:1fr}.task-item{grid-template-columns:auto 1fr}.task-item button{grid-column:2;text-align:left;padding:0}.page-heading{align-items:flex-start}.page-heading>.primary-button{width:100%}}
+
+/* v2.5 CRM Intelligence */
+.danger-card{border-color:#f1c6c1!important;background:#fff8f7!important}.danger-card strong{color:#b42318!important}
+.edit-grid-v25{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:14px}.edit-grid-v25 label{display:grid;gap:7px;font-size:13px;font-weight:700;color:#315274}
+.priority-pill{display:inline-flex;align-items:center;justify-content:center;padding:3px 8px;border-radius:999px;font-size:11px;font-style:normal;font-weight:800;white-space:nowrap}.priority-hot{background:#fee4e2;color:#b42318}.priority-warm{background:#fff2cc;color:#8a5b00}.priority-normal{background:#eaf2ff;color:#175cd3}.priority-low{background:#edf0f3;color:#475467}
+.task-item.due-today{border-color:#f1d18b;background:#fffaf0}.task-item.overdue{border-color:#efb5ae;background:#fff6f5}.task-item strong{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.quick-followup{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:14px 0 4px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#f8fbff}.quick-followup span{font-weight:800;color:#315274}.quick-followup button{border:1px solid #b8cce4;background:#fff;color:var(--navy);padding:7px 10px;border-radius:8px;font-weight:700}.quick-followup button:hover{background:var(--blue2);border-color:var(--blue)}
+.filters-v24{grid-template-columns:repeat(4,minmax(150px,1fr))}
+@media(max-width:900px){.edit-grid-v25{grid-template-columns:1fr 1fr}.filters-v24{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.edit-grid-v25,.filters-v24{grid-template-columns:1fr}.quick-followup{align-items:stretch}.quick-followup button{flex:1 1 42%}}

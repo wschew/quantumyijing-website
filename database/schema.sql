@@ -24,3 +24,6 @@ CREATE INDEX IF NOT EXISTS idx_enquiries_email ON enquiries(email);
 CREATE INDEX IF NOT EXISTS idx_enquiries_interest ON enquiries(interest);
 CREATE INDEX IF NOT EXISTS idx_enquiries_status ON enquiries(status);
 CREATE INDEX IF NOT EXISTS idx_enquiries_follow_up_date ON enquiries(follow_up_date);
+
+-- v2.4 / v2.5 additions for clean installations.
+-- If upgrading an existing database, use migrate-v2.4.sql then migrate-v2.5.sql instead.

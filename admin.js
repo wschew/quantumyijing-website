@@ -19,7 +19,7 @@
 
   const filters = () => {
     const params = new URLSearchParams({ page: state.page, pageSize: state.pageSize });
-    [['q','filterQ'],['status','filterStatus'],['lifecycle','filterLifecycle'],['interest','filterInterest'],['from','filterFrom'],['to','filterTo']].forEach(([key,id]) => {
+    [['q','filterQ'],['status','filterStatus'],['lifecycle','filterLifecycle'],['priority','filterPriority'],['interest','filterInterest'],['from','filterFrom'],['to','filterTo']].forEach(([key,id]) => {
       const value = $(id).value.trim(); if (value) params.set(key, value);
     });
     return params;
@@ -28,6 +28,7 @@
   const showDashboard = () => { $('loginPanel').hidden = true; $('dashboard').hidden = false; };
   const showLogin = () => { $('dashboard').hidden = true; $('loginPanel').hidden = false; };
   const detail = (label, value, full = false) => `<div class="detail${full?' full':''}"><span>${esc(label)}</span><p>${esc(value || '—')}</p></div>`;
+  const priorityClass = value => `priority-${String(value || 'Normal').toLowerCase()}`;
 
   function renderBars(id, rows, labelKey, valueKey = 'count') {
     const host = $(id); host.innerHTML = '';
@@ -41,10 +42,11 @@
 
   function renderTasks(tasks) {
     const host = $('taskList'); host.innerHTML = '';
-    if (!tasks.length) { host.innerHTML = '<div class="empty-state">No follow-ups due. Your task list is clear.</div>'; return; }
+    if (!tasks.length) { host.innerHTML = '<div class="empty-state">No follow-ups scheduled in the next seven days.</div>'; return; }
     tasks.forEach(row => {
-      const overdue = row.is_overdue ? ' overdue' : '';
-      host.insertAdjacentHTML('beforeend', `<div class="task-item${overdue}"><span class="task-dot"></span><div><strong>${esc(row.name)}</strong><span>${esc(row.follow_up_date)} · ${esc(row.interest)}${row.student_id ? ` · ${esc(row.student_id)}` : ''}</span></div><button type="button" data-open-id="${row.id}">Open</button></div>`);
+      const urgency = row.bucket === 'Overdue' ? ' overdue' : row.bucket === 'Today' ? ' due-today' : '';
+      const next = row.next_action ? ` · ${esc(row.next_action)}` : '';
+      host.insertAdjacentHTML('beforeend', `<div class="task-item${urgency}"><span class="task-dot"></span><div><strong>${esc(row.name)} <em class="priority-pill ${priorityClass(row.priority)}">${esc(row.priority)}</em></strong><span>${esc(row.bucket)} · ${esc(row.follow_up_date)} · ${esc(row.interest)}${next}${row.student_id ? ` · ${esc(row.student_id)}` : ''}</span></div><button type="button" data-open-id="${row.id}">Open</button></div>`);
     });
   }
 
@@ -52,11 +54,11 @@
     const response = await api('/api/admin?action=stats');
     const data = await response.json();
     $('statTotal').textContent = data.summary.total;
-    $('statDue').textContent = data.summary.followUpsDue;
-    $('statNew').textContent = data.summary.newCount;
-    $('statInterested').textContent = data.summary.interested;
+    $('statOverdue').textContent = data.summary.overdue;
+    $('statDueToday').textContent = data.summary.dueToday;
+    $('statUpcoming').textContent = data.summary.upcoming;
+    $('statPriority').textContent = data.summary.priorityLeads;
     $('statStudents').textContent = data.summary.students;
-    $('statAlumni').textContent = data.summary.alumni;
     renderTasks(data.tasks || []);
     renderBars('lifecycleChart', data.byLifecycle || [], 'lifecycle_stage');
     renderBars('interestChart', data.byInterest || [], 'interest');
@@ -72,9 +74,10 @@
     const body = $('recordsBody'); body.innerHTML = '';
     data.results.forEach(row => {
       const student = row.student_id ? `<span class="student-badge">${esc(row.student_id)}</span>` : '';
-      body.insertAdjacentHTML('beforeend', `<tr data-id="${row.id}"><td>${esc(row.submitted_date)}<br><small>${esc(row.submitted_at_malaysia)}</small></td><td><strong>${esc(row.reference)}</strong><br>${student}</td><td><strong>${esc(row.name)}</strong><br><a href="mailto:${esc(row.email)}">${esc(row.email)}</a><br><small>${esc(row.phone || '')}</small></td><td>${esc(row.interest)}</td><td><span class="lifecycle ${esc(row.lifecycle_stage).replace(/\s+/g,'-')}">${esc(row.lifecycle_stage)}</span></td><td><span class="status ${esc(row.status)}">${esc(row.status)}</span></td><td>${esc(row.follow_up_date || '—')}</td><td><button class="view-button" data-open-id="${row.id}" type="button">Open</button></td></tr>`);
+      const action = row.next_action ? `<strong>${esc(row.next_action)}</strong><br>` : '';
+      body.insertAdjacentHTML('beforeend', `<tr data-id="${row.id}"><td>${esc(row.submitted_date)}<br><small>${esc(row.submitted_at_malaysia)}</small></td><td><strong>${esc(row.reference)}</strong><br>${student}</td><td><strong>${esc(row.name)}</strong><br><a href="mailto:${esc(row.email)}">${esc(row.email)}</a><br><small>${esc(row.phone || '')}</small></td><td>${esc(row.interest)}</td><td><span class="priority-pill ${priorityClass(row.priority)}">${esc(row.priority || 'Normal')}</span></td><td><span class="lifecycle ${esc(row.lifecycle_stage).replace(/\s+/g,'-')}">${esc(row.lifecycle_stage)}</span></td><td><span class="status ${esc(row.status)}">${esc(row.status)}</span></td><td>${action}${esc(row.follow_up_date || '—')}<br><small>${esc(row.contact_preference || 'Any')}</small></td><td><button class="view-button" data-open-id="${row.id}" type="button">Open</button></td></tr>`);
     });
-    if (!data.results.length) body.innerHTML = '<tr><td colspan="8">No matching records.</td></tr>';
+    if (!data.results.length) body.innerHTML = '<tr><td colspan="9">No matching records.</td></tr>';
     $('recordCount').textContent = `${data.total} record${data.total === 1 ? '' : 's'}`;
     const pages = Math.max(Math.ceil(data.total / state.pageSize), 1);
     $('pageInfo').textContent = `Page ${state.page} of ${pages}`;
@@ -102,7 +105,11 @@
       $('recordDetails').innerHTML = detail('Name',row.name)+detail('Email',row.email)+detail('WhatsApp / Phone',row.phone)+detail('Country',row.country)+detail('Area of interest',row.interest)+detail('Submitted',row.submitted_at_malaysia)+detail('Message',row.message,true);
       $('editStatus').value = row.status;
       $('editLifecycle').value = row.lifecycle_stage || 'Lead';
+      $('editPriority').value = row.priority || 'Normal';
+      $('editContactPreference').value = row.contact_preference || 'Any';
       $('editFollowUp').value = row.follow_up_date || '';
+      $('editNextAction').value = row.next_action || '';
+      $('editTags').value = row.tags || '';
       $('editNotes').value = row.notes || '';
       $('convertStudent').disabled = Boolean(row.student_id);
       $('convertStudent').textContent = row.student_id ? 'Student Created' : 'Convert to Student';
@@ -119,10 +126,24 @@
       await api(`/api/admin?action=update&id=${state.selected.id}`, { method:'PATCH', body:JSON.stringify({
         status:$('editStatus').value,
         lifecycleStage:$('editLifecycle').value,
+        priority:$('editPriority').value,
+        contactPreference:$('editContactPreference').value,
         followUpDate:$('editFollowUp').value,
+        nextAction:$('editNextAction').value,
+        tags:$('editTags').value,
         notes:$('editNotes').value
       }) });
       setMessage('dialogMessage','Record saved.',true);
+      await Promise.all([loadAll(), openRecordById(state.selected.id)]);
+    } catch(error){ setMessage('dialogMessage',error.message); }
+  }
+
+  async function quickFollowUp(days) {
+    if (!state.selected) return;
+    try {
+      const response = await api(`/api/admin?action=quickfollowup&id=${state.selected.id}`, { method:'POST', body:JSON.stringify({ days:Number(days) }) });
+      const data = await response.json();
+      setMessage('dialogMessage', data.followUpDate ? `Contact logged. Next follow-up: ${data.followUpDate}` : 'Contact logged and follow-up cleared.', true);
       await Promise.all([loadAll(), openRecordById(state.selected.id)]);
     } catch(error){ setMessage('dialogMessage',error.message); }
   }
@@ -147,7 +168,7 @@
       $('activityDescription').value = '';
       $('activityComposer').hidden = true;
       setMessage('dialogMessage','Activity added.',true);
-      await openRecordById(state.selected.id);
+      await Promise.all([loadStats(), openRecordById(state.selected.id)]);
     } catch(error){ setMessage('dialogMessage',error.message); }
   }
 
@@ -163,7 +184,10 @@
   $('refreshButton').addEventListener('click', () => loadAll().catch(handleError));
   $('prevPage').addEventListener('click', async () => { if(state.page>1){state.page--;await loadRecords().catch(handleError);} });
   $('nextPage').addEventListener('click', async () => { if(state.page*state.pageSize<state.total){state.page++;await loadRecords().catch(handleError);} });
-  document.addEventListener('click', e => { const button=e.target.closest('[data-open-id]'); if(button) openRecordById(Number(button.dataset.openId)); });
+  document.addEventListener('click', e => {
+    const openButton=e.target.closest('[data-open-id]'); if(openButton) openRecordById(Number(openButton.dataset.openId));
+    const followButton=e.target.closest('[data-follow-days]'); if(followButton) quickFollowUp(Number(followButton.dataset.followDays));
+  });
   $('dialogClose').addEventListener('click', () => $('recordDialog').close());
   $('cancelRecord').addEventListener('click', () => $('recordDialog').close());
   $('saveRecord').addEventListener('click', saveRecord);
@@ -175,7 +199,7 @@
     try {
       const response = await api(`/api/admin?action=export&${filters()}`);
       const blob = await response.blob(); const url=URL.createObjectURL(blob); const a=document.createElement('a');
-      a.href=url; a.download=`quantum-yijing-aos-${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url);
+      a.href=url; a.download=`quantum-yijing-crm-${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url);
     } catch(error){ handleError(error); }
   });
 

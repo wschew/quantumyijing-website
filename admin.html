@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Academy Operating System | Quantum YiJing International Academy</title>
   <link rel="icon" href="images/quantum-yijing-logo.png">
-  <link rel="stylesheet" href="admin.css?v=2.4.0">
+  <link rel="stylesheet" href="admin.css?v=2.5.0">
 </head>
 <body>
   <main class="crm-shell">
@@ -27,7 +27,7 @@
       <header class="topbar">
         <div class="brand-lockup">
           <img src="images/quantum-yijing-logo.png" alt="" class="topbar-logo">
-          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v2.4</span></div>
+          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v2.5</span></div>
         </div>
         <div class="topbar-actions">
           <a href="index.html" class="text-link">View website</a>
@@ -37,25 +37,25 @@
 
       <section class="page-heading">
         <div>
-          <p class="eyebrow">QY-AOS · PHASE 1</p>
-          <h1>Lead & Student Lifecycle Dashboard</h1>
-          <p>Manage enquiries, follow-ups, conversions, students and activity history in one place.</p>
+          <p class="eyebrow">QY-AOS · CRM INTELLIGENCE</p>
+          <h1>CRM Intelligence & Follow-up Dashboard</h1>
+          <p>Prioritize leads, manage next actions, prevent missed follow-ups and maintain the complete student lifecycle.</p>
         </div>
         <button id="exportButton" class="primary-button" type="button">Export CRM to Excel (CSV)</button>
       </section>
 
       <section class="stats-grid stats-grid-v24" aria-label="CRM summary">
         <article><span>Total enquiries</span><strong id="statTotal">0</strong></article>
-        <article class="attention"><span>Follow-ups due</span><strong id="statDue">0</strong></article>
-        <article><span>New leads</span><strong id="statNew">0</strong></article>
-        <article><span>Interested</span><strong id="statInterested">0</strong></article>
+        <article class="danger-card"><span>Overdue</span><strong id="statOverdue">0</strong></article>
+        <article class="attention"><span>Due today</span><strong id="statDueToday">0</strong></article>
+        <article><span>Next 7 days</span><strong id="statUpcoming">0</strong></article>
+        <article><span>Hot / Warm leads</span><strong id="statPriority">0</strong></article>
         <article><span>Students</span><strong id="statStudents">0</strong></article>
-        <article><span>Graduates / Alumni</span><strong id="statAlumni">0</strong></article>
       </section>
 
       <section class="today-grid">
         <article class="panel task-panel">
-          <div class="panel-heading"><div><h2>Today's follow-ups</h2><p>Due and overdue items that need attention.</p></div></div>
+          <div class="panel-heading"><div><h2>Follow-up intelligence</h2><p>Overdue, due-today and upcoming actions sorted by urgency.</p></div></div>
           <div id="taskList" class="task-list"></div>
         </article>
         <article class="panel">
@@ -80,6 +80,7 @@
           <label>Search<input id="filterQ" type="search" placeholder="Name, email, phone, student ID…"></label>
           <label>CRM status<select id="filterStatus"><option value="">All statuses</option><option>New</option><option>Contacted</option><option>Follow-up</option><option>Converted</option><option>Closed</option></select></label>
           <label>Lifecycle<select id="filterLifecycle"><option value="">All stages</option><option>Lead</option><option>Prospect</option><option>Registered</option><option>Active Student</option><option>Graduate</option><option>Alumni</option><option>Closed</option></select></label>
+          <label>Priority<select id="filterPriority"><option value="">All priorities</option><option>Hot</option><option>Warm</option><option>Normal</option><option>Low</option></select></label>
           <label>Area<select id="filterInterest"><option value="">All enquiry areas</option><option>General Enquiry</option><option>Academy Course</option><option>Bazi Consultation</option><option>Feng Shui Consultation</option><option>Baby Naming</option><option>Research Collaboration</option><option>Media / Speaking</option><option>Other</option></select></label>
           <label>From<input id="filterFrom" type="date"></label>
           <label>To<input id="filterTo" type="date"></label>
@@ -89,7 +90,7 @@
 
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Date</th><th>Reference / Student ID</th><th>Contact</th><th>Area</th><th>Lifecycle</th><th>Status</th><th>Follow-up</th><th></th></tr></thead>
+            <thead><tr><th>Date</th><th>Reference / Student ID</th><th>Contact</th><th>Area</th><th>Priority</th><th>Lifecycle</th><th>Status</th><th>Next action / Follow-up</th><th></th></tr></thead>
             <tbody id="recordsBody"></tbody>
           </table>
         </div>
@@ -105,12 +106,23 @@
       <div id="recordDetails" class="record-details"></div>
 
       <div class="section-title"><h3>Lifecycle & follow-up</h3></div>
-      <div class="edit-grid edit-grid-v24">
+      <div class="edit-grid edit-grid-v25">
         <label>CRM status<select id="editStatus"><option>New</option><option>Contacted</option><option>Follow-up</option><option>Converted</option><option>Closed</option></select></label>
         <label>Lifecycle stage<select id="editLifecycle"><option>Lead</option><option>Prospect</option><option>Registered</option><option>Active Student</option><option>Graduate</option><option>Alumni</option><option>Closed</option></select></label>
+        <label>Priority<select id="editPriority"><option>Hot</option><option>Warm</option><option>Normal</option><option>Low</option></select></label>
+        <label>Preferred contact<select id="editContactPreference"><option>Any</option><option>Email</option><option>WhatsApp</option><option>Phone</option></select></label>
         <label>Follow-up date<input id="editFollowUp" type="date"></label>
+        <label>Next action<input id="editNextAction" type="text" maxlength="300" placeholder="e.g. Send course brochure"></label>
       </div>
-      <label>Private notes<textarea id="editNotes" rows="4" maxlength="4000" placeholder="Calls, WhatsApp discussions, preferences, next action…"></textarea></label>
+      <label>Tags<input id="editTags" type="text" maxlength="300" placeholder="e.g. online-course, Penang, high-interest"></label>
+      <label>Private notes<textarea id="editNotes" rows="4" maxlength="4000" placeholder="Calls, WhatsApp discussions, preferences, context…"></textarea></label>
+      <div class="quick-followup">
+        <span>Quick follow-up:</span>
+        <button type="button" data-follow-days="1">Tomorrow</button>
+        <button type="button" data-follow-days="3">+3 days</button>
+        <button type="button" data-follow-days="7">+7 days</button>
+        <button type="button" data-follow-days="0">Mark contacted</button>
+      </div>
       <div class="dialog-actions split-actions">
         <button id="saveRecord" class="primary-button" type="button">Save record</button>
         <button id="convertStudent" class="gold-button" type="button">Convert to Student</button>
@@ -127,6 +139,6 @@
       <div id="timeline" class="timeline"></div>
     </form>
   </dialog>
-  <script src="admin.js?v=2.4.0" defer></script>
+  <script src="admin.js?v=2.5.0" defer></script>
 </body>
 </html>
