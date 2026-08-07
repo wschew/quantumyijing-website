@@ -25,16 +25,25 @@ const validEmail = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.le
 async function saveEnquiry(db, data, meta) {
   if (!db) throw new Error('ENQUIRIES_DB binding is not configured.');
 
-  return db.prepare(`
+  const inserted = await db.prepare(`
     INSERT INTO enquiries (
       reference, submitted_at_utc, submitted_at_malaysia, submitted_date,
-      name, email, phone, country, interest, message, language, status, source
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'New', 'Website')
+      name, email, phone, country, interest, message, language, status, source, lifecycle_stage
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'New', 'Website', 'Lead')
+    RETURNING id
   `).bind(
     meta.reference, meta.submittedAtUtc, meta.submitted, meta.submittedDate,
     data.name, data.email, data.phone, data.country, data.interest,
     data.message, data.language
-  ).run();
+  ).first();
+
+  if (inserted?.id) {
+    await db.prepare(`
+      INSERT INTO crm_activities (enquiry_id, activity_type, description, activity_date)
+      VALUES (?, 'Enquiry', 'Website enquiry received.', ?)
+    `).bind(inserted.id, meta.submitted).run();
+  }
+  return inserted;
 }
 
 async function sendEmail(apiKey, payload) {
