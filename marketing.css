@@ -18,3 +18,18 @@
 .consent-row a:hover,
 .marketing-body a[href*="privacy"]:hover,
 .marketing-body a[href*="terms"]:hover{color:#043f96!important}
+
+/* v2.8.1 — footer legal links follow the dark-footer visual system.
+   Legal links remain strong blue only on light content/form backgrounds. */
+.marketing-footer a[href*="privacy"],
+.marketing-footer a[href*="terms"]{
+  color:#dbe8f8!important;
+  font-weight:400;
+  text-decoration:none;
+}
+.marketing-footer a[href*="privacy"]:hover,
+.marketing-footer a[href*="terms"]:hover{
+  color:#ffffff!important;
+  text-decoration:underline;
+  text-underline-offset:3px;
+}

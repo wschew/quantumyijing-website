@@ -520,3 +520,22 @@ a[href*="terms"]:hover{
   .main-nav.open{display:flex}
   .main-nav a{padding:9px;font-size:.86rem}
 }
+
+/* v2.8.1 — dark corporate footer override.
+   Privacy / Terms use the same light text treatment as other footer links. */
+.site-footer a[href*="privacy"],
+.site-footer a[href*="terms"],
+.site-footer .privacy-link,
+.site-footer .terms-link{
+  color:rgba(255,255,255,.65)!important;
+  font-weight:400;
+  text-decoration:none;
+}
+.site-footer a[href*="privacy"]:hover,
+.site-footer a[href*="terms"]:hover,
+.site-footer .privacy-link:hover,
+.site-footer .terms-link:hover{
+  color:#fff!important;
+  text-decoration:underline;
+  text-underline-offset:3px;
+}
