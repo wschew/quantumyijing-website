@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Academy Operating System | Quantum YiJing International Academy</title>
   <link rel="icon" href="images/quantum-yijing-logo.png">
-  <link rel="stylesheet" href="admin.css?v=2.9.0">
+  <link rel="stylesheet" href="admin.css?v=3.0.0">
 </head>
 <body>
   <main class="crm-shell">
@@ -27,7 +27,7 @@
       <header class="topbar">
         <div class="brand-lockup">
           <img src="images/quantum-yijing-logo.png" alt="" class="topbar-logo">
-          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v2.9</span></div>
+          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v3.0</span></div>
         </div>
         <div class="topbar-actions">
           <a href="index.html" class="text-link">View website</a>
@@ -304,7 +304,7 @@
       <div class="dialog-header"><div><p class="eyebrow">PRODUCT</p><h2 id="productDialogTitle">New Product</h2></div><button id="productDialogClose" class="icon-button" type="button" aria-label="Close">×</button></div>
       <input id="productId" type="hidden">
       <div class="edit-grid edit-grid-v25">
-        <label>SKU<input id="productSku" maxlength="80" required></label><label>Slug<input id="productSlug" maxlength="120" required></label>
+        <label>SKU<input id="productSku" maxlength="80" required></label><label>Slug (auto-generated)<input id="productSlug" maxlength="120" placeholder="Generated from English name"></label>
         <label>Product type<select id="productType"><option>course</option><option>membership</option><option>consultation</option><option>ebook</option><option>digital</option><option>physical</option><option>event</option><option>other</option></select></label>
         <label>Status<select id="productStatus"><option>Draft</option><option>Active</option><option>Inactive</option><option>Archived</option></select></label>
         <label>Price<input id="productPrice" type="number" min="0" step="0.01"></label><label>Currency<input id="productCurrency" value="MYR" maxlength="10"></label>
@@ -312,6 +312,15 @@
         <label>Payment provider<select id="productProvider"><option>SenangPay</option><option>Google</option><option>Manual</option><option>Marketplace</option></select></label>
       </div>
       <label>English name<input id="productNameEn" maxlength="200"></label><label>Chinese name<input id="productNameZh" maxlength="200"></label>
+      <label>English description<textarea id="productDescriptionEn" rows="3" maxlength="1200"></textarea></label>
+      <label>Chinese description<textarea id="productDescriptionZh" rows="3" maxlength="1200"></textarea></label>
+      <div class="edit-grid edit-grid-v25">
+        <label>Start date<input id="productStartsOn" type="date"></label><label>End date<input id="productEndsOn" type="date"></label>
+        <label>Time (EN)<input id="productTimeEn" maxlength="100" placeholder="10:00 AM – 5:00 PM"></label><label>Time (中文)<input id="productTimeZh" maxlength="100"></label>
+        <label>Delivery (EN)<input id="productDeliveryEn" maxlength="100" placeholder="Live via Zoom"></label><label>Delivery (中文)<input id="productDeliveryZh" maxlength="100"></label>
+        <label>Instructor<input id="productInstructor" maxlength="160"></label><label>Hero image URL<input id="productHeroImage" maxlength="500" placeholder="/images/course-banner.png"></label>
+        <label>Early-bird price<input id="productEarlyBirdPrice" type="number" min="0" step="0.01"></label><label>Early-bird deadline<input id="productEarlyBirdEnd" type="date"></label>
+      </div>
       <label>External purchase URL<input id="productExternalUrl" type="url" placeholder="For Google Play Books or another marketplace"></label>
       <div class="dialog-actions"><button id="productSave" class="primary-button" type="button">Save product</button><button id="productClose" class="secondary-button" type="button">Close</button></div>
       <p id="productDialogMessage" class="form-message" aria-live="polite"></p>
@@ -334,6 +343,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=2.9.0" defer></script>
+  <script src="admin.js?v=3.0.0" defer></script>
 </body>
 </html>

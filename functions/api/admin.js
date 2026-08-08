@@ -462,17 +462,23 @@ async function commerceStats(context) {
 }
 
 async function commerceProducts(context) {
-  const result=await context.env.ENQUIRIES_DB.prepare(`SELECT id,sku,slug,product_type,name_en,name_zh,status,price,currency,sales_channel,payment_provider,external_purchase_url,senangpay_enabled,affiliate_enabled,commission_type,commission_value FROM products ORDER BY CASE status WHEN 'Active' THEN 1 WHEN 'Draft' THEN 2 ELSE 3 END, id DESC`).all();
-  return json({ok:true,results:result.results||[]});
+  const result=await context.env.ENQUIRIES_DB.prepare(`SELECT id,sku,slug,product_type,name_en,name_zh,description_en,description_zh,status,price,currency,sales_channel,payment_provider,external_purchase_url,senangpay_enabled,affiliate_enabled,commission_type,commission_value,starts_on,ends_on,time_en,time_zh,delivery_en,delivery_zh,instructor,early_bird_price,early_bird_end,hero_image_url FROM products ORDER BY CASE status WHEN 'Active' THEN 1 WHEN 'Draft' THEN 2 ELSE 3 END, id DESC`).all();
+  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kuala_Lumpur',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  const rows=(result.results||[]).map(r=>{const early=Number(r.early_bird_price)>0 && r.early_bird_end && today<=r.early_bird_end; return {...r,early_bird_active:early,effective_price:early?Number(r.early_bird_price):Number(r.price||0)};});
+  return json({ok:true,results:rows});
 }
 
+function makeSlug(value){return clean(value,200).toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,120);}
 async function saveProduct(context,url) {
   let body; try{body=await context.request.json()}catch{return json({error:'Invalid request.'},400)}
-  const id=Number(url.searchParams.get('id')||0), sku=clean(body.sku,80), slug=clean(body.slug,120), type=clean(body.productType,30), status=clean(body.status,20), nameEn=clean(body.nameEn,200), nameZh=clean(body.nameZh,200), currency=clean(body.currency,10)||'MYR', channel=clean(body.salesChannel,80)||'Website', provider=clean(body.paymentProvider,80)||'SenangPay', externalUrl=clean(body.externalPurchaseUrl,1000); const price=Number(body.price||0);
-  if(!sku||!slug||!nameEn)return json({error:'SKU, slug and English name are required.'},400); if(!productTypes.has(type)||!productStatuses.has(status))return json({error:'Invalid product type or status.'},400); if(!Number.isFinite(price)||price<0)return json({error:'Invalid price.'},400);
+  const id=Number(url.searchParams.get('id')||0), sku=clean(body.sku,80), type=clean(body.productType,30), status=clean(body.status,20), nameEn=clean(body.nameEn,200), nameZh=clean(body.nameZh,200), currency=clean(body.currency,10)||'MYR', channel=clean(body.salesChannel,80)||'Website', provider=clean(body.paymentProvider,80)||'SenangPay', externalUrl=clean(body.externalPurchaseUrl,1000);
+  const slug=makeSlug(body.slug)||makeSlug(nameEn), price=Number(body.price||0), earlyRaw=body.earlyBirdPrice, early=earlyRaw===''||earlyRaw==null?null:Number(earlyRaw);
+  const descriptionEn=clean(body.descriptionEn,1200),descriptionZh=clean(body.descriptionZh,1200),startsOn=clean(body.startsOn,20),endsOn=clean(body.endsOn,20),timeEn=clean(body.timeEn,100),timeZh=clean(body.timeZh,100),deliveryEn=clean(body.deliveryEn,100),deliveryZh=clean(body.deliveryZh,100),instructor=clean(body.instructor,160),earlyEnd=clean(body.earlyBirdEnd,20),hero=clean(body.heroImageUrl,500);
+  if(!sku||!slug||!nameEn)return json({error:'SKU and English name are required.'},400); if(!productTypes.has(type)||!productStatuses.has(status))return json({error:'Invalid product type or status.'},400); if(!Number.isFinite(price)||price<0)return json({error:'Invalid price.'},400); if(early!==null&&(!Number.isFinite(early)||early<0))return json({error:'Invalid early-bird price.'},400);
   const db=context.env.ENQUIRIES_DB;
-  if(id){await db.prepare(`UPDATE products SET sku=?,slug=?,product_type=?,name_en=?,name_zh=?,status=?,price=?,currency=?,sales_channel=?,payment_provider=?,external_purchase_url=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(sku,slug,type,nameEn,nameZh,status,price,currency,channel,provider,externalUrl,id).run(); return json({ok:true,id});}
-  const r=await db.prepare(`INSERT INTO products(sku,slug,product_type,name_en,name_zh,status,price,currency,sales_channel,payment_provider,external_purchase_url) VALUES(?,?,?,?,?,?,?,?,?,?,?)`).bind(sku,slug,type,nameEn,nameZh,status,price,currency,channel,provider,externalUrl).run(); return json({ok:true,id:r.meta?.last_row_id});
+  const params=[sku,slug,type,nameEn,nameZh,descriptionEn,descriptionZh,status,price,currency,channel,provider,externalUrl,startsOn,endsOn,timeEn,timeZh,deliveryEn,deliveryZh,instructor,early,earlyEnd,hero];
+  if(id){await db.prepare(`UPDATE products SET sku=?,slug=?,product_type=?,name_en=?,name_zh=?,description_en=?,description_zh=?,status=?,price=?,currency=?,sales_channel=?,payment_provider=?,external_purchase_url=?,starts_on=?,ends_on=?,time_en=?,time_zh=?,delivery_en=?,delivery_zh=?,instructor=?,early_bird_price=?,early_bird_end=?,hero_image_url=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(...params,id).run(); return json({ok:true,id,slug});}
+  const r=await db.prepare(`INSERT INTO products(sku,slug,product_type,name_en,name_zh,description_en,description_zh,status,price,currency,sales_channel,payment_provider,external_purchase_url,starts_on,ends_on,time_en,time_zh,delivery_en,delivery_zh,instructor,early_bird_price,early_bird_end,hero_image_url) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(...params).run(); return json({ok:true,id:r.meta?.last_row_id,slug});
 }
 
 async function commerceOrders(context) {

@@ -48,26 +48,58 @@ async function saveEnquiry(db, data, meta) {
 
 async function saveAttribution(db, enquiryId, attribution) {
   if (!db || !enquiryId) return;
+  const standardValues = [
+    enquiryId, attribution.marketingSource, attribution.campaignCode, attribution.landingPage,
+    attribution.referrer, attribution.utmSource, attribution.utmMedium, attribution.utmCampaign,
+    attribution.utmContent, attribution.utmTerm, attribution.affiliateCode
+  ];
   try {
+    // v3.0 can optionally store the originating product when those columns exist.
     await db.prepare(`
       INSERT INTO enquiry_attribution (
         enquiry_id, marketing_source, campaign_code, landing_page, referrer,
-        utm_source, utm_medium, utm_campaign, utm_content, utm_term, affiliate_code
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        utm_source, utm_medium, utm_campaign, utm_content, utm_term, affiliate_code, product_id, product_slug
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(enquiry_id) DO UPDATE SET
         marketing_source=excluded.marketing_source, campaign_code=excluded.campaign_code,
         landing_page=excluded.landing_page, referrer=excluded.referrer, utm_source=excluded.utm_source,
         utm_medium=excluded.utm_medium, utm_campaign=excluded.utm_campaign, utm_content=excluded.utm_content,
-        utm_term=excluded.utm_term, affiliate_code=excluded.affiliate_code
-    `).bind(
-      enquiryId, attribution.marketingSource, attribution.campaignCode, attribution.landingPage,
-      attribution.referrer, attribution.utmSource, attribution.utmMedium, attribution.utmCampaign,
-      attribution.utmContent, attribution.utmTerm, attribution.affiliateCode
-    ).run();
-  } catch (error) {
-    // Attribution must never block a legitimate enquiry if the marketing migration is pending.
-    console.warn('Attribution storage skipped', error);
+        utm_term=excluded.utm_term, affiliate_code=excluded.affiliate_code,
+        product_id=excluded.product_id, product_slug=excluded.product_slug
+    `).bind(...standardValues, attribution.productId || null, attribution.productSlug).run();
+  } catch (extendedError) {
+    // Backward-compatible fallback for a v2.9 attribution table without product_id/product_slug.
+    try {
+      await db.prepare(`
+        INSERT INTO enquiry_attribution (
+          enquiry_id, marketing_source, campaign_code, landing_page, referrer,
+          utm_source, utm_medium, utm_campaign, utm_content, utm_term, affiliate_code
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(enquiry_id) DO UPDATE SET
+          marketing_source=excluded.marketing_source, campaign_code=excluded.campaign_code,
+          landing_page=excluded.landing_page, referrer=excluded.referrer, utm_source=excluded.utm_source,
+          utm_medium=excluded.utm_medium, utm_campaign=excluded.utm_campaign,
+          utm_content=excluded.utm_content, utm_term=excluded.utm_term,
+          affiliate_code=excluded.affiliate_code
+      `).bind(...standardValues).run();
+    } catch (fallbackError) {
+      // Marketing attribution must never prevent a legitimate enquiry from being recorded.
+      console.warn('Attribution storage skipped', fallbackError);
+    }
   }
+}
+
+function orderReference(){return `QY-${new Date().toISOString().slice(0,10).replaceAll('-','')}-${crypto.randomUUID().slice(0,6).toUpperCase()}`;}
+async function createProductOrder(db,enquiryId,data,attribution){
+  if(!db||!attribution.createOrder||!attribution.productSlug)return null;
+  const product=await db.prepare(`SELECT id,slug,name_en,status,price,currency,sales_channel,payment_provider,early_bird_price,early_bird_end FROM products WHERE slug=? AND status='Active' LIMIT 1`).bind(attribution.productSlug).first();
+  if(!product || product.sales_channel!=='Website') return null;
+  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kuala_Lumpur',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  const early=Number(product.early_bird_price)>0 && product.early_bird_end && today<=product.early_bird_end;
+  const unit=early?Number(product.early_bird_price):Number(product.price||0), ref=orderReference();
+  const order=await db.prepare(`INSERT INTO orders(order_reference,enquiry_id,customer_name,customer_email,customer_phone,currency,subtotal,total,sales_channel,payment_provider,payment_status,campaign_code,affiliate_code) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(ref,enquiryId,data.name,data.email,data.phone,product.currency||'MYR',unit,unit,product.sales_channel,product.payment_provider,'Pending',attribution.campaignCode||attribution.utmCampaign||'',attribution.affiliateCode||'').run();
+  const orderId=order.meta?.last_row_id; if(orderId) await db.prepare(`INSERT INTO order_items(order_id,product_id,quantity,unit_price,line_total) VALUES(?,?,?,?,?)`).bind(orderId,product.id,1,unit,unit).run();
+  return {orderReference:ref,total:unit,currency:product.currency||'MYR',productName:product.name_en};
 }
 
 async function sendEmail(apiKey, payload) {
@@ -193,7 +225,10 @@ export async function onRequestPost(context) {
     utmCampaign: clean(body.utmCampaign, 100),
     utmContent: clean(body.utmContent, 120),
     utmTerm: clean(body.utmTerm, 120),
-    affiliateCode: clean(body.affiliateCode, 80)
+    affiliateCode: clean(body.affiliateCode, 80),
+    productId: Number(body.productId || 0),
+    productSlug: clean(body.productSlug, 120),
+    createOrder: body.createOrder === true || body.createOrder === 'true'
   };
 
   const allowedInterests = new Set(['General Enquiry','Academy Course','Bazi Consultation','Feng Shui Consultation','Baby Naming','Research Collaboration','Media / Speaking','Other']);
@@ -221,6 +256,7 @@ export async function onRequestPost(context) {
     // Save first so the enquiry remains recorded even if email delivery later fails.
     const inserted = await saveEnquiry(context.env.ENQUIRIES_DB, data, meta);
     await saveAttribution(context.env.ENQUIRIES_DB, inserted?.id, attribution);
+    const orderInfo = await createProductOrder(context.env.ENQUIRIES_DB, inserted?.id, data, attribution);
 
     await Promise.all([
       sendEmail(context.env.RESEND_API_KEY, {
@@ -240,7 +276,7 @@ export async function onRequestPost(context) {
         text: `Dear ${data.name},\n\nThank you for contacting ${ACADEMY_NAME}. Reference: ${reference}.  We have received your enquiry and will normally reply within 1–2 working days.\n\n尊敬的 ${data.name}：\n\n感谢您联系量子易经国际学院。我们已收到您的咨询，一般会在 1–2 个工作日内回复。\n\ninfo@quantumyijing.com`
       })
     ]);
-    return json({ ok: true });
+    return json({ ok: true, reference, orderReference: orderInfo?.orderReference || '', orderTotal: orderInfo?.total ?? null, currency: orderInfo?.currency || '' });
   } catch (error) {
     console.error('Email delivery failed', error);
     return json({ error: 'Email delivery failed.' }, 502);
