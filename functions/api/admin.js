@@ -446,6 +446,53 @@ async function studentExport(context, url) {
   return new Response(csv,{headers:{'content-type':'text/csv; charset=utf-8','content-disposition':`attachment; filename="quantum-yijing-students-${stamp}.csv"`,'cache-control':'no-store'}});
 }
 
+
+const productTypes = new Set(['course','membership','consultation','ebook','digital','physical','event','other']);
+const productStatuses = new Set(['Draft','Active','Inactive','Archived']);
+const paymentStatuses = new Set(['Pending','Paid','Failed','Cancelled','Refunded','External']);
+
+async function commerceStats(context) {
+  const db=context.env.ENQUIRIES_DB;
+  const products=await db.prepare(`SELECT COUNT(*) total, SUM(CASE WHEN status='Active' THEN 1 ELSE 0 END) active FROM products`).first();
+  const orders=await db.prepare(`SELECT COUNT(*) total, SUM(CASE WHEN payment_status IN ('Paid','External') THEN 1 ELSE 0 END) paid, SUM(CASE WHEN payment_status='Pending' THEN 1 ELSE 0 END) pending, SUM(CASE WHEN payment_status IN ('Paid','External') THEN total ELSE 0 END) revenue FROM orders`).first();
+  const byChannel=await db.prepare(`SELECT sales_channel label, COUNT(*) count FROM orders GROUP BY sales_channel ORDER BY count DESC`).all();
+  const byProvider=await db.prepare(`SELECT payment_provider label, COUNT(*) count FROM orders GROUP BY payment_provider ORDER BY count DESC`).all();
+  const byStatus=await db.prepare(`SELECT payment_status label, COUNT(*) count FROM orders GROUP BY payment_status ORDER BY count DESC`).all();
+  return json({ok:true,summary:{products:Number(products?.active||0),orders:Number(orders?.total||0),paid:Number(orders?.paid||0),pending:Number(orders?.pending||0),revenue:Number(orders?.revenue||0)},byChannel:byChannel.results||[],byProvider:byProvider.results||[],byStatus:byStatus.results||[]});
+}
+
+async function commerceProducts(context) {
+  const result=await context.env.ENQUIRIES_DB.prepare(`SELECT id,sku,slug,product_type,name_en,name_zh,status,price,currency,sales_channel,payment_provider,external_purchase_url,senangpay_enabled,affiliate_enabled,commission_type,commission_value FROM products ORDER BY CASE status WHEN 'Active' THEN 1 WHEN 'Draft' THEN 2 ELSE 3 END, id DESC`).all();
+  return json({ok:true,results:result.results||[]});
+}
+
+async function saveProduct(context,url) {
+  let body; try{body=await context.request.json()}catch{return json({error:'Invalid request.'},400)}
+  const id=Number(url.searchParams.get('id')||0), sku=clean(body.sku,80), slug=clean(body.slug,120), type=clean(body.productType,30), status=clean(body.status,20), nameEn=clean(body.nameEn,200), nameZh=clean(body.nameZh,200), currency=clean(body.currency,10)||'MYR', channel=clean(body.salesChannel,80)||'Website', provider=clean(body.paymentProvider,80)||'SenangPay', externalUrl=clean(body.externalPurchaseUrl,1000); const price=Number(body.price||0);
+  if(!sku||!slug||!nameEn)return json({error:'SKU, slug and English name are required.'},400); if(!productTypes.has(type)||!productStatuses.has(status))return json({error:'Invalid product type or status.'},400); if(!Number.isFinite(price)||price<0)return json({error:'Invalid price.'},400);
+  const db=context.env.ENQUIRIES_DB;
+  if(id){await db.prepare(`UPDATE products SET sku=?,slug=?,product_type=?,name_en=?,name_zh=?,status=?,price=?,currency=?,sales_channel=?,payment_provider=?,external_purchase_url=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(sku,slug,type,nameEn,nameZh,status,price,currency,channel,provider,externalUrl,id).run(); return json({ok:true,id});}
+  const r=await db.prepare(`INSERT INTO products(sku,slug,product_type,name_en,name_zh,status,price,currency,sales_channel,payment_provider,external_purchase_url) VALUES(?,?,?,?,?,?,?,?,?,?,?)`).bind(sku,slug,type,nameEn,nameZh,status,price,currency,channel,provider,externalUrl).run(); return json({ok:true,id:r.meta?.last_row_id});
+}
+
+async function commerceOrders(context) {
+  const result=await context.env.ENQUIRIES_DB.prepare(`SELECT o.id,o.order_reference,o.customer_name,o.customer_email,o.customer_phone,o.currency,o.total,o.sales_channel,o.payment_provider,o.payment_status,o.campaign_code,o.affiliate_code,o.external_order_id,o.created_at,p.name_en product_name,p.sku,oi.quantity FROM orders o LEFT JOIN order_items oi ON oi.order_id=o.id LEFT JOIN products p ON p.id=oi.product_id ORDER BY o.id DESC LIMIT 200`).all();
+  return json({ok:true,results:result.results||[]});
+}
+
+function makeOrderReference(){return `QY-${new Date().toISOString().slice(0,10).replaceAll('-','')}-${crypto.randomUUID().slice(0,6).toUpperCase()}`}
+async function createOrder(context) {
+  let body; try{body=await context.request.json()}catch{return json({error:'Invalid request.'},400)}
+  const productId=Number(body.productId), quantity=Math.max(1,Math.min(Number(body.quantity||1),100)), name=clean(body.customerName,160), email=clean(body.customerEmail,240), phone=clean(body.customerPhone,80), channel=clean(body.salesChannel,80)||'Website', provider=clean(body.paymentProvider,80)||'SenangPay', status=clean(body.paymentStatus,20)||'Pending', campaign=clean(body.campaignCode,120), affiliate=clean(body.affiliateCode,100);
+  if(!Number.isInteger(productId)||productId<1||!name||!email)return json({error:'Customer name, email and product are required.'},400); if(!paymentStatuses.has(status))return json({error:'Invalid payment status.'},400);
+  const db=context.env.ENQUIRIES_DB, product=await db.prepare(`SELECT id,price,currency,name_en FROM products WHERE id=?`).bind(productId).first(); if(!product)return json({error:'Product not found.'},404);
+  const unit=Number(product.price||0), total=unit*quantity, ref=makeOrderReference();
+  const order=await db.prepare(`INSERT INTO orders(order_reference,customer_name,customer_email,customer_phone,currency,subtotal,total,sales_channel,payment_provider,payment_status,campaign_code,affiliate_code) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`).bind(ref,name,email,phone,product.currency||'MYR',total,total,channel,provider,status,campaign,affiliate).run(); const orderId=order.meta?.last_row_id;
+  await db.prepare(`INSERT INTO order_items(order_id,product_id,quantity,unit_price,line_total) VALUES(?,?,?,?,?)`).bind(orderId,productId,quantity,unit,total).run();
+  if(status==='Paid'||status==='External') await db.prepare(`INSERT INTO payments(order_id,provider,amount,currency,status,paid_at) VALUES(?,?,?,?,?,?)`).bind(orderId,provider,total,product.currency||'MYR',status,new Date().toISOString()).run();
+  return json({ok:true,id:orderId,orderReference:ref,total,currency:product.currency||'MYR'});
+}
+
 export async function onRequest(context) {
   const blocked = requireConfigured(context);
   if (blocked) return blocked;
@@ -466,6 +513,11 @@ export async function onRequest(context) {
     if (context.request.method === 'GET' && action === 'studentdetail') return await studentDetail(context, url);
     if (context.request.method === 'PATCH' && action === 'studentupdate') return await studentUpdate(context, url);
     if (context.request.method === 'GET' && action === 'studentexport') return await studentExport(context, url);
+    if (context.request.method === 'GET' && action === 'commercestats') return await commerceStats(context);
+    if (context.request.method === 'GET' && action === 'commerceproducts') return await commerceProducts(context);
+    if ((context.request.method === 'POST' || context.request.method === 'PATCH') && action === 'productsave') return await saveProduct(context, url);
+    if (context.request.method === 'GET' && action === 'commerceorders') return await commerceOrders(context);
+    if (context.request.method === 'POST' && action === 'ordercreate') return await createOrder(context);
     return json({ error: 'Unknown admin action.' }, 404);
   } catch (error) {
     console.error('Admin API failed', error);

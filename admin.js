@@ -5,7 +5,8 @@
     token: sessionStorage.getItem('qyAdminToken') || '',
     page: 1, pageSize: 25, total: 0, selected: null,
     studentPage: 1, studentPageSize: 25, studentTotal: 0, selectedStudent: null,
-    activeModule: 'crm'
+    activeModule: 'crm',
+    products: []
   };
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 
@@ -191,14 +192,18 @@
     const crmMode = module === 'crm';
     const studentMode = module === 'students';
     const marketingMode = module === 'marketing';
+    const commerceMode = module === 'commerce';
     $('crmModule').hidden = !crmMode;
     $('studentsModule').hidden = !studentMode;
     $('marketingModule').hidden = !marketingMode;
+    $('commerceModule').hidden = !commerceMode;
     $('crmTab').classList.toggle('active', crmMode);
     $('studentsTab').classList.toggle('active', studentMode);
     $('marketingTab').classList.toggle('active', marketingMode);
+    $('commerceTab').classList.toggle('active', commerceMode);
     if (studentMode) loadStudentAll().catch(handleStudentError);
     if (marketingMode) loadMarketingStats().catch(handleMarketingError);
+    if (commerceMode) loadCommerceAll().catch(handleCommerceError);
   }
 
   async function loadMarketingStats() {
@@ -316,6 +321,32 @@
     } catch(error){setMessage('studentDialogMessage',error.message);}
   }
 
+
+  const money = (value,currency='MYR') => `${currency === 'MYR' ? 'RM' : currency} ${Number(value||0).toFixed(2)}`;
+  async function loadCommerceStats(){
+    const response=await api('/api/admin?action=commercestats'), data=await response.json();
+    $('commerceStatProducts').textContent=data.summary.products; $('commerceStatOrders').textContent=data.summary.orders; $('commerceStatPaid').textContent=data.summary.paid; $('commerceStatPending').textContent=data.summary.pending; $('commerceStatRevenue').textContent=money(data.summary.revenue);
+    renderBars('commerceChannelChart',data.byChannel||[],'label'); renderBars('commerceProviderChart',data.byProvider||[],'label'); renderBars('commerceStatusChart',data.byStatus||[],'label');
+  }
+  async function loadCommerceProducts(){
+    const response=await api('/api/admin?action=commerceproducts'), data=await response.json(); state.products=data.results||[];
+    const body=$('commerceProductsBody'); body.innerHTML='';
+    state.products.forEach(r=>body.insertAdjacentHTML('beforeend',`<tr><td><strong>${esc(r.sku)}</strong></td><td><strong>${esc(r.name_en)}</strong><br><small>${esc(r.name_zh||'')}</small></td><td>${esc(r.product_type)}</td><td class="money">${money(r.price,r.currency)}</td><td>${esc(r.sales_channel)}</td><td>${esc(r.payment_provider)}</td><td>${esc(r.status)}</td><td><button type="button" class="view-button" data-edit-product="${r.id}">Edit</button></td></tr>`));
+    if(!state.products.length) body.innerHTML='<tr><td colspan="8">No products yet. Create your first product.</td></tr>';
+    const select=$('orderProduct'); select.innerHTML='<option value="">Select product</option>'+state.products.filter(p=>p.status==='Active').map(p=>`<option value="${p.id}">${esc(p.sku)} — ${esc(p.name_en)} (${money(p.price,p.currency)})</option>`).join('');
+  }
+  async function loadCommerceOrders(){
+    setMessage('commerceDashboardMessage','Loading…',true); const response=await api('/api/admin?action=commerceorders'), data=await response.json(); const body=$('commerceOrdersBody'); body.innerHTML='';
+    (data.results||[]).forEach(r=>body.insertAdjacentHTML('beforeend',`<tr><td><strong>${esc(r.order_reference)}</strong><br><small>${esc(String(r.created_at||'').slice(0,16).replace('T',' '))}</small></td><td><strong>${esc(r.customer_name)}</strong><br><small>${esc(r.customer_email)}</small></td><td>${esc(r.product_name||'—')}<br><small>${r.quantity||1} × ${esc(r.sku||'')}</small></td><td>${esc(r.sales_channel)}</td><td>${esc(r.payment_provider)}<br><span class="payment-pill ${esc(r.payment_status)}">${esc(r.payment_status)}</span></td><td class="money">${money(r.total,r.currency)}</td><td>${esc(r.campaign_code||'—')}<br><small>${r.affiliate_code?`Affiliate: ${esc(r.affiliate_code)}`:''}</small></td><td></td></tr>`));
+    if(!(data.results||[]).length) body.innerHTML='<tr><td colspan="8">No orders yet.</td></tr>'; $('commerceOrderCount').textContent=`${(data.results||[]).length} order${(data.results||[]).length===1?'':'s'}`; setMessage('commerceDashboardMessage','',true);
+  }
+  async function loadCommerceAll(){await Promise.all([loadCommerceStats(),loadCommerceProducts(),loadCommerceOrders()]);}
+  function openProduct(row=null){$('productId').value=row?.id||''; $('productDialogTitle').textContent=row?'Edit Product':'New Product'; $('productSku').value=row?.sku||''; $('productSlug').value=row?.slug||''; $('productType').value=row?.product_type||'course'; $('productStatus').value=row?.status||'Draft'; $('productPrice').value=row?.price??''; $('productCurrency').value=row?.currency||'MYR'; $('productChannel').value=row?.sales_channel||'Website'; $('productProvider').value=row?.payment_provider||'SenangPay'; $('productNameEn').value=row?.name_en||''; $('productNameZh').value=row?.name_zh||''; $('productExternalUrl').value=row?.external_purchase_url||''; setMessage('productDialogMessage','',true); $('productDialog').showModal();}
+  async function saveProduct(){try{const id=$('productId').value, response=await api(`/api/admin?action=productsave${id?`&id=${id}`:''}`,{method:id?'PATCH':'POST',body:JSON.stringify({sku:$('productSku').value,slug:$('productSlug').value,productType:$('productType').value,status:$('productStatus').value,price:$('productPrice').value,currency:$('productCurrency').value,salesChannel:$('productChannel').value,paymentProvider:$('productProvider').value,nameEn:$('productNameEn').value,nameZh:$('productNameZh').value,externalPurchaseUrl:$('productExternalUrl').value})}); await response.json(); setMessage('productDialogMessage','Product saved.',true); await loadCommerceAll();}catch(e){setMessage('productDialogMessage',e.message);}}
+  function openOrder(){if(!state.products.length){setMessage('commerceDashboardMessage','Create an active product first.');return;} $('orderCustomerName').value='';$('orderCustomerEmail').value='';$('orderCustomerPhone').value='';$('orderQuantity').value='1';$('orderCampaign').value='';$('orderAffiliate').value='';setMessage('orderDialogMessage','',true);$('orderDialog').showModal();}
+  async function saveOrder(){try{const response=await api('/api/admin?action=ordercreate',{method:'POST',body:JSON.stringify({customerName:$('orderCustomerName').value,customerEmail:$('orderCustomerEmail').value,customerPhone:$('orderCustomerPhone').value,productId:Number($('orderProduct').value),quantity:Number($('orderQuantity').value),salesChannel:$('orderChannel').value,paymentProvider:$('orderProvider').value,paymentStatus:$('orderPaymentStatus').value,campaignCode:$('orderCampaign').value,affiliateCode:$('orderAffiliate').value})});const data=await response.json();setMessage('orderDialogMessage',`Order ${data.orderReference} created — ${money(data.total,data.currency)}.`,true);await loadCommerceAll();}catch(e){setMessage('orderDialogMessage',e.message);}}
+  function handleCommerceError(error){if(error.status===401){sessionStorage.removeItem('qyAdminToken');showLogin();setMessage('loginMessage','Your session is not authorized. Please log in again.');}else setMessage('commerceDashboardMessage',error.message);}
+
   function handleStudentError(error){
     if(error.status===401){sessionStorage.removeItem('qyAdminToken');showLogin();setMessage('loginMessage','Your session is not authorized. Please log in again.');}
     else setMessage('studentDashboardMessage',error.message);
@@ -331,6 +362,12 @@
   $('crmTab').addEventListener('click', () => switchModule('crm'));
   $('studentsTab').addEventListener('click', () => switchModule('students'));
   $('marketingTab').addEventListener('click', () => switchModule('marketing'));
+  $('commerceTab').addEventListener('click', () => switchModule('commerce'));
+  $('commerceRefreshButton').addEventListener('click', () => loadCommerceAll().catch(handleCommerceError));
+  $('newProductButton').addEventListener('click', () => openProduct());
+  $('newOrderButton').addEventListener('click', openOrder);
+  $('productDialogClose').addEventListener('click',()=>$('productDialog').close()); $('productClose').addEventListener('click',()=>$('productDialog').close()); $('productSave').addEventListener('click',saveProduct);
+  $('orderDialogClose').addEventListener('click',()=>$('orderDialog').close()); $('orderClose').addEventListener('click',()=>$('orderDialog').close()); $('orderSave').addEventListener('click',saveOrder);
   $('marketingRefreshButton').addEventListener('click', () => loadMarketingStats().catch(handleMarketingError));
   $('studentFilterForm').addEventListener('submit', async e => { e.preventDefault(); state.studentPage=1; await loadStudents().catch(handleStudentError); });
   $('studentClearFilters').addEventListener('click', async () => { $('studentFilterForm').reset(); state.studentPage=1; await loadStudents().catch(handleStudentError); });
@@ -356,6 +393,7 @@
     const openButton=e.target.closest('[data-open-id]'); if(openButton) openRecordById(Number(openButton.dataset.openId));
     const followButton=e.target.closest('[data-follow-days]'); if(followButton) quickFollowUp(Number(followButton.dataset.followDays));
     const studentButton=e.target.closest('[data-open-student]'); if(studentButton) openStudentById(Number(studentButton.dataset.openStudent));
+    const productButton=e.target.closest('[data-edit-product]'); if(productButton){const row=state.products.find(p=>Number(p.id)===Number(productButton.dataset.editProduct)); if(row) openProduct(row);}
   });
   $('dialogClose').addEventListener('click', () => $('recordDialog').close());
   $('cancelRecord').addEventListener('click', () => $('recordDialog').close());

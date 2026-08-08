@@ -1,3 +1,6 @@
+## Current platform release: v2.9
+Sales & Commerce CRM with multi-channel product and order management.
+
 # Quantum YiJing v2.8 — Marketing CRM
 
 Current development release adds marketing attribution analytics to the Academy Operating System.

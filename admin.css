@@ -67,3 +67,7 @@
 #marketingModule .bar-row span{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:900px){.marketing-stats-grid{grid-template-columns:repeat(2,1fr)}.marketing-insights{grid-template-columns:1fr}}
 @media(max-width:620px){.module-tabs{flex-wrap:wrap}.module-tab{min-width:calc(50% - 4px)}.marketing-stats-grid{grid-template-columns:1fr 1fr}}
+
+
+/* v2.9 Sales & Commerce */
+.commerce-stats-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.commerce-insights{grid-template-columns:repeat(3,minmax(0,1fr))}.commerce-products-panel{margin-top:24px}.money{font-variant-numeric:tabular-nums;font-weight:800}.payment-pill{display:inline-flex;padding:5px 9px;border-radius:999px;background:#eef4fb;font-weight:800}.payment-pill.Paid,.payment-pill.External{background:#e7f6ec;color:#176b35}.payment-pill.Pending{background:#fff5d9;color:#8b6500}.payment-pill.Failed,.payment-pill.Cancelled,.payment-pill.Refunded{background:#fff0ef;color:#a12820}@media(max-width:1100px){.commerce-stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.commerce-insights{grid-template-columns:1fr}}
