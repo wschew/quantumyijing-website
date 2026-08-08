@@ -1,3 +1,7 @@
+# Quantum YiJing v2.8 — Marketing CRM
+
+Current development release adds marketing attribution analytics to the Academy Operating System.
+
 # Quantum YiJing Website V1
 
 Bilingual static starter for Cloudflare Pages.

@@ -52,17 +52,17 @@ async function saveAttribution(db, enquiryId, attribution) {
     await db.prepare(`
       INSERT INTO enquiry_attribution (
         enquiry_id, marketing_source, campaign_code, landing_page, referrer,
-        utm_source, utm_medium, utm_campaign, utm_content, affiliate_code
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        utm_source, utm_medium, utm_campaign, utm_content, utm_term, affiliate_code
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(enquiry_id) DO UPDATE SET
         marketing_source=excluded.marketing_source, campaign_code=excluded.campaign_code,
         landing_page=excluded.landing_page, referrer=excluded.referrer, utm_source=excluded.utm_source,
         utm_medium=excluded.utm_medium, utm_campaign=excluded.utm_campaign, utm_content=excluded.utm_content,
-        affiliate_code=excluded.affiliate_code
+        utm_term=excluded.utm_term, affiliate_code=excluded.affiliate_code
     `).bind(
       enquiryId, attribution.marketingSource, attribution.campaignCode, attribution.landingPage,
       attribution.referrer, attribution.utmSource, attribution.utmMedium, attribution.utmCampaign,
-      attribution.utmContent, attribution.affiliateCode
+      attribution.utmContent, attribution.utmTerm, attribution.affiliateCode
     ).run();
   } catch (error) {
     // Attribution must never block a legitimate enquiry if the marketing migration is pending.
@@ -192,6 +192,7 @@ export async function onRequestPost(context) {
     utmMedium: clean(body.utmMedium, 100),
     utmCampaign: clean(body.utmCampaign, 100),
     utmContent: clean(body.utmContent, 120),
+    utmTerm: clean(body.utmTerm, 120),
     affiliateCode: clean(body.affiliateCode, 80)
   };
 

@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Academy Operating System | Quantum YiJing International Academy</title>
   <link rel="icon" href="images/quantum-yijing-logo.png">
-  <link rel="stylesheet" href="admin.css?v=2.6.0">
+  <link rel="stylesheet" href="admin.css?v=2.8.0">
 </head>
 <body>
   <main class="crm-shell">
@@ -14,7 +14,7 @@
       <img src="images/quantum-yijing-3d-logo.png" alt="Quantum YiJing" class="login-logo">
       <p class="eyebrow">PRIVATE ADMINISTRATION</p>
       <h1>Academy Operating System</h1>
-      <p class="login-copy">Secure CRM, follow-up and student lifecycle management.</p>
+      <p class="login-copy">Secure CRM, marketing attribution, follow-up and student lifecycle management.</p>
       <form id="loginForm" class="login-form">
         <label for="adminToken">Administrator token</label>
         <input id="adminToken" type="password" autocomplete="current-password" required>
@@ -27,7 +27,7 @@
       <header class="topbar">
         <div class="brand-lockup">
           <img src="images/quantum-yijing-logo.png" alt="" class="topbar-logo">
-          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v2.6</span></div>
+          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v2.8</span></div>
         </div>
         <div class="topbar-actions">
           <a href="index.html" class="text-link">View website</a>
@@ -38,6 +38,7 @@
       <nav class="module-tabs" aria-label="Academy modules">
         <button id="crmTab" class="module-tab active" type="button">CRM & Follow-up</button>
         <button id="studentsTab" class="module-tab" type="button">Students</button>
+        <button id="marketingTab" class="module-tab" type="button">Marketing</button>
       </nav>
 
       <div id="crmModule">
@@ -88,6 +89,9 @@
           <label>Lifecycle<select id="filterLifecycle"><option value="">All stages</option><option>Lead</option><option>Prospect</option><option>Registered</option><option>Active Student</option><option>Graduate</option><option>Alumni</option><option>Closed</option></select></label>
           <label>Priority<select id="filterPriority"><option value="">All priorities</option><option>Hot</option><option>Warm</option><option>Normal</option><option>Low</option></select></label>
           <label>Area<select id="filterInterest"><option value="">All enquiry areas</option><option>General Enquiry</option><option>Academy Course</option><option>Bazi Consultation</option><option>Feng Shui Consultation</option><option>Baby Naming</option><option>Research Collaboration</option><option>Media / Speaking</option><option>Other</option></select></label>
+          <label>Marketing source<input id="filterSource" type="search" placeholder="TikTok, Facebook…"></label>
+          <label>Campaign<input id="filterCampaign" type="search" placeholder="Campaign code / UTM"></label>
+          <label>Affiliate<input id="filterAffiliate" type="search" placeholder="Affiliate code"></label>
           <label>From<input id="filterFrom" type="date"></label>
           <label>To<input id="filterTo" type="date"></label>
           <button class="primary-button" type="submit">Apply filters</button>
@@ -96,7 +100,7 @@
 
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Date</th><th>Reference / Student ID</th><th>Contact</th><th>Area</th><th>Priority</th><th>Lifecycle</th><th>Status</th><th>Next action / Follow-up</th><th></th></tr></thead>
+            <thead><tr><th>Date</th><th>Reference / Student ID</th><th>Contact</th><th>Area</th><th>Source</th><th>Campaign / Affiliate</th><th>Priority</th><th>Lifecycle</th><th>Status</th><th>Next action / Follow-up</th><th></th></tr></thead>
             <tbody id="recordsBody"></tbody>
           </table>
         </div>
@@ -148,6 +152,45 @@
           </div>
           <div class="pagination"><button id="studentPrevPage" type="button">Previous</button><span id="studentPageInfo">Page 1</span><button id="studentNextPage" type="button">Next</button></div>
           <p id="studentDashboardMessage" class="form-message" aria-live="polite"></p>
+        </section>
+      </div>
+
+      <div id="marketingModule" hidden>
+        <section class="page-heading">
+          <div>
+            <p class="eyebrow">QY-AOS · MARKETING CRM</p>
+            <h1>Campaign & Attribution Dashboard</h1>
+            <p>See which channels, campaigns, landing pages and affiliate codes generate enquiries and students.</p>
+          </div>
+          <a class="primary-button button-link" href="products.html" target="_blank">View Marketing Hub</a>
+        </section>
+
+        <section class="stats-grid marketing-stats-grid" aria-label="Marketing summary">
+          <article><span>Tracked enquiries</span><strong id="marketingStatAttributed">0</strong></article>
+          <article><span>Campaign enquiries</span><strong id="marketingStatCampaigns">0</strong></article>
+          <article><span>Affiliate enquiries</span><strong id="marketingStatAffiliates">0</strong></article>
+          <article><span>Converted students</span><strong id="marketingStatStudents">0</strong></article>
+        </section>
+
+        <section class="insights-grid marketing-insights">
+          <article class="panel"><div class="panel-heading"><h2>Enquiries by source</h2></div><div id="marketingSourceChart" class="bar-list"></div></article>
+          <article class="panel"><div class="panel-heading"><h2>Campaign performance</h2></div><div id="marketingCampaignChart" class="bar-list"></div></article>
+          <article class="panel"><div class="panel-heading"><h2>Affiliate referrals</h2></div><div id="marketingAffiliateChart" class="bar-list"></div></article>
+          <article class="panel"><div class="panel-heading"><h2>Landing pages</h2></div><div id="marketingLandingChart" class="bar-list"></div></article>
+        </section>
+
+        <section class="panel records-panel">
+          <div class="panel-heading records-heading">
+            <div><h2>Recent attributed enquiries</h2><p>UTM and affiliate details captured by the DBP.</p></div>
+            <button id="marketingRefreshButton" class="secondary-button" type="button">Refresh</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Prospect</th><th>Source / Medium</th><th>Campaign</th><th>Affiliate</th><th>Landing page</th><th>Converted</th><th></th></tr></thead>
+              <tbody id="marketingRecentBody"></tbody>
+            </table>
+          </div>
+          <p id="marketingDashboardMessage" class="form-message" aria-live="polite"></p>
         </section>
       </div>
     </section>
@@ -218,6 +261,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=2.6.0" defer></script>
+  <script src="admin.js?v=2.8.0" defer></script>
 </body>
 </html>

@@ -53,7 +53,7 @@
     const values = Object.fromEntries(new FormData(form).entries());
     values.language = lang();
 
-    // v2.7 marketing attribution: records where the prospect came from without cookies.
+    // v2.8 marketing attribution: records where the prospect came from without cookies.
     const params = new URLSearchParams(window.location.search);
     const inferredSource = params.get('utm_source') || params.get('source') || (document.referrer ? (() => {
       try { const host = new URL(document.referrer).hostname.toLowerCase();
@@ -72,6 +72,7 @@
     values.utmMedium = (params.get('utm_medium') || '').slice(0, 100);
     values.utmCampaign = (params.get('utm_campaign') || '').slice(0, 100);
     values.utmContent = (params.get('utm_content') || '').slice(0, 120);
+    values.utmTerm = (params.get('utm_term') || '').slice(0, 120);
     values.affiliateCode = (params.get('aff') || params.get('affiliate') || '').slice(0, 80);
 
     try {

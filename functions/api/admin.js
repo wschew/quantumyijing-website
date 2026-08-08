@@ -39,6 +39,9 @@ function buildFilters(url) {
   const lifecycle = clean(url.searchParams.get('lifecycle'), 40);
   const interest = clean(url.searchParams.get('interest'), 100);
   const priority = clean(url.searchParams.get('priority'), 20);
+  const source = clean(url.searchParams.get('source'), 100);
+  const campaign = clean(url.searchParams.get('campaign'), 120);
+  const affiliate = clean(url.searchParams.get('affiliate'), 100);
   const from = clean(url.searchParams.get('from'), 10);
   const to = clean(url.searchParams.get('to'), 10);
   const conditions = [];
@@ -52,6 +55,9 @@ function buildFilters(url) {
   if (lifecycle) { conditions.push('e.lifecycle_stage = ?'); values.push(lifecycle); }
   if (interest) { conditions.push('e.interest = ?'); values.push(interest); }
   if (priority) { conditions.push('e.priority = ?'); values.push(priority); }
+  if (source) { conditions.push('(a.marketing_source = ? OR a.utm_source = ?)'); values.push(source, source); }
+  if (campaign) { conditions.push('(a.campaign_code = ? OR a.utm_campaign = ?)'); values.push(campaign, campaign); }
+  if (affiliate) { conditions.push('a.affiliate_code = ?'); values.push(affiliate); }
   if (/^\d{4}-\d{2}-\d{2}$/.test(from)) { conditions.push('e.submitted_date >= ?'); values.push(from); }
   if (/^\d{4}-\d{2}-\d{2}$/.test(to)) { conditions.push('e.submitted_date <= ?'); values.push(to); }
   return { where: conditions.length ? `WHERE ${conditions.join(' AND ')}` : '', values };
@@ -105,12 +111,13 @@ async function enquiries(context, url) {
   const offset = (page - 1) * pageSize;
   const { where, values } = buildFilters(url);
   const db = context.env.ENQUIRIES_DB;
-  const baseJoin = `FROM enquiries e LEFT JOIN students s ON s.enquiry_id = e.id`;
+  const baseJoin = `FROM enquiries e LEFT JOIN students s ON s.enquiry_id = e.id LEFT JOIN enquiry_attribution a ON a.enquiry_id = e.id`;
   const countResult = await db.prepare(`SELECT COUNT(*) AS total ${baseJoin} ${where}`).bind(...values).first();
   const result = await db.prepare(`
     SELECT e.id, e.reference, e.submitted_at_malaysia, e.submitted_date, e.name, e.email, e.phone,
       e.country, e.interest, e.message, e.language, e.status, e.source, e.follow_up_date, e.notes,
-      e.lifecycle_stage, e.priority, e.next_action, e.tags, e.contact_preference, e.last_contacted_at, e.updated_at, s.student_id, s.programme
+      e.lifecycle_stage, e.priority, e.next_action, e.tags, e.contact_preference, e.last_contacted_at, e.updated_at, s.student_id, s.programme,
+      a.marketing_source, a.campaign_code, a.landing_page, a.referrer, a.utm_source, a.utm_medium, a.utm_campaign, a.utm_content, a.utm_term, a.affiliate_code
     ${baseJoin} ${where} ORDER BY e.id DESC LIMIT ? OFFSET ?
   `).bind(...values, pageSize, offset).all();
   return json({ ok: true, page, pageSize, total: Number(countResult?.total || 0), results: result.results || [] });
@@ -120,8 +127,11 @@ async function detail(context, url) {
   const id = Number(url.searchParams.get('id'));
   if (!Number.isInteger(id) || id < 1) return json({ error: 'Invalid enquiry ID.' }, 400);
   const enquiry = await context.env.ENQUIRIES_DB.prepare(`
-    SELECT e.*, s.student_id, s.programme, s.enrolled_date, s.graduated_date
-    FROM enquiries e LEFT JOIN students s ON s.enquiry_id = e.id WHERE e.id = ?
+    SELECT e.*, s.student_id, s.programme, s.enrolled_date, s.graduated_date,
+      a.marketing_source, a.campaign_code, a.landing_page, a.referrer, a.utm_source, a.utm_medium,
+      a.utm_campaign, a.utm_content, a.utm_term, a.affiliate_code
+    FROM enquiries e LEFT JOIN students s ON s.enquiry_id = e.id
+    LEFT JOIN enquiry_attribution a ON a.enquiry_id = e.id WHERE e.id = ?
   `).bind(id).first();
   if (!enquiry) return json({ error: 'Enquiry not found.' }, 404);
   const activities = await context.env.ENQUIRIES_DB.prepare(`
@@ -238,14 +248,66 @@ async function exportCsv(context, url) {
   const result = await context.env.ENQUIRIES_DB.prepare(`
     SELECT e.reference, s.student_id, e.submitted_date, e.submitted_at_malaysia, e.name, e.email, e.phone,
       e.country, e.interest, e.message, e.language, e.status, e.lifecycle_stage, e.priority, e.contact_preference,
-      e.follow_up_date, e.next_action, e.last_contacted_at, e.tags, e.notes, e.source
-    FROM enquiries e LEFT JOIN students s ON s.enquiry_id=e.id ${where} ORDER BY e.id DESC LIMIT 10000
+      e.follow_up_date, e.next_action, e.last_contacted_at, e.tags, e.notes, e.source,
+      a.marketing_source, a.utm_source, a.utm_medium, a.utm_campaign, a.utm_content, a.utm_term,
+      a.campaign_code, a.affiliate_code, a.landing_page, a.referrer
+    FROM enquiries e LEFT JOIN students s ON s.enquiry_id=e.id
+    LEFT JOIN enquiry_attribution a ON a.enquiry_id=e.id ${where} ORDER BY e.id DESC LIMIT 10000
   `).bind(...values).all();
-  const headers = ['Reference','Student ID','Date','Date & Time (Malaysia)','Name','Email','WhatsApp / Phone','Country','Area of Interest','Message','Language','CRM Status','Lifecycle Stage','Priority','Preferred Contact','Follow-up Date','Next Action','Last Contacted','Tags','Notes','Source'];
-  const rows = (result.results || []).map(r => [r.reference,r.student_id,r.submitted_date,r.submitted_at_malaysia,r.name,r.email,r.phone,r.country,r.interest,r.message,r.language === 'zh' ? 'Chinese' : 'English',r.status,r.lifecycle_stage,r.priority,r.contact_preference,r.follow_up_date,r.next_action,r.last_contacted_at,r.tags,r.notes,r.source]);
+  const headers = ['Reference','Student ID','Date','Date & Time (Malaysia)','Name','Email','WhatsApp / Phone','Country','Area of Interest','Message','Language','CRM Status','Lifecycle Stage','Priority','Preferred Contact','Follow-up Date','Next Action','Last Contacted','Tags','Notes','CRM Source','Marketing Source','UTM Source','UTM Medium','UTM Campaign','UTM Content','UTM Term','Campaign Code','Affiliate Code','Landing Page','Referrer'];
+  const rows = (result.results || []).map(r => [r.reference,r.student_id,r.submitted_date,r.submitted_at_malaysia,r.name,r.email,r.phone,r.country,r.interest,r.message,r.language === 'zh' ? 'Chinese' : 'English',r.status,r.lifecycle_stage,r.priority,r.contact_preference,r.follow_up_date,r.next_action,r.last_contacted_at,r.tags,r.notes,r.source,r.marketing_source,r.utm_source,r.utm_medium,r.utm_campaign,r.utm_content,r.utm_term,r.campaign_code,r.affiliate_code,r.landing_page,r.referrer]);
   const csv = '\uFEFF' + [headers, ...rows].map(row => row.map(csvCell).join(',')).join('\r\n');
   const stamp = new Date().toISOString().slice(0, 10);
   return new Response(csv, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="quantum-yijing-aos-${stamp}.csv"`, 'cache-control': 'no-store' } });
+}
+
+
+async function marketingStats(context) {
+  const db = context.env.ENQUIRIES_DB;
+  const summary = await db.prepare(`
+    SELECT
+      COUNT(a.id) AS attributed,
+      SUM(CASE WHEN trim(COALESCE(a.utm_campaign,'')) != '' OR trim(COALESCE(a.campaign_code,'')) != '' THEN 1 ELSE 0 END) AS campaign_leads,
+      SUM(CASE WHEN trim(COALESCE(a.affiliate_code,'')) != '' THEN 1 ELSE 0 END) AS affiliate_leads,
+      SUM(CASE WHEN s.id IS NOT NULL THEN 1 ELSE 0 END) AS converted_students
+    FROM enquiry_attribution a
+    JOIN enquiries e ON e.id=a.enquiry_id
+    LEFT JOIN students s ON s.enquiry_id=e.id
+  `).first();
+  const bySource = await db.prepare(`
+    SELECT CASE WHEN trim(COALESCE(NULLIF(a.utm_source,''),a.marketing_source,''))='' THEN 'Website' ELSE COALESCE(NULLIF(a.utm_source,''),a.marketing_source) END AS source,
+      COUNT(*) AS count, SUM(CASE WHEN s.id IS NOT NULL THEN 1 ELSE 0 END) AS students
+    FROM enquiry_attribution a JOIN enquiries e ON e.id=a.enquiry_id LEFT JOIN students s ON s.enquiry_id=e.id
+    GROUP BY source ORDER BY count DESC, source ASC LIMIT 12
+  `).all();
+  const byCampaign = await db.prepare(`
+    SELECT COALESCE(NULLIF(a.utm_campaign,''),NULLIF(a.campaign_code,''),'Unspecified') AS campaign,
+      COUNT(*) AS count, SUM(CASE WHEN s.id IS NOT NULL THEN 1 ELSE 0 END) AS students
+    FROM enquiry_attribution a JOIN enquiries e ON e.id=a.enquiry_id LEFT JOIN students s ON s.enquiry_id=e.id
+    WHERE trim(COALESCE(a.utm_campaign,a.campaign_code,'')) != ''
+    GROUP BY campaign ORDER BY count DESC, campaign ASC LIMIT 12
+  `).all();
+  const byAffiliate = await db.prepare(`
+    SELECT a.affiliate_code AS affiliate, COUNT(*) AS count, SUM(CASE WHEN s.id IS NOT NULL THEN 1 ELSE 0 END) AS students
+    FROM enquiry_attribution a JOIN enquiries e ON e.id=a.enquiry_id LEFT JOIN students s ON s.enquiry_id=e.id
+    WHERE trim(a.affiliate_code) != '' GROUP BY a.affiliate_code ORDER BY count DESC, affiliate ASC LIMIT 12
+  `).all();
+  const byLanding = await db.prepare(`
+    SELECT CASE WHEN trim(a.landing_page)='' THEN 'Unknown' ELSE a.landing_page END AS landing_page, COUNT(*) AS count
+    FROM enquiry_attribution a GROUP BY CASE WHEN trim(a.landing_page)='' THEN 'Unknown' ELSE a.landing_page END
+    ORDER BY count DESC, landing_page ASC LIMIT 12
+  `).all();
+  const recent = await db.prepare(`
+    SELECT e.id,e.reference,e.submitted_date,e.name,e.email,e.interest,e.lifecycle_stage,
+      a.marketing_source,a.utm_source,a.utm_medium,a.utm_campaign,a.campaign_code,a.affiliate_code,a.landing_page,
+      CASE WHEN s.id IS NULL THEN 0 ELSE 1 END AS converted
+    FROM enquiry_attribution a JOIN enquiries e ON e.id=a.enquiry_id LEFT JOIN students s ON s.enquiry_id=e.id
+    ORDER BY e.id DESC LIMIT 30
+  `).all();
+  return json({ ok:true, summary:{
+    attributed:Number(summary?.attributed||0), campaignLeads:Number(summary?.campaign_leads||0),
+    affiliateLeads:Number(summary?.affiliate_leads||0), convertedStudents:Number(summary?.converted_students||0)
+  }, bySource:bySource.results||[], byCampaign:byCampaign.results||[], byAffiliate:byAffiliate.results||[], byLanding:byLanding.results||[], recent:recent.results||[] });
 }
 
 
@@ -398,6 +460,7 @@ export async function onRequest(context) {
     if (context.request.method === 'POST' && action === 'quickfollowup') return await quickFollowUp(context, url);
     if (context.request.method === 'POST' && action === 'convert') return await convert(context, url);
     if (context.request.method === 'POST' && action === 'activity') return await addActivity(context, url);
+    if (context.request.method === 'GET' && action === 'marketingstats') return await marketingStats(context);
     if (context.request.method === 'GET' && action === 'studentstats') return await studentStats(context);
     if (context.request.method === 'GET' && action === 'students') return await students(context, url);
     if (context.request.method === 'GET' && action === 'studentdetail') return await studentDetail(context, url);

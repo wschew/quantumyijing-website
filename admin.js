@@ -24,7 +24,7 @@
 
   const filters = () => {
     const params = new URLSearchParams({ page: state.page, pageSize: state.pageSize });
-    [['q','filterQ'],['status','filterStatus'],['lifecycle','filterLifecycle'],['priority','filterPriority'],['interest','filterInterest'],['from','filterFrom'],['to','filterTo']].forEach(([key,id]) => {
+    [['q','filterQ'],['status','filterStatus'],['lifecycle','filterLifecycle'],['priority','filterPriority'],['interest','filterInterest'],['source','filterSource'],['campaign','filterCampaign'],['affiliate','filterAffiliate'],['from','filterFrom'],['to','filterTo']].forEach(([key,id]) => {
       const value = $(id).value.trim(); if (value) params.set(key, value);
     });
     return params;
@@ -80,9 +80,9 @@
     data.results.forEach(row => {
       const student = row.student_id ? `<span class="student-badge">${esc(row.student_id)}</span>` : '';
       const action = row.next_action ? `<strong>${esc(row.next_action)}</strong><br>` : '';
-      body.insertAdjacentHTML('beforeend', `<tr data-id="${row.id}"><td>${esc(row.submitted_date)}<br><small>${esc(row.submitted_at_malaysia)}</small></td><td><strong>${esc(row.reference)}</strong><br>${student}</td><td><strong>${esc(row.name)}</strong><br><a href="mailto:${esc(row.email)}">${esc(row.email)}</a><br><small>${esc(row.phone || '')}</small></td><td>${esc(row.interest)}</td><td><span class="priority-pill ${priorityClass(row.priority)}">${esc(row.priority || 'Normal')}</span></td><td><span class="lifecycle ${esc(row.lifecycle_stage).replace(/\s+/g,'-')}">${esc(row.lifecycle_stage)}</span></td><td><span class="status ${esc(row.status)}">${esc(row.status)}</span></td><td>${action}${esc(row.follow_up_date || '—')}<br><small>${esc(row.contact_preference || 'Any')}</small></td><td><button class="view-button" data-open-id="${row.id}" type="button">Open</button></td></tr>`);
+      body.insertAdjacentHTML('beforeend', `<tr data-id="${row.id}"><td>${esc(row.submitted_date)}<br><small>${esc(row.submitted_at_malaysia)}</small></td><td><strong>${esc(row.reference)}</strong><br>${student}</td><td><strong>${esc(row.name)}</strong><br><a href="mailto:${esc(row.email)}">${esc(row.email)}</a><br><small>${esc(row.phone || '')}</small></td><td>${esc(row.interest)}</td><td><strong>${esc(row.utm_source || row.marketing_source || 'Website')}</strong><br><small>${esc(row.utm_medium || '')}</small></td><td>${esc(row.utm_campaign || row.campaign_code || '—')}<br><small>${row.affiliate_code ? `Affiliate: ${esc(row.affiliate_code)}` : ''}</small></td><td><span class="priority-pill ${priorityClass(row.priority)}">${esc(row.priority || 'Normal')}</span></td><td><span class="lifecycle ${esc(row.lifecycle_stage).replace(/\s+/g,'-')}">${esc(row.lifecycle_stage)}</span></td><td><span class="status ${esc(row.status)}">${esc(row.status)}</span></td><td>${action}${esc(row.follow_up_date || '—')}<br><small>${esc(row.contact_preference || 'Any')}</small></td><td><button class="view-button" data-open-id="${row.id}" type="button">Open</button></td></tr>`);
     });
-    if (!data.results.length) body.innerHTML = '<tr><td colspan="9">No matching records.</td></tr>';
+    if (!data.results.length) body.innerHTML = '<tr><td colspan="11">No matching records.</td></tr>';
     $('recordCount').textContent = `${data.total} record${data.total === 1 ? '' : 's'}`;
     const pages = Math.max(Math.ceil(data.total / state.pageSize), 1);
     $('pageInfo').textContent = `Page ${state.page} of ${pages}`;
@@ -107,7 +107,7 @@
       state.selected = row;
       $('dialogReference').textContent = row.reference;
       $('dialogStudentId').textContent = row.student_id ? `Student ID: ${row.student_id}` : 'Lead / Prospect';
-      $('recordDetails').innerHTML = detail('Name',row.name)+detail('Email',row.email)+detail('WhatsApp / Phone',row.phone)+detail('Country',row.country)+detail('Area of interest',row.interest)+detail('Submitted',row.submitted_at_malaysia)+detail('Message',row.message,true);
+      $('recordDetails').innerHTML = detail('Name',row.name)+detail('Email',row.email)+detail('WhatsApp / Phone',row.phone)+detail('Country',row.country)+detail('Area of interest',row.interest)+detail('Submitted',row.submitted_at_malaysia)+detail('Marketing source',row.utm_source || row.marketing_source || 'Website')+detail('UTM medium',row.utm_medium)+detail('Campaign',row.utm_campaign || row.campaign_code)+detail('Affiliate code',row.affiliate_code)+detail('Landing page',row.landing_page)+detail('Referrer',row.referrer,true)+detail('Message',row.message,true);
       $('editStatus').value = row.status;
       $('editLifecycle').value = row.lifecycle_stage || 'Lead';
       $('editPriority').value = row.priority || 'Normal';
@@ -188,12 +188,42 @@
 
   function switchModule(module) {
     state.activeModule = module;
+    const crmMode = module === 'crm';
     const studentMode = module === 'students';
-    $('crmModule').hidden = studentMode;
+    const marketingMode = module === 'marketing';
+    $('crmModule').hidden = !crmMode;
     $('studentsModule').hidden = !studentMode;
-    $('crmTab').classList.toggle('active', !studentMode);
+    $('marketingModule').hidden = !marketingMode;
+    $('crmTab').classList.toggle('active', crmMode);
     $('studentsTab').classList.toggle('active', studentMode);
+    $('marketingTab').classList.toggle('active', marketingMode);
     if (studentMode) loadStudentAll().catch(handleStudentError);
+    if (marketingMode) loadMarketingStats().catch(handleMarketingError);
+  }
+
+  async function loadMarketingStats() {
+    setMessage('marketingDashboardMessage','Loading…',true);
+    const response = await api('/api/admin?action=marketingstats');
+    const data = await response.json();
+    $('marketingStatAttributed').textContent = data.summary.attributed;
+    $('marketingStatCampaigns').textContent = data.summary.campaignLeads;
+    $('marketingStatAffiliates').textContent = data.summary.affiliateLeads;
+    $('marketingStatStudents').textContent = data.summary.convertedStudents;
+    renderBars('marketingSourceChart', data.bySource || [], 'source');
+    renderBars('marketingCampaignChart', data.byCampaign || [], 'campaign');
+    renderBars('marketingAffiliateChart', data.byAffiliate || [], 'affiliate');
+    renderBars('marketingLandingChart', data.byLanding || [], 'landing_page');
+    const body = $('marketingRecentBody'); body.innerHTML='';
+    (data.recent || []).forEach(row => {
+      body.insertAdjacentHTML('beforeend', `<tr><td>${esc(row.submitted_date)}</td><td><strong>${esc(row.name)}</strong><br><small>${esc(row.reference)}</small></td><td><strong>${esc(row.utm_source || row.marketing_source || 'Website')}</strong><br><small>${esc(row.utm_medium || '')}</small></td><td>${esc(row.utm_campaign || row.campaign_code || '—')}</td><td>${esc(row.affiliate_code || '—')}</td><td>${esc(row.landing_page || '—')}</td><td>${Number(row.converted) ? 'Yes' : 'No'}</td><td><button class="view-button" data-open-id="${row.id}" type="button">Open</button></td></tr>`);
+    });
+    if (!(data.recent || []).length) body.innerHTML='<tr><td colspan="8">No attributed enquiries yet. Submit a test landing-page enquiry with UTM parameters.</td></tr>';
+    setMessage('marketingDashboardMessage','',true);
+  }
+
+  function handleMarketingError(error){
+    if(error.status===401){sessionStorage.removeItem('qyAdminToken');showLogin();setMessage('loginMessage','Your session is not authorized. Please log in again.');}
+    else setMessage('marketingDashboardMessage',error.message);
   }
 
   async function loadStudentStats() {
@@ -300,6 +330,8 @@
   $('logoutButton').addEventListener('click', () => { sessionStorage.removeItem('qyAdminToken'); state.token=''; $('adminToken').value=''; showLogin(); });
   $('crmTab').addEventListener('click', () => switchModule('crm'));
   $('studentsTab').addEventListener('click', () => switchModule('students'));
+  $('marketingTab').addEventListener('click', () => switchModule('marketing'));
+  $('marketingRefreshButton').addEventListener('click', () => loadMarketingStats().catch(handleMarketingError));
   $('studentFilterForm').addEventListener('submit', async e => { e.preventDefault(); state.studentPage=1; await loadStudents().catch(handleStudentError); });
   $('studentClearFilters').addEventListener('click', async () => { $('studentFilterForm').reset(); state.studentPage=1; await loadStudents().catch(handleStudentError); });
   $('studentRefreshButton').addEventListener('click', () => loadStudentAll().catch(handleStudentError));

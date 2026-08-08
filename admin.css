@@ -57,3 +57,13 @@
 #studentDialog textarea,#studentDialog input,#studentDialog select{width:100%}
 @media(max-width:1000px){.student-stats-grid{grid-template-columns:repeat(3,1fr)}.student-filters{grid-template-columns:1fr 1fr}.student-insights{grid-template-columns:1fr}}
 @media(max-width:620px){.module-tabs{width:calc(100% - 24px)}.module-tab{flex:1}.student-stats-grid{grid-template-columns:1fr 1fr}.student-filters{grid-template-columns:1fr}}
+
+/* v2.8 Marketing CRM */
+#marketingModule[hidden]{display:none}
+.marketing-stats-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.marketing-insights{grid-template-columns:repeat(2,minmax(0,1fr))}
+.button-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+#marketingModule .table-wrap table{min-width:1050px}
+#marketingModule .bar-row span{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:900px){.marketing-stats-grid{grid-template-columns:repeat(2,1fr)}.marketing-insights{grid-template-columns:1fr}}
+@media(max-width:620px){.module-tabs{flex-wrap:wrap}.module-tab{min-width:calc(50% - 4px)}.marketing-stats-grid{grid-template-columns:1fr 1fr}}
