@@ -33,3 +33,15 @@
   text-decoration:underline;
   text-underline-offset:3px;
 }
+
+
+/* v2.8.2 — final corporate footer refinement */
+@media (min-width:901px){
+  .marketing-footer .cols{grid-template-columns:1.55fr .8fr 1.05fr .9fr;align-items:start}
+  .marketing-footer .footer-tagline{white-space:nowrap}
+  .marketing-footer .legal-line{white-space:nowrap}
+}
+.marketing-footer .footer-identity strong{margin-bottom:2px}
+.marketing-footer .footer-identity>span:first-of-type{margin-top:0;color:#fff;font-weight:600}
+.marketing-footer .legal-line{line-height:1.5}
+@media (max-width:900px){.marketing-footer .footer-tagline,.marketing-footer .legal-line{white-space:normal}}

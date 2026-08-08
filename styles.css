@@ -539,3 +539,11 @@ a[href*="terms"]:hover{
   text-decoration:underline;
   text-underline-offset:3px;
 }
+
+
+/* v2.8.2 — final corporate footer refinement */
+@media (min-width:651px){
+  .site-footer .copyright{white-space:nowrap}
+  .site-footer .footer-brand small{max-width:none;white-space:nowrap}
+}
+@media (max-width:650px){.site-footer .copyright{white-space:normal}}

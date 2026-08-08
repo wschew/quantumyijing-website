@@ -168,14 +168,13 @@
 
     'Quantum YiJing® International Academy': 'Quantum YiJing® 国际学院',
     'Where Ancient Wisdom Meets Modern Scientific Thinking': '古老智慧 · 现代科学思维',
-    'Penang, Malaysia': '马来西亚 · 槟城',
     'Explore': '探索',
     'Connect': '联系',
     'Enquiry Form': '咨询表格',
     'Legal': '法律',
     'Refund Policy': '退款政策',
     'Cookie Policy': 'Cookie 政策',
-    'Quantum YiJing Sdn. Bhd. Quantum YiJing® is a registered trademark. All rights reserved.': 'Quantum YiJing Sdn. Bhd. · Quantum YiJing® 为注册商标。版权所有。'
+    'Quantum YiJing® • Registered Trademark • All Rights Reserved.': 'Quantum YiJing® • 注册商标 • 版权所有。'
   };
 
   const originalText = new Map();
