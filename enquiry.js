@@ -53,6 +53,27 @@
     const values = Object.fromEntries(new FormData(form).entries());
     values.language = lang();
 
+    // v2.7 marketing attribution: records where the prospect came from without cookies.
+    const params = new URLSearchParams(window.location.search);
+    const inferredSource = params.get('utm_source') || params.get('source') || (document.referrer ? (() => {
+      try { const host = new URL(document.referrer).hostname.toLowerCase();
+        if (host.includes('tiktok')) return 'TikTok';
+        if (host.includes('facebook') || host.includes('fb.com')) return 'Facebook';
+        if (host.includes('youtube') || host.includes('youtu.be')) return 'YouTube';
+        if (host.includes('google')) return 'Google';
+        return 'Referral';
+      } catch { return 'Referral'; }
+    })() : 'Website');
+    values.marketingSource = inferredSource.slice(0, 80);
+    values.campaignCode = (params.get('campaign') || params.get('utm_campaign') || '').slice(0, 100);
+    values.landingPage = window.location.pathname.slice(0, 200);
+    values.referrer = document.referrer.slice(0, 400);
+    values.utmSource = (params.get('utm_source') || '').slice(0, 100);
+    values.utmMedium = (params.get('utm_medium') || '').slice(0, 100);
+    values.utmCampaign = (params.get('utm_campaign') || '').slice(0, 100);
+    values.utmContent = (params.get('utm_content') || '').slice(0, 120);
+    values.affiliateCode = (params.get('aff') || params.get('affiliate') || '').slice(0, 80);
+
     try {
       const response = await fetch('/api/enquiry', {
         method: 'POST',

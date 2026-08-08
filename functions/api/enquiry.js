@@ -46,6 +46,30 @@ async function saveEnquiry(db, data, meta) {
   return inserted;
 }
 
+async function saveAttribution(db, enquiryId, attribution) {
+  if (!db || !enquiryId) return;
+  try {
+    await db.prepare(`
+      INSERT INTO enquiry_attribution (
+        enquiry_id, marketing_source, campaign_code, landing_page, referrer,
+        utm_source, utm_medium, utm_campaign, utm_content, affiliate_code
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(enquiry_id) DO UPDATE SET
+        marketing_source=excluded.marketing_source, campaign_code=excluded.campaign_code,
+        landing_page=excluded.landing_page, referrer=excluded.referrer, utm_source=excluded.utm_source,
+        utm_medium=excluded.utm_medium, utm_campaign=excluded.utm_campaign, utm_content=excluded.utm_content,
+        affiliate_code=excluded.affiliate_code
+    `).bind(
+      enquiryId, attribution.marketingSource, attribution.campaignCode, attribution.landingPage,
+      attribution.referrer, attribution.utmSource, attribution.utmMedium, attribution.utmCampaign,
+      attribution.utmContent, attribution.affiliateCode
+    ).run();
+  } catch (error) {
+    // Attribution must never block a legitimate enquiry if the marketing migration is pending.
+    console.warn('Attribution storage skipped', error);
+  }
+}
+
 async function sendEmail(apiKey, payload) {
   const response = await fetch(RESEND_ENDPOINT, {
     method: 'POST',
@@ -133,7 +157,7 @@ function acknowledgementHtml(name, reference, interest, submitted) {
 
 function internalHtml(data, meta) {
   const row = (label, value) => `<tr><td style="padding:10px 13px;background:#f5f8fc;font-weight:700;width:155px;color:#315274;border-bottom:1px solid #e2eaf3">${label}</td><td style="padding:10px 13px;border-bottom:1px solid #e2eaf3;color:#17243a">${escapeHtml(value || '—')}</td></tr>`;
-  return `<!doctype html><html><body style="margin:0;padding:24px;background:#f4f7fb;font-family:Arial,'Noto Sans SC',sans-serif;color:#17243a"><div style="max-width:760px;margin:0 auto;background:#fff;border:1px solid #dce7f4;border-radius:16px;overflow:hidden"><div style="padding:22px 26px;background:#edf5ff;border-bottom:4px solid #d3a62c"><div style="font-size:12px;font-weight:800;letter-spacing:1.6px;color:#1768c4">QUANTUM YIJING INTERNATIONAL ACADEMY</div><h2 style="margin:8px 0 0;color:#0b2f66">New Website Enquiry</h2></div><div style="padding:26px"><p style="margin:0 0 18px;color:#526a85">Reference: <strong style="color:#173b63">${escapeHtml(meta.reference)}</strong></p><table style="border-collapse:separate;border-spacing:0;width:100%;border:1px solid #e2eaf3;border-radius:10px;overflow:hidden">${row('Name',data.name)}${row('Email',data.email)}${row('WhatsApp / Phone',data.phone)}${row('Country',data.country)}${row('Interest',data.interest)}${row('Language',data.language === 'zh' ? 'Chinese' : 'English')}${row('Submitted',meta.submitted)}${row('Message',data.message)}</table><p style="margin:20px 0 0;font-size:12px;color:#71839a">Submitted through quantumyijing.com. Reply directly to this email to contact the enquirer.</p></div></div></body></html>`;
+  return `<!doctype html><html><body style="margin:0;padding:24px;background:#f4f7fb;font-family:Arial,'Noto Sans SC',sans-serif;color:#17243a"><div style="max-width:760px;margin:0 auto;background:#fff;border:1px solid #dce7f4;border-radius:16px;overflow:hidden"><div style="padding:22px 26px;background:#edf5ff;border-bottom:4px solid #d3a62c"><div style="font-size:12px;font-weight:800;letter-spacing:1.6px;color:#1768c4">QUANTUM YIJING INTERNATIONAL ACADEMY</div><h2 style="margin:8px 0 0;color:#0b2f66">New Website Enquiry</h2></div><div style="padding:26px"><p style="margin:0 0 18px;color:#526a85">Reference: <strong style="color:#173b63">${escapeHtml(meta.reference)}</strong></p><table style="border-collapse:separate;border-spacing:0;width:100%;border:1px solid #e2eaf3;border-radius:10px;overflow:hidden">${row('Name',data.name)}${row('Email',data.email)}${row('WhatsApp / Phone',data.phone)}${row('Country',data.country)}${row('Interest',data.interest)}${row('Language',data.language === 'zh' ? 'Chinese' : 'English')}${row('Marketing Source',data.marketingSource || 'Website')}${row('Campaign',data.campaignCode || '—')}${row('Affiliate',data.affiliateCode || '—')}${row('Submitted',meta.submitted)}${row('Message',data.message)}</table><p style="margin:20px 0 0;font-size:12px;color:#71839a">Submitted through quantumyijing.com. Reply directly to this email to contact the enquirer.</p></div></div></body></html>`;
 }
 
 export async function onRequestPost(context) {
@@ -159,6 +183,18 @@ export async function onRequestPost(context) {
     language: body.language === 'zh' ? 'zh' : 'en'
   };
 
+  const attribution = {
+    marketingSource: clean(body.marketingSource, 80) || 'Website',
+    campaignCode: clean(body.campaignCode, 100),
+    landingPage: clean(body.landingPage, 200),
+    referrer: clean(body.referrer, 400),
+    utmSource: clean(body.utmSource, 100),
+    utmMedium: clean(body.utmMedium, 100),
+    utmCampaign: clean(body.utmCampaign, 100),
+    utmContent: clean(body.utmContent, 120),
+    affiliateCode: clean(body.affiliateCode, 80)
+  };
+
   const allowedInterests = new Set(['General Enquiry','Academy Course','Bazi Consultation','Feng Shui Consultation','Baby Naming','Research Collaboration','Media / Speaking','Other']);
   const startedAt = Number(body.startedAt || 0);
   const elapsed = Date.now() - startedAt;
@@ -182,7 +218,8 @@ export async function onRequestPost(context) {
 
   try {
     // Save first so the enquiry remains recorded even if email delivery later fails.
-    await saveEnquiry(context.env.ENQUIRIES_DB, data, meta);
+    const inserted = await saveEnquiry(context.env.ENQUIRIES_DB, data, meta);
+    await saveAttribution(context.env.ENQUIRIES_DB, inserted?.id, attribution);
 
     await Promise.all([
       sendEmail(context.env.RESEND_API_KEY, {
@@ -190,7 +227,7 @@ export async function onRequestPost(context) {
         to: [INTERNAL_ADDRESS],
         reply_to: data.email,
         subject: `[Website Enquiry] ${subjectTag} — ${data.name}`,
-        html: internalHtml(data, meta),
+        html: internalHtml({ ...data, ...attribution }, meta),
         text: `New website enquiry\nReference: ${reference}\nName: ${data.name}\nEmail: ${data.email}\nPhone: ${data.phone}\nCountry: ${data.country}\nInterest: ${data.interest}\nMessage: ${data.message}`
       }),
       sendEmail(context.env.RESEND_API_KEY, {
