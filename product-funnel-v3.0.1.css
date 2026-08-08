@@ -1,0 +1,6 @@
+/* Append this block to the bottom of product-funnel.css */
+.product-about{padding:48px 0;background:#f5f8fc}
+.product-about-card{background:#fff;border:1px solid #d9e4f2;border-radius:24px;padding:32px;box-shadow:0 16px 40px rgba(8,43,91,.08)}
+.product-about-copy{white-space:pre-line;font-size:1.05rem;line-height:1.8;color:#27415f;max-width:1000px}
+.product-about-card .marketing-eyebrow{margin-bottom:14px}
+@media (max-width:720px){.product-about{padding:32px 0}.product-about-card{padding:24px}.product-about-copy{font-size:1rem;line-height:1.72}}
