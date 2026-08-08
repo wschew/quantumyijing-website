@@ -168,6 +168,11 @@
 
     'Quantum YiJing® International Academy': 'Quantum YiJing® 国际学院',
     'Where Ancient Wisdom Meets Modern Scientific Thinking': '古老智慧 · 现代科学思维',
+    'Academy': '学院',
+    'Academic Programmes': '学院课程',
+    'Research': '研究',
+    'Publications': '出版物',
+    'Marketing Hub': '市场资讯',
     'Explore': '探索',
     'Connect': '联系',
     'Enquiry Form': '咨询表格',

@@ -92,3 +92,25 @@
 @media(max-width:900px){
   .marketing-footer .legal-line{flex-wrap:wrap;white-space:normal}
 }
+
+
+/* v2.8.4 — standardize DBP/marketing footers with the main Academy footer.
+   No decorative link icons; consistent brand lockup, columns and copyright line. */
+.standardized-footer{padding:44px 0 24px;background:#071e3d;color:#dbe8f8}
+.standardized-footer .standard-footer-brand{display:flex;align-items:center;gap:16px;margin-bottom:34px}
+.standardized-footer .standard-footer-logo-wrap{position:relative;display:inline-grid;place-items:center;width:72px;height:72px;flex:0 0 72px}
+.standardized-footer .standard-footer-logo-wrap img{width:72px;height:72px;object-fit:contain}
+.standardized-footer .standard-footer-logo-wrap::after{content:"®";position:absolute;right:-2px;top:-3px;font-size:12px;font-weight:800;color:#fff;line-height:1}
+.standardized-footer .standard-footer-brand>div{display:flex;flex-direction:column}
+.standardized-footer .standard-footer-brand strong{margin:0 0 2px;color:#fff;font-size:21px;line-height:1.25}
+.standardized-footer .standard-footer-brand span{margin:0;color:#fff;font-size:13px;letter-spacing:.15em;text-transform:uppercase}
+.standardized-footer .standard-footer-brand small{display:block;margin-top:10px;color:#a9bdd5;font-size:14px;line-height:1.5}
+.standardized-footer .standard-footer-columns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:48px;margin:0 0 34px}
+.standardized-footer .standard-footer-columns>div{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.standardized-footer .standard-footer-columns strong{margin:0 0 4px;color:#fff;font-size:16px}
+.standardized-footer .standard-footer-columns a{display:block;margin:0;color:#dbe8f8;text-decoration:none;font-size:14px;line-height:1.45}
+.standardized-footer .standard-footer-columns a:hover{color:#fff;text-decoration:underline;text-underline-offset:3px}
+.standardized-footer .legal-line{display:block;border-top:1px solid rgba(255,255,255,.14);margin-top:0;padding-top:20px;color:#a9bdd5;font-size:13px;white-space:nowrap}
+.standardized-footer .legal-line span{display:inline;margin:0;font-size:inherit}
+@media(max-width:900px){.standardized-footer .standard-footer-columns{grid-template-columns:repeat(2,minmax(0,1fr));gap:32px}.standardized-footer .legal-line{white-space:normal}}
+@media(max-width:560px){.standardized-footer .standard-footer-brand{align-items:flex-start}.standardized-footer .standard-footer-columns{grid-template-columns:1fr;gap:26px}.standardized-footer .standard-footer-brand small{max-width:300px}}
