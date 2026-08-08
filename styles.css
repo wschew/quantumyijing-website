@@ -447,3 +447,76 @@ html[data-lang="zh"] .school-kicker{text-transform:none;letter-spacing:.08em}
   .brand-logo-wrap{flex-basis:46px;width:46px;height:46px}
   .brand-logo-wrap::after{top:-5px;right:-6px;font-size:9px}
 }
+
+/* v2.7.3 — Legal-link visibility + desktop navigation refinement */
+.consent-row a,
+.privacy-link,
+.terms-link,
+a[href*="privacy"],
+a[href*="terms"]{
+  color:#075fd1;
+  font-weight:700;
+  text-decoration:underline;
+  text-decoration-thickness:1.5px;
+  text-underline-offset:3px;
+}
+.consent-row a:hover,
+.privacy-link:hover,
+.terms-link:hover,
+a[href*="privacy"]:hover,
+a[href*="terms"]:hover{
+  color:#043f96;
+}
+
+/* Keep the complete desktop navigation visible on normal notebook/desktop widths.
+   The hamburger is reserved for genuinely narrow layouts. */
+@media(min-width:1181px) and (max-width:1500px){
+  .site-header{
+    grid-template-columns:minmax(220px,auto) minmax(0,1fr) auto;
+    gap:12px;
+    padding-left:clamp(14px,2vw,30px);
+    padding-right:clamp(14px,2vw,30px);
+  }
+  .brand{min-width:220px}
+  .main-nav{
+    position:static;
+    display:flex;
+    flex-direction:row;
+    align-items:center;
+    justify-content:center;
+    gap:clamp(7px,.75vw,13px);
+    max-height:none;
+    overflow:visible;
+    padding:0;
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
+  }
+  .main-nav a{padding:0;font-size:.72rem}
+  .menu-toggle{display:none}
+  .lang-toggle{min-width:62px;padding-inline:8px}
+}
+
+@media(max-width:1180px){
+  .site-header{grid-template-columns:auto auto auto;justify-content:space-between}
+  .brand{min-width:0}
+  .menu-toggle{display:block}
+  .main-nav{
+    position:absolute;
+    display:none;
+    top:84px;
+    left:18px;
+    right:18px;
+    flex-direction:column;
+    align-items:stretch;
+    gap:0;
+    max-height:calc(100vh - 110px);
+    overflow:auto;
+    padding:15px;
+    border-radius:16px;
+    background:rgba(255,255,255,.99);
+    box-shadow:var(--shadow);
+  }
+  .main-nav.open{display:flex}
+  .main-nav a{padding:9px;font-size:.86rem}
+}

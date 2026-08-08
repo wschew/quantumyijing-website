@@ -10,3 +10,11 @@
 .consent-row a{color:#b9dcff;text-decoration:underline;text-underline-offset:2px}
 @media(max-width:1080px){.site-footer .footer-columns{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:650px){.site-footer .footer-columns{grid-template-columns:1fr}}
+
+/* v2.7.3 — legal-link visibility across DBP marketing and landing forms */
+.consent-row a,
+.marketing-body a[href*="privacy"],
+.marketing-body a[href*="terms"]{color:#075fd1!important;font-weight:700;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}
+.consent-row a:hover,
+.marketing-body a[href*="privacy"]:hover,
+.marketing-body a[href*="terms"]:hover{color:#043f96!important}
