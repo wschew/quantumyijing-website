@@ -114,3 +114,24 @@
 .standardized-footer .legal-line span{display:inline;margin:0;font-size:inherit}
 @media(max-width:900px){.standardized-footer .standard-footer-columns{grid-template-columns:repeat(2,minmax(0,1fr));gap:32px}.standardized-footer .legal-line{white-space:normal}}
 @media(max-width:560px){.standardized-footer .standard-footer-brand{align-items:flex-start}.standardized-footer .standard-footer-columns{grid-template-columns:1fr;gap:26px}.standardized-footer .standard-footer-brand small{max-width:300px}}
+
+/* v2.8.5 — unify every DBP/marketing footer with the main Academy footer. */
+.dbp-standard-footer{padding:45px clamp(20px,4vw,65px) 24px;color:rgba(255,255,255,.86);background:#061b42}
+.dbp-standard-footer .footer-brand{display:flex;align-items:center;gap:15px}
+.dbp-standard-footer .brand-logo-wrap{width:68px;height:68px;border-radius:50%;overflow:visible;position:relative;flex:0 0 68px;box-shadow:none}
+.dbp-standard-footer .brand-logo-wrap img{width:68px;height:68px;border-radius:50%;object-fit:cover;display:block}
+.dbp-standard-footer .footer-brand div{display:flex;flex-direction:column}
+.dbp-standard-footer .footer-brand strong{font:800 1.15rem Manrope,sans-serif;color:#fff;margin:0}
+.dbp-standard-footer .footer-brand span{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.86);margin:0}
+.dbp-standard-footer .footer-brand small{margin-top:7px;max-width:310px;color:rgba(255,255,255,.58);font-size:.78rem}
+.dbp-standard-footer .footer-columns{display:grid;grid-template-columns:repeat(4,1fr);gap:36px;margin:35px 0}
+.dbp-standard-footer .footer-columns div{display:flex;flex-direction:column;align-items:flex-start;gap:7px}
+.dbp-standard-footer .footer-columns strong{color:#fff;margin:0}
+.dbp-standard-footer .footer-columns a,.dbp-standard-footer .footer-columns span{display:block;margin:0;font-size:.88rem;color:rgba(255,255,255,.65);text-decoration:none;font-weight:400}
+.dbp-standard-footer .footer-columns a:hover{color:#fff;text-decoration:none}
+.dbp-standard-footer .footer-columns a::before{content:none!important;display:none!important}
+.dbp-standard-footer a[href*="privacy"],.dbp-standard-footer a[href*="terms"]{color:rgba(255,255,255,.65)!important;font-weight:400!important;text-decoration:none!important}
+.dbp-standard-footer .copyright{padding-top:18px;border-top:1px solid rgba(255,255,255,.12);font-size:.78rem;color:rgba(255,255,255,.52);white-space:nowrap}
+.dbp-standard-footer .copyright span{display:inline;margin:0;font-size:inherit;color:inherit}
+@media(max-width:1080px){.dbp-standard-footer .footer-columns{grid-template-columns:repeat(2,1fr)}.dbp-standard-footer .copyright{white-space:normal}}
+@media(max-width:650px){.dbp-standard-footer .footer-columns{grid-template-columns:1fr}.dbp-standard-footer .footer-brand{align-items:flex-start}}
