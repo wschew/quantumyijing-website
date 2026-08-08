@@ -135,3 +135,29 @@
 .dbp-standard-footer .copyright span{display:inline;margin:0;font-size:inherit;color:inherit}
 @media(max-width:1080px){.dbp-standard-footer .footer-columns{grid-template-columns:repeat(2,1fr)}.dbp-standard-footer .copyright{white-space:normal}}
 @media(max-width:650px){.dbp-standard-footer .footer-columns{grid-template-columns:1fr}.dbp-standard-footer .footer-brand{align-items:flex-start}}
+
+/* v2.8.6 — DBP footer must exactly follow the main Academy footer standard. */
+.dbp-standard-footer .brand-logo-wrap::after{
+  content:"®";
+  position:absolute;
+  top:-6px;
+  right:-7px;
+  z-index:3;
+  color:#073b8c;
+  font:800 11px/1 Arial,sans-serif;
+  background:#fff;
+  border-radius:50%;
+  padding:1px;
+}
+@media (min-width:651px){
+  .dbp-standard-footer .footer-brand small{
+    max-width:none;
+    white-space:nowrap;
+  }
+}
+@media (max-width:650px){
+  .dbp-standard-footer .footer-brand small{
+    max-width:310px;
+    white-space:normal;
+  }
+}
