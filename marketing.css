@@ -45,3 +45,50 @@
 .marketing-footer .footer-identity>span:first-of-type{margin-top:0;color:#fff;font-weight:600}
 .marketing-footer .legal-line{line-height:1.5}
 @media (max-width:900px){.marketing-footer .footer-tagline,.marketing-footer .legal-line{white-space:normal}}
+
+/* v2.8.3 — footer line + navigation icon refinement */
+.marketing-footer .legal-line{
+  display:flex;
+  align-items:center;
+  gap:.38rem;
+  flex-wrap:nowrap;
+}
+.marketing-footer .legal-line #year,
+.marketing-footer .legal-line span{
+  display:inline!important;
+  margin:0!important;
+  font-size:inherit!important;
+  line-height:inherit!important;
+}
+
+/* Clean monochrome footer navigation icons. */
+.marketing-footer .cols>div:not(.footer-identity) a{
+  display:flex;
+  align-items:center;
+  gap:.55rem;
+}
+.marketing-footer .cols>div:not(.footer-identity) a::before{
+  width:1.05rem;
+  min-width:1.05rem;
+  text-align:center;
+  color:#9fc7f4;
+  font-size:.9rem;
+  line-height:1;
+}
+.marketing-footer a[href*="events"]::before{content:"▣"}
+.marketing-footer a[href*="promotions"]::before{content:"✦"}
+.marketing-footer a[href*="news"]::before{content:"≡";font-weight:800}
+.marketing-footer a[href*="products"]::before{content:"◆";font-size:.72rem}
+.marketing-footer a[href*="#contact"]::before{content:"✉"}
+.marketing-footer a[href^="mailto:"]::before{content:"@";font-weight:800}
+.marketing-footer a[href*="tiktok"]::before{content:"♪"}
+.marketing-footer a[href*="youtube"]::before{content:"▶";font-size:.72rem}
+.marketing-footer a[href*="privacy"]::before{content:"◉";font-size:.72rem}
+.marketing-footer a[href*="terms"]::before{content:"✓"}
+.marketing-footer a[href*="disclaimer"]::before{content:"!";font-weight:800}
+.marketing-footer a[href*="refund"]::before{content:"↶"}
+.marketing-footer a[href*="cookie"]::before{content:"○"}
+
+@media(max-width:900px){
+  .marketing-footer .legal-line{flex-wrap:wrap;white-space:normal}
+}
