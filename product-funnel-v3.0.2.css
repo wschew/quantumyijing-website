@@ -1,0 +1,13 @@
+/* Quantum YiJing v3.0.2
+   Append to the BOTTOM of the existing product-funnel.css.
+   1) reduces excess hero whitespace
+   2) supports the fifth Language information card
+*/
+.product-hero{padding-bottom:34px!important}
+.product-hero .product-shell{padding-bottom:0!important}
+.product-stats{align-items:stretch}
+.product-stat{min-height:96px}
+@media (max-width:720px){
+  .product-hero{padding-bottom:24px!important}
+  .product-stat{min-height:auto}
+}
