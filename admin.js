@@ -6,7 +6,8 @@
     page: 1, pageSize: 25, total: 0, selected: null,
     studentPage: 1, studentPageSize: 25, studentTotal: 0, selectedStudent: null,
     activeModule: 'crm',
-    products: []
+    products: [],
+    orders: []
   };
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 
@@ -325,8 +326,9 @@
   const money = (value,currency='MYR') => `${currency === 'MYR' ? 'RM' : currency} ${Number(value||0).toFixed(2)}`;
   async function loadCommerceStats(){
     const response=await api('/api/admin?action=commercestats'), data=await response.json();
-    $('commerceStatProducts').textContent=data.summary.products; $('commerceStatOrders').textContent=data.summary.orders; $('commerceStatPaid').textContent=data.summary.paid; $('commerceStatPending').textContent=data.summary.pending; $('commerceStatRevenue').textContent=money(data.summary.revenue);
-    renderBars('commerceChannelChart',data.byChannel||[],'label'); renderBars('commerceProviderChart',data.byProvider||[],'label'); renderBars('commerceStatusChart',data.byStatus||[],'label');
+    $('commerceStatProducts').textContent=data.summary.products; $('commerceStatOrders').textContent=data.summary.orders; $('commerceStatPaid').textContent=data.summary.paid; $('commerceStatPending').textContent=data.summary.pending;
+    $('commerceStatGross').textContent=money(data.summary.grossSales); $('commerceStatFees').textContent=money(data.summary.providerFees); $('commerceStatNet').textContent=money(data.summary.netSales); $('commerceStatBank').textContent=money(data.summary.bankReceived);
+    renderBars('commerceChannelChart',data.byChannel||[],'label'); renderBars('commerceProviderChart',data.byProvider||[],'label'); renderBars('commerceStatusChart',data.byStatus||[],'label'); renderBars('commerceMethodChart',data.byMethod||[],'label');
   }
   async function loadCommerceProducts(){
     const response=await api('/api/admin?action=commerceproducts'), data=await response.json(); state.products=data.results||[];
@@ -337,15 +339,52 @@
   }
   async function loadCommerceOrders(){
     setMessage('commerceDashboardMessage','Loading…',true); const response=await api('/api/admin?action=commerceorders'), data=await response.json(); const body=$('commerceOrdersBody'); body.innerHTML='';
-    (data.results||[]).forEach(r=>body.insertAdjacentHTML('beforeend',`<tr><td><strong>${esc(r.order_reference)}</strong><br><small>${esc(String(r.created_at||'').slice(0,16).replace('T',' '))}</small></td><td><strong>${esc(r.customer_name)}</strong><br><small>${esc(r.customer_email)}</small></td><td>${esc(r.product_name||'—')}<br><small>${r.quantity||1} × ${esc(r.sku||'')}</small></td><td>${esc(r.sales_channel)}</td><td>${esc(r.payment_provider)}<br><span class="payment-pill ${esc(r.payment_status)}">${esc(r.payment_status)}</span></td><td class="money">${money(r.total,r.currency)}</td><td>${esc(r.campaign_code||'—')}<br><small>${r.affiliate_code?`Affiliate: ${esc(r.affiliate_code)}`:''}</small></td><td></td></tr>`));
-    if(!(data.results||[]).length) body.innerHTML='<tr><td colspan="8">No orders yet.</td></tr>'; $('commerceOrderCount').textContent=`${(data.results||[]).length} order${(data.results||[]).length===1?'':'s'}`; setMessage('commerceDashboardMessage','',true);
+    state.orders=data.results||[];
+    state.orders.forEach(r=>body.insertAdjacentHTML('beforeend',`<tr><td><strong>${esc(r.order_reference)}</strong><br><small>${esc(String(r.created_at||'').slice(0,16).replace('T',' '))}</small></td><td><strong>${esc(r.customer_name)}</strong><br><small>${esc(r.customer_email)}</small></td><td>${esc(r.product_name||'—')}<br><small>${r.quantity||1} × ${esc(r.sku||'')}</small></td><td>${esc(r.sales_channel)}</td><td>${esc(r.payment_provider)}<br><span class="payment-pill ${esc(r.payment_status)}">${esc(r.payment_status)}</span>${r.verification_status?`<br><small>${esc(r.verification_status)}</small>`:''}</td><td class="money">${money(r.total,r.currency)}</td><td>${esc(r.campaign_code||'—')}<br><small>${r.affiliate_code?`Affiliate: ${esc(r.affiliate_code)}`:''}</small></td><td><button type="button" class="view-button" data-record-payment="${r.id}">Record Payment</button></td></tr>`));
+    if(!state.orders.length) body.innerHTML='<tr><td colspan="8">No orders yet.</td></tr>'; $('commerceOrderCount').textContent=`${state.orders.length} order${state.orders.length===1?'':'s'}`;
+    const paymentOrder=$('paymentOrder'); if(paymentOrder) paymentOrder.innerHTML='<option value="">Select order</option>'+state.orders.map(o=>`<option value="${o.id}" data-total="${Number(o.total||0)}" data-currency="${esc(o.currency||'MYR')}">${esc(o.order_reference)} — ${esc(o.customer_name)} — ${money(o.total,o.currency)}</option>`).join('');
+    setMessage('commerceDashboardMessage','',true);
   }
-  async function loadCommerceAll(){await Promise.all([loadCommerceStats(),loadCommerceProducts(),loadCommerceOrders()]);}
+  async function loadCommercePayments(){
+    const response=await api('/api/admin?action=commercepayments'), data=await response.json(); const body=$('commercePaymentsBody'); body.innerHTML='';
+    (data.results||[]).forEach(r=>body.insertAdjacentHTML('beforeend',`<tr><td><strong>${esc(r.order_reference)}</strong><br><small>${esc(r.settlement_date||String(r.paid_at||'').slice(0,10)||'')}</small></td><td><strong>${esc(r.customer_name)}</strong><br><small>${esc(r.product_name||r.sku||'—')}</small></td><td>${esc(r.payment_method||r.provider)}<br><small>${esc(r.provider||'')}</small></td><td class="money">${money(r.gross_amount,r.currency)}</td><td class="money">${money(r.provider_fee,r.currency)}</td><td class="money">${money(r.net_amount,r.currency)}</td><td class="money">${money(r.bank_received_amount,r.currency)}</td><td><strong>${esc(r.verification_status||'Unverified')}</strong><br><small>Receipt: ${esc(r.customer_receipt_issuer||'—')}</small></td></tr>`));
+    if(!(data.results||[]).length) body.innerHTML='<tr><td colspan="8">No payment records yet.</td></tr>';
+  }
+
+  async function loadCommerceAll(){await Promise.all([loadCommerceStats(),loadCommerceProducts(),loadCommerceOrders(),loadCommercePayments()]);}
   function slugify(value){return String(value||'').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,120);}
   function openProduct(row=null){delete $('productSlug').dataset.manual; $('productId').value=row?.id||''; $('productDialogTitle').textContent=row?'Edit Product':'New Product'; $('productSku').value=row?.sku||''; $('productSlug').value=row?.slug||''; $('productType').value=row?.product_type||'course'; $('productStatus').value=row?.status||'Draft'; $('productPrice').value=row?.price??''; $('productCurrency').value=row?.currency||'MYR'; $('productChannel').value=row?.sales_channel||'Website'; $('productProvider').value=row?.payment_provider||'SenangPay'; $('productNameEn').value=row?.name_en||''; $('productNameZh').value=row?.name_zh||''; $('productDescriptionEn').value=row?.description_en||''; $('productDescriptionZh').value=row?.description_zh||''; $('productStartsOn').value=row?.starts_on||''; $('productEndsOn').value=row?.ends_on||''; $('productTimeEn').value=row?.time_en||''; $('productTimeZh').value=row?.time_zh||''; $('productDeliveryEn').value=row?.delivery_en||''; $('productDeliveryZh').value=row?.delivery_zh||''; $('productInstructor').value=row?.instructor||''; $('productHeroImage').value=row?.hero_image_url||''; $('productEarlyBirdPrice').value=row?.early_bird_price??''; $('productEarlyBirdEnd').value=row?.early_bird_end||''; $('productExternalUrl').value=row?.external_purchase_url||''; setMessage('productDialogMessage','',true); $('productDialog').showModal();}
   async function saveProduct(){try{const id=$('productId').value, response=await api(`/api/admin?action=productsave${id?`&id=${id}`:''}`,{method:id?'PATCH':'POST',body:JSON.stringify({sku:$('productSku').value,slug:$('productSlug').value||slugify($('productNameEn').value),productType:$('productType').value,status:$('productStatus').value,price:$('productPrice').value,currency:$('productCurrency').value,salesChannel:$('productChannel').value,paymentProvider:$('productProvider').value,nameEn:$('productNameEn').value,nameZh:$('productNameZh').value,descriptionEn:$('productDescriptionEn').value,descriptionZh:$('productDescriptionZh').value,startsOn:$('productStartsOn').value,endsOn:$('productEndsOn').value,timeEn:$('productTimeEn').value,timeZh:$('productTimeZh').value,deliveryEn:$('productDeliveryEn').value,deliveryZh:$('productDeliveryZh').value,instructor:$('productInstructor').value,heroImageUrl:$('productHeroImage').value,earlyBirdPrice:$('productEarlyBirdPrice').value,earlyBirdEnd:$('productEarlyBirdEnd').value,externalPurchaseUrl:$('productExternalUrl').value})}); const data=await response.json(); setMessage('productDialogMessage',`Product saved. Public page: /product/${data.slug||$('productSlug').value}`,true); $('productSlug').value=data.slug||$('productSlug').value; await loadCommerceAll();}catch(e){setMessage('productDialogMessage',e.message);}}
   function openOrder(){if(!state.products.length){setMessage('commerceDashboardMessage','Create an active product first.');return;} $('orderCustomerName').value='';$('orderCustomerEmail').value='';$('orderCustomerPhone').value='';$('orderQuantity').value='1';$('orderCampaign').value='';$('orderAffiliate').value='';setMessage('orderDialogMessage','',true);$('orderDialog').showModal();}
   async function saveOrder(){try{const response=await api('/api/admin?action=ordercreate',{method:'POST',body:JSON.stringify({customerName:$('orderCustomerName').value,customerEmail:$('orderCustomerEmail').value,customerPhone:$('orderCustomerPhone').value,productId:Number($('orderProduct').value),quantity:Number($('orderQuantity').value),salesChannel:$('orderChannel').value,paymentProvider:$('orderProvider').value,paymentStatus:$('orderPaymentStatus').value,campaignCode:$('orderCampaign').value,affiliateCode:$('orderAffiliate').value})});const data=await response.json();setMessage('orderDialogMessage',`Order ${data.orderReference} created — ${money(data.total,data.currency)}.`,true);await loadCommerceAll();}catch(e){setMessage('orderDialogMessage',e.message);}}
+  function recalcPayment(){
+    const gross=Number($('paymentGross').value||0), fee=Number($('paymentFee').value||0), net=Math.max(gross-fee,0);
+    if(document.activeElement!==$('paymentNet')) $('paymentNet').value=net.toFixed(2);
+    if(!$('paymentBank').dataset.manual) $('paymentBank').value=net.toFixed(2);
+  }
+  function openPayment(orderId=''){
+    $('paymentOrder').value=String(orderId||''); $('paymentMethod').value='SenangPay'; $('paymentProviderName').value='SenangPay'; $('paymentTransactionRef').value=''; $('paymentRecordStatus').value='Paid'; $('paymentVerification').value='Verified'; $('paymentFee').value='0'; $('paymentSettlementDate').value=new Date().toISOString().slice(0,10); $('paymentReceiptIssuer').value='Quantum YiJing'; $('paymentNotes').value=''; delete $('paymentBank').dataset.manual;
+    const option=$('paymentOrder').selectedOptions[0], total=Number(option?.dataset.total||0); $('paymentGross').value=total.toFixed(2); $('paymentNet').value=total.toFixed(2); $('paymentBank').value=total.toFixed(2); setMessage('paymentDialogMessage','',true); $('paymentDialog').showModal();
+  }
+  function applyPaymentMethodDefaults(){
+    const method=$('paymentMethod').value;
+    if(method==='Google Play Books'){ $('paymentProviderName').value='Google Play Books'; $('paymentRecordStatus').value='External'; $('paymentReceiptIssuer').value='External Platform'; $('paymentVerification').value='Reconciled'; }
+    else if(method==='Bank Transfer'){ $('paymentProviderName').value='Bank Transfer'; $('paymentRecordStatus').value='Paid'; $('paymentReceiptIssuer').value='Quantum YiJing'; $('paymentVerification').value='Verified'; }
+    else if(method==='SenangPay'){ $('paymentProviderName').value='SenangPay'; $('paymentRecordStatus').value='Paid'; $('paymentReceiptIssuer').value='Quantum YiJing'; $('paymentVerification').value='Verified'; }
+    else if(method==='Marketplace'){ $('paymentProviderName').value='Marketplace'; $('paymentRecordStatus').value='External'; $('paymentReceiptIssuer').value='External Platform'; }
+  }
+  async function savePayment(){
+    try{
+      const response=await api('/api/admin?action=paymentsave',{method:'POST',body:JSON.stringify({
+        orderId:Number($('paymentOrder').value),paymentMethod:$('paymentMethod').value,provider:$('paymentProviderName').value,
+        transactionReference:$('paymentTransactionRef').value,status:$('paymentRecordStatus').value,
+        verificationStatus:$('paymentVerification').value,grossAmount:$('paymentGross').value,providerFee:$('paymentFee').value,
+        netAmount:$('paymentNet').value,bankReceivedAmount:$('paymentBank').value,settlementDate:$('paymentSettlementDate').value,
+        customerReceiptIssuer:$('paymentReceiptIssuer').value,notes:$('paymentNotes').value,currency:'MYR'
+      })});
+      const data=await response.json(); setMessage('paymentDialogMessage',`Payment record saved. Net ${money(data.netAmount)} · Bank received ${money(data.bankReceivedAmount)}.`,true); await loadCommerceAll();
+    }catch(e){setMessage('paymentDialogMessage',e.message);}
+  }
   function handleCommerceError(error){if(error.status===401){sessionStorage.removeItem('qyAdminToken');showLogin();setMessage('loginMessage','Your session is not authorized. Please log in again.');}else setMessage('commerceDashboardMessage',error.message);}
 
   function handleStudentError(error){
@@ -367,6 +406,9 @@
   $('commerceRefreshButton').addEventListener('click', () => loadCommerceAll().catch(handleCommerceError));
   $('newProductButton').addEventListener('click', () => openProduct());
   $('newOrderButton').addEventListener('click', openOrder);
+  $('newPaymentButton').addEventListener('click',()=>openPayment());
+  $('paymentDialogClose').addEventListener('click',()=>$('paymentDialog').close()); $('paymentClose').addEventListener('click',()=>$('paymentDialog').close()); $('paymentSave').addEventListener('click',savePayment);
+  $('paymentMethod').addEventListener('change',applyPaymentMethodDefaults); $('paymentGross').addEventListener('input',recalcPayment); $('paymentFee').addEventListener('input',recalcPayment); $('paymentBank').addEventListener('input',()=>{$('paymentBank').dataset.manual='1';}); $('paymentOrder').addEventListener('change',()=>{const o=$('paymentOrder').selectedOptions[0]; const t=Number(o?.dataset.total||0); $('paymentGross').value=t.toFixed(2); recalcPayment();});
   $('productDialogClose').addEventListener('click',()=>$('productDialog').close()); $('productClose').addEventListener('click',()=>$('productDialog').close()); $('productSave').addEventListener('click',saveProduct);
   $('productNameEn').addEventListener('input',()=>{if(!$('productId').value && !$('productSlug').dataset.manual){$('productSlug').value=slugify($('productNameEn').value);}}); $('productSlug').addEventListener('input',()=>{$('productSlug').dataset.manual='1';});
   $('orderDialogClose').addEventListener('click',()=>$('orderDialog').close()); $('orderClose').addEventListener('click',()=>$('orderDialog').close()); $('orderSave').addEventListener('click',saveOrder);
@@ -396,6 +438,7 @@
     const followButton=e.target.closest('[data-follow-days]'); if(followButton) quickFollowUp(Number(followButton.dataset.followDays));
     const studentButton=e.target.closest('[data-open-student]'); if(studentButton) openStudentById(Number(studentButton.dataset.openStudent));
     const productButton=e.target.closest('[data-edit-product]'); if(productButton){const row=state.products.find(p=>Number(p.id)===Number(productButton.dataset.editProduct)); if(row) openProduct(row);}
+    const paymentButton=e.target.closest('[data-record-payment]'); if(paymentButton) openPayment(paymentButton.dataset.recordPayment);
   });
   $('dialogClose').addEventListener('click', () => $('recordDialog').close());
   $('cancelRecord').addEventListener('click', () => $('recordDialog').close());

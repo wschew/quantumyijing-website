@@ -450,15 +450,28 @@ async function studentExport(context, url) {
 const productTypes = new Set(['course','membership','consultation','ebook','digital','physical','event','other']);
 const productStatuses = new Set(['Draft','Active','Inactive','Archived']);
 const paymentStatuses = new Set(['Pending','Paid','Failed','Cancelled','Refunded','External']);
+const paymentMethods = new Set(['SenangPay','Bank Transfer','Google Play Books','Cash','Manual','Marketplace','Other']);
+const verificationStatuses = new Set(['Unverified','Verified','Reconciled']);
 
 async function commerceStats(context) {
   const db=context.env.ENQUIRIES_DB;
   const products=await db.prepare(`SELECT COUNT(*) total, SUM(CASE WHEN status='Active' THEN 1 ELSE 0 END) active FROM products`).first();
-  const orders=await db.prepare(`SELECT COUNT(*) total, SUM(CASE WHEN payment_status IN ('Paid','External') THEN 1 ELSE 0 END) paid, SUM(CASE WHEN payment_status='Pending' THEN 1 ELSE 0 END) pending, SUM(CASE WHEN payment_status IN ('Paid','External') THEN total ELSE 0 END) revenue FROM orders`).first();
+  const orders=await db.prepare(`SELECT COUNT(*) total, SUM(CASE WHEN payment_status IN ('Paid','External') THEN 1 ELSE 0 END) paid, SUM(CASE WHEN payment_status='Pending' THEN 1 ELSE 0 END) pending FROM orders`).first();
+  const moneySummary=await db.prepare(`SELECT
+      COALESCE(SUM(gross_amount),0) gross_sales,
+      COALESCE(SUM(provider_fee),0) provider_fees,
+      COALESCE(SUM(net_amount),0) net_sales,
+      COALESCE(SUM(bank_received_amount),0) bank_received
+    FROM payments WHERE status IN ('Paid','External') OR verification_status IN ('Verified','Reconciled')`).first();
   const byChannel=await db.prepare(`SELECT sales_channel label, COUNT(*) count FROM orders GROUP BY sales_channel ORDER BY count DESC`).all();
   const byProvider=await db.prepare(`SELECT payment_provider label, COUNT(*) count FROM orders GROUP BY payment_provider ORDER BY count DESC`).all();
   const byStatus=await db.prepare(`SELECT payment_status label, COUNT(*) count FROM orders GROUP BY payment_status ORDER BY count DESC`).all();
-  return json({ok:true,summary:{products:Number(products?.active||0),orders:Number(orders?.total||0),paid:Number(orders?.paid||0),pending:Number(orders?.pending||0),revenue:Number(orders?.revenue||0)},byChannel:byChannel.results||[],byProvider:byProvider.results||[],byStatus:byStatus.results||[]});
+  const byMethod=await db.prepare(`SELECT CASE WHEN trim(payment_method)='' THEN provider ELSE payment_method END label, COUNT(*) count FROM payments GROUP BY CASE WHEN trim(payment_method)='' THEN provider ELSE payment_method END ORDER BY count DESC`).all();
+  return json({ok:true,summary:{
+    products:Number(products?.active||0),orders:Number(orders?.total||0),paid:Number(orders?.paid||0),pending:Number(orders?.pending||0),
+    grossSales:Number(moneySummary?.gross_sales||0),providerFees:Number(moneySummary?.provider_fees||0),
+    netSales:Number(moneySummary?.net_sales||0),bankReceived:Number(moneySummary?.bank_received||0)
+  },byChannel:byChannel.results||[],byProvider:byProvider.results||[],byStatus:byStatus.results||[],byMethod:byMethod.results||[]});
 }
 
 async function commerceProducts(context) {
@@ -482,8 +495,69 @@ async function saveProduct(context,url) {
 }
 
 async function commerceOrders(context) {
-  const result=await context.env.ENQUIRIES_DB.prepare(`SELECT o.id,o.order_reference,o.customer_name,o.customer_email,o.customer_phone,o.currency,o.total,o.sales_channel,o.payment_provider,o.payment_status,o.campaign_code,o.affiliate_code,o.external_order_id,o.created_at,p.name_en product_name,p.sku,oi.quantity FROM orders o LEFT JOIN order_items oi ON oi.order_id=o.id LEFT JOIN products p ON p.id=oi.product_id ORDER BY o.id DESC LIMIT 200`).all();
+  const result=await context.env.ENQUIRIES_DB.prepare(`
+    SELECT o.id,o.order_reference,o.customer_name,o.customer_email,o.customer_phone,o.currency,o.total,
+      o.sales_channel,o.payment_provider,o.payment_status,o.campaign_code,o.affiliate_code,o.external_order_id,o.created_at,
+      p.name_en product_name,p.sku,oi.quantity,
+      py.id payment_id,py.payment_method,py.provider_transaction_id,py.gross_amount,py.provider_fee,py.net_amount,
+      py.bank_received_amount,py.settlement_date,py.verification_status,py.customer_receipt_issuer,py.status payment_record_status
+    FROM orders o
+    LEFT JOIN order_items oi ON oi.order_id=o.id
+    LEFT JOIN products p ON p.id=oi.product_id
+    LEFT JOIN payments py ON py.id=(SELECT MAX(p2.id) FROM payments p2 WHERE p2.order_id=o.id)
+    ORDER BY o.id DESC LIMIT 200
+  `).all();
   return json({ok:true,results:result.results||[]});
+}
+
+async function commercePayments(context) {
+  const result=await context.env.ENQUIRIES_DB.prepare(`
+    SELECT py.id,py.order_id,o.order_reference,o.customer_name,o.customer_email,o.sales_channel,
+      py.provider,py.payment_method,py.provider_transaction_id,py.amount,py.gross_amount,py.provider_fee,
+      py.net_amount,py.bank_received_amount,py.currency,py.status,py.settlement_date,py.verification_status,
+      py.verified_at,py.customer_receipt_issuer,py.notes,py.paid_at,py.created_at,
+      p.name_en product_name,p.sku
+    FROM payments py
+    JOIN orders o ON o.id=py.order_id
+    LEFT JOIN order_items oi ON oi.order_id=o.id
+    LEFT JOIN products p ON p.id=oi.product_id
+    ORDER BY py.id DESC LIMIT 300
+  `).all();
+  return json({ok:true,results:result.results||[]});
+}
+
+async function savePayment(context) {
+  let body; try{body=await context.request.json()}catch{return json({error:'Invalid request.'},400)}
+  const orderId=Number(body.orderId), method=clean(body.paymentMethod,60), provider=clean(body.provider,80)||method,
+    tx=clean(body.transactionReference,200), status=clean(body.status,30)||'Paid',
+    currency=clean(body.currency,10)||'MYR', settlementDate=clean(body.settlementDate,20),
+    verification=clean(body.verificationStatus,30)||'Unverified',
+    issuer=clean(body.customerReceiptIssuer,100)||'Quantum YiJing', notes=clean(body.notes,1000);
+  const gross=Number(body.grossAmount||0), fee=Number(body.providerFee||0),
+    net=body.netAmount===''||body.netAmount==null ? gross-fee : Number(body.netAmount),
+    bank=body.bankReceivedAmount===''||body.bankReceivedAmount==null ? net : Number(body.bankReceivedAmount);
+  if(!Number.isInteger(orderId)||orderId<1)return json({error:'Select a valid order.'},400);
+  if(!paymentMethods.has(method))return json({error:'Invalid payment method.'},400);
+  if(!paymentStatuses.has(status))return json({error:'Invalid payment status.'},400);
+  if(!verificationStatuses.has(verification))return json({error:'Invalid verification status.'},400);
+  if([gross,fee,net,bank].some(v=>!Number.isFinite(v)||v<0))return json({error:'Payment amounts must be valid non-negative numbers.'},400);
+  const db=context.env.ENQUIRIES_DB;
+  const order=await db.prepare(`SELECT id,total,currency,payment_status FROM orders WHERE id=?`).bind(orderId).first();
+  if(!order)return json({error:'Order not found.'},404);
+  const paidAt=(status==='Paid'||status==='External')?new Date().toISOString():'';
+  const verifiedAt=(verification==='Verified'||verification==='Reconciled')?new Date().toISOString():'';
+  const insert=await db.prepare(`INSERT INTO payments(
+    order_id,provider,provider_transaction_id,amount,currency,status,raw_reference,paid_at,
+    payment_method,gross_amount,provider_fee,net_amount,settlement_date,bank_received_amount,
+    verification_status,verified_at,customer_receipt_issuer,notes
+  ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(
+    orderId,provider,tx,gross,currency,status,tx,paidAt,
+    method,gross,fee,net,settlementDate,bank,verification,verifiedAt,issuer,notes
+  ).run();
+  const orderStatus=status==='External'?'External':(status==='Paid'?'Paid':status);
+  await db.prepare(`UPDATE orders SET payment_provider=?,payment_status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`)
+    .bind(provider,orderStatus,orderId).run();
+  return json({ok:true,id:insert.meta?.last_row_id,netAmount:net,bankReceivedAmount:bank});
 }
 
 function makeOrderReference(){return `QY-${new Date().toISOString().slice(0,10).replaceAll('-','')}-${crypto.randomUUID().slice(0,6).toUpperCase()}`}
@@ -523,6 +597,8 @@ export async function onRequest(context) {
     if (context.request.method === 'GET' && action === 'commerceproducts') return await commerceProducts(context);
     if ((context.request.method === 'POST' || context.request.method === 'PATCH') && action === 'productsave') return await saveProduct(context, url);
     if (context.request.method === 'GET' && action === 'commerceorders') return await commerceOrders(context);
+    if (context.request.method === 'GET' && action === 'commercepayments') return await commercePayments(context);
+    if (context.request.method === 'POST' && action === 'paymentsave') return await savePayment(context);
     if (context.request.method === 'POST' && action === 'ordercreate') return await createOrder(context);
     return json({ error: 'Unknown admin action.' }, 404);
   } catch (error) {

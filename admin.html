@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Academy Operating System | Quantum YiJing International Academy</title>
   <link rel="icon" href="images/quantum-yijing-logo.png">
-  <link rel="stylesheet" href="admin.css?v=3.0.0">
+  <link rel="stylesheet" href="admin.css?v=3.1.0">
 </head>
 <body>
   <main class="crm-shell">
@@ -27,7 +27,7 @@
       <header class="topbar">
         <div class="brand-lockup">
           <img src="images/quantum-yijing-logo.png" alt="" class="topbar-logo">
-          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v3.0</span></div>
+          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v3.1</span></div>
         </div>
         <div class="topbar-actions">
           <a href="index.html" class="text-link">View website</a>
@@ -210,19 +210,32 @@
           <article><span>Total orders</span><strong id="commerceStatOrders">0</strong></article>
           <article><span>Paid / External</span><strong id="commerceStatPaid">0</strong></article>
           <article><span>Pending</span><strong id="commerceStatPending">0</strong></article>
-          <article><span>Recorded revenue</span><strong id="commerceStatRevenue">RM 0.00</strong></article>
+          <article><span>Gross sales</span><strong id="commerceStatGross">RM 0.00</strong></article>
+          <article><span>Platform / provider fees</span><strong id="commerceStatFees">RM 0.00</strong></article>
+          <article><span>Net amount</span><strong id="commerceStatNet">RM 0.00</strong></article>
+          <article><span>Bank received</span><strong id="commerceStatBank">RM 0.00</strong></article>
         </section>
 
         <section class="insights-grid commerce-insights">
           <article class="panel"><div class="panel-heading"><h2>Orders by sales channel</h2></div><div id="commerceChannelChart" class="bar-list"></div></article>
           <article class="panel"><div class="panel-heading"><h2>Orders by payment provider</h2></div><div id="commerceProviderChart" class="bar-list"></div></article>
           <article class="panel"><div class="panel-heading"><h2>Payment status</h2></div><div id="commerceStatusChart" class="bar-list"></div></article>
+          <article class="panel"><div class="panel-heading"><h2>Recorded payment methods</h2></div><div id="commerceMethodChart" class="bar-list"></div></article>
         </section>
 
         <section class="panel records-panel">
           <div class="panel-heading records-heading"><div><h2>Orders</h2><p id="commerceOrderCount">0 orders</p></div><button id="commerceRefreshButton" class="secondary-button" type="button">Refresh</button></div>
-          <div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Product</th><th>Channel</th><th>Payment</th><th>Total</th><th>Campaign / Affiliate</th><th></th></tr></thead><tbody id="commerceOrdersBody"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Product</th><th>Channel</th><th>Payment</th><th>Total</th><th>Campaign / Affiliate</th><th>Accounting</th></tr></thead><tbody id="commerceOrdersBody"></tbody></table></div>
           <p id="commerceDashboardMessage" class="form-message" aria-live="polite"></p>
+        </section>
+
+        <section class="panel records-panel">
+          <div class="panel-heading records-heading">
+            <div><h2>Payment & Accounting Records</h2><p>Gross sale, provider fee, net settlement and bank receipt are stored separately.</p></div>
+            <button id="newPaymentButton" class="primary-button" type="button">+ Record Payment</button>
+          </div>
+          <div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer / Product</th><th>Method / Provider</th><th>Gross</th><th>Fees</th><th>Net</th><th>Bank received</th><th>Verification / Receipt</th></tr></thead><tbody id="commercePaymentsBody"></tbody></table></div>
+          <p id="commercePaymentMessage" class="form-message" aria-live="polite"></p>
         </section>
 
         <section class="panel records-panel commerce-products-panel">
@@ -343,6 +356,31 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=3.0.0" defer></script>
+
+  <dialog id="paymentDialog" class="record-dialog record-dialog-v24">
+    <form method="dialog">
+      <div class="dialog-header"><div><p class="eyebrow">PAYMENT & ACCOUNTING</p><h2>Record Payment / Settlement</h2></div><button id="paymentDialogClose" class="icon-button" type="button" aria-label="Close">×</button></div>
+      <div class="edit-grid edit-grid-v25">
+        <label>Order<select id="paymentOrder"></select></label>
+        <label>Payment method<select id="paymentMethod"><option>SenangPay</option><option>Bank Transfer</option><option>Google Play Books</option><option>Cash</option><option>Manual</option><option>Marketplace</option><option>Other</option></select></label>
+        <label>Provider / platform<input id="paymentProviderName" maxlength="80" placeholder="SenangPay / Google / Bank"></label>
+        <label>Transaction / settlement reference<input id="paymentTransactionRef" maxlength="200"></label>
+        <label>Payment status<select id="paymentRecordStatus"><option>Paid</option><option>External</option><option>Pending</option><option>Failed</option><option>Cancelled</option><option>Refunded</option></select></label>
+        <label>Verification<select id="paymentVerification"><option>Unverified</option><option>Verified</option><option>Reconciled</option></select></label>
+        <label>Gross sale<input id="paymentGross" type="number" min="0" step="0.01"></label>
+        <label>Provider / platform fee<input id="paymentFee" type="number" min="0" step="0.01" value="0"></label>
+        <label>Net amount<input id="paymentNet" type="number" min="0" step="0.01"></label>
+        <label>Amount received in bank<input id="paymentBank" type="number" min="0" step="0.01"></label>
+        <label>Settlement / payment date<input id="paymentSettlementDate" type="date"></label>
+        <label>Customer receipt issuer<select id="paymentReceiptIssuer"><option>Quantum YiJing</option><option>External Platform</option><option>Not Applicable</option></select></label>
+      </div>
+      <label>Accounting notes<textarea id="paymentNotes" rows="3" maxlength="1000" placeholder="e.g. Google payout after platform fee; bank transfer verified against statement."></textarea></label>
+      <p class="helper-text">External-platform sales should normally preserve Gross Sale, Platform Fee and Net Settlement separately. Customer receipt can be marked “External Platform”.</p>
+      <div class="dialog-actions"><button id="paymentSave" class="primary-button" type="button">Save Payment Record</button><button id="paymentClose" class="secondary-button" type="button">Close</button></div>
+      <p id="paymentDialogMessage" class="form-message" aria-live="polite"></p>
+    </form>
+  </dialog>
+
+  <script src="admin.js?v=3.1.0" defer></script>
 </body>
 </html>
