@@ -8,3 +8,10 @@
 .fx-result{margin-top:10px;font-size:1.15rem;font-weight:800;color:#fff}
 .fx-display small{display:block;margin-top:7px;max-width:720px;line-height:1.45;color:rgba(255,255,255,.76)}
 @media(max-width:720px){.fx-display select{width:100%;min-width:0}.fx-display label{display:block}.fx-display label span{display:block;margin-bottom:8px}}
+
+
+/* v3.2 — SenangPay secure checkout */
+#paymentActions{margin-top:16px}
+.senangpay-start-form{display:grid;gap:10px;padding:16px;border:1px solid #d5e4f5;border-radius:16px;background:#f5f9ff}
+.senangpay-pay-button{width:100%;background:#1768c4}
+.senangpay-start-form small{display:block;line-height:1.5;color:#5d7189}
