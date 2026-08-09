@@ -498,7 +498,7 @@ async function commerceOrders(context) {
   const result=await context.env.ENQUIRIES_DB.prepare(`
     SELECT o.id,o.order_reference,o.customer_name,o.customer_email,o.customer_phone,o.currency,o.total,
       o.sales_channel,o.payment_provider,o.payment_status,o.campaign_code,o.affiliate_code,o.external_order_id,o.created_at,
-      p.name_en product_name,p.sku,oi.quantity,
+      p.name_en product_name,p.sku,oi.quantity,oi.list_unit_price,oi.discount_amount,oi.final_unit_price,oi.pricing_rule,
       py.id payment_id,py.payment_method,py.provider_transaction_id,py.gross_amount,py.provider_fee,py.net_amount,
       py.bank_received_amount,py.settlement_date,py.verification_status,py.customer_receipt_issuer,py.status payment_record_status
     FROM orders o
@@ -564,13 +564,22 @@ function makeOrderReference(){return `QY-${new Date().toISOString().slice(0,10).
 async function createOrder(context) {
   let body; try{body=await context.request.json()}catch{return json({error:'Invalid request.'},400)}
   const productId=Number(body.productId), quantity=Math.max(1,Math.min(Number(body.quantity||1),100)), name=clean(body.customerName,160), email=clean(body.customerEmail,240), phone=clean(body.customerPhone,80), channel=clean(body.salesChannel,80)||'Website', provider=clean(body.paymentProvider,80)||'SenangPay', status=clean(body.paymentStatus,20)||'Pending', campaign=clean(body.campaignCode,120), affiliate=clean(body.affiliateCode,100);
-  if(!Number.isInteger(productId)||productId<1||!name||!email)return json({error:'Customer name, email and product are required.'},400); if(!paymentStatuses.has(status))return json({error:'Invalid payment status.'},400);
-  const db=context.env.ENQUIRIES_DB, product=await db.prepare(`SELECT id,price,currency,name_en FROM products WHERE id=?`).bind(productId).first(); if(!product)return json({error:'Product not found.'},404);
-  const unit=Number(product.price||0), total=unit*quantity, ref=makeOrderReference();
-  const order=await db.prepare(`INSERT INTO orders(order_reference,customer_name,customer_email,customer_phone,currency,subtotal,total,sales_channel,payment_provider,payment_status,campaign_code,affiliate_code) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`).bind(ref,name,email,phone,product.currency||'MYR',total,total,channel,provider,status,campaign,affiliate).run(); const orderId=order.meta?.last_row_id;
-  await db.prepare(`INSERT INTO order_items(order_id,product_id,quantity,unit_price,line_total) VALUES(?,?,?,?,?)`).bind(orderId,productId,quantity,unit,total).run();
+  if(!Number.isInteger(productId)||productId<1||!name||!email)return json({error:'Customer name, email and product are required.'},400);
+  if(!paymentStatuses.has(status))return json({error:'Invalid payment status.'},400);
+  const db=context.env.ENQUIRIES_DB;
+  const product=await db.prepare(`SELECT id,price,currency,name_en,early_bird_price,early_bird_end FROM products WHERE id=?`).bind(productId).first();
+  if(!product)return json({error:'Product not found.'},404);
+  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kuala_Lumpur',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  const listUnit=Number(product.price||0);
+  const early=Number(product.early_bird_price)>0 && product.early_bird_end && today<=product.early_bird_end;
+  const finalUnit=early?Number(product.early_bird_price):listUnit;
+  const discount=Math.max(listUnit-finalUnit,0);
+  const total=finalUnit*quantity, ref=makeOrderReference();
+  const order=await db.prepare(`INSERT INTO orders(order_reference,customer_name,customer_email,customer_phone,currency,subtotal,total,sales_channel,payment_provider,payment_status,campaign_code,affiliate_code) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`).bind(ref,name,email,phone,product.currency||'MYR',total,total,channel,provider,status,campaign,affiliate).run();
+  const orderId=order.meta?.last_row_id;
+  await db.prepare(`INSERT INTO order_items(order_id,product_id,quantity,unit_price,line_total,list_unit_price,discount_amount,final_unit_price,pricing_rule) VALUES(?,?,?,?,?,?,?,?,?)`).bind(orderId,productId,quantity,finalUnit,total,listUnit,discount*quantity,finalUnit,early?'Early Bird':'Standard').run();
   if(status==='Paid'||status==='External') await db.prepare(`INSERT INTO payments(order_id,provider,amount,currency,status,paid_at) VALUES(?,?,?,?,?,?)`).bind(orderId,provider,total,product.currency||'MYR',status,new Date().toISOString()).run();
-  return json({ok:true,id:orderId,orderReference:ref,total,currency:product.currency||'MYR'});
+  return json({ok:true,id:orderId,orderReference:ref,total,currency:product.currency||'MYR',listUnit,discount:discount*quantity,finalUnit,pricingRule:early?'Early Bird':'Standard'});
 }
 
 export async function onRequest(context) {

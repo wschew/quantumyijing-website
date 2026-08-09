@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Academy Operating System | Quantum YiJing International Academy</title>
   <link rel="icon" href="images/quantum-yijing-logo.png">
-  <link rel="stylesheet" href="admin.css?v=3.1.0">
+  <link rel="stylesheet" href="admin.css?v=3.1.1">
 </head>
 <body>
   <main class="crm-shell">
@@ -27,7 +27,7 @@
       <header class="topbar">
         <div class="brand-lockup">
           <img src="images/quantum-yijing-logo.png" alt="" class="topbar-logo">
-          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v3.1</span></div>
+          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v3.1.1</span></div>
         </div>
         <div class="topbar-actions">
           <a href="index.html" class="text-link">View website</a>
@@ -364,7 +364,7 @@
         <label>Order<select id="paymentOrder"></select></label>
         <label>Payment method<select id="paymentMethod"><option>SenangPay</option><option>Bank Transfer</option><option>Google Play Books</option><option>Cash</option><option>Manual</option><option>Marketplace</option><option>Other</option></select></label>
         <label>Provider / platform<input id="paymentProviderName" maxlength="80" placeholder="SenangPay / Google / Bank"></label>
-        <label>Transaction / settlement reference<input id="paymentTransactionRef" maxlength="200"></label>
+        <label class="payment-reference-field"><span>Transaction / Settlement Reference</span><input id="paymentTransactionRef" maxlength="200" placeholder="e.g. BANK-20260809-001 / Google settlement ID"></label>
         <label>Payment status<select id="paymentRecordStatus"><option>Paid</option><option>External</option><option>Pending</option><option>Failed</option><option>Cancelled</option><option>Refunded</option></select></label>
         <label>Verification<select id="paymentVerification"><option>Unverified</option><option>Verified</option><option>Reconciled</option></select></label>
         <label>Gross sale<input id="paymentGross" type="number" min="0" step="0.01"></label>
@@ -381,6 +381,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=3.1.0" defer></script>
+  <script src="admin.js?v=3.1.1" defer></script>
 </body>
 </html>

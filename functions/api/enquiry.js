@@ -95,11 +95,15 @@ async function createProductOrder(db,enquiryId,data,attribution){
   const product=await db.prepare(`SELECT id,slug,name_en,status,price,currency,sales_channel,payment_provider,early_bird_price,early_bird_end FROM products WHERE slug=? AND status='Active' LIMIT 1`).bind(attribution.productSlug).first();
   if(!product || product.sales_channel!=='Website') return null;
   const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kuala_Lumpur',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  const listUnit=Number(product.price||0);
   const early=Number(product.early_bird_price)>0 && product.early_bird_end && today<=product.early_bird_end;
-  const unit=early?Number(product.early_bird_price):Number(product.price||0), ref=orderReference();
-  const order=await db.prepare(`INSERT INTO orders(order_reference,enquiry_id,customer_name,customer_email,customer_phone,currency,subtotal,total,sales_channel,payment_provider,payment_status,campaign_code,affiliate_code) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(ref,enquiryId,data.name,data.email,data.phone,product.currency||'MYR',unit,unit,product.sales_channel,product.payment_provider,'Pending',attribution.campaignCode||attribution.utmCampaign||'',attribution.affiliateCode||'').run();
-  const orderId=order.meta?.last_row_id; if(orderId) await db.prepare(`INSERT INTO order_items(order_id,product_id,quantity,unit_price,line_total) VALUES(?,?,?,?,?)`).bind(orderId,product.id,1,unit,unit).run();
-  return {orderReference:ref,total:unit,currency:product.currency||'MYR',productName:product.name_en};
+  const finalUnit=early?Number(product.early_bird_price):listUnit;
+  const discount=Math.max(listUnit-finalUnit,0), ref=orderReference();
+  const displayCurrency=attribution.displayCurrency||'', displayRate=Number(attribution.displayExchangeRate||0), displayAmount=Number(attribution.displayAmount||0);
+  const order=await db.prepare(`INSERT INTO orders(order_reference,enquiry_id,customer_name,customer_email,customer_phone,currency,subtotal,total,sales_channel,payment_provider,payment_status,campaign_code,affiliate_code,display_currency,display_exchange_rate,display_amount) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(ref,enquiryId,data.name,data.email,data.phone,product.currency||'MYR',finalUnit,finalUnit,product.sales_channel,product.payment_provider,'Pending',attribution.campaignCode||attribution.utmCampaign||'',attribution.affiliateCode||'',displayCurrency,displayRate,displayAmount).run();
+  const orderId=order.meta?.last_row_id;
+  if(orderId) await db.prepare(`INSERT INTO order_items(order_id,product_id,quantity,unit_price,line_total,list_unit_price,discount_amount,final_unit_price,pricing_rule) VALUES(?,?,?,?,?,?,?,?,?)`).bind(orderId,product.id,1,finalUnit,finalUnit,listUnit,discount,finalUnit,early?'Early Bird':'Standard').run();
+  return {orderReference:ref,total:finalUnit,currency:product.currency||'MYR',productName:product.name_en};
 }
 
 async function sendEmail(apiKey, payload) {
@@ -228,7 +232,10 @@ export async function onRequestPost(context) {
     affiliateCode: clean(body.affiliateCode, 80),
     productId: Number(body.productId || 0),
     productSlug: clean(body.productSlug, 120),
-    createOrder: body.createOrder === true || body.createOrder === 'true'
+    createOrder: body.createOrder === true || body.createOrder === 'true',
+    displayCurrency: clean(body.displayCurrency, 10),
+    displayExchangeRate: Number(body.displayExchangeRate || 0),
+    displayAmount: Number(body.displayAmount || 0)
   };
 
   const allowedInterests = new Set(['General Enquiry','Academy Course','Bazi Consultation','Feng Shui Consultation','Baby Naming','Research Collaboration','Media / Speaking','Other']);
