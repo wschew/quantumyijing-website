@@ -259,12 +259,21 @@ export async function onRequestPost(context) {
   const reference = `QY-${submittedDate.replaceAll('-', '')}-${crypto.randomUUID().slice(0,6).toUpperCase()}`;
   const meta = { submitted, submittedAtUtc, submittedDate, reference };
 
+  let inserted;
+  let orderInfo;
   try {
-    // Save first so the enquiry remains recorded even if email delivery later fails.
-    const inserted = await saveEnquiry(context.env.ENQUIRIES_DB, data, meta);
+    // Database/order creation is the primary transaction. Once this succeeds,
+    // a temporary email-provider failure must not hide the valid order from checkout.
+    inserted = await saveEnquiry(context.env.ENQUIRIES_DB, data, meta);
     await saveAttribution(context.env.ENQUIRIES_DB, inserted?.id, attribution);
-    const orderInfo = await createProductOrder(context.env.ENQUIRIES_DB, inserted?.id, data, attribution);
+    orderInfo = await createProductOrder(context.env.ENQUIRIES_DB, inserted?.id, data, attribution);
+  } catch (error) {
+    console.error('Enquiry/order persistence failed', error);
+    return json({ error: 'Unable to record registration. Please try again.' }, 500);
+  }
 
+  let emailWarning = false;
+  try {
     await Promise.all([
       sendEmail(context.env.RESEND_API_KEY, {
         from: FROM_ADDRESS,
@@ -283,11 +292,19 @@ export async function onRequestPost(context) {
         text: `Dear ${data.name},\n\nThank you for contacting ${ACADEMY_NAME}. Reference: ${reference}.  We have received your enquiry and will normally reply within 1–2 working days.\n\n尊敬的 ${data.name}：\n\n感谢您联系量子易经国际学院。我们已收到您的咨询，一般会在 1–2 个工作日内回复。\n\ninfo@quantumyijing.com`
       })
     ]);
-    return json({ ok: true, reference, orderReference: orderInfo?.orderReference || '', orderTotal: orderInfo?.total ?? null, currency: orderInfo?.currency || '' });
   } catch (error) {
-    console.error('Email delivery failed', error);
-    return json({ error: 'Email delivery failed.' }, 502);
+    emailWarning = true;
+    console.error('Email delivery failed after registration/order was recorded', error);
   }
+
+  return json({
+    ok: true,
+    reference,
+    orderReference: orderInfo?.orderReference || '',
+    orderTotal: orderInfo?.total ?? null,
+    currency: orderInfo?.currency || '',
+    emailWarning
+  });
 }
 
 export function onRequest(context) {
