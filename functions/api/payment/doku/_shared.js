@@ -1,5 +1,7 @@
 const enc=new TextEncoder();
 
+export const DOKU_API_VERSION='arabica.2025-12-01';
+
 export const clean=(v,max=300)=>String(v??'').trim().slice(0,max);
 export const json=(d,s=200)=>new Response(JSON.stringify(d),{
   status:s,
@@ -32,7 +34,7 @@ export function config(env){
   if(u.protocol!=='https:') throw new Error('DOKU endpoint must use HTTPS.');
   if(!u.pathname.endsWith('/v3/checkouts')) throw new Error('DOKU_CHECKOUT_ENDPOINT must end with /v3/checkouts.');
   const mode=u.hostname.includes('sandbox')?'sandbox':'production';
-  return {clientId,secret,apiKey,endpoint,mode};
+  return {clientId,secret,apiKey,endpoint,mode,apiVersion:DOKU_API_VERSION};
 }
 export async function digest(body){
   const h=await crypto.subtle.digest('SHA-256',enc.encode(body));
@@ -73,6 +75,11 @@ export function safeEqual(a,b){
   for(let i=0;i<a.length;i++) d|=a.charCodeAt(i)^b.charCodeAt(i);
   return d===0;
 }
+export function moneyEqual(a,b){
+  const x=Number(a), y=Number(b);
+  if(!Number.isFinite(x)||!Number.isFinite(y)) return false;
+  return Math.round(x*100)===Math.round(y*100);
+}
 export async function logEvent(db,data){
   try{
     await db.prepare(`INSERT INTO payment_gateway_events(
@@ -89,6 +96,7 @@ export async function markPaid(db,{orderRef,checkoutId='',statusMessage='SUCCESS
   const o=await db.prepare(`SELECT id,total,currency,payment_status
     FROM orders WHERE order_reference=? LIMIT 1`).bind(orderRef).first();
   if(!o) return {ok:false,error:'Order not found.'};
+
   const now=new Date().toISOString();
   let py=await db.prepare(`SELECT id FROM payments
     WHERE order_id=? AND provider='DOKU' ORDER BY id DESC LIMIT 1`).bind(o.id).first();
@@ -104,7 +112,7 @@ export async function markPaid(db,{orderRef,checkoutId='',statusMessage='SUCCESS
         `DOKU:${checkoutId||orderRef}`,now,Number(o.total||0),now,
         mode,statusMessage,py.id
       ).run();
-  } else {
+  }else{
     await db.prepare(`INSERT INTO payments(
       order_id,provider,provider_transaction_id,amount,currency,status,raw_reference,paid_at,
       payment_method,gross_amount,provider_fee,net_amount,settlement_date,bank_received_amount,
@@ -117,8 +125,36 @@ export async function markPaid(db,{orderRef,checkoutId='',statusMessage='SUCCESS
         `DOKU:${checkoutId||orderRef}`,now,Number(o.total||0),now,mode,statusMessage
       ).run();
   }
+
   await db.prepare(`UPDATE orders SET
-    payment_provider='DOKU',payment_status='Paid',external_order_id=?,updated_at=CURRENT_TIMESTAMP
-    WHERE id=?`).bind(checkoutId||'',o.id).run();
+    payment_provider='DOKU',payment_status='Paid',external_order_id=?,
+    updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(checkoutId||'',o.id).run();
+
   return {ok:true,total:Number(o.total||0),currency:o.currency||'MYR'};
+}
+export async function markTerminal(db,{orderRef,checkoutId='',status='Failed',statusMessage='',mode=''}) {
+  const normalized=String(status).toLowerCase()==='expired'?'Expired':'Failed';
+  const o=await db.prepare(`SELECT id,total,currency,payment_status
+    FROM orders WHERE order_reference=? LIMIT 1`).bind(orderRef).first();
+  if(!o) return {ok:false,error:'Order not found.'};
+  if(o.payment_status==='Paid') return {ok:true,ignored:true};
+
+  let py=await db.prepare(`SELECT id FROM payments
+    WHERE order_id=? AND provider='DOKU' ORDER BY id DESC LIMIT 1`).bind(o.id).first();
+
+  if(py){
+    await db.prepare(`UPDATE payments SET
+      provider_transaction_id=?,status=?,payment_method='DOKU',
+      verification_status='Verified',verified_at=?,
+      gateway_mode=?,gateway_message=?,gateway_hash_verified=1
+      WHERE id=?`).bind(
+        checkoutId,normalized,new Date().toISOString(),mode,statusMessage||normalized,py.id
+      ).run();
+  }
+
+  await db.prepare(`UPDATE orders SET
+    payment_provider='DOKU',payment_status=?,external_order_id=COALESCE(NULLIF(?,''),external_order_id),
+    updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(normalized,checkoutId,o.id).run();
+
+  return {ok:true,status:normalized};
 }

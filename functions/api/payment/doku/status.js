@@ -1,6 +1,6 @@
 import {
   json,clean,config,signature,requestTarget,statusEndpoint,
-  basicAuthorization,logEvent,markPaid
+  basicAuthorization,logEvent,markPaid,markTerminal,moneyEqual
 } from './_shared.js';
 
 export async function onRequestGet(context){
@@ -38,6 +38,7 @@ export async function onRequestGet(context){
       'accept':'application/json',
       'authorization':basicAuthorization(cfg.apiKey),
       'Client-Id':cfg.clientId,
+      'API-Version':cfg.apiVersion,
       'Request-Id':requestId,
       'Request-Timestamp':timestamp,
       'Signature':sig
@@ -46,21 +47,53 @@ export async function onRequestGet(context){
 
   let d={};
   try{d=await r.json()}catch{}
+
   const orderStatus=clean(d?.order?.status,40).toUpperCase();
   const paymentStatus=clean(d?.payment?.status,40).toUpperCase();
   const state=clean(d?.payment?.state,40).toUpperCase();
+  const channel=clean(d?.payment?.channel,80);
+  const remoteAmount=Number(d?.order?.amount);
+  const remoteCurrency=clean(d?.order?.currency,12).toUpperCase();
+
+  const amountVerified=r.ok && moneyEqual(order.total,remoteAmount);
+  const currencyVerified=r.ok &&
+    String(order.currency||'MYR').toUpperCase()===remoteCurrency;
+  const integrityVerified=r.ok && amountVerified && currencyVerified;
 
   await logEvent(db,{
     eventType:'StatusCheck',orderRef:ref,transactionId:order.external_order_id,
     status:orderStatus||paymentStatus||String(r.status),
-    message:`${orderStatus||paymentStatus}${state?` / ${state}`:''}`,
-    verified:r.ok,mode:cfg.mode,payload:{httpStatus:r.status,response:d}
+    message:[
+      orderStatus||paymentStatus,state,channel,
+      amountVerified?'amount-ok':'amount-mismatch',
+      currencyVerified?'currency-ok':'currency-mismatch'
+    ].filter(Boolean).join(' / '),
+    verified:integrityVerified,mode:cfg.mode,payload:{httpStatus:r.status,response:d}
   });
 
-  if(r.ok && (orderStatus==='PAID' || paymentStatus==='SUCCESS')){
+  if(r.ok && !amountVerified){
+    return json({error:'DOKU amount does not match the local order.',httpStatus:r.status},409);
+  }
+  if(r.ok && !currencyVerified){
+    return json({error:'DOKU currency does not match the local order.',httpStatus:r.status},409);
+  }
+
+  if(integrityVerified && (orderStatus==='PAID' || paymentStatus==='SUCCESS')){
     await markPaid(db,{
       orderRef:ref,checkoutId:order.external_order_id,
-      statusMessage:`${orderStatus||paymentStatus}${state?` / ${state}`:''}`,
+      statusMessage:`${orderStatus||paymentStatus}${state?` / ${state}`:''}${channel?` / ${channel}`:''}`,
+      mode:cfg.mode
+    });
+  }else if(integrityVerified && (orderStatus==='EXPIRED' || paymentStatus==='EXPIRED')){
+    await markTerminal(db,{
+      orderRef:ref,checkoutId:order.external_order_id,status:'Expired',
+      statusMessage:`EXPIRED${state?` / ${state}`:''}${channel?` / ${channel}`:''}`,
+      mode:cfg.mode
+    });
+  }else if(integrityVerified && paymentStatus==='FAILED'){
+    await markTerminal(db,{
+      orderRef:ref,checkoutId:order.external_order_id,status:'Failed',
+      statusMessage:`FAILED${state?` / ${state}`:''}${channel?` / ${channel}`:''}`,
       mode:cfg.mode
     });
   }
@@ -84,11 +117,13 @@ export async function onRequestGet(context){
       remoteOrderStatus:orderStatus,
       remotePaymentStatus:paymentStatus,
       remoteState:state,
+      remoteChannel:channel,
+      amountVerified,
+      currencyVerified,
       verificationStatus:latest?.verification_status||'',
       gatewayMessage:latest?.gateway_message||''
     },
-    doku:r.ok?d:undefined,
-    error:r.ok?undefined:(d?.message||d?.error||'DOKU status request failed.')
+    error:r.ok?undefined:(d?.message||d?.error?.message||'DOKU status request failed.')
   },r.ok?200:502);
 }
 export function onRequest(c){
