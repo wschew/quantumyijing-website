@@ -135,6 +135,7 @@ export async function onRequestPost(context) {
         'content-type': 'application/json',
         'authorization': basicAuthorization(cfg.apiKey),
         'Client-Id': cfg.clientId,
+        'API-Version': 'arabica.2025-12-01',
         'Request-Id': requestId,
         'Request-Timestamp': timestamp,
         'Signature': sig
