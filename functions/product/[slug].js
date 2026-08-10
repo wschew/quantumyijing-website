@@ -54,7 +54,27 @@ if(pa&&d.orderReference&&P.onlineCheckout){
   const amount=Number(d.orderTotal||P.amount||0).toFixed(2);
   if(P.doku){
     const payText=root.dataset.lang==='zh'?'使用 DOKU 安全付款':'Pay securely with DOKU';
-    pa.innerHTML='<form method="post" action="/api/payment/doku/start" class="doku-start-form"><input type="hidden" name="order_reference" value="'+ref+'"><button type="submit" class="product-primary doku-pay-button" data-en="Pay securely with DOKU" data-zh="使用 DOKU 安全付款">'+payText+' · RM '+amount+'</button><small data-en="You will be redirected to DOKU to complete payment. Card, banking and e-wallet credentials are not entered or stored on the Academy website." data-zh="您将被转至 DOKU 完成付款。银行卡、网银及电子钱包认证资料不会输入或储存在学院网站。">You will be redirected to DOKU to complete payment. Card, banking and e-wallet credentials are not entered or stored on the Academy website.</small></form>';
+    pa.innerHTML='<button type="button" class="product-primary doku-pay-button" data-en="Pay securely with DOKU" data-zh="使用 DOKU 安全付款">'+payText+' · RM '+amount+'</button><small data-en="You will be redirected to DOKU to complete payment. Card, banking and e-wallet credentials are not entered or stored on the Academy website." data-zh="您将被转至 DOKU 完成付款。银行卡、网银及电子钱包认证资料不会输入或储存在学院网站。">You will be redirected to DOKU to complete payment. Card, banking and e-wallet credentials are not entered or stored on the Academy website.</small>';
+    const dokuBtn=pa.querySelector('.doku-pay-button');
+    if(dokuBtn){
+      dokuBtn.addEventListener('click',()=>{
+        dokuBtn.disabled=true;
+        const original=dokuBtn.textContent;
+        dokuBtn.textContent=root.dataset.lang==='zh'?'正在连接 DOKU…':'Connecting to DOKU…';
+        const payForm=document.createElement('form');
+        payForm.method='post';
+        payForm.action='/api/payment/doku/start';
+        payForm.style.display='none';
+        const input=document.createElement('input');
+        input.type='hidden';
+        input.name='order_reference';
+        input.value=d.orderReference;
+        payForm.appendChild(input);
+        document.body.appendChild(payForm);
+        payForm.submit();
+        setTimeout(()=>{dokuBtn.disabled=false;dokuBtn.textContent=original;payForm.remove();},5000);
+      },{once:true});
+    }
   }else if(P.senangpay){
     const payText=root.dataset.lang==='zh'?'使用 senangPay 安全付款':'Pay securely with senangPay';
     pa.innerHTML='<form method="post" action="/api/payment/senangpay/start" class="senangpay-start-form"><input type="hidden" name="order_reference" value="'+ref+'"><button type="submit" class="product-primary senangpay-pay-button" data-en="Pay securely with senangPay" data-zh="使用 senangPay 安全付款">'+payText+' · RM '+amount+'</button><small data-en="You will be redirected to senangPay to complete payment. Card/bank details are not entered on the Academy website." data-zh="您将被转至 senangPay 完成付款。银行卡资料不会输入或储存在学院网站。">You will be redirected to senangPay to complete payment. Card/bank details are not entered on the Academy website.</small></form>';
