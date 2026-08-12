@@ -19,7 +19,17 @@ export async function onRequestPost(context){
 
   const expected=await signature(cfg.secret,client,rid,ts,target,raw,'POST');
   const signatureVerified=client===cfg.clientId && safeEqual(received,expected);
-
+console.log('DOKU VERIFY', {
+  clientMatch: client === cfg.clientId,
+  clientReceived: client,
+  clientConfigured: cfg.clientId,
+  receivedPrefix: received.slice(0, 20),
+  expectedPrefix: expected.slice(0, 20),
+  requestId: rid,
+  timestamp: ts,
+  target,
+  rawLength: raw.length
+});
   const ref=clean(p?.order?.invoice_number||p?.invoice_number,100);
   const checkoutId=clean(
     p?.id||p?.transaction?.id||p?.transaction?.original_request_id||
