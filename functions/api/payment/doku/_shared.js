@@ -48,8 +48,8 @@ export async function hmac(secret,text){
 }
 export async function signature(secret,clientId,requestId,timestamp,target,body='',method='POST'){
   const parts=[
-    `Client-Id:${clientId}`,
-    `Request-Id:${requestId}`,
+    `Client-id:${clientId}`,
+    `Request-id:${requestId}`,
     `Request-Timestamp:${timestamp}`,
     `Request-Target:${target}`
   ];
