@@ -4,6 +4,7 @@ import {
 
 export async function onRequestPost(context){
   const raw=await context.request.text();
+  console.log('DOKU RAW BODY', raw);
   let p={};
   try{p=JSON.parse(raw)}catch{return new Response(null,{status:400})}
 
