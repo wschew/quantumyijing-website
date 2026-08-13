@@ -1,5 +1,5 @@
 import {
-  clean,config,signature,logEvent,safeEqual,moneyEqual,markPaid,markTerminal
+  clean,config,signature,digest,logEvent,safeEqual,moneyEqual,markPaid,markTerminal
 } from './_shared.js';
 
 export async function onRequestPost(context){
@@ -17,18 +17,41 @@ export async function onRequestPost(context){
   const received=h.get('Signature')||h.get('signature')||'';
   const target=new URL(context.request.url).pathname;
 
-  const expected=await signature(cfg.secret,client,rid,ts,target,raw,'POST');
-  const signatureVerified=client===cfg.clientId && safeEqual(received,expected);
+ const calculatedDigest = await digest(raw);
+
+const canonical = [
+  `Client-Id:${client}`,
+  `Request-Id:${rid}`,
+  `Request-Timestamp:${ts}`,
+  `Request-Target:${target}`,
+  `Digest:${calculatedDigest}`
+].join('\n');
+
+const expected = await signature(
+  cfg.secret,
+  client,
+  rid,
+  ts,
+  target,
+  raw,
+  'POST'
+);
+
+const signatureVerified =
+  client === cfg.clientId && safeEqual(received, expected);
+
 console.log('DOKU VERIFY', {
   clientMatch: client === cfg.clientId,
   clientReceived: client,
   clientConfigured: cfg.clientId,
-  receivedPrefix: received.slice(0, 20),
-  expectedPrefix: expected.slice(0, 20),
+  receivedPrefix: received.slice(0, 24),
+  expectedPrefix: expected.slice(0, 24),
   requestId: rid,
   timestamp: ts,
   target,
-  rawLength: raw.length
+  rawLength: raw.length,
+  calculatedDigest,
+  canonical
 });
   const ref=clean(p?.order?.invoice_number||p?.invoice_number,100);
   const checkoutId=clean(
