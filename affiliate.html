@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Quantum YiJing® Affiliate Programme</title>
+  <meta name="description" content="Join the Quantum YiJing Affiliate Programme and earn commission by referring customers to eligible QY courses, consultations, books, products and services.">
+  <link rel="stylesheet" href="/affiliate.css">
+</head>
+<body>
+  <header class="qy-header">
+    <a class="brand" href="/">Quantum YiJing®</a>
+    <a class="home-link" href="/">Home</a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap">
+        <p class="eyebrow">Quantum YiJing® Affiliate Programme</p>
+        <h1>Share Quantum YiJing. Earn from eligible sales.</h1>
+        <p class="lead">Approved affiliates receive one permanent QY Affiliate Code that can be used across eligible Quantum YiJing courses, consultations, books, products and services.</p>
+        <a class="btn primary" href="#apply">Apply to Join</a>
+      </div>
+    </section>
+
+    <section class="wrap section">
+      <h2>How the programme works</h2>
+      <div class="grid four">
+        <article class="card"><span class="step">1</span><h3>Apply</h3><p>Submit your contact and payout details.</p></article>
+        <article class="card"><span class="step">2</span><h3>Get approved</h3><p>QY reviews your application and activates your affiliate membership.</p></article>
+        <article class="card"><span class="step">3</span><h3>Share QY links</h3><p>Use your affiliate code when sharing eligible QY product pages.</p></article>
+        <article class="card"><span class="step">4</span><h3>Earn commission</h3><p>Successful eligible paid sales are recorded and paid monthly.</p></article>
+      </div>
+    </section>
+
+    <section class="rules">
+      <div class="wrap section">
+        <h2>Current programme terms</h2>
+        <div class="grid two">
+          <div class="rule"><strong>Default commission</strong><span id="commissionRate">20%</span></div>
+          <div class="rule"><strong>Initial referral window</strong><span id="referralDays">30 days</span></div>
+          <div class="rule"><strong>Customer attribution</strong><span id="attributionMonths">12 months</span></div>
+          <div class="rule"><strong>Affiliate membership</strong><span id="membershipMonths">12 months, renewable</span></div>
+          <div class="rule"><strong>Payout</strong><span>Monthly bank transfer</span></div>
+          <div class="rule"><strong>Eligibility</strong><span>Only affiliate-enabled QY offerings qualify</span></div>
+        </div>
+        <p class="small">Product-specific commission rates may differ from the default programme rate. The applicable rate is recorded with each eligible sale.</p>
+      </div>
+    </section>
+
+    <section id="apply" class="wrap section">
+      <div class="form-intro">
+        <p class="eyebrow">Application</p>
+        <h2>Join the Quantum YiJing Affiliate Programme</h2>
+        <p>Your bank details are collected only for approved affiliate commission payouts.</p>
+      </div>
+
+      <form id="affiliateForm" class="form-card" novalidate>
+        <div class="grid two">
+          <label>Full Name *
+            <input name="full_name" required maxlength="120" autocomplete="name">
+          </label>
+          <label>Display Name
+            <input name="display_name" maxlength="120">
+          </label>
+          <label>Email *
+            <input name="email" type="email" required maxlength="160" autocomplete="email">
+          </label>
+          <label>Mobile / WhatsApp *
+            <input name="phone" required maxlength="60" autocomplete="tel">
+          </label>
+          <label>Country *
+            <input name="country" required maxlength="100" autocomplete="country-name">
+          </label>
+          <label>Account Type *
+            <select name="account_type" required>
+              <option value="Individual">Individual</option>
+              <option value="Company">Company</option>
+            </select>
+          </label>
+        </div>
+
+        <fieldset>
+          <legend>Commission payout bank details</legend>
+          <div class="grid two">
+            <label>Bank Name *
+              <input name="bank_name" required maxlength="120">
+            </label>
+            <label>Bank Account Holder Name *
+              <input name="bank_account_name" required maxlength="160">
+            </label>
+          </div>
+          <label>Bank Account Number *
+            <input name="bank_account_number" required maxlength="80" inputmode="numeric">
+          </label>
+        </fieldset>
+
+        <label class="check">
+          <input type="checkbox" name="privacy_consent" value="1" required>
+          <span>I consent to Quantum YiJing storing and using the information above to administer the Affiliate Programme and process commission payouts.</span>
+        </label>
+
+        <label class="check">
+          <input type="checkbox" name="terms_accepted" value="1" required>
+          <span>I agree to the Quantum YiJing Affiliate Programme terms, including referral attribution, eligible-product rules, monthly payout and annual membership renewal.</span>
+        </label>
+
+        <button class="btn primary" id="submitBtn" type="submit">Submit Application</button>
+        <p id="formStatus" class="status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">© 2026 Quantum YiJing® • Registered Trademark • All Rights Reserved.</div>
+  </footer>
+
+  <script src="/affiliate.js" defer></script>
+</body>
+</html>
