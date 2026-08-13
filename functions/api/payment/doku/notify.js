@@ -18,6 +18,8 @@ export async function onRequestPost(context){
   const target=new URL(context.request.url).pathname;
 
  const calculatedDigest = await digest(raw);
+const secretFingerprint = (await digest(cfg.secret)).slice(0, 16);
+const secretLength = cfg.secret.length;
 
 const canonical = [
   `Client-Id:${client}`,
@@ -51,7 +53,9 @@ console.log('DOKU VERIFY', {
   target,
   rawLength: raw.length,
   calculatedDigest,
-  canonical
+  canonical,
+  secretLength,
+  secretFingerprint
 });
   const ref=clean(p?.order?.invoice_number||p?.invoice_number,100);
   const checkoutId=clean(
