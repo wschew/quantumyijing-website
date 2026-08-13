@@ -1,5 +1,5 @@
 import {
-  clean,config,signature,digest,logEvent,safeEqual,moneyEqual,markPaid,markTerminal
+  clean,config,signature,digest,hmac,logEvent,safeEqual,moneyEqual,markPaid,markTerminal
 } from './_shared.js';
 
 export async function onRequestPost(context){
