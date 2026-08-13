@@ -19,6 +19,20 @@ export async function onRequestPost(context){
   const target=new URL(context.request.url).pathname;
 
  const calculatedDigest = await digest(raw);
+ const normalizedBody = JSON.stringify(p);
+const normalizedDigest = await digest(normalizedBody);
+
+const normalizedCanonical = [
+  `Client-Id:${client}`,
+  `Request-Id:${rid}`,
+  `Request-Timestamp:${ts}`,
+  `Request-Target:${target}`,
+  `Digest:${normalizedDigest}`
+].join('\n');
+
+const normalizedExpected =
+  `HMACSHA256=${await hmac(cfg.secret, normalizedCanonical)}`;
+
 const secretFingerprint = (await digest(cfg.secret)).slice(0, 16);
 const secretLength = cfg.secret.length;
 
@@ -56,7 +70,11 @@ console.log('DOKU VERIFY', {
   calculatedDigest,
   canonical,
   secretLength,
-  secretFingerprint
+  secretFingerprint,
+  normalizedLength: normalizedBody.length,
+normalizedDigest,
+normalizedExpectedPrefix: normalizedExpected.slice(0,24),
+normalizedMatch: safeEqual(received, normalizedExpected),
 });
   const ref=clean(p?.order?.invoice_number||p?.invoice_number,100);
   const checkoutId=clean(
