@@ -1,0 +1,18 @@
+
+/* v3.3.3d unified QY header */
+.affiliate-admin-header{
+  background:#fff;color:#172033;border-bottom:1px solid #dfe6ef;
+  padding:10px 24px;min-height:82px;display:flex;align-items:center;justify-content:space-between;gap:18px
+}
+.affiliate-admin-header .qy-brand-lockup{display:flex;align-items:center;gap:12px;text-decoration:none}
+.affiliate-admin-header .qy-brand-logo{height:58px;width:auto;display:block}
+.affiliate-admin-header .qy-brand-name{color:#0b56a5;font-weight:800;font-size:1.15rem;white-space:nowrap}
+.affiliate-admin-header-right{display:flex;align-items:center;gap:16px}
+.affiliate-admin-section{color:#0b56a5;font-weight:800}
+.affiliate-admin-header a{color:#0b56a5}
+@media(max-width:700px){
+  .affiliate-admin-header{padding:8px 14px}
+  .affiliate-admin-header .qy-brand-logo{height:46px}
+  .affiliate-admin-header .qy-brand-name{font-size:.95rem}
+  .affiliate-admin-header-right{gap:9px;flex-direction:column;align-items:flex-end}
+}
