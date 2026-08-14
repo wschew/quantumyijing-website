@@ -12,3 +12,43 @@ main{padding:24px}.toolbar{display:flex;gap:14px;align-items:end;flex-wrap:wrap;
 .category-legend{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px 14px}
 .empty-state{min-height:220px;display:grid;place-items:center;color:#667085;border:1px dashed #d8e2ee;border-radius:12px;background:#fafcff}
 @media(max-width:850px){.category-legend{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* v3.3.3f hard header safety rules.
+   Inline dimensions in the HTML are the primary fix.
+   These rules provide responsive sizing on small screens. */
+
+.qy-hard-brand img{
+  width:58px !important;
+  height:58px !important;
+  min-width:58px !important;
+  max-width:58px !important;
+  min-height:58px !important;
+  max-height:58px !important;
+  object-fit:contain !important;
+}
+
+.qy-hard-brand{
+  width:auto !important;
+  max-width:none !important;
+}
+
+@media(max-width:650px){
+  .qy-hard-brand img{
+    width:46px !important;
+    height:46px !important;
+    min-width:46px !important;
+    max-width:46px !important;
+    min-height:46px !important;
+    max-height:46px !important;
+  }
+
+  .qy-hard-brand span{
+    font-size:.95rem !important;
+  }
+
+  .affiliate-public-header,
+  .affiliate-admin-header,
+  .affiliate-detail-header{
+    padding:8px 14px !important;
+  }
+}

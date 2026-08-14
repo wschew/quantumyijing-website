@@ -1,1 +1,41 @@
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#162136;line-height:1.55}.wrap{width:min(1180px,calc(100% - 40px));margin:auto}.site-header{height:76px;border-bottom:1px solid #d8e2ee;background:#fff;position:sticky;top:0;z-index:10}.header-inner{height:100%;display:flex;align-items:center;justify-content:space-between;width:min(1180px,calc(100% - 40px));margin:auto}.brand{text-decoration:none;color:#0b56a5;font-weight:900;display:flex;align-items:center;gap:10px}.brand img{height:46px}.brand span{display:none}.header-actions{display:flex;gap:8px;align-items:center}.header-actions a{text-decoration:none;color:#5e6b7e;font-weight:700}.lang{border:1px solid #d8e2ee;background:#fff;border-radius:999px;padding:7px 11px;font-weight:800}.lang.active{background:#0b56a5;color:#fff}.hero{background:linear-gradient(135deg,#073c77,#0b56a5);color:#fff}.hero-grid{display:grid;grid-template-columns:1.35fr .65fr;gap:42px;align-items:center;padding:72px 0}.eyebrow{text-transform:uppercase;letter-spacing:.12em;font-weight:900;font-size:.78rem}.hero h1{font-size:clamp(2.4rem,5vw,4.6rem);line-height:1.03;margin:.4rem 0 1rem}.lead{font-size:1.12rem}.btn{display:inline-flex;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:900;border:0;cursor:pointer}.light{background:#fff;color:#073c77}.ghost{border:1px solid rgba(255,255,255,.5);color:#fff}.outline{border:1px solid #0b56a5;color:#0b56a5}.panel{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);border-radius:18px;padding:15px}.panel div{padding:14px;border-bottom:1px solid rgba(255,255,255,.18);display:flex;justify-content:space-between;gap:18px}.panel div:last-child{border:0}.panel span{text-align:right}.section{padding:62px 0}.section h2{font-size:clamp(1.8rem,3vw,2.7rem)}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}.cards article,.terms-grid div,.form{border:1px solid #d8e2ee;border-radius:16px;background:#fff}.cards article{padding:22px}.cards i{font-style:normal;width:36px;height:36px;border-radius:50%;background:#0b56a5;color:#fff;display:grid;place-items:center;font-weight:900}.summary{background:#f7f9fc}.terms-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.terms-grid div{padding:18px;display:flex;flex-direction:column;gap:7px}.terms-grid span{color:#5e6b7e}.terms-grid b{color:#0b56a5}.form{padding:22px;box-shadow:0 12px 34px rgba(20,52,92,.08)}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 18px}label{display:flex;flex-direction:column;gap:6px;font-weight:800}input,select{padding:11px 12px;border:1px solid #bdc9d7;border-radius:9px;font:inherit}.check{flex-direction:row;align-items:flex-start;font-weight:500;margin:14px 0}.check input{width:auto;margin-top:5px}.check a{color:#0b56a5;font-weight:800}.submitrow{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.submit{background:#0b56a5;color:#fff}#formStatus{font-weight:800}.ok{color:#17743b}.err{color:#a12020}footer{border-top:1px solid #d8e2ee;padding:28px 0;color:#5e6b7e;font-size:.9rem}@media(max-width:960px){.hero-grid{grid-template-columns:1fr}.cards{grid-template-columns:1fr 1fr}.terms-grid,.grid3{grid-template-columns:1fr 1fr}}@media(max-width:640px){.cards,.terms-grid,.grid3{grid-template-columns:1fr}.wrap,.header-inner{width:min(100% - 26px,1180px)}}
+
+/* v3.3.3f hard header safety rules.
+   Inline dimensions in the HTML are the primary fix.
+   These rules provide responsive sizing on small screens. */
+
+.qy-hard-brand img{
+  width:58px !important;
+  height:58px !important;
+  min-width:58px !important;
+  max-width:58px !important;
+  min-height:58px !important;
+  max-height:58px !important;
+  object-fit:contain !important;
+}
+
+.qy-hard-brand{
+  width:auto !important;
+  max-width:none !important;
+}
+
+@media(max-width:650px){
+  .qy-hard-brand img{
+    width:46px !important;
+    height:46px !important;
+    min-width:46px !important;
+    max-width:46px !important;
+    min-height:46px !important;
+    max-height:46px !important;
+  }
+
+  .qy-hard-brand span{
+    font-size:.95rem !important;
+  }
+
+  .affiliate-public-header,
+  .affiliate-admin-header,
+  .affiliate-detail-header{
+    padding:8px 14px !important;
+  }
+}
