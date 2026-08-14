@@ -29,7 +29,7 @@ export function randomSalt(bytes=16){
   return randomToken(bytes);
 }
 
-export async function passwordHash(password,saltHex,iterations=210000){
+export async function passwordHash(password,saltHex,iterations=100000){
   const key=await crypto.subtle.importKey(
     'raw', enc.encode(password), {name:'PBKDF2'}, false, ['deriveBits']
   );
