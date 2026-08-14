@@ -1,0 +1,53 @@
+
+/* Quantum YiJing® v3.3.3e — Affiliate header logo size hotfix */
+
+/* Prevent older/global header image rules from enlarging the QY logo */
+.affiliate-admin-header .qy-brand-lockup,
+.affiliate-detail-header .qy-brand-lockup {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  width: auto !important;
+  max-width: none !important;
+  flex: 0 0 auto !important;
+}
+
+.affiliate-admin-header .qy-brand-logo,
+.affiliate-detail-header .qy-brand-logo {
+  display: block !important;
+  width: auto !important;
+  height: 58px !important;
+  max-width: 58px !important;
+  max-height: 58px !important;
+  min-width: 0 !important;
+  object-fit: contain !important;
+  flex: 0 0 58px !important;
+}
+
+.affiliate-admin-header .qy-brand-name,
+.affiliate-detail-header .qy-brand-name {
+  display: inline-block !important;
+  width: auto !important;
+  max-width: none !important;
+  white-space: nowrap !important;
+  color: #0b56a5 !important;
+  font-weight: 800 !important;
+}
+
+/* Make sure the header itself stays compact */
+.affiliate-admin-header,
+.affiliate-detail-header {
+  min-height: 82px !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+@media (max-width:700px){
+  .affiliate-admin-header .qy-brand-logo,
+  .affiliate-detail-header .qy-brand-logo {
+    height: 46px !important;
+    max-width: 46px !important;
+    max-height: 46px !important;
+    flex-basis: 46px !important;
+  }
+}
