@@ -1,14 +1,46 @@
-<section id="accountControlPanel" class="panel">
-<h2>Affiliate Account Control</h2>
-<div class="control-grid">
-<label>Status<select id="accountStatus"><option>Pending</option><option>Approved</option><option>Rejected</option><option>Suspended</option><option>Archived</option></select></label>
-<label>Admin Reason / Note<input id="accountReason" placeholder="Reason for status or access change"></label>
-</div>
-<div class="control-actions">
-<button id="saveAffiliateStatus">Save Status</button>
-<button id="disablePortal" class="warn">Disable Portal</button>
-<button id="enablePortal">Enable Portal</button>
-<button id="revokeSessions" class="warn">Revoke Sessions</button>
-</div>
-<p id="accountControlMsg"></p>
+<!-- v3.3.4b-final: insert AFTER affiliate profile/summary card -->
+<section id="accountControlPanel" class="panel hidden">
+  <h2>Affiliate Account Control</h2>
+
+  <div class="control-grid">
+    <label>
+      Affiliate Status
+      <select id="accountStatus">
+        <option value="Pending">Pending</option>
+        <option value="Approved">Approved</option>
+        <option value="Rejected">Rejected</option>
+        <option value="Suspended">Suspended</option>
+        <option value="Archived">Archived</option>
+      </select>
+    </label>
+
+    <label>
+      Portal Access
+      <select id="portalEnabled">
+        <option value="1">Enabled</option>
+        <option value="0">Disabled</option>
+      </select>
+    </label>
+
+    <label class="wide">
+      Admin Reason / Note
+      <input id="accountReason" placeholder="Reason for suspension, block, restoration, etc.">
+    </label>
+  </div>
+
+  <div class="account-audit">
+    <span>Last updated: <b id="accountUpdatedAt">—</b></span>
+    <span>Updated by: <b id="accountUpdatedBy">—</b></span>
+  </div>
+
+  <div class="control-actions">
+    <button id="saveAccountControl">Save Account Status</button>
+    <button id="revokeSessions" class="warn">Revoke Active Sessions</button>
+  </div>
+
+  <p class="control-note">
+    Suspended, Rejected and Archived automatically disable portal access.
+  </p>
+
+  <p id="accountControlMsg"></p>
 </section>

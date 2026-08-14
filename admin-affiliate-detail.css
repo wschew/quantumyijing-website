@@ -1,1 +1,18 @@
 body{margin:0;font-family:system-ui;background:#f6f8fb;color:#172033}header{display:flex;justify-content:space-between;align-items:center;background:#0b56a5;color:#fff;padding:16px 24px}header h1{margin:0;font-size:1.2rem}header a{color:#fff}main{padding:24px}.toolbar,.panel,#profile,.summary{background:#fff;border:1px solid #dde4ee;border-radius:14px;padding:18px;margin-bottom:18px}.toolbar{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.toolbar label{display:flex;flex-direction:column;font-weight:700}.toolbar input,.toolbar select,.toolbar button{padding:9px;border:1px solid #bdc8d7;border-radius:7px}.toolbar button{background:#0b56a5;color:#fff;font-weight:800}.profile-grid,.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.item{padding:12px;background:#f7f9fc;border-radius:9px}.item span{display:block;color:#6b7280;font-size:.82rem}.summary b{color:#0b56a5;font-size:1.3rem}.scroll{overflow:auto}table{border-collapse:collapse;width:100%;min-width:1000px}th,td{padding:9px;border-bottom:1px solid #e4e9f0;text-align:left}.hidden{display:none}.paybtn{background:#16723b;color:#fff;border:0;border-radius:6px;padding:7px 10px;font-weight:800}
+
+#accountControlPanel{margin-top:18px}
+#accountControlPanel.hidden{display:none}
+.control-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.control-grid label{display:flex;flex-direction:column;gap:6px;font-weight:700}
+.control-grid .wide{grid-column:1/-1}
+.control-grid input,.control-grid select{
+  padding:10px 12px;border:1px solid #bcc8d6;border-radius:8px;font:inherit
+}
+.account-audit{display:flex;gap:22px;flex-wrap:wrap;margin:14px 0;color:#667085;font-size:.9rem}
+.control-actions{display:flex;gap:10px;flex-wrap:wrap}
+.control-actions button{
+  border:0;border-radius:8px;padding:10px 14px;background:#0b56a5;color:#fff;font-weight:800;cursor:pointer
+}
+.control-actions .warn{background:#a12a2a}
+.control-note{color:#667085;font-size:.9rem}
+@media(max-width:700px){.control-grid{grid-template-columns:1fr}.control-grid .wide{grid-column:auto}}

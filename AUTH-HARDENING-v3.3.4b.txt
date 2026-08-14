@@ -1,0 +1,13 @@
+IMPORTANT
+
+Open:
+functions/api/affiliate/auth/_auth.js
+
+Inside requireAffiliate(), make sure the authenticated affiliate query checks BOTH:
+
+a.status='Approved'
+AND a.portal_enabled=1
+
+If portal_enabled is not checked, a blocked affiliate may still use an old session.
+
+Also ensure revoked affiliate_sessions are rejected.

@@ -83,13 +83,15 @@ export async function requireAffiliate(request,env){
   const row=await db.prepare(`
     SELECT s.id session_id,s.affiliate_id,s.expires_at,
            a.affiliate_code,a.full_name,a.display_name,a.email,a.phone,a.country,
-           a.status,a.membership_started_at,a.membership_expires_at,a.renewal_status
+           a.status,a.portal_enabled,
+a.membership_started_at,a.membership_expires_at,a.renewal_status
     FROM affiliate_sessions s
     JOIN affiliates a ON a.id=s.affiliate_id
     WHERE s.token_hash=?
       AND s.revoked_at=''
       AND datetime(s.expires_at) > datetime('now')
       AND a.status='Approved'
+      AND a.portal_enabled=1
     LIMIT 1
   `).bind(tokenHash).first();
 
