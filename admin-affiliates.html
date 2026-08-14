@@ -5,43 +5,43 @@
 <header><h1>Quantum YiJing® Affiliate Admin</h1><a href="/admin.html">Main Admin</a></header>
 <main>
 <section class="toolbar">
-  <label>Admin Token<input id="token" type="password"></label>
-  <label>Analytics Month<input id="month" type="month"></label>
-  <button id="loadDashboard">Load Dashboard</button>
-  <a class="detail-link" href="/admin-affiliate-detail.html">Individual Affiliate Detail</a>
+<label>Admin Token<input id="token" type="password"></label>
+<label>Analytics Month<input id="month" type="month"></label>
+<button id="loadDashboard">Load Dashboard</button>
+<a class="detail-link" href="/admin-affiliate-detail.html">Individual Affiliate Detail</a>
 </section>
 
 <section id="kpis" class="kpis hidden"></section>
 
 <section class="chart-panel hidden" id="funnelPanel">
-  <div class="panel-head"><div><h2>Monthly Affiliate Funnel</h2><p>Unique visitors → applications → approved → active affiliates</p></div></div>
-  <div id="funnelChart" class="chart"></div>
+<h2>Monthly Affiliate Funnel</h2>
+<p>Unique visitors → applications → approved → active affiliates</p>
+<div id="funnelChart" class="chart"></div>
 </section>
 
-<section class="chart-panel hidden" id="salesPanel">
-  <h2>Monthly Affiliate Sales</h2>
-  <div id="salesChart" class="chart"></div>
+<section class="chart-panel hidden" id="categorySalesPanel">
+<h2>Monthly Affiliate Sales by Product Category</h2>
+<p>Successfully paid affiliate sales grouped by QY offering type</p>
+<div id="categorySalesChart" class="chart"></div>
 </section>
 
 <div class="chart-grid">
-  <section class="chart-panel hidden" id="countryPanel">
-    <h2>Affiliate Sales by Country</h2>
-    <div id="countryChart" class="chart"></div>
-  </section>
-  <section class="chart-panel hidden" id="topPanel">
-    <h2>Top 10 Affiliates</h2>
-    <div id="topChart" class="chart"></div>
-  </section>
+<section class="chart-panel hidden" id="countryPanel">
+<h2>Affiliate Sales by Country</h2><p>Selected month</p><div id="countryChart" class="chart"></div>
+</section>
+<section class="chart-panel hidden" id="topPanel">
+<h2>Top 10 Affiliates</h2><p>Selected month, ranked by successfully paid affiliate sales</p><div id="topChart" class="chart"></div>
+</section>
 </div>
 
 <section class="management">
-  <h2>Affiliate Applications & Members</h2>
-  <div class="toolbar small">
-    <label>Status<select id="filter"><option value="">All</option><option>Pending</option><option>Approved</option><option>Rejected</option><option>Suspended</option><option>Archived</option></select></label>
-    <button id="loadAffiliates">Load Affiliates</button>
-  </div>
-  <p id="status"></p>
-  <div class="table-wrap"><table><thead><tr><th>ID</th><th>Code</th><th>Name</th><th>Email</th><th>Country</th><th>Bank</th><th>Status</th><th>Membership Expiry</th><th>Action</th></tr></thead><tbody id="rows"></tbody></table></div>
+<h2>Affiliate Applications & Members</h2>
+<div class="toolbar small">
+<label>Status<select id="filter"><option value="">All</option><option>Pending</option><option>Approved</option><option>Rejected</option><option>Suspended</option><option>Archived</option></select></label>
+<button id="loadAffiliates">Load Affiliates</button>
+</div>
+<p id="status"></p>
+<div class="table-wrap"><table><thead><tr><th>ID</th><th>Code</th><th>Name</th><th>Email</th><th>Country</th><th>Bank</th><th>Status</th><th>Membership Expiry</th><th>Action</th></tr></thead><tbody id="rows"></tbody></table></div>
 </section>
 </main>
 <script src="/admin-affiliates.js" defer></script>
