@@ -1,1 +1,22 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Affiliate Portal Activation</title><link rel="stylesheet" href="/affiliate-portal.css"></head><body><header class="portal-header"><a href="/admin-affiliates.html" class="brand">← Affiliate Admin</a></header><main class="auth-wrap"><section class="auth-card"><h1>Send Affiliate Portal Activation</h1><label>Admin Token<input id="token" type="password"></label><label>Affiliate ID<input id="affiliateId" type="number" min="1"></label><button id="send" class="primary">Send Activation Email</button><p id="status" class="status"></p></section></main><script src="/admin-affiliate-portal.js" defer></script></body></html>
+<!doctype html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Affiliate Portal Activation</title>
+<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/affiliate-portal.css"></head>
+<body>
+<header class="qy-portal-header">
+  <a href="/" class="qy-portal-brand" aria-label="Quantum YiJing Home">
+    <img src="/images/quantum-yijing-3d-logo.png" alt="Quantum YiJing®" class="qy-portal-logo">
+  </a>
+  <div class="qy-portal-header-right">
+    <div class="qy-portal-section">Affiliate Portal Admin</div>
+    <a href="/admin-affiliates.html" class="portal-outline-link">← Affiliate Admin</a>
+  </div>
+</header>
+<main class="auth-wrap"><section class="auth-card">
+<h1>Send Affiliate Portal Activation</h1>
+<label>Admin Token<input id="token" type="password"></label>
+<label>Affiliate ID<input id="affiliateId" type="number" min="1"></label>
+<button id="send" class="primary">Send Activation Email</button>
+<p id="status" class="status"></p>
+</section></main><script src="/admin-affiliate-portal.js" defer></script></body></html>
