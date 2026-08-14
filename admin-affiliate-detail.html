@@ -34,9 +34,58 @@
 <p id="status"></p>
 <section id="profile" class="hidden"></section>
 <section id="summary" class="summary hidden"></section>
+<!-- v3.3.4b-final: insert AFTER affiliate profile/summary card -->
+<section id="accountControlPanel" class="panel hidden">
+  <h2>Affiliate Account Control</h2>
+
+  <div class="control-grid">
+    <label>
+      Affiliate Status
+      <select id="accountStatus">
+        <option value="Pending">Pending</option>
+        <option value="Approved">Approved</option>
+        <option value="Rejected">Rejected</option>
+        <option value="Suspended">Suspended</option>
+        <option value="Archived">Archived</option>
+      </select>
+    </label>
+
+    <label>
+      Portal Access
+      <select id="portalEnabled">
+        <option value="1">Enabled</option>
+        <option value="0">Disabled</option>
+      </select>
+    </label>
+
+    <label class="wide">
+      Admin Reason / Note
+      <input id="accountReason" placeholder="Reason for suspension, block, restoration, etc.">
+    </label>
+  </div>
+
+  <div class="account-audit">
+    <span>Last updated: <b id="accountUpdatedAt">—</b></span>
+    <span>Updated by: <b id="accountUpdatedBy">—</b></span>
+  </div>
+
+  <div class="control-actions">
+    <button id="saveAccountControl">Save Account Status</button>
+    <button id="revokeSessions" class="warn">Revoke Active Sessions</button>
+  </div>
+
+  <p class="control-note">
+    Suspended, Rejected and Archived automatically disable portal access.
+  </p>
+
+  <p id="accountControlMsg"></p>
+</section>
+
+
 <section id="attrPanel" class="panel hidden"><h2>Customer Attributions</h2><div class="scroll"><table><thead><tr><th>Customer</th><th>Email</th><th>First Order</th><th>Started</th><th>Expires</th><th>Status</th></tr></thead><tbody id="attrs"></tbody></table></div></section>
 <section id="commPanel" class="panel hidden"><h2>Commission Ledger</h2><div class="scroll"><table><thead><tr><th>Date</th><th>Invoice</th><th>Customer</th><th>Product</th><th>Sale</th><th>Rate</th><th>Commission</th><th>Status</th><th>Paid Date</th></tr></thead><tbody id="comms"></tbody></table></div></section>
 <section id="payPanel" class="panel hidden"><h2>Monthly Payouts</h2><div class="scroll"><table><thead><tr><th>Period</th><th>Reference</th><th>Sales</th><th>Commission</th><th>Status</th><th>Payment Date</th><th>Payment Ref</th><th>Action</th></tr></thead><tbody id="pays"></tbody></table></div></section>
 </main>
 <script src="/admin-affiliate-detail.js" defer></script>
+<script src="/admin-affiliate-detail-v3.3.4b.js" defer></script>
 </body></html>
