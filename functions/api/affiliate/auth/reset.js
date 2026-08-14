@@ -31,7 +31,7 @@ export async function onRequestPost({request,env}){
       return Response.json({error:'Reset link has expired.'},{status:400});
 
     const salt=randomSalt();
-    const iterations=210000;
+    const iterations=100000;
     const hash=await passwordHash(password,salt,iterations);
     const now=new Date().toISOString();
 
