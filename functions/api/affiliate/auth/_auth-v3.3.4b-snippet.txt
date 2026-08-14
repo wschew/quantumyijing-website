@@ -1,0 +1,13 @@
+In functions/api/affiliate/auth/_auth.js, inside requireAffiliate():
+
+1. Add `a.portal_enabled` to the SELECT.
+2. Add this condition to the WHERE clause:
+
+AND a.portal_enabled=1
+
+Keep the existing checks for:
+- session not revoked
+- session not expired
+- affiliate status = 'Approved'
+
+This ensures portal-disabled or suspended affiliates cannot use an existing session.

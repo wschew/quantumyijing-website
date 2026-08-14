@@ -1,0 +1,8 @@
+const $=s=>document.querySelector(s);let products=[],currentId=0;
+const fields=['sku','slug','product_type','status','price','currency','name_en','name_zh','early_bird_price','early_bird_end','starts_on','ends_on','instructor','delivery_en','delivery_zh','language_en','language_zh','hero_image_url','description_en','description_zh'];
+const tok=()=>$('#token').value.trim();
+function clearForm(){currentId=0;fields.forEach(k=>{const e=$('#'+k);if(!e)return;e.value=k==='currency'?'MYR':k==='product_type'?'course':k==='status'?'Draft':''});$('#productSelect').value='';$('#msg').textContent='New product mode.'}
+function fill(p){currentId=Number(p.id);fields.forEach(k=>{const e=$('#'+k);if(e)e.value=p[k]??''})}
+async function load(){const r=await fetch('/api/admin/products-master',{headers:{authorization:`Bearer ${tok()}`}}),d=await r.json().catch(()=>({}));if(!r.ok){$('#msg').textContent=d.error||r.status;return}products=d.products||[];$('#productSelect').innerHTML='<option value="">New product…</option>'+products.map(p=>`<option value="${p.id}">${p.sku} — ${p.name_en}</option>`).join('');$('#msg').textContent=`${products.length} product(s) loaded.`}
+async function save(){const b={id:currentId||null};fields.forEach(k=>b[k]=$('#'+k).value);const r=await fetch('/api/admin/products-master',{method:'POST',headers:{authorization:`Bearer ${tok()}`,'content-type':'application/json'},body:JSON.stringify(b)}),d=await r.json().catch(()=>({}));$('#msg').textContent=r.ok?'Saved successfully.':(d.error||r.status);if(r.ok)await load()}
+$('#load').onclick=load;$('#new').onclick=clearForm;$('#save').onclick=save;$('#productSelect').onchange=e=>{const p=products.find(x=>String(x.id)===e.target.value);p?fill(p):clearForm()};

@@ -1,0 +1,14 @@
+<section id="accountControlPanel" class="panel">
+<h2>Affiliate Account Control</h2>
+<div class="control-grid">
+<label>Status<select id="accountStatus"><option>Pending</option><option>Approved</option><option>Rejected</option><option>Suspended</option><option>Archived</option></select></label>
+<label>Admin Reason / Note<input id="accountReason" placeholder="Reason for status or access change"></label>
+</div>
+<div class="control-actions">
+<button id="saveAffiliateStatus">Save Status</button>
+<button id="disablePortal" class="warn">Disable Portal</button>
+<button id="enablePortal">Enable Portal</button>
+<button id="revokeSessions" class="warn">Revoke Sessions</button>
+</div>
+<p id="accountControlMsg"></p>
+</section>

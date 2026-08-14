@@ -1,0 +1,19 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Quantum YiJing Product Admin</title><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/admin-products-master.css"></head><body>
+<header class="pm-head"><a href="/" class="brand"><img src="/images/quantum-yijing-3d-logo.png" alt="QY"><span>Quantum YiJing®</span></a><div><b>Product Admin</b><a href="/admin.html">Main Admin</a></div></header>
+<main><section class="card controls"><label>Admin Token<input id="token" type="password"></label><button id="load">Load Products</button><button id="new">New Product</button><a class="linkbtn" href="/admin-affiliate-products.html">Affiliate Product Settings</a></section>
+<section class="card"><div class="grid">
+<label>Product<select id="productSelect"><option value="">New product…</option></select></label>
+<label>SKU<input id="sku"></label><label>Slug<input id="slug"></label>
+<label>Category<select id="product_type"><option>course</option><option>membership</option><option>consultation</option><option>ebook</option><option>digital</option><option>physical</option><option>event</option><option>other</option></select></label>
+<label>Status<select id="status"><option>Draft</option><option>Active</option><option>Inactive</option><option>Archived</option></select></label>
+<label>Price<input id="price" type="number" min="0" step="0.01"></label><label>Currency<input id="currency" value="MYR"></label>
+<label>Name EN<input id="name_en"></label><label>Name 中文<input id="name_zh"></label>
+<label>Early Bird Price<input id="early_bird_price" type="number" min="0" step="0.01"></label><label>Early Bird End<input id="early_bird_end" type="date"></label>
+<label>Start Date<input id="starts_on" type="date"></label><label>End Date<input id="ends_on" type="date"></label>
+<label>Instructor<input id="instructor"></label><label>Delivery EN<input id="delivery_en"></label><label>Delivery 中文<input id="delivery_zh"></label>
+<label>Language EN<input id="language_en"></label><label>Language 中文<input id="language_zh"></label>
+<label class="wide">Hero Image URL<input id="hero_image_url"></label>
+<label class="wide">Description EN<textarea id="description_en"></textarea></label>
+<label class="wide">Description 中文<textarea id="description_zh"></textarea></label>
+</div><button id="save">Save Product</button><p id="msg"></p></section></main>
+<script src="/admin-products-master.js" defer></script></body></html>
