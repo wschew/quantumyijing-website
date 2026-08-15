@@ -1,4 +1,4 @@
-<<<<<<< Updated upstream
+
 function dbOf(env){return env.ENQUIRIES_DB||env.DB||null}
 function tok(req){const h=req.headers.get('authorization')||'';return h.toLowerCase().startsWith('bearer ')?h.slice(7).trim():''}
 function ok(req,env){return !!env.ADMIN_TOKEN&&tok(req)===env.ADMIN_TOKEN}
@@ -42,7 +42,7 @@ export async function onRequestGet({request,env}){
   kpis:{visitors:cur.visitors,applications:cur.applications,approved:cur.approved,active:cur.active,sales:cur.sales,commission:cur.commission}
  });
 }
-=======
+
 function dbOf(env){
   return env.ENQUIRIES_DB || env.DB || null;
 }
@@ -370,4 +370,4 @@ export async function onRequestGet({request,env}){
     }
   });
 }
->>>>>>> Stashed changes
+
