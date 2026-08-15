@@ -1,0 +1,93 @@
+<dialog id="paymentDialog" class="record-dialog record-dialog-v24">
+  <form method="dialog">
+    <div class="dialog-header">
+      <div>
+        <p class="eyebrow">PAYMENT & ACCOUNTING</p>
+        <h2>Record Payment / Settlement</h2>
+      </div>
+      <button id="paymentDialogClose" class="icon-button" type="button" aria-label="Close">×</button>
+    </div>
+
+    <div class="edit-grid edit-grid-v25">
+      <label>Order<select id="paymentOrder"></select></label>
+
+      <label>Payment method
+        <select id="paymentMethod">
+          <option>DOKU</option>
+          <option>Bank Transfer</option>
+          <option>External Platform</option>
+          <option>Cash</option>
+          <option>Manual</option>
+          <option>Other</option>
+        </select>
+      </label>
+
+      <label>Provider / platform
+        <input id="paymentProviderName" maxlength="80" placeholder="DOKU / Google Play Books / Bookstera / Bank">
+      </label>
+
+      <label class="payment-reference-field">
+        <span>Transaction Reference</span>
+        <input id="paymentTransactionRef" maxlength="200" placeholder="e.g. DOKU transaction ID / bank reference / platform settlement ID">
+      </label>
+
+      <label>Payment status
+        <select id="paymentRecordStatus">
+          <option>Pending</option>
+          <option>Paid</option>
+          <option>External</option>
+          <option>Failed</option>
+          <option>Cancelled</option>
+          <option>Refunded</option>
+        </select>
+      </label>
+
+      <label>Verification
+        <select id="paymentVerification">
+          <option>Unverified</option>
+          <option>Verified</option>
+          <option>Review</option>
+        </select>
+      </label>
+
+      <label>Gross amount<input id="paymentGross" type="number" min="0" step="0.01"></label>
+      <label>Provider / platform fee<input id="paymentFee" type="number" min="0" step="0.01"></label>
+      <label>Net amount<input id="paymentNet" type="number" min="0" step="0.01"></label>
+      <label>Amount received in bank<input id="paymentBank" type="number" min="0" step="0.01" placeholder="Leave blank until received"></label>
+
+      <label>Settlement status
+        <select id="paymentSettlementStatus">
+          <option>Pending</option>
+          <option>Settled</option>
+          <option>Reconciled</option>
+          <option>Exception</option>
+        </select>
+      </label>
+
+      <label>Settlement date<input id="paymentSettlementDate" type="date"></label>
+
+      <label>Customer receipt issuer
+        <select id="paymentReceiptIssuer">
+          <option>Quantum YiJing</option>
+          <option>External Platform</option>
+          <option>Not Applicable</option>
+        </select>
+      </label>
+    </div>
+
+    <label>Accounting notes
+      <textarea id="paymentNotes" rows="3" maxlength="1000"
+        placeholder="e.g. DOKU settlement pending; Google payout after platform fee; bank transfer verified against statement."></textarea>
+    </label>
+
+    <p class="helper-text">
+      Payment status records whether the customer paid. Settlement status records whether funds were received and reconciled in the company bank/accounting records.
+    </p>
+
+    <div class="dialog-actions">
+      <button id="paymentSave" class="primary-button" type="button">Save Payment Record</button>
+      <button id="paymentClose" class="secondary-button" type="button">Close</button>
+    </div>
+    <p id="paymentDialogMessage" class="form-message" aria-live="polite"></p>
+  </form>
+</dialog>
