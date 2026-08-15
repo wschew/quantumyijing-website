@@ -348,7 +348,19 @@
   }
   async function loadCommercePayments(){
     const response=await api('/api/admin?action=commercepayments'), data=await response.json(); const body=$('commercePaymentsBody'); body.innerHTML='';
-    (data.results||[]).forEach(r=>body.insertAdjacentHTML('beforeend',`<tr><td><strong>${esc(r.order_reference)}</strong><br><small>${esc(r.settlement_date||String(r.paid_at||'').slice(0,10)||'')}</small></td><td><strong>${esc(r.customer_name)}</strong><br><small>${esc(r.product_name||r.sku||'—')}</small></td><td>${esc(r.payment_method||r.provider)}<br><small>${esc(r.provider||'')}</small></td><td class="money">${displayMoney(r.gross_amount,r.currency)}</td><td class="money">${displayMoney(r.provider_fee,r.currency)}</td><td class="money">${displayMoney(r.net_amount,r.currency)}</td><td class="money">${displayMoney(r.bank_received_amount,r.currency)}</td><td><strong>Verification: ${esc(r.verification_status||'Unverified')}</strong><br><small>Settlement: ${esc(r.settlement_status||'Pending')}</small><br><small>Receipt: ${esc(r.customer_receipt_issuer||'—')}</small></td></tr>`));
+    (data.results||[]).forEach(r=>{
+      const unsettledDoku =
+        String(r.provider||'').trim().toUpperCase()==='DOKU' &&
+        r.status==='Pending' &&
+        (r.verification_status||'Unverified')==='Unverified' &&
+        (r.settlement_status||'Pending')==='Pending';
+
+      const feeDisplay = unsettledDoku ? '—' : displayMoney(r.provider_fee,r.currency);
+      const netDisplay = unsettledDoku ? '—' : displayMoney(r.net_amount,r.currency);
+      const bankDisplay = unsettledDoku ? '—' : displayMoney(r.bank_received_amount,r.currency);
+
+      body.insertAdjacentHTML('beforeend',`<tr><td><strong>${esc(r.order_reference)}</strong><br><small>${esc(r.settlement_date||String(r.paid_at||'').slice(0,10)||'')}</small></td><td><strong>${esc(r.customer_name)}</strong><br><small>${esc(r.product_name||r.sku||'—')}</small></td><td>${esc(r.payment_method||r.provider)}<br><small>${esc(r.provider||'')}</small></td><td class="money">${displayMoney(r.gross_amount,r.currency)}</td><td class="money">${feeDisplay}</td><td class="money">${netDisplay}</td><td class="money">${bankDisplay}</td><td><strong>Verification: ${esc(r.verification_status||'Unverified')}</strong><br><small>Settlement: ${esc(r.settlement_status||'Pending')}</small><br><small>Receipt: ${esc(r.customer_receipt_issuer||'—')}</small></td></tr>`);
+    });
     if(!(data.results||[]).length) body.innerHTML='<tr><td colspan="8">No payment records yet.</td></tr>';
   }
 
