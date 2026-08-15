@@ -1,7 +1,16 @@
 
 import {
-  clean,config,signature,digest,hmac,basicAuthorization,
-  logEvent,safeEqual,moneyEqual,markPaid,markTerminal
+  clean,
+  config,
+  signature,
+  digest,
+  hmac,
+  basicAuthorization,
+  logEvent,
+  safeEqual,
+  moneyEqual,
+  markPaid,
+  markTerminal
 } from './_shared.js';
 export async function onRequestPost(context){
   const raw=await context.request.text();
@@ -59,9 +68,13 @@ console.log('DOKU NOTIFICATION VERIFY', {
   signatureMatch: safeEqual(received, expected),
 
   secretLength: cfg.secret.length,
-  secretFingerprint
+  secretFingerprint,
+
   authorizationMatch:
-  safeEqual(receivedAuthorization, basicAuthorization(cfg.apiKey)),
+    safeEqual(
+      receivedAuthorization,
+      basicAuthorization(cfg.apiKey)
+    )
 });
   const ref=clean(p?.order?.invoice_number||p?.invoice_number,100);
   const checkoutId=clean(
