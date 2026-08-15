@@ -20,13 +20,16 @@ export async function onRequestPost(context){
 
 const calculatedDigest = await digest(raw);
 
-const expected = await signature(
-  cfg.secret,
-  ts,
-  target,
-  raw,
-  'POST'
-);
+const canonical = [
+  `Client-Id:${client}`,
+  `Request-Id:${rid}`,
+  `Request-Timestamp:${ts}`,
+  `Request-Target:${target}`,
+  `Digest:${calculatedDigest}`
+].join('\n');
+
+const expected =
+  `HMACSHA256=${await hmac(cfg.secret, canonical)}`;
 
 const signatureVerified =
   client === cfg.clientId &&
@@ -35,7 +38,7 @@ const signatureVerified =
 const secretFingerprint =
   (await digest(cfg.secret)).slice(0,16);
 
-console.log('DOKU GLOBAL VERIFY', {
+console.log('DOKU NOTIFICATION VERIFY', {
   clientMatch: client === cfg.clientId,
   clientReceived: client,
   clientConfigured: cfg.clientId,
@@ -49,6 +52,7 @@ console.log('DOKU GLOBAL VERIFY', {
 
   rawLength: raw.length,
   calculatedDigest,
+  canonical,
 
   signatureMatch: safeEqual(received, expected),
 
