@@ -122,10 +122,14 @@ export async function onRequestPost(context) {
   const requestId = crypto.randomUUID();
   const timestamp = new Date().toISOString();
   const target = requestTarget(cfg.endpoint);
-  const sig = await signature(
-    cfg.secret, cfg.clientId, requestId, timestamp, target, raw, 'POST'
-  );
 
+const sig = await signature(
+  cfg.secret,
+  timestamp,
+  target,
+  raw,
+  'POST'
+);
   let r;
   try {
     r = await fetch(cfg.endpoint, {

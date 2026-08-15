@@ -18,36 +18,10 @@ export async function onRequestPost(context){
   const received=h.get('Signature')||h.get('signature')||'';
   const target=new URL(context.request.url).pathname;
 
- const calculatedDigest = await digest(raw);
- const normalizedBody = JSON.stringify(p);
-const normalizedDigest = await digest(normalizedBody);
-
-const normalizedCanonical = [
-  `Client-Id:${client}`,
-  `Request-Id:${rid}`,
-  `Request-Timestamp:${ts}`,
-  `Request-Target:${target}`,
-  `Digest:${normalizedDigest}`
-].join('\n');
-
-const normalizedExpected =
-  `HMACSHA256=${await hmac(cfg.secret, normalizedCanonical)}`;
-
-const secretFingerprint = (await digest(cfg.secret)).slice(0, 16);
-const secretLength = cfg.secret.length;
-
-const canonical = [
-  `Client-Id:${client}`,
-  `Request-Id:${rid}`,
-  `Request-Timestamp:${ts}`,
-  `Request-Target:${target}`,
-  `Digest:${calculatedDigest}`
-].join('\n');
+const calculatedDigest = await digest(raw);
 
 const expected = await signature(
   cfg.secret,
-  client,
-  rid,
   ts,
   target,
   raw,
@@ -55,26 +29,31 @@ const expected = await signature(
 );
 
 const signatureVerified =
-  client === cfg.clientId && safeEqual(received, expected);
+  client === cfg.clientId &&
+  safeEqual(received, expected);
 
-console.log('DOKU VERIFY', {
+const secretFingerprint =
+  (await digest(cfg.secret)).slice(0,16);
+
+console.log('DOKU GLOBAL VERIFY', {
   clientMatch: client === cfg.clientId,
   clientReceived: client,
   clientConfigured: cfg.clientId,
-  receivedPrefix: received.slice(0, 24),
-  expectedPrefix: expected.slice(0, 24),
+
+  receivedPrefix: received.slice(0,24),
+  expectedPrefix: expected.slice(0,24),
+
   requestId: rid,
   timestamp: ts,
   target,
+
   rawLength: raw.length,
   calculatedDigest,
-  canonical,
-  secretLength,
-  secretFingerprint,
-  normalizedLength: normalizedBody.length,
-normalizedDigest,
-normalizedExpectedPrefix: normalizedExpected.slice(0,24),
-normalizedMatch: safeEqual(received, normalizedExpected),
+
+  signatureMatch: safeEqual(received, expected),
+
+  secretLength: cfg.secret.length,
+  secretFingerprint
 });
   const ref=clean(p?.order?.invoice_number||p?.invoice_number,100);
   const checkoutId=clean(
