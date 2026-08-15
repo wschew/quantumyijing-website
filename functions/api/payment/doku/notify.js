@@ -1,7 +1,8 @@
-import {
-  clean,config,signature,digest,hmac,logEvent,safeEqual,moneyEqual,markPaid,markTerminal
-} from './_shared.js';
 
+import {
+  clean,config,signature,digest,hmac,basicAuthorization,
+  logEvent,safeEqual,moneyEqual,markPaid,markTerminal
+} from './_shared.js';
 export async function onRequestPost(context){
   const raw=await context.request.text();
   console.log('DOKU RAW BODY', raw);
@@ -16,6 +17,7 @@ export async function onRequestPost(context){
   const rid=h.get('Request-Id')||h.get('request-id')||'';
   const ts=h.get('Request-Timestamp')||h.get('request-timestamp')||'';
   const received=h.get('Signature')||h.get('signature')||'';
+  const receivedAuthorization=h.get('Authorization')||h.get('authorization')||'';
   const target=new URL(context.request.url).pathname;
 
 const calculatedDigest = await digest(raw);
@@ -58,6 +60,8 @@ console.log('DOKU NOTIFICATION VERIFY', {
 
   secretLength: cfg.secret.length,
   secretFingerprint
+  authorizationMatch:
+  safeEqual(receivedAuthorization, basicAuthorization(cfg.apiKey)),
 });
   const ref=clean(p?.order?.invoice_number||p?.invoice_number,100);
   const checkoutId=clean(
