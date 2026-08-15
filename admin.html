@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Academy Operating System | Quantum YiJing International Academy</title>
   <link rel="icon" href="images/quantum-yijing-logo.png">
-  <link rel="stylesheet" href="admin.css?v=3.1.1">
+  <link rel="stylesheet" href="admin.css?v=3.3.5a">
 </head>
 <body>
   <main class="crm-shell">
@@ -27,7 +27,7 @@
       <header class="topbar">
         <div class="brand-lockup">
           <img src="images/quantum-yijing-logo.png" alt="" class="topbar-logo">
-          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v3.1.1</span></div>
+          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v3.3.5a</span></div>
         </div>
         <div class="topbar-actions">
           <a href="index.html" class="text-link">View website</a>
@@ -208,7 +208,7 @@
           <div>
             <p class="eyebrow">QY-AOS · SALES & COMMERCE</p>
             <h1>Sales & Commerce Dashboard</h1>
-            <p>Manage products and multi-channel orders while keeping SenangPay and external marketplaces separate.</p>
+            <p>Manage products, orders, payments and multi-channel settlements across website and external sales channels.</p>
           </div>
           <div class="topbar-actions"><button id="newProductButton" class="secondary-button" type="button">+ Product</button><button id="newOrderButton" class="primary-button" type="button">+ Order</button></div>
         </section>
@@ -242,7 +242,7 @@
             <div><h2>Payment & Accounting Records</h2><p>Gross sale, provider fee, net settlement and bank receipt are stored separately.</p></div>
             <button id="newPaymentButton" class="primary-button" type="button">+ Record Payment</button>
           </div>
-          <div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer / Product</th><th>Method / Provider</th><th>Gross</th><th>Fees</th><th>Net</th><th>Bank received</th><th>Verification / Receipt</th></tr></thead><tbody id="commercePaymentsBody"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer / Product</th><th>Method / Provider</th><th>Gross</th><th>Fees</th><th>Net</th><th>Bank received</th><th>Verification / Settlement / Receipt</th></tr></thead><tbody id="commercePaymentsBody"></tbody></table></div>
           <p id="commercePaymentMessage" class="form-message" aria-live="polite"></p>
         </section>
 
@@ -365,7 +365,7 @@
   </dialog>
 
 
-<dialog id="paymentDialog" class="record-dialog record-dialog-v24">
+  <dialog id="paymentDialog" class="record-dialog record-dialog-v24">
   <form method="dialog">
     <div class="dialog-header">
       <div>
@@ -459,7 +459,6 @@
   </form>
 </dialog>
 
-
-  <script src="admin.js?v=3.1.1" defer></script>
+  <script src="admin.js?v=3.3.5a" defer></script>
 </body>
 </html>

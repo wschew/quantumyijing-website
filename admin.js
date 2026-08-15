@@ -324,6 +324,7 @@
 
 
   const money = (value,currency='MYR') => `${currency === 'MYR' ? 'RM' : currency} ${Number(value||0).toFixed(2)}`;
+  const displayMoney = (value,currency='MYR') => (value === null || value === undefined || value === '') ? '—' : money(value,currency);
   async function loadCommerceStats(){
     const response=await api('/api/admin?action=commercestats'), data=await response.json();
     $('commerceStatProducts').textContent=data.summary.products; $('commerceStatOrders').textContent=data.summary.orders; $('commerceStatPaid').textContent=data.summary.paid; $('commerceStatPending').textContent=data.summary.pending;
@@ -347,7 +348,7 @@
   }
   async function loadCommercePayments(){
     const response=await api('/api/admin?action=commercepayments'), data=await response.json(); const body=$('commercePaymentsBody'); body.innerHTML='';
-    (data.results||[]).forEach(r=>body.insertAdjacentHTML('beforeend',`<tr><td><strong>${esc(r.order_reference)}</strong><br><small>${esc(r.settlement_date||String(r.paid_at||'').slice(0,10)||'')}</small></td><td><strong>${esc(r.customer_name)}</strong><br><small>${esc(r.product_name||r.sku||'—')}</small></td><td>${esc(r.payment_method||r.provider)}<br><small>${esc(r.provider||'')}</small></td><td class="money">${money(r.gross_amount,r.currency)}</td><td class="money">${money(r.provider_fee,r.currency)}</td><td class="money">${money(r.net_amount,r.currency)}</td><td class="money">${money(r.bank_received_amount,r.currency)}</td><td><strong>${esc(r.verification_status||'Unverified')}</strong><br><small>Receipt: ${esc(r.customer_receipt_issuer||'—')}</small></td></tr>`));
+    (data.results||[]).forEach(r=>body.insertAdjacentHTML('beforeend',`<tr><td><strong>${esc(r.order_reference)}</strong><br><small>${esc(r.settlement_date||String(r.paid_at||'').slice(0,10)||'')}</small></td><td><strong>${esc(r.customer_name)}</strong><br><small>${esc(r.product_name||r.sku||'—')}</small></td><td>${esc(r.payment_method||r.provider)}<br><small>${esc(r.provider||'')}</small></td><td class="money">${displayMoney(r.gross_amount,r.currency)}</td><td class="money">${displayMoney(r.provider_fee,r.currency)}</td><td class="money">${displayMoney(r.net_amount,r.currency)}</td><td class="money">${displayMoney(r.bank_received_amount,r.currency)}</td><td><strong>Verification: ${esc(r.verification_status||'Unverified')}</strong><br><small>Settlement: ${esc(r.settlement_status||'Pending')}</small><br><small>Receipt: ${esc(r.customer_receipt_issuer||'—')}</small></td></tr>`));
     if(!(data.results||[]).length) body.innerHTML='<tr><td colspan="8">No payment records yet.</td></tr>';
   }
 

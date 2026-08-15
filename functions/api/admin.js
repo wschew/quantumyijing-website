@@ -537,12 +537,12 @@ async function commerceOrders(context) {
   `).all();
   return json({ok:true,results:result.results||[]});
 }
-
 async function commercePayments(context) {
   const result=await context.env.ENQUIRIES_DB.prepare(`
     SELECT py.id,py.order_id,o.order_reference,o.customer_name,o.customer_email,o.sales_channel,
       py.provider,py.payment_method,py.provider_transaction_id,py.amount,py.gross_amount,py.provider_fee,
       py.net_amount,py.bank_received_amount,py.currency,py.status,py.settlement_date,py.verification_status,
+      py.settlement_status,py.reconciled_at,
       py.verified_at,py.customer_receipt_issuer,py.notes,py.paid_at,py.created_at,
       p.name_en product_name,p.sku
     FROM payments py
@@ -553,6 +553,8 @@ async function commercePayments(context) {
   `).all();
   return json({ok:true,results:result.results||[]});
 }
+
+
 async function savePayment(context) {
   let body;
   try { body = await context.request.json(); }
