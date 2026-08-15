@@ -371,9 +371,21 @@
   function openOrder(){if(!state.products.length){setMessage('commerceDashboardMessage','Create an active product first.');return;} $('orderCustomerName').value='';$('orderCustomerEmail').value='';$('orderCustomerPhone').value='';$('orderQuantity').value='1';$('orderCampaign').value='';$('orderAffiliate').value='';setMessage('orderDialogMessage','',true);$('orderDialog').showModal();}
   async function saveOrder(){try{const response=await api('/api/admin?action=ordercreate',{method:'POST',body:JSON.stringify({customerName:$('orderCustomerName').value,customerEmail:$('orderCustomerEmail').value,customerPhone:$('orderCustomerPhone').value,productId:Number($('orderProduct').value),quantity:Number($('orderQuantity').value),salesChannel:$('orderChannel').value,paymentProvider:$('orderProvider').value,paymentStatus:$('orderPaymentStatus').value,campaignCode:$('orderCampaign').value,affiliateCode:$('orderAffiliate').value})});const data=await response.json();setMessage('orderDialogMessage',`Order ${data.orderReference} created — ${money(data.total,data.currency)}${data.discount>0?` (discount ${money(data.discount,data.currency)} · ${data.pricingRule})`:''}.`,true);await loadCommerceAll();}catch(e){setMessage('orderDialogMessage',e.message);}}
   function recalcPayment(){
-    const gross=Number($('paymentGross').value||0), fee=Number($('paymentFee').value||0), net=Math.max(gross-fee,0);
+    const gross=Number($('paymentGross').value||0);
+    const feeRaw=$('paymentFee').value;
+    const method=$('paymentMethod').value;
+
+    // For pending DOKU settlements, a blank fee means the net is not known yet.
+    if(method==='DOKU' && feeRaw===''){
+      if(document.activeElement!==$('paymentNet')) $('paymentNet').value='';
+      return;
+    }
+
+    const fee=Number(feeRaw||0);
+    const net=Math.max(gross-fee,0);
     if(document.activeElement!==$('paymentNet')) $('paymentNet').value=net.toFixed(2);
   }
+
   function derivePaymentMethod(provider=''){
     const p=String(provider||'').trim().toLowerCase();
     if(p==='doku' || p.includes('doku')) return 'DOKU';
@@ -383,6 +395,7 @@
     if(p.includes('cash')) return 'Cash';
     return p ? 'Other' : 'Manual';
   }
+
   function openPayment(orderId=''){
     $('paymentOrder').value=String(orderId||'');
     const option=$('paymentOrder').selectedOptions[0];
@@ -396,35 +409,80 @@
     $('paymentRecordStatus').value=(order?.payment_status==='Paid'?'Paid':'Pending');
     $('paymentVerification').value='Unverified';
     $('paymentSettlementStatus').value='Pending';
-    $('paymentFee').value='';
     $('paymentSettlementDate').value='';
-    $('paymentReceiptIssuer').value=(method==='External Platform'?'External Platform':'Quantum YiJing');
     $('paymentNotes').value='';
-    $('paymentBank').value='';
 
     const total=Number(option?.dataset.total||order?.total||0);
     $('paymentGross').value=total.toFixed(2);
-    $('paymentNet').value=total.toFixed(2);
+
+    if(method==='DOKU'){
+      // Gateway fee, net settlement and bank receipt are unknown until settlement/reconciliation.
+      $('paymentFee').value='';
+      $('paymentNet').value='';
+      $('paymentBank').value='';
+      $('paymentReceiptIssuer').value='Quantum YiJing';
+    } else if(method==='Bank Transfer'){
+      // Direct bank transfer normally has no provider fee.
+      $('paymentFee').value='0.00';
+      $('paymentNet').value=total.toFixed(2);
+      $('paymentBank').value='';
+      $('paymentReceiptIssuer').value='Quantum YiJing';
+    } else if(method==='External Platform'){
+      $('paymentFee').value='';
+      $('paymentNet').value='';
+      $('paymentBank').value='';
+      $('paymentReceiptIssuer').value='External Platform';
+    } else {
+      $('paymentFee').value='';
+      $('paymentNet').value='';
+      $('paymentBank').value='';
+      $('paymentReceiptIssuer').value='Quantum YiJing';
+    }
+
     setMessage('paymentDialogMessage','',true);
     $('paymentDialog').showModal();
   }
+
   function applyPaymentMethodDefaults(){
     const method=$('paymentMethod').value;
+    const gross=Number($('paymentGross').value||0);
+
     if(method==='DOKU'){
       $('paymentProviderName').value='DOKU';
       $('paymentReceiptIssuer').value='Quantum YiJing';
+      $('paymentFee').value='';
+      $('paymentNet').value='';
+      $('paymentBank').value='';
+      $('paymentSettlementStatus').value='Pending';
+      $('paymentSettlementDate').value='';
     } else if(method==='Bank Transfer'){
       if(!$('paymentProviderName').value || $('paymentProviderName').value==='DOKU') $('paymentProviderName').value='Bank Transfer';
       $('paymentReceiptIssuer').value='Quantum YiJing';
+      $('paymentFee').value='0.00';
+      $('paymentNet').value=gross.toFixed(2);
+      $('paymentBank').value='';
+      $('paymentSettlementStatus').value='Pending';
+      $('paymentSettlementDate').value='';
     } else if(method==='External Platform'){
       if(!$('paymentProviderName').value || $('paymentProviderName').value==='DOKU') $('paymentProviderName').value='';
       $('paymentReceiptIssuer').value='External Platform';
+      $('paymentFee').value='';
+      $('paymentNet').value='';
+      $('paymentBank').value='';
+      $('paymentSettlementStatus').value='Pending';
+      $('paymentSettlementDate').value='';
     } else if(method==='Cash'){
       $('paymentProviderName').value='Cash';
       $('paymentReceiptIssuer').value='Quantum YiJing';
+      $('paymentFee').value='0.00';
+      $('paymentNet').value=gross.toFixed(2);
+      $('paymentBank').value='';
     } else if(method==='Manual'){
       if($('paymentProviderName').value==='DOKU') $('paymentProviderName').value='';
       $('paymentReceiptIssuer').value='Quantum YiJing';
+      $('paymentFee').value='';
+      $('paymentNet').value='';
+      $('paymentBank').value='';
     }
   }
   async function savePayment(){
@@ -468,7 +526,7 @@
   $('newOrderButton').addEventListener('click', openOrder);
   $('newPaymentButton').addEventListener('click',()=>openPayment());
   $('paymentDialogClose').addEventListener('click',()=>$('paymentDialog').close()); $('paymentClose').addEventListener('click',()=>$('paymentDialog').close()); $('paymentSave').addEventListener('click',savePayment);
-  $('paymentMethod').addEventListener('change',applyPaymentMethodDefaults); $('paymentGross').addEventListener('input',recalcPayment); $('paymentFee').addEventListener('input',recalcPayment); $('paymentOrder').addEventListener('change',()=>{const o=$('paymentOrder').selectedOptions[0]; const t=Number(o?.dataset.total||0); $('paymentGross').value=t.toFixed(2); const provider=o?.dataset.provider||''; $('paymentMethod').value=derivePaymentMethod(provider); $('paymentProviderName').value=provider; applyPaymentMethodDefaults(); recalcPayment();});
+  $('paymentMethod').addEventListener('change',applyPaymentMethodDefaults); $('paymentGross').addEventListener('input',recalcPayment); $('paymentFee').addEventListener('input',recalcPayment); $('paymentOrder').addEventListener('change',()=>{const o=$('paymentOrder').selectedOptions[0]; const t=Number(o?.dataset.total||0); $('paymentGross').value=t.toFixed(2); const provider=o?.dataset.provider||''; $('paymentMethod').value=derivePaymentMethod(provider); $('paymentProviderName').value=provider; applyPaymentMethodDefaults();});
   $('productDialogClose').addEventListener('click',()=>$('productDialog').close()); $('productClose').addEventListener('click',()=>$('productDialog').close()); $('productSave').addEventListener('click',saveProduct);
   $('productNameEn').addEventListener('input',()=>{if(!$('productId').value && !$('productSlug').dataset.manual){$('productSlug').value=slugify($('productNameEn').value);}}); $('productSlug').addEventListener('input',()=>{$('productSlug').dataset.manual='1';});
   $('orderDialogClose').addEventListener('click',()=>$('orderDialog').close()); $('orderClose').addEventListener('click',()=>$('orderDialog').close()); $('orderSave').addEventListener('click',saveOrder);
