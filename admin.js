@@ -394,11 +394,11 @@
     return p ? 'Other' : 'Manual';
   }
 
-  function setPaymentBalanceSummary(order=null, option=null){
-    const total=Number(order?.total ?? option?.dataset.total ?? 0);
-    const paid=Number(order?.paid_to_date ?? option?.dataset.paid ?? 0);
-    const balance=Math.max(total-paid,0);
-    const currency=order?.currency || option?.dataset.currency || 'MYR';
+  function setPaymentBalanceSummary(order=null, option=null, authoritative=null){
+    const total=Number(authoritative?.orderTotal ?? order?.total ?? option?.dataset.total ?? 0);
+    const paid=Number(authoritative?.paidToDate ?? order?.paid_to_date ?? option?.dataset.paid ?? 0);
+    const balance=Math.max(Number(authoritative?.balanceDue ?? (total-paid)),0);
+    const currency=authoritative?.currency || order?.currency || option?.dataset.currency || 'MYR';
 
     $('paymentOrderTotal').value=money(total,currency);
     $('paymentPaidToDate').value=money(paid,currency);
@@ -406,13 +406,26 @@
     return {total,paid,balance,currency};
   }
 
-  function openPayment(orderId=''){
+  async function fetchPaymentBalance(orderId){
+    if(!orderId) return null;
+    const response=await api(`/api/admin?action=paymentbalance&id=${encodeURIComponent(orderId)}`);
+    return await response.json();
+  }
+
+  async function openPayment(orderId=''){
     $('paymentOrder').value=String(orderId||'');
     const option=$('paymentOrder').selectedOptions[0];
     const order=state.orders.find(o=>Number(o.id)===Number(orderId)) || null;
     const provider=order?.payment_provider || option?.dataset.provider || '';
     const method=derivePaymentMethod(provider);
-    const summary=setPaymentBalanceSummary(order,option);
+
+    let authoritative=null;
+    try{
+      authoritative=await fetchPaymentBalance(orderId);
+    }catch(error){
+      console.warn('Could not load authoritative payment balance',error);
+    }
+    const summary=setPaymentBalanceSummary(order,option,authoritative);
 
     $('paymentMethod').value=method;
     $('paymentProviderName').value=provider || (method==='DOKU'?'DOKU':'');
@@ -423,7 +436,7 @@
     $('paymentSettlementDate').value='';
     $('paymentNotes').value='';
 
-    // "This payment amount" defaults to the outstanding balance, not the original order total.
+    // Default the next payment to the actual outstanding balance.
     $('paymentGross').value=summary.balance>0 ? summary.balance.toFixed(2) : '0.00';
 
     if(method==='DOKU'){
@@ -540,7 +553,7 @@
   $('newOrderButton').addEventListener('click', openOrder);
   $('newPaymentButton').addEventListener('click',()=>openPayment());
   $('paymentDialogClose').addEventListener('click',()=>$('paymentDialog').close()); $('paymentClose').addEventListener('click',()=>$('paymentDialog').close()); $('paymentSave').addEventListener('click',savePayment);
-  $('paymentMethod').addEventListener('change',applyPaymentMethodDefaults); $('paymentGross').addEventListener('input',recalcPayment); $('paymentFee').addEventListener('input',recalcPayment); $('paymentOrder').addEventListener('change',()=>{const o=$('paymentOrder').selectedOptions[0]; const order=state.orders.find(x=>Number(x.id)===Number(o?.value))||null; const summary=setPaymentBalanceSummary(order,o); const provider=order?.payment_provider||o?.dataset.provider||''; $('paymentMethod').value=derivePaymentMethod(provider); $('paymentProviderName').value=provider; $('paymentGross').value=summary.balance>0?summary.balance.toFixed(2):'0.00'; applyPaymentMethodDefaults(); if($('paymentMethod').value==='Bank Transfer') $('paymentNet').value=summary.balance>0?summary.balance.toFixed(2):'0.00';});
+  $('paymentMethod').addEventListener('change',applyPaymentMethodDefaults); $('paymentGross').addEventListener('input',recalcPayment); $('paymentFee').addEventListener('input',recalcPayment); $('paymentOrder').addEventListener('change',async()=>{const o=$('paymentOrder').selectedOptions[0]; const order=state.orders.find(x=>Number(x.id)===Number(o?.value))||null; let authoritative=null; try{authoritative=await fetchPaymentBalance(o?.value);}catch(error){console.warn('Could not load authoritative payment balance',error);} const summary=setPaymentBalanceSummary(order,o,authoritative); const provider=order?.payment_provider||o?.dataset.provider||''; $('paymentMethod').value=derivePaymentMethod(provider); $('paymentProviderName').value=provider; $('paymentGross').value=summary.balance>0?summary.balance.toFixed(2):'0.00'; applyPaymentMethodDefaults(); if($('paymentMethod').value==='Bank Transfer') $('paymentNet').value=summary.balance>0?summary.balance.toFixed(2):'0.00';});
   $('productDialogClose').addEventListener('click',()=>$('productDialog').close()); $('productClose').addEventListener('click',()=>$('productDialog').close()); $('productSave').addEventListener('click',saveProduct);
   $('productNameEn').addEventListener('input',()=>{if(!$('productId').value && !$('productSlug').dataset.manual){$('productSlug').value=slugify($('productNameEn').value);}}); $('productSlug').addEventListener('input',()=>{$('productSlug').dataset.manual='1';});
   $('orderDialogClose').addEventListener('click',()=>$('orderDialog').close()); $('orderClose').addEventListener('click',()=>$('orderDialog').close()); $('orderSave').addEventListener('click',saveOrder);

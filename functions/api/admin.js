@@ -568,6 +568,48 @@ async function commercePayments(context) {
 }
 
 
+async function paymentBalance(context, url) {
+  const orderId=Number(url.searchParams.get('id'));
+  if(!Number.isInteger(orderId)||orderId<1)
+    return json({error:'Invalid order ID.'},400);
+
+  const db=context.env.ENQUIRIES_DB;
+  const order=await db.prepare(`
+    SELECT id,total,currency,payment_status
+    FROM orders
+    WHERE id=?
+  `).bind(orderId).first();
+
+  if(!order) return json({error:'Order not found.'},404);
+
+  const paidRow=await db.prepare(`
+    SELECT COALESCE(SUM(COALESCE(NULLIF(gross_amount,0),amount,0)),0) AS paid
+    FROM payments
+    WHERE order_id=?
+      AND status IN ('Paid','External')
+      AND verification_status='Verified'
+  `).bind(orderId).first();
+
+  const orderTotal=Number(order.total||0);
+  const paidToDate=Number(paidRow?.paid||0);
+  const balanceDue=Math.max(orderTotal-paidToDate,0);
+
+  let calculatedStatus='Pending';
+  if(orderTotal>0 && paidToDate>=orderTotal-0.005) calculatedStatus='Paid';
+  else if(paidToDate>0) calculatedStatus='Partially Paid';
+
+  return json({
+    ok:true,
+    orderId,
+    orderTotal,
+    paidToDate,
+    balanceDue,
+    currency:clean(order.currency,10)||'MYR',
+    calculatedStatus
+  });
+}
+
+
 async function savePayment(context) {
   let body;
   try { body = await context.request.json(); }
@@ -837,6 +879,7 @@ export async function onRequest(context) {
     if (context.request.method === 'GET' && action === 'commerceproducts') return await commerceProducts(context);
     if ((context.request.method === 'POST' || context.request.method === 'PATCH') && action === 'productsave') return await saveProduct(context, url);
     if (context.request.method === 'GET' && action === 'commerceorders') return await commerceOrders(context);
+    if (context.request.method === 'GET' && action === 'paymentbalance') return await paymentBalance(context, url);
     if (context.request.method === 'GET' && action === 'commercepayments') return await commercePayments(context);
     if (context.request.method === 'POST' && action === 'paymentsave') return await savePayment(context);
     if (context.request.method === 'POST' && action === 'ordercreate') return await createOrder(context);
