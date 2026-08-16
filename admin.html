@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Academy Operating System | Quantum YiJing International Academy</title>
   <link rel="icon" href="images/quantum-yijing-logo.png">
-  <link rel="stylesheet" href="admin.css?v=3.3.5a">
+  <link rel="stylesheet" href="admin.css?v=3.3.6">
 </head>
 <body>
   <main class="crm-shell">
@@ -27,7 +27,7 @@
       <header class="topbar">
         <div class="brand-lockup">
           <img src="images/quantum-yijing-logo.png" alt="" class="topbar-logo">
-          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v3.3.5a</span></div>
+          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v3.3.6</span></div>
         </div>
         <div class="topbar-actions">
           <a href="index.html" class="text-link">View website</a>
@@ -217,7 +217,7 @@
           <article><span>Active products</span><strong id="commerceStatProducts">0</strong></article>
           <article><span>Total orders</span><strong id="commerceStatOrders">0</strong></article>
           <article><span>Paid / External</span><strong id="commerceStatPaid">0</strong></article>
-          <article><span>Pending</span><strong id="commerceStatPending">0</strong></article>
+          <article><span>Pending / Partial</span><strong id="commerceStatPending">0</strong></article>
           <article><span>Gross sales</span><strong id="commerceStatGross">RM 0.00</strong></article>
           <article><span>Platform / provider fees</span><strong id="commerceStatFees">RM 0.00</strong></article>
           <article><span>Net amount</span><strong id="commerceStatNet">RM 0.00</strong></article>
@@ -392,12 +392,21 @@
       <label>Provider / platform
         <input id="paymentProviderName" maxlength="80" placeholder="DOKU / Google Play Books / Bookstera / Bank">
       </label>
+    </div>
 
-      <label class="payment-reference-field">
-        <span>Transaction Reference</span>
-        <input id="paymentTransactionRef" maxlength="200" placeholder="e.g. DOKU transaction ID / bank reference / platform settlement ID">
-      </label>
+    <div class="section-title"><h3>Order balance</h3></div>
+    <div class="edit-grid edit-grid-v25">
+      <label>Order total<input id="paymentOrderTotal" type="text" readonly></label>
+      <label>Paid to date<input id="paymentPaidToDate" type="text" readonly></label>
+      <label>Balance due<input id="paymentBalanceDue" type="text" readonly></label>
+    </div>
 
+    <label class="payment-reference-field">
+      <span>Transaction Reference</span>
+      <input id="paymentTransactionRef" maxlength="200" placeholder="e.g. DOKU transaction ID / bank reference / platform settlement ID">
+    </label>
+
+    <div class="edit-grid edit-grid-v25">
       <label>Payment status
         <select id="paymentRecordStatus">
           <option>Pending</option>
@@ -417,7 +426,7 @@
         </select>
       </label>
 
-      <label>Gross amount<input id="paymentGross" type="number" min="0" step="0.01"></label>
+      <label>This payment amount<input id="paymentGross" type="number" min="0" step="0.01"></label>
       <label>Provider / platform fee<input id="paymentFee" type="number" min="0" step="0.01"></label>
       <label>Net amount<input id="paymentNet" type="number" min="0" step="0.01"></label>
       <label>Amount received in bank<input id="paymentBank" type="number" min="0" step="0.01" placeholder="Leave blank until received"></label>
@@ -444,11 +453,11 @@
 
     <label>Accounting notes
       <textarea id="paymentNotes" rows="3" maxlength="1000"
-        placeholder="e.g. DOKU settlement pending; Google payout after platform fee; bank transfer verified against statement."></textarea>
+        placeholder="e.g. Deposit / installment #1; DOKU settlement pending; bank transfer verified against statement."></textarea>
     </label>
 
     <p class="helper-text">
-      Payment status records whether the customer paid. Settlement status records whether funds were received and reconciled in the company bank/accounting records.
+      The order total stays fixed. “This payment amount” can be the full amount or a partial payment. QY calculates Paid to Date and Balance Due across verified payment records. Verification and settlement remain separate.
     </p>
 
     <div class="dialog-actions">
@@ -459,6 +468,6 @@
   </form>
 </dialog>
 
-  <script src="admin.js?v=3.3.5a" defer></script>
+  <script src="admin.js?v=3.3.6" defer></script>
 </body>
 </html>
