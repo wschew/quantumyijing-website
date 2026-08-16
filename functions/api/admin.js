@@ -483,27 +483,90 @@ const settlementStatuses = new Set([
 
 async function commerceStats(context) {
   const db=context.env.ENQUIRIES_DB;
-  const products=await db.prepare(`SELECT COUNT(*) total, SUM(CASE WHEN status='Active' THEN 1 ELSE 0 END) active FROM products`).first();
-  const orders=await db.prepare(`SELECT COUNT(*) total,
-      SUM(CASE WHEN payment_status IN ('Paid','External') THEN 1 ELSE 0 END) paid,
-      SUM(CASE WHEN payment_status IN ('Pending','Partially Paid') THEN 1 ELSE 0 END) pending
-    FROM orders`).first();
-  const moneySummary=await db.prepare(`SELECT
+
+  const products=await db.prepare(`
+    SELECT COUNT(*) total,
+      SUM(CASE WHEN status='Active' THEN 1 ELSE 0 END) active
+    FROM products
+  `).first();
+
+  const orders=await db.prepare(`
+    SELECT
+      COUNT(*) total,
+      SUM(CASE WHEN total > 0 AND COALESCE(v.paid_to_date,0) >= total - 0.005 THEN 1 ELSE 0 END) paid,
+      SUM(CASE WHEN COALESCE(v.paid_to_date,0) < total - 0.005 THEN 1 ELSE 0 END) pending
+    FROM orders o
+    LEFT JOIN (
+      SELECT order_id,
+        SUM(COALESCE(NULLIF(gross_amount,0),amount,0)) AS paid_to_date
+      FROM payments
+      WHERE status IN ('Paid','External')
+        AND verification_status='Verified'
+      GROUP BY order_id
+    ) v ON v.order_id=o.id
+  `).first();
+
+  const moneySummary=await db.prepare(`
+    SELECT
       COALESCE(SUM(gross_amount),0) gross_sales,
       COALESCE(SUM(provider_fee),0) provider_fees,
       COALESCE(SUM(net_amount),0) net_sales,
       COALESCE(SUM(bank_received_amount),0) bank_received
     FROM payments
-    WHERE status IN ('Paid','External') OR verification_status='Verified'`).first();
+    WHERE status IN ('Paid','External')
+      AND verification_status='Verified'
+  `).first();
+
   const byChannel=await db.prepare(`SELECT sales_channel label, COUNT(*) count FROM orders GROUP BY sales_channel ORDER BY count DESC`).all();
   const byProvider=await db.prepare(`SELECT payment_provider label, COUNT(*) count FROM orders GROUP BY payment_provider ORDER BY count DESC`).all();
-  const byStatus=await db.prepare(`SELECT payment_status label, COUNT(*) count FROM orders GROUP BY payment_status ORDER BY count DESC`).all();
-  const byMethod=await db.prepare(`SELECT CASE WHEN trim(payment_method)='' THEN provider ELSE payment_method END label, COUNT(*) count FROM payments GROUP BY CASE WHEN trim(payment_method)='' THEN provider ELSE payment_method END ORDER BY count DESC`).all();
-  return json({ok:true,summary:{
-    products:Number(products?.active||0),orders:Number(orders?.total||0),paid:Number(orders?.paid||0),pending:Number(orders?.pending||0),
-    grossSales:Number(moneySummary?.gross_sales||0),providerFees:Number(moneySummary?.provider_fees||0),
-    netSales:Number(moneySummary?.net_sales||0),bankReceived:Number(moneySummary?.bank_received||0)
-  },byChannel:byChannel.results||[],byProvider:byProvider.results||[],byStatus:byStatus.results||[],byMethod:byMethod.results||[]});
+
+  const byStatus=await db.prepare(`
+    SELECT calculated_status label, COUNT(*) count
+    FROM (
+      SELECT o.id,
+        CASE
+          WHEN o.total > 0 AND COALESCE(v.paid_to_date,0) >= o.total - 0.005 THEN 'Paid'
+          WHEN COALESCE(v.paid_to_date,0) > 0 THEN 'Partially Paid'
+          ELSE 'Pending'
+        END AS calculated_status
+      FROM orders o
+      LEFT JOIN (
+        SELECT order_id,
+          SUM(COALESCE(NULLIF(gross_amount,0),amount,0)) AS paid_to_date
+        FROM payments
+        WHERE status IN ('Paid','External')
+          AND verification_status='Verified'
+        GROUP BY order_id
+      ) v ON v.order_id=o.id
+    )
+    GROUP BY calculated_status
+    ORDER BY count DESC
+  `).all();
+
+  const byMethod=await db.prepare(`
+    SELECT CASE WHEN trim(payment_method)='' THEN provider ELSE payment_method END label, COUNT(*) count
+    FROM payments
+    GROUP BY CASE WHEN trim(payment_method)='' THEN provider ELSE payment_method END
+    ORDER BY count DESC
+  `).all();
+
+  return json({
+    ok:true,
+    summary:{
+      products:Number(products?.active||0),
+      orders:Number(orders?.total||0),
+      paid:Number(orders?.paid||0),
+      pending:Number(orders?.pending||0),
+      grossSales:Number(moneySummary?.gross_sales||0),
+      providerFees:Number(moneySummary?.provider_fees||0),
+      netSales:Number(moneySummary?.net_sales||0),
+      bankReceived:Number(moneySummary?.bank_received||0)
+    },
+    byChannel:byChannel.results||[],
+    byProvider:byProvider.results||[],
+    byStatus:byStatus.results||[],
+    byMethod:byMethod.results||[]
+  });
 }
 
 
@@ -540,7 +603,24 @@ async function commerceOrders(context) {
         WHERE p3.order_id=o.id
           AND p3.status IN ('Paid','External')
           AND p3.verification_status='Verified'
-      ),0) AS paid_to_date
+      ),0) AS paid_to_date,
+      CASE
+        WHEN o.total > 0 AND COALESCE((
+          SELECT SUM(COALESCE(NULLIF(p4.gross_amount,0),p4.amount,0))
+          FROM payments p4
+          WHERE p4.order_id=o.id
+            AND p4.status IN ('Paid','External')
+            AND p4.verification_status='Verified'
+        ),0) >= o.total - 0.005 THEN 'Paid'
+        WHEN COALESCE((
+          SELECT SUM(COALESCE(NULLIF(p5.gross_amount,0),p5.amount,0))
+          FROM payments p5
+          WHERE p5.order_id=o.id
+            AND p5.status IN ('Paid','External')
+            AND p5.verification_status='Verified'
+        ),0) > 0 THEN 'Partially Paid'
+        ELSE 'Pending'
+      END AS calculated_payment_status
     FROM orders o
     LEFT JOIN order_items oi ON oi.order_id=o.id
     LEFT JOIN products p ON p.id=oi.product_id
@@ -737,11 +817,15 @@ async function savePayment(context) {
   if (paidToDate >= orderTotal - 0.005 && orderTotal > 0) orderPaymentStatus = 'Paid';
   else if (paidToDate > 0) orderPaymentStatus = 'Partially Paid';
 
+  // Existing D1 CHECK constraint does not allow "Partially Paid".
+  // Store Pending for partial balances, but return/display the calculated status separately.
+  const storedOrderStatus = orderPaymentStatus === 'Partially Paid' ? 'Pending' : orderPaymentStatus;
+
   await db.prepare(`
     UPDATE orders
     SET payment_provider=?, payment_status=?, updated_at=CURRENT_TIMESTAMP
     WHERE id=?
-  `).bind(provider,orderPaymentStatus,orderId).run();
+  `).bind(provider,storedOrderStatus,orderId).run();
 
   return json({
     ok:true,
