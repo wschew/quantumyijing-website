@@ -28,7 +28,21 @@ export async function onRequestPost(context){
   const received=h.get('Signature')||h.get('signature')||'';
   const receivedAuthorization=h.get('Authorization')||h.get('authorization')||'';
   const target=new URL(context.request.url).pathname;
+// TEMPORARY DOKU NOTIFICATION DIAGNOSTICS
+const debugHeaders = {};
+for (const [key, value] of h.entries()) {
+  debugHeaders[key] =
+    key.toLowerCase() === 'authorization'
+      ? '[REDACTED - Authorization present]'
+      : value;
+}
 
+console.log('=== DOKU NOTIFICATION REQUEST DEBUG ===');
+console.log('DOKU NOTIFICATION URL', context.request.url);
+console.log('DOKU NOTIFICATION METHOD', context.request.method);
+console.log('DOKU NOTIFICATION HEADERS', debugHeaders);
+console.log('DOKU NOTIFICATION RAW BODY', raw);
+console.log('=== END DOKU NOTIFICATION REQUEST DEBUG ===');
 const calculatedDigest = await digest(raw);
 
 const canonical = [
@@ -54,8 +68,9 @@ console.log('DOKU NOTIFICATION VERIFY', {
   clientReceived: client,
   clientConfigured: cfg.clientId,
 
-  receivedPrefix: received.slice(0,24),
-  expectedPrefix: expected.slice(0,24),
+  receivedSignature: received,
+expectedSignature: expected,
+
 
   requestId: rid,
   timestamp: ts,
@@ -69,6 +84,9 @@ console.log('DOKU NOTIFICATION VERIFY', {
 
   secretLength: cfg.secret.length,
   secretFingerprint,
+
+  authorizationPresent: !!receivedAuthorization,
+authorizationLength: receivedAuthorization.length,
 
   authorizationMatch:
     safeEqual(
