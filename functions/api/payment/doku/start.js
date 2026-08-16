@@ -130,6 +130,27 @@ const sig = await signature(
   raw,
   'POST'
 );
+console.log('=== DOKU CHECKOUT REQUEST DEBUG ===');
+
+console.log('DOKU ENDPOINT', cfg.endpoint);
+
+console.log('DOKU REQUEST HEADERS', {
+  'accept': 'application/json',
+  'content-type': 'application/json',
+
+  // Do NOT expose the API key itself in logs.
+  'authorization': '[REDACTED - Basic Authorization]',
+
+  'Client-Id': cfg.clientId,
+  'API-Version': 'arabica.2025-12-01',
+  'Request-Id': requestId,
+  'Request-Timestamp': timestamp,
+  'Signature': sig
+});
+
+console.log('DOKU REQUEST BODY', raw);
+
+console.log('=== END DOKU CHECKOUT REQUEST DEBUG ===');
   let r;
   try {
     r = await fetch(cfg.endpoint, {
