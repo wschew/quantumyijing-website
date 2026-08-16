@@ -712,3 +712,138 @@ async function savePayment(context) {
     settlementStatus
   });
 }
+
+
+function makeOrderReference(){
+  return `QY-${new Date().toISOString().slice(0,10).replaceAll('-','')}-${crypto.randomUUID().slice(0,6).toUpperCase()}`;
+}
+
+async function createOrder(context) {
+  let body;
+  try { body=await context.request.json(); }
+  catch { return json({error:'Invalid request.'},400); }
+
+  const productId=Number(body.productId),
+    quantity=Math.max(1,Math.min(Number(body.quantity||1),100)),
+    name=clean(body.customerName,160),
+    email=clean(body.customerEmail,240),
+    phone=clean(body.customerPhone,80),
+    channel=clean(body.salesChannel,80)||'Website',
+    provider=clean(body.paymentProvider,80)||'DOKU',
+    status=clean(body.paymentStatus,20)||'Pending',
+    campaign=clean(body.campaignCode,120),
+    affiliate=clean(body.affiliateCode,100);
+
+  if(!Number.isInteger(productId)||productId<1||!name||!email)
+    return json({error:'Customer name, email and product are required.'},400);
+
+  if(!paymentStatuses.has(status))
+    return json({error:'Invalid payment status.'},400);
+
+  const db=context.env.ENQUIRIES_DB;
+
+  const product=await db.prepare(`
+    SELECT id,price,currency,name_en,early_bird_price,early_bird_end
+    FROM products WHERE id=?
+  `).bind(productId).first();
+
+  if(!product) return json({error:'Product not found.'},404);
+
+  const today=new Intl.DateTimeFormat('en-CA',{
+    timeZone:'Asia/Kuala_Lumpur',
+    year:'numeric',month:'2-digit',day:'2-digit'
+  }).format(new Date());
+
+  const listUnit=Number(product.price||0);
+  const early=Number(product.early_bird_price)>0 &&
+    product.early_bird_end && today<=product.early_bird_end;
+  const finalUnit=early?Number(product.early_bird_price):listUnit;
+  const discount=Math.max(listUnit-finalUnit,0);
+  const total=finalUnit*quantity;
+  const ref=makeOrderReference();
+
+  const order=await db.prepare(`
+    INSERT INTO orders(
+      order_reference,customer_name,customer_email,customer_phone,
+      currency,subtotal,total,sales_channel,payment_provider,payment_status,
+      campaign_code,affiliate_code
+    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
+  `).bind(
+    ref,name,email,phone,product.currency||'MYR',total,total,
+    channel,provider,status,campaign,affiliate
+  ).run();
+
+  const orderId=order.meta?.last_row_id;
+
+  await db.prepare(`
+    INSERT INTO order_items(
+      order_id,product_id,quantity,unit_price,line_total,
+      list_unit_price,discount_amount,final_unit_price,pricing_rule
+    ) VALUES(?,?,?,?,?,?,?,?,?)
+  `).bind(
+    orderId,productId,quantity,finalUnit,total,
+    listUnit,discount*quantity,finalUnit,early?'Early Bird':'Standard'
+  ).run();
+
+  // If an Admin-created order is entered as already paid, create a basic payment row.
+  // It is intentionally NOT auto-verified; the admin should verify it separately.
+  if(status==='Paid'||status==='External'){
+    await db.prepare(`
+      INSERT INTO payments(
+        order_id,provider,amount,currency,status,paid_at,
+        payment_method,gross_amount,provider_fee,net_amount,
+        verification_status,settlement_status
+      ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
+    `).bind(
+      orderId,provider,total,product.currency||'MYR',status,new Date().toISOString(),
+      provider,total,0,total,'Unverified','Pending'
+    ).run();
+  }
+
+  return json({
+    ok:true,id:orderId,orderReference:ref,total,
+    currency:product.currency||'MYR',
+    listUnit,discount:discount*quantity,finalUnit,
+    pricingRule:early?'Early Bird':'Standard'
+  });
+}
+
+export async function onRequest(context) {
+  const blocked = requireConfigured(context);
+  if (blocked) return blocked;
+
+  const url = new URL(context.request.url);
+  const action = url.searchParams.get('action') || '';
+
+  try {
+    if (context.request.method === 'GET' && action === 'stats') return await stats(context);
+    if (context.request.method === 'GET' && action === 'enquiries') return await enquiries(context, url);
+    if (context.request.method === 'GET' && action === 'detail') return await detail(context, url);
+    if (context.request.method === 'GET' && action === 'export') return await exportCsv(context, url);
+    if (context.request.method === 'PATCH' && action === 'update') return await update(context, url);
+    if (context.request.method === 'POST' && action === 'quickfollowup') return await quickFollowUp(context, url);
+    if (context.request.method === 'POST' && action === 'convert') return await convert(context, url);
+    if (context.request.method === 'POST' && action === 'activity') return await addActivity(context, url);
+
+    if (context.request.method === 'GET' && action === 'marketingstats') return await marketingStats(context);
+
+    if (context.request.method === 'GET' && action === 'studentstats') return await studentStats(context);
+    if (context.request.method === 'GET' && action === 'students') return await students(context, url);
+    if (context.request.method === 'GET' && action === 'studentdetail') return await studentDetail(context, url);
+    if (context.request.method === 'PATCH' && action === 'studentupdate') return await studentUpdate(context, url);
+    if (context.request.method === 'GET' && action === 'studentexport') return await studentExport(context, url);
+
+    if (context.request.method === 'GET' && action === 'commercestats') return await commerceStats(context);
+    if (context.request.method === 'GET' && action === 'commerceproducts') return await commerceProducts(context);
+    if ((context.request.method === 'POST' || context.request.method === 'PATCH') && action === 'productsave') return await saveProduct(context, url);
+    if (context.request.method === 'GET' && action === 'commerceorders') return await commerceOrders(context);
+    if (context.request.method === 'GET' && action === 'commercepayments') return await commercePayments(context);
+    if (context.request.method === 'POST' && action === 'paymentsave') return await savePayment(context);
+    if (context.request.method === 'POST' && action === 'ordercreate') return await createOrder(context);
+
+    return json({ error: 'Unknown admin action.' }, 404);
+  } catch (error) {
+    console.error('Admin API failed', error);
+    return json({ error: 'Academy Operating System request failed.' }, 500);
+  }
+}
