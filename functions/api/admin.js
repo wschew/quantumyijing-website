@@ -493,8 +493,8 @@ async function commerceStats(context) {
   const orders=await db.prepare(`
     SELECT
       COUNT(*) total,
-      SUM(CASE WHEN total > 0 AND COALESCE(v.paid_to_date,0) >= total - 0.005 THEN 1 ELSE 0 END) paid,
-      SUM(CASE WHEN COALESCE(v.paid_to_date,0) < total - 0.005 THEN 1 ELSE 0 END) pending
+      SUM(CASE WHEN COALESCE(final_agreed_total,total) > 0 AND COALESCE(v.paid_to_date,0) >= COALESCE(final_agreed_total,total) - 0.005 THEN 1 ELSE 0 END) paid,
+      SUM(CASE WHEN COALESCE(v.paid_to_date,0) < COALESCE(final_agreed_total,total) - 0.005 THEN 1 ELSE 0 END) pending
     FROM orders o
     LEFT JOIN (
       SELECT order_id,
@@ -525,7 +525,7 @@ async function commerceStats(context) {
     FROM (
       SELECT o.id,
         CASE
-          WHEN o.total > 0 AND COALESCE(v.paid_to_date,0) >= o.total - 0.005 THEN 'Paid'
+          WHEN COALESCE(o.final_agreed_total,o.total) > 0 AND COALESCE(v.paid_to_date,0) >= COALESCE(o.final_agreed_total,o.total) - 0.005 THEN 'Paid'
           WHEN COALESCE(v.paid_to_date,0) > 0 THEN 'Partially Paid'
           ELSE 'Pending'
         END AS calculated_status
@@ -593,6 +593,7 @@ async function saveProduct(context,url) {
 async function commerceOrders(context) {
   const result=await context.env.ENQUIRIES_DB.prepare(`
     SELECT o.id,o.order_reference,o.customer_name,o.customer_email,o.customer_phone,o.currency,o.total,
+      o.final_agreed_total,o.fee_adjustment_reason,
       o.sales_channel,o.payment_provider,o.payment_status,o.campaign_code,o.affiliate_code,o.external_order_id,o.created_at,
       p.name_en product_name,p.sku,oi.quantity,oi.list_unit_price,oi.discount_amount,oi.final_unit_price,oi.pricing_rule,
       py.id payment_id,py.payment_method,py.provider_transaction_id,py.gross_amount,py.provider_fee,py.net_amount,
@@ -605,13 +606,13 @@ async function commerceOrders(context) {
           AND p3.verification_status='Verified'
       ),0) AS paid_to_date,
       CASE
-        WHEN o.total > 0 AND COALESCE((
+        WHEN COALESCE(o.final_agreed_total,o.total) > 0 AND COALESCE((
           SELECT SUM(COALESCE(NULLIF(p4.gross_amount,0),p4.amount,0))
           FROM payments p4
           WHERE p4.order_id=o.id
             AND p4.status IN ('Paid','External')
             AND p4.verification_status='Verified'
-        ),0) >= o.total - 0.005 THEN 'Paid'
+        ),0) >= COALESCE(o.final_agreed_total,o.total) - 0.005 THEN 'Paid'
         WHEN COALESCE((
           SELECT SUM(COALESCE(NULLIF(p5.gross_amount,0),p5.amount,0))
           FROM payments p5
@@ -655,9 +656,8 @@ async function paymentBalance(context, url) {
 
   const db=context.env.ENQUIRIES_DB;
   const order=await db.prepare(`
-    SELECT id,total,currency,payment_status
-    FROM orders
-    WHERE id=?
+    SELECT id,total,final_agreed_total,fee_adjustment_reason,currency,payment_status
+    FROM orders WHERE id=?
   `).bind(orderId).first();
 
   if(!order) return json({error:'Order not found.'},404);
@@ -670,21 +670,19 @@ async function paymentBalance(context, url) {
       AND verification_status='Verified'
   `).bind(orderId).first();
 
-  const orderTotal=Number(order.total||0);
+  const originalTotal=Number(order.total||0);
+  const finalAgreedTotal=order.final_agreed_total==null ? originalTotal : Number(order.final_agreed_total);
   const paidToDate=Number(paidRow?.paid||0);
-  const balanceDue=Math.max(orderTotal-paidToDate,0);
+  const balanceDue=Math.max(finalAgreedTotal-paidToDate,0);
 
   let calculatedStatus='Pending';
-  if(orderTotal>0 && paidToDate>=orderTotal-0.005) calculatedStatus='Paid';
+  if(finalAgreedTotal>0 && paidToDate>=finalAgreedTotal-0.005) calculatedStatus='Paid';
   else if(paidToDate>0) calculatedStatus='Partially Paid';
 
   return json({
-    ok:true,
-    orderId,
-    orderTotal,
-    paidToDate,
-    balanceDue,
+    ok:true,orderId,originalTotal,finalAgreedTotal,paidToDate,balanceDue,
     currency:clean(order.currency,10)||'MYR',
+    feeAdjustmentReason:order.fee_adjustment_reason||'',
     calculatedStatus
   });
 }
@@ -706,6 +704,8 @@ async function savePayment(context) {
   const settlementStatus = clean(body.settlementStatus,30) || 'Pending';
   const issuer = clean(body.customerReceiptIssuer,100) || 'Quantum YiJing';
   const notes = clean(body.notes,1000);
+  const finalAgreedRaw = body.finalAgreedTotal;
+  const feeAdjustmentReason = clean(body.feeAdjustmentReason,300);
 
   const gross = Number(body.grossAmount || 0);
   const feeBlank = body.providerFee === '' || body.providerFee == null;
@@ -752,7 +752,7 @@ async function savePayment(context) {
   const db = context.env.ENQUIRIES_DB;
 
   const order = await db.prepare(
-    `SELECT id,total,currency,payment_status FROM orders WHERE id=?`
+    `SELECT id,total,final_agreed_total,currency,payment_status FROM orders WHERE id=?`
   ).bind(orderId).first();
 
   if (!order) return json({error:'Order not found.'},404);
@@ -766,8 +766,25 @@ async function savePayment(context) {
   `).bind(orderId).first();
 
   const paidBefore = Number(verifiedPaidBefore?.paid || 0);
-  const orderTotal = Number(order.total || 0);
+  const originalTotal = Number(order.total || 0);
+  const finalAgreedTotal = finalAgreedRaw==='' || finalAgreedRaw==null
+    ? (order.final_agreed_total==null ? originalTotal : Number(order.final_agreed_total))
+    : Number(finalAgreedRaw);
+
+  if(!Number.isFinite(finalAgreedTotal) || finalAgreedTotal < 0)
+    return json({error:'Final agreed fee must be a valid non-negative amount.'},400);
+
+  if(finalAgreedTotal + 0.005 < paidBefore)
+    return json({error:`Final agreed fee cannot be lower than amount already paid (${paidBefore.toFixed(2)}).`},400);
+
+  const orderTotal = finalAgreedTotal;
   const balanceBefore = Math.max(orderTotal-paidBefore,0);
+
+  await db.prepare(`
+    UPDATE orders
+    SET final_agreed_total=?, fee_adjustment_reason=?, fee_adjusted_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP
+    WHERE id=?
+  `).bind(finalAgreedTotal,feeAdjustmentReason,orderId).run();
 
   // Prevent accidental overpayment entries. A separate overpayment/refund workflow
   // can be added later if needed.

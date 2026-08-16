@@ -341,9 +341,14 @@
   async function loadCommerceOrders(){
     setMessage('commerceDashboardMessage','Loading…',true); const response=await api('/api/admin?action=commerceorders'), data=await response.json(); const body=$('commerceOrdersBody'); body.innerHTML='';
     state.orders=data.results||[];
-    state.orders.forEach(r=>body.insertAdjacentHTML('beforeend',`<tr><td><strong>${esc(r.order_reference)}</strong><br><small>${esc(String(r.created_at||'').slice(0,16).replace('T',' '))}</small></td><td><strong>${esc(r.customer_name)}</strong><br><small>${esc(r.customer_email)}</small></td><td>${esc(r.product_name||'—')}<br><small>${r.quantity||1} × ${esc(r.sku||'')}</small></td><td>${esc(r.sales_channel)}</td><td>${esc(r.payment_provider)}<br><span class="payment-pill ${esc(r.calculated_payment_status||r.payment_status)}">${esc(r.calculated_payment_status||r.payment_status)}</span>${r.verification_status?`<br><small>${esc(r.verification_status)}</small>`:''}</td><td class="money">${Number(r.discount_amount||0)>0?`<small>List ${money(r.list_unit_price,r.currency)}</small><br><small>Discount −${money(r.discount_amount,r.currency)} (${esc(r.pricing_rule||'Discount')})</small><br><strong>${money(r.total,r.currency)}</strong>`:`<strong>${money(r.total,r.currency)}</strong>`}</td><td>${esc(r.campaign_code||'—')}<br><small>${r.affiliate_code?`Affiliate: ${esc(r.affiliate_code)}`:''}</small></td><td><button type="button" class="view-button" data-record-payment="${r.id}">Record Payment</button></td></tr>`));
+    state.orders.forEach(r=>{
+      const effectiveTotal=Number(r.final_agreed_total ?? r.total ?? 0);
+      const paid=Number(r.paid_to_date||0);
+      const balance=Math.max(effectiveTotal-paid,0);
+      body.insertAdjacentHTML('beforeend',`<tr><td><strong>${esc(r.order_reference)}</strong><br><small>${esc(String(r.created_at||'').slice(0,16).replace('T',' '))}</small></td><td><strong>${esc(r.customer_name)}</strong><br><small>${esc(r.customer_email)}</small></td><td>${esc(r.product_name||'—')}<br><small>${r.quantity||1} × ${esc(r.sku||'')}</small></td><td>${esc(r.sales_channel)}</td><td>${esc(r.payment_provider)}<br><span class="payment-pill ${esc(r.calculated_payment_status||r.payment_status)}">${esc(r.calculated_payment_status||r.payment_status)}</span>${r.payment_id?`<br><small>${esc(r.verification_status||'Unverified')}</small>`:''}</td><td>${r.list_unit_price!=null&&Number(r.list_unit_price)!==effectiveTotal?`<small>List ${money(r.list_unit_price,r.currency)}</small><br>`:''}${r.final_agreed_total!=null&&Number(r.final_agreed_total)!==Number(r.total||0)?`<small>Agreed ${money(effectiveTotal,r.currency)}</small><br>`:''}<strong>${money(effectiveTotal,r.currency)}</strong></td><td class="money">${money(paid,r.currency)}</td><td class="money">${money(balance,r.currency)}</td><td>${esc(r.campaign_code||'—')}<br><small>${esc(r.affiliate_code||'')}</small></td><td><button class="link-button" type="button" data-record-payment="${r.id}">Record<br>Payment</button></td></tr>`);
+    });
     if(!state.orders.length) body.innerHTML='<tr><td colspan="8">No orders yet.</td></tr>'; $('commerceOrderCount').textContent=`${state.orders.length} order${state.orders.length===1?'':'s'}`;
-    const paymentOrder=$('paymentOrder'); if(paymentOrder) paymentOrder.innerHTML='<option value="">Select order</option>'+state.orders.map(o=>`<option value="${o.id}" data-total="${Number(o.total||0)}" data-paid="${Number(o.paid_to_date||0)}" data-currency="${esc(o.currency||'MYR')}" data-provider="${esc(o.payment_provider||'')}" data-status="${esc(o.payment_status||'Pending')}">${esc(o.order_reference)} — ${esc(o.customer_name)} — ${money(o.total,o.currency)}</option>`).join('');
+    const paymentOrder=$('paymentOrder'); if(paymentOrder) paymentOrder.innerHTML='<option value="">Select order</option>'+state.orders.map(o=>`<option value="${o.id}" data-total="${Number(o.total||0)}" data-agreed="${Number(o.final_agreed_total ?? o.total ?? 0)}" data-paid="${Number(o.paid_to_date||0)}" data-currency="${esc(o.currency||'MYR')}" data-provider="${esc(o.payment_provider||'')}" data-status="${esc(o.payment_status||'Pending')}">${esc(o.order_reference)} — ${esc(o.customer_name)} — ${money(o.total,o.currency)}</option>`).join('');
     setMessage('commerceDashboardMessage','',true);
   }
   async function loadCommercePayments(){
@@ -395,15 +400,18 @@
   }
 
   function setPaymentBalanceSummary(order=null, option=null, authoritative=null){
-    const total=Number(authoritative?.orderTotal ?? order?.total ?? option?.dataset.total ?? 0);
+    const originalTotal=Number(authoritative?.originalTotal ?? order?.total ?? option?.dataset.total ?? 0);
+    const finalAgreedTotal=Number(authoritative?.finalAgreedTotal ?? order?.final_agreed_total ?? option?.dataset.agreed ?? originalTotal);
     const paid=Number(authoritative?.paidToDate ?? order?.paid_to_date ?? option?.dataset.paid ?? 0);
-    const balance=Math.max(Number(authoritative?.balanceDue ?? (total-paid)),0);
+    const balance=Math.max(Number(authoritative?.balanceDue ?? (finalAgreedTotal-paid)),0);
     const currency=authoritative?.currency || order?.currency || option?.dataset.currency || 'MYR';
 
-    $('paymentOrderTotal').value=money(total,currency);
+    $('paymentOriginalTotal').value=money(originalTotal,currency);
+    $('paymentFinalAgreedTotal').value=finalAgreedTotal.toFixed(2);
     $('paymentPaidToDate').value=money(paid,currency);
     $('paymentBalanceDue').value=money(balance,currency);
-    return {total,paid,balance,currency};
+    $('paymentFeeAdjustmentReason').value=authoritative?.feeAdjustmentReason || order?.fee_adjustment_reason || '';
+    return {originalTotal,finalAgreedTotal,paid,balance,currency};
   }
 
   async function fetchPaymentBalance(orderId){
@@ -519,6 +527,7 @@
         orderId:Number($('paymentOrder').value),paymentMethod:$('paymentMethod').value,provider:$('paymentProviderName').value,
         transactionReference:$('paymentTransactionRef').value,status:$('paymentRecordStatus').value,
         verificationStatus:$('paymentVerification').value,settlementStatus:$('paymentSettlementStatus').value,
+        finalAgreedTotal:$('paymentFinalAgreedTotal').value,feeAdjustmentReason:$('paymentFeeAdjustmentReason').value,
         grossAmount:$('paymentGross').value,providerFee:$('paymentFee').value,
         netAmount:$('paymentNet').value,bankReceivedAmount:$('paymentBank').value,settlementDate:$('paymentSettlementDate').value,
         customerReceiptIssuer:$('paymentReceiptIssuer').value,notes:$('paymentNotes').value,currency
@@ -553,6 +562,17 @@
   $('newOrderButton').addEventListener('click', openOrder);
   $('newPaymentButton').addEventListener('click',()=>openPayment());
   $('paymentDialogClose').addEventListener('click',()=>$('paymentDialog').close()); $('paymentClose').addEventListener('click',()=>$('paymentDialog').close()); $('paymentSave').addEventListener('click',savePayment);
+  $('paymentFinalAgreedTotal').addEventListener('input',()=>{
+    const agreed=Number($('paymentFinalAgreedTotal').value||0);
+    const paidText=String($('paymentPaidToDate').value||'').replace(/[^0-9.-]/g,'');
+    const paid=Number(paidText||0);
+    const balance=Math.max(agreed-paid,0);
+    const option=$('paymentOrder').selectedOptions[0];
+    const currency=option?.dataset.currency||'MYR';
+    $('paymentBalanceDue').value=money(balance,currency);
+    if(document.activeElement!==$('paymentGross')) $('paymentGross').value=balance.toFixed(2);
+    if($('paymentMethod').value==='Bank Transfer' && document.activeElement!==$('paymentNet')) $('paymentNet').value=balance.toFixed(2);
+  });
   $('paymentMethod').addEventListener('change',applyPaymentMethodDefaults); $('paymentGross').addEventListener('input',recalcPayment); $('paymentFee').addEventListener('input',recalcPayment); $('paymentOrder').addEventListener('change',async()=>{const o=$('paymentOrder').selectedOptions[0]; const order=state.orders.find(x=>Number(x.id)===Number(o?.value))||null; let authoritative=null; try{authoritative=await fetchPaymentBalance(o?.value);}catch(error){console.warn('Could not load authoritative payment balance',error);} const summary=setPaymentBalanceSummary(order,o,authoritative); const provider=order?.payment_provider||o?.dataset.provider||''; $('paymentMethod').value=derivePaymentMethod(provider); $('paymentProviderName').value=provider; $('paymentGross').value=summary.balance>0?summary.balance.toFixed(2):'0.00'; applyPaymentMethodDefaults(); if($('paymentMethod').value==='Bank Transfer') $('paymentNet').value=summary.balance>0?summary.balance.toFixed(2):'0.00';});
   $('productDialogClose').addEventListener('click',()=>$('productDialog').close()); $('productClose').addEventListener('click',()=>$('productDialog').close()); $('productSave').addEventListener('click',saveProduct);
   $('productNameEn').addEventListener('input',()=>{if(!$('productId').value && !$('productSlug').dataset.manual){$('productSlug').value=slugify($('productNameEn').value);}}); $('productSlug').addEventListener('input',()=>{$('productSlug').dataset.manual='1';});
