@@ -177,10 +177,19 @@ async function sendStatusEmail(
   }
 
 
-const reasonHtml = reason
+const reasonEnHtml = reason
   ? `
     <div style="margin:20px 0;padding:14px 16px;background:#fff8e6;border-left:4px solid #d3a62c;border-radius:8px;font-size:14px;line-height:1.7;color:#43566d">
-      <strong>Reason / 原因:</strong><br>
+      <strong>Reason:</strong><br>
+      ${esc(reason)}
+    </div>
+  `
+  : '';
+
+const reasonZhHtml = reason
+  ? `
+    <div style="margin:20px 0;padding:14px 16px;background:#fff8e6;border-left:4px solid #d3a62c;border-radius:8px;font-size:14px;line-height:1.7;color:#43566d">
+      <strong>原因：</strong><br>
       ${esc(reason)}
     </div>
   `
@@ -273,7 +282,7 @@ ${esc(newStatus)}
 
 </table>
 
-${reasonHtml}
+${reasonEnHtml}
 
 <p style="margin:24px 0 0;font-size:15px;line-height:1.75">
 Warm regards,<br>
@@ -308,6 +317,8 @@ ${esc(bodyZh)}
 <p style="margin:18px 0;font-size:15px;line-height:1.85">
 <strong>联盟编号：</strong> ${safeCode || '—'}
 </p>
+
+${reasonZhHtml}
 
 <p style="margin:24px 0 0;font-size:15px;line-height:1.85">
 敬祝安好！<br>
