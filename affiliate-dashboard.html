@@ -7,9 +7,9 @@
 </head><body>
 <header class="qy-portal-header">
   <a href="/" class="qy-brand-lockup" aria-label="Quantum YiJing Home">
-  <img src="/images/quantum-yijing-3d-logo.png" alt="Quantum YiJing® Logo" class="qy-brand-logo">
-  <span class="qy-brand-name">Quantum YiJing®</span>
-</a>
+    <img src="/images/quantum-yijing-3d-logo.png" alt="Quantum YiJing® Logo" class="qy-brand-logo">
+    <span class="qy-brand-name">Quantum YiJing®</span>
+  </a>
   <div class="qy-portal-header-right">
     <div class="qy-portal-section">Affiliate Portal</div>
     <button id="logout" class="portal-outline-btn">Logout / 登出</button>
@@ -18,11 +18,25 @@
 
 <main class="portal-main">
 <section class="welcome">
-<div><p class="eyebrow">PRIVATE AFFILIATE DASHBOARD</p><h1 id="welcome">Welcome</h1><p id="membership" class="muted"></p></div>
-<div class="code-card"><span>Affiliate Code</span><b id="affiliateCode">—</b></div>
+  <div>
+    <p class="eyebrow">PRIVATE AFFILIATE DASHBOARD</p>
+    <h1 id="welcome">Welcome</h1>
+    <p id="membership" class="muted"></p>
+    <p id="accountStatus" class="muted"></p>
+  </div>
+  <div class="code-card"><span>Affiliate Code</span><b id="affiliateCode">—</b></div>
 </section>
 
 <section id="metrics" class="metrics"></section>
+
+<section class="panel">
+  <div class="panel-head"><div><h2>Your Referral Link</h2><p>Use this permanent link for general Quantum YiJing referrals.</p></div></div>
+  <div class="link-row">
+    <input id="generalLink" readonly>
+    <button id="copyGeneral">Copy General Link</button>
+  </div>
+  <p id="copyStatus" class="status" aria-live="polite"></p>
+</section>
 
 <section class="panel">
 <div class="panel-head"><div><h2>Monthly Total Sales</h2><p>Successfully paid affiliate sales — latest 12 months</p></div></div>
@@ -36,17 +50,7 @@
 
 <section class="panel">
   <h2>Eligible Products to Promote</h2>
-
-  <p class="muted">
-    Only Quantum YiJing offerings currently approved for affiliate promotion are shown below.
-    Your permanent Affiliate Code is automatically included in every link.
-  </p>
-
-  <div class="link-row">
-    <input id="generalLink" readonly>
-    <button id="copyGeneral">Copy General Link</button>
-  </div>
-
+  <p class="muted">Only Quantum YiJing offerings currently approved for affiliate promotion are shown below. Your permanent Affiliate Code is automatically included in every link.</p>
   <div id="productLinks" class="product-links"></div>
 </section>
 
@@ -66,6 +70,6 @@
 </table></div>
 </section>
 </main>
+
 <script src="/affiliate-dashboard.js" defer></script>
-<script src="/affiliate-dashboard-v3.3.4a.js" defer></script>
 </body></html>
