@@ -4,6 +4,28 @@
 <title>Quantum YiJing® Affiliate Dashboard</title>
 <link rel="stylesheet" href="/styles.css">
 <link rel="stylesheet" href="/affiliate-portal.css">
+<style>
+  .portal-main.compact-dashboard{max-width:1500px;margin:0 auto;padding:26px 20px 34px}
+  .compact-dashboard .welcome{margin-bottom:18px}
+  .compact-dashboard .metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin:16px 0 18px}
+  .compact-dashboard .metric{min-height:104px;padding:20px 22px}
+  .compact-dashboard .dashboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+  .compact-dashboard .panel{padding:22px 24px;margin:0}
+  .compact-dashboard .panel h2{margin-top:0}
+  .compact-dashboard .chart{min-height:250px}
+  .compact-dashboard .compact-chart{min-height:245px}
+  .compact-dashboard .product-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .compact-dashboard .affiliate-offer{margin:0}
+  .compact-dashboard .table-wrap{max-height:300px;overflow:auto}
+  .compact-dashboard .table-wrap table{font-size:14px}
+  .compact-dashboard .bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .compact-dashboard .link-row{align-items:stretch}
+  @media(max-width:1100px){
+    .compact-dashboard .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .compact-dashboard .dashboard-grid,.compact-dashboard .bottom-grid{grid-template-columns:1fr}
+    .compact-dashboard .product-links{grid-template-columns:1fr}
+  }
+</style>
 </head><body>
 <header class="qy-portal-header">
   <a href="/" class="qy-brand-lockup" aria-label="Quantum YiJing Home">
@@ -16,7 +38,7 @@
   </div>
 </header>
 
-<main class="portal-main">
+<main class="portal-main compact-dashboard">
 <section class="welcome">
   <div>
     <p class="eyebrow">PRIVATE AFFILIATE DASHBOARD</p>
@@ -29,45 +51,51 @@
 
 <section id="metrics" class="metrics"></section>
 
-<section class="panel">
-  <div class="panel-head"><div><h2>Your Referral Link</h2><p>Use this permanent link for general Quantum YiJing referrals.</p></div></div>
-  <div class="link-row">
-    <input id="generalLink" readonly>
-    <button id="copyGeneral">Copy General Link</button>
-  </div>
-  <p id="copyStatus" class="status" aria-live="polite"></p>
+<section class="dashboard-grid">
+  <section class="panel">
+    <div class="panel-head"><div><h2>Your Referral Link</h2><p>Use this permanent link for general Quantum YiJing referrals.</p></div></div>
+    <div class="link-row">
+      <input id="generalLink" readonly>
+      <button id="copyGeneral">Copy General Link</button>
+    </div>
+    <p id="copyStatus" class="status" aria-live="polite"></p>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div><h2>Monthly Total Sales</h2><p>Successfully paid affiliate sales — latest 12 months</p></div></div>
+    <div id="salesChart" class="chart compact-chart"></div>
+  </section>
 </section>
 
-<section class="panel">
-<div class="panel-head"><div><h2>Monthly Total Sales</h2><p>Successfully paid affiliate sales — latest 12 months</p></div></div>
-<div id="salesChart" class="chart"></div>
+<section class="dashboard-grid">
+  <section class="panel">
+    <div class="panel-head"><div><h2>Monthly Sales by Product Category</h2><p>Courses, consultations, books/eBooks, digital products, physical products, memberships, events and other</p></div></div>
+    <div id="categoryChart" class="chart compact-chart"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Eligible Products to Promote</h2>
+    <p class="muted">Only Quantum YiJing offerings currently approved for affiliate promotion are shown below. Your permanent Affiliate Code is automatically included in every link.</p>
+    <div id="productLinks" class="product-links"></div>
+  </section>
 </section>
 
-<section class="panel">
-<div class="panel-head"><div><h2>Monthly Sales by Product Category</h2><p>Courses, consultations, books/eBooks, digital products, physical products, memberships, events and other</p></div></div>
-<div id="categoryChart" class="chart"></div>
-</section>
+<section class="bottom-grid">
+  <section class="panel">
+    <h2>Sales & Commission Statement</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Date</th><th>Invoice</th><th>Customer</th><th>Product</th><th>Sale</th><th>Rate</th><th>Commission</th><th>Status</th><th>Paid Date</th></tr></thead>
+      <tbody id="commissions"></tbody>
+    </table></div>
+  </section>
 
-<section class="panel">
-  <h2>Eligible Products to Promote</h2>
-  <p class="muted">Only Quantum YiJing offerings currently approved for affiliate promotion are shown below. Your permanent Affiliate Code is automatically included in every link.</p>
-  <div id="productLinks" class="product-links"></div>
-</section>
-
-<section class="panel">
-<h2>Sales & Commission Statement</h2>
-<div class="table-wrap"><table>
-<thead><tr><th>Date</th><th>Invoice</th><th>Customer</th><th>Product</th><th>Sale</th><th>Rate</th><th>Commission</th><th>Status</th><th>Paid Date</th></tr></thead>
-<tbody id="commissions"></tbody>
-</table></div>
-</section>
-
-<section class="panel">
-<h2>Monthly Payout History</h2>
-<div class="table-wrap"><table>
-<thead><tr><th>Period</th><th>Payout Ref</th><th>Sales</th><th>Commission</th><th>Status</th><th>Payment Date</th><th>Payment Ref</th></tr></thead>
-<tbody id="payouts"></tbody>
-</table></div>
+  <section class="panel">
+    <h2>Monthly Payout History</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Period</th><th>Payout Ref</th><th>Sales</th><th>Commission</th><th>Status</th><th>Payment Date</th><th>Payment Ref</th></tr></thead>
+      <tbody id="payouts"></tbody>
+    </table></div>
+  </section>
 </section>
 </main>
 

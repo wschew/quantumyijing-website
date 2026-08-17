@@ -3,23 +3,99 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const money=(v,c='MYR')=>`${c||'MYR'} ${Number(v||0).toFixed(2)}`;
 const monthLabel=m=>{const [y,mo]=m.split('-');return new Date(+y,+mo-1,1).toLocaleDateString('en-MY',{month:'short',year:'2-digit'})};
 
+function niceScale(maxValue){
+  const max=Number(maxValue||0);
+  if(max<=0) return {max:0,ticks:[0]};
+  const rough=max/4;
+  const pow=Math.pow(10,Math.floor(Math.log10(rough)));
+  const n=rough/pow;
+  let nice;
+  if(n<=1) nice=1;
+  else if(n<=2) nice=2;
+  else if(n<=5) nice=5;
+  else nice=10;
+  const step=nice*pow;
+  const top=Math.ceil(max/step)*step;
+  return {max:top,ticks:[0,step,step*2,step*3,step*4].filter(v=>v<=top)};
+}
+
+function fmtTick(v){
+  const n=Number(v||0);
+  if(n>=1000000) return `RM ${(n/1000000).toFixed(n%1000000===0?0:1)}m`;
+  if(n>=1000) return `RM ${(n/1000).toFixed(n%1000===0?0:1)}k`;
+  if(n>=100) return `RM ${n.toFixed(0)}`;
+  if(n>=10) return `RM ${n.toFixed(0)}`;
+  if(n>=1) return `RM ${n.toFixed(2).replace(/\.00$/,'')}`;
+  return `RM ${n.toFixed(2).replace(/0+$/,'').replace(/\.$/,'')}`;
+}
+
+function zeroChart(el,message='No sales yet.'){
+  el.innerHTML=`<div style="min-height:220px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px">
+    <div style="font-size:34px;font-weight:800;color:#0b56a5">RM 0.00</div>
+    <div class="muted">${message}</div>
+  </div>`;
+}
+
 function lineChart(el,data){
-  if(!Array.isArray(data)||!data.length){el.innerHTML='<p class="muted">No sales data yet.</p>';return}
-  const W=960,H=320,p={l:65,r:20,t:20,b:50},max=Math.max(1,...data.map(d=>Number(d.sales||0))),x=i=>p.l+i*(W-p.l-p.r)/Math.max(1,data.length-1),y=v=>H-p.b-(Number(v)/max)*(H-p.t-p.b);
+  if(!Array.isArray(data)||!data.length){zeroChart(el);return}
+  const values=data.map(d=>Number(d.sales||0));
+  const actualMax=Math.max(0,...values);
+  if(actualMax<=0){zeroChart(el,'No affiliate sales recorded in the latest 12 months.');return}
+
+  const scale=niceScale(actualMax);
+  const W=960,H=250,p={l:72,r:18,t:18,b:42};
+  const x=i=>p.l+i*(W-p.l-p.r)/Math.max(1,data.length-1);
+  const y=v=>H-p.b-(Number(v)/Math.max(1,scale.max))*(H-p.t-p.b);
   let svg=`<svg class="svgchart" viewBox="0 0 ${W} ${H}">`;
-  for(let i=0;i<=4;i++){const v=max*i/4,yy=y(v);svg+=`<line x1="${p.l}" y1="${yy}" x2="${W-p.r}" y2="${yy}" stroke="#e5eaf0"/><text x="${p.l-8}" y="${yy+4}" text-anchor="end" font-size="11" fill="#667085">RM ${v.toFixed(0)}</text>`}
-  data.forEach((d,i)=>{if(i%2===0||data.length<=8)svg+=`<text x="${x(i)}" y="${H-18}" text-anchor="middle" font-size="11" fill="#667085">${monthLabel(d.month)}</text>`});
+
+  scale.ticks.forEach(v=>{
+    const yy=y(v);
+    svg+=`<line x1="${p.l}" y1="${yy}" x2="${W-p.r}" y2="${yy}" stroke="#e5eaf0"/>
+      <text x="${p.l-8}" y="${yy+4}" text-anchor="end" font-size="11" fill="#667085">${fmtTick(v)}</text>`;
+  });
+
+  data.forEach((d,i)=>{
+    if(i%2===0||data.length<=8)svg+=`<text x="${x(i)}" y="${H-14}" text-anchor="middle" font-size="11" fill="#667085">${monthLabel(d.month)}</text>`;
+  });
+
   svg+=`<polyline fill="none" stroke="#0b56a5" stroke-width="3" points="${data.map((d,i)=>`${x(i)},${y(d.sales)}`).join(' ')}"/>`;
   data.forEach((d,i)=>svg+=`<circle cx="${x(i)}" cy="${y(d.sales)}" r="3.5" fill="#0b56a5"><title>${monthLabel(d.month)}: RM ${Number(d.sales||0).toFixed(2)}</title></circle>`);
   el.innerHTML=svg+'</svg>';
 }
 
 function stacked(el,data,labels){
-  if(!Array.isArray(data)||!data.length){el.innerHTML='<p class="muted">No category sales data yet.</p>';return}
-  const keys=['courses','consultations','books','digital','physical','memberships','events','other'],colors={courses:'#0b56a5',consultations:'#16a085',books:'#7c3aed',digital:'#d97706',physical:'#dc2626',memberships:'#0891b2',events:'#65a30d',other:'#6b7280'},W=960,H=360,p={l:65,r:20,t:20,b:55},totals=data.map(d=>keys.reduce((s,k)=>s+Number(d[k]||0),0)),max=Math.max(1,...totals),slot=(W-p.l-p.r)/Math.max(1,data.length),barW=Math.min(48,slot*.68),y=v=>H-p.b-(Number(v)/max)*(H-p.t-p.b);
+  if(!Array.isArray(data)||!data.length){zeroChart(el,'No category sales data yet.');return}
+  const keys=['courses','consultations','books','digital','physical','memberships','events','other'];
+  const colors={courses:'#0b56a5',consultations:'#16a085',books:'#7c3aed',digital:'#d97706',physical:'#dc2626',memberships:'#0891b2',events:'#65a30d',other:'#6b7280'};
+  const totals=data.map(d=>keys.reduce((s,k)=>s+Number(d[k]||0),0));
+  const actualMax=Math.max(0,...totals);
+  if(actualMax<=0){zeroChart(el,'No category sales recorded in the latest 12 months.');return}
+
+  const scale=niceScale(actualMax);
+  const W=960,H=250,p={l:72,r:18,t:18,b:42};
+  const slot=(W-p.l-p.r)/Math.max(1,data.length),barW=Math.min(42,slot*.62);
+  const y=v=>H-p.b-(Number(v)/Math.max(1,scale.max))*(H-p.t-p.b);
   let svg=`<svg class="svgchart" viewBox="0 0 ${W} ${H}">`;
-  for(let i=0;i<=4;i++){const v=max*i/4,yy=y(v);svg+=`<line x1="${p.l}" y1="${yy}" x2="${W-p.r}" y2="${yy}" stroke="#e5eaf0"/><text x="${p.l-8}" y="${yy+4}" text-anchor="end" font-size="11" fill="#667085">RM ${v.toFixed(0)}</text>`}
-  data.forEach((d,i)=>{const x=p.l+i*slot+(slot-barW)/2;let c=0;keys.forEach(k=>{const v=Number(d[k]||0);if(v<=0)return;const yt=y(c+v),yb=y(c);svg+=`<rect x="${x}" y="${yt}" width="${barW}" height="${Math.max(1,yb-yt)}" fill="${colors[k]}"><title>${monthLabel(d.month)} — ${labels[k]}: RM ${v.toFixed(2)}</title></rect>`;c+=v});if(i%2===0||data.length<=8)svg+=`<text x="${x+barW/2}" y="${H-20}" text-anchor="middle" font-size="11" fill="#667085">${monthLabel(d.month)}</text>`});
+
+  scale.ticks.forEach(v=>{
+    const yy=y(v);
+    svg+=`<line x1="${p.l}" y1="${yy}" x2="${W-p.r}" y2="${yy}" stroke="#e5eaf0"/>
+      <text x="${p.l-8}" y="${yy+4}" text-anchor="end" font-size="11" fill="#667085">${fmtTick(v)}</text>`;
+  });
+
+  data.forEach((d,i)=>{
+    const x=p.l+i*slot+(slot-barW)/2;
+    let c=0;
+    keys.forEach(k=>{
+      const v=Number(d[k]||0);
+      if(v<=0)return;
+      const yt=y(c+v),yb=y(c);
+      svg+=`<rect x="${x}" y="${yt}" width="${barW}" height="${Math.max(1,yb-yt)}" fill="${colors[k]}"><title>${monthLabel(d.month)} — ${labels[k]}: RM ${v.toFixed(2)}</title></rect>`;
+      c+=v;
+    });
+    if(i%2===0||data.length<=8)svg+=`<text x="${x+barW/2}" y="${H-14}" text-anchor="middle" font-size="11" fill="#667085">${monthLabel(d.month)}</text>`;
+  });
+
   svg+='</svg><div class="legend category-legend">'+keys.map(k=>`<span style="color:${colors[k]}">● ${esc(labels[k])}</span>`).join('')+'</div>';
   el.innerHTML=svg;
 }
@@ -39,8 +115,16 @@ async function api(url){
 
 function renderProducts(l){
   const box=$('#productLinks');
-  if(!Array.isArray(l.products)||!l.products.length){box.innerHTML='<div class="product-link affiliate-offer"><b>No affiliate-eligible products are currently available.</b><small>Please check again later.</small></div>';return}
-  box.innerHTML=l.products.map((p,i)=>`<div class="product-link affiliate-offer"><div class="offer-top"><div><b>${esc(p.name_en)}</b>${p.name_zh?`<small>${esc(p.name_zh)}</small>`:''}</div><span class="offer-category">${esc(p.product_type)}</span></div><div class="offer-meta"><span><strong>SKU:</strong> ${esc(p.sku)}</span><span><strong>Price:</strong> ${esc(p.currency||'MYR')} ${Number(p.price||0).toFixed(2)}</span><span><strong>Commission:</strong> ${esc(commissionText(p))}</span></div><small class="commission-source">${esc(p.commission_source||'')}</small><div class="link-row"><input id="affProductLink${i}" value="${esc(p.url)}" readonly><button class="copy-product" data-target="affProductLink${i}">Copy Link</button></div></div>`).join('');
+  if(!Array.isArray(l.products)||!l.products.length){
+    box.innerHTML='<div class="product-link affiliate-offer"><b>No affiliate-eligible products are currently available.</b><small>Please check again later.</small></div>';
+    return;
+  }
+  box.innerHTML=l.products.map((p,i)=>`<div class="product-link affiliate-offer">
+    <div class="offer-top"><div><b>${esc(p.name_en)}</b>${p.name_zh?`<small>${esc(p.name_zh)}</small>`:''}</div><span class="offer-category">${esc(p.product_type)}</span></div>
+    <div class="offer-meta"><span><strong>SKU:</strong> ${esc(p.sku)}</span><span><strong>Price:</strong> ${esc(p.currency||'MYR')} ${Number(p.price||0).toFixed(2)}</span><span><strong>Commission:</strong> ${esc(commissionText(p))}</span></div>
+    <small class="commission-source">${esc(p.commission_source||'')}</small>
+    <div class="link-row"><input id="affProductLink${i}" value="${esc(p.url)}" readonly><button class="copy-product" data-target="affProductLink${i}">Copy Link</button></div>
+  </div>`).join('');
 }
 
 function renderCommissions(rows){
@@ -78,7 +162,7 @@ async function load(){
 }
 
 function copied(message){
-  const s=$('#copyStatus'); if(!s)return;
+  const s=$('#copyStatus');if(!s)return;
   s.className='status success';s.textContent=message;
   setTimeout(()=>{s.textContent='';s.className='status'},1800);
 }
