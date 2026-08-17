@@ -54,6 +54,9 @@ async function sendStatusEmail(
   let headline =
     'Affiliate Account Update';
 
+  let headlineZh =
+    '联盟账户更新';
+
   let bodyEn =
     `Your Quantum YiJing® Affiliate account status has been updated to ${newStatus}.`;
 
@@ -80,6 +83,9 @@ async function sendStatusEmail(
       headline =
         'Affiliate Account Restored';
 
+      headlineZh =
+        '联盟账户已恢复';  
+
       bodyEn =
         'Your Quantum YiJing® Affiliate account has been restored and portal access is available again.';
 
@@ -93,6 +99,9 @@ async function sendStatusEmail(
 
       headline =
         'Affiliate Account Approved';
+
+      headlineZh =
+        '联盟账户已获批准';
 
       bodyEn =
         'Your Quantum YiJing® Affiliate account has been approved.';
@@ -114,6 +123,9 @@ async function sendStatusEmail(
     headline =
       'Affiliate Account Suspended';
 
+    headlineZh =
+      '联盟账户已暂停';
+
     bodyEn =
       'Your Quantum YiJing® Affiliate account has been temporarily suspended and portal access has been disabled.';
 
@@ -133,6 +145,8 @@ async function sendStatusEmail(
     headline =
       'Affiliate Application Update';
 
+    headlineZh =
+      '联盟申请状态更新';
     bodyEn =
       'Your Quantum YiJing® Affiliate application/account has been marked as Rejected.';
 
@@ -152,6 +166,9 @@ async function sendStatusEmail(
     headline =
       'Affiliate Account Archived';
 
+    headlineZh =
+      '联盟账户已归档';
+
     bodyEn =
       'Your Quantum YiJing® Affiliate account has been archived and portal access has been disabled.';
 
@@ -160,63 +177,186 @@ async function sendStatusEmail(
   }
 
 
-  const reasonHtml = reason
-    ? `
-      <p>
-        <strong>Reason / 原因:</strong><br>
-        ${esc(reason)}
-      </p>
-    `
-    : '';
-
-
-  const html = `
-    <div
-      style="
-        font-family:Arial,sans-serif;
-        line-height:1.6;
-        color:#172033;
-        max-width:680px;
-        margin:auto;
-      "
-    >
-
-      <h2 style="color:#0b56a5">
-        ${esc(headline)}
-      </h2>
-
-      <p>
-        Dear ${esc(
-          affiliate.display_name ||
-          affiliate.full_name ||
-          'Affiliate'
-        )},
-      </p>
-
-      <p>${esc(bodyEn)}</p>
-
-      <p>${esc(bodyZh)}</p>
-
-      ${reasonHtml}
-
-      <p>
-        <strong>Affiliate Code:</strong>
-        ${esc(affiliate.affiliate_code || '')}
-      </p>
-
-      <hr
-        style="
-          border:0;
-          border-top:1px solid #dfe6ef;
-        "
-      >
-
-      <p style="color:#667085">
-        Quantum YiJing® Affiliate Programme
-      </p>
-
+const reasonHtml = reason
+  ? `
+    <div style="margin:20px 0;padding:14px 16px;background:#fff8e6;border-left:4px solid #d3a62c;border-radius:8px;font-size:14px;line-height:1.7;color:#43566d">
+      <strong>Reason / 原因:</strong><br>
+      ${esc(reason)}
     </div>
-  `;
+  `
+  : '';
+
+  const logoUrl =
+  'https://quantumyijing.com/images/quantum-yijing-3d-logo.png';
+
+const safeName = esc(
+  affiliate.display_name ||
+  affiliate.full_name ||
+  'Affiliate'
+);
+
+const safeCode = esc(affiliate.affiliate_code || '');
+
+const html = `<!doctype html>
+<html lang="en">
+<body style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,'Noto Sans SC','Microsoft YaHei',sans-serif;color:#17243a">
+
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f7fb">
+<tr>
+<td align="center" style="padding:28px 12px">
+
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
+style="max-width:680px;background:#ffffff;border:1px solid #dce7f4;border-radius:20px;overflow:hidden;box-shadow:0 12px 34px rgba(19,55,96,.10)">
+
+<tr>
+<td style="padding:26px 30px;background:#edf5ff;border-bottom:4px solid #d3a62c">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+<tr>
+<td width="82" valign="middle">
+<img src="${logoUrl}" width="68" height="68"
+alt="Quantum YiJing International Academy"
+style="display:block;width:68px;height:68px;object-fit:contain;border:0">
+</td>
+
+<td valign="middle">
+<div style="font-size:21px;line-height:1.2;font-weight:800;color:#082b63">
+Quantum YiJing
+</div>
+<div style="margin-top:4px;font-size:11px;line-height:1.4;font-weight:700;letter-spacing:2px;color:#45688f">
+INTERNATIONAL ACADEMY
+</div>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+
+<tr>
+<td style="padding:34px 34px 18px">
+
+<div style="font-size:12px;font-weight:800;letter-spacing:1.7px;color:#1768c4;text-transform:uppercase">
+Affiliate Programme
+</div>
+
+<h1 style="margin:10px 0 22px;font-size:27px;line-height:1.28;color:#0b2f66">
+${esc(headline)}
+</h1>
+
+<p style="margin:0 0 16px;font-size:15px;line-height:1.75">
+Dear ${safeName},
+</p>
+
+<p style="margin:0 0 16px;font-size:15px;line-height:1.75">
+${esc(bodyEn)}
+</p>
+
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
+style="margin:24px 0;background:#f7faff;border:1px solid #dce8f6;border-radius:12px">
+
+<tr>
+<td style="padding:13px 16px;color:#58708d;font-size:13px;width:145px">
+Affiliate Code
+</td>
+<td style="padding:13px 16px;font-size:13px;font-weight:700;color:#173b63">
+${safeCode || '—'}
+</td>
+</tr>
+
+<tr>
+<td style="padding:13px 16px;color:#58708d;font-size:13px;border-top:1px solid #e3edf8">
+Status
+</td>
+<td style="padding:13px 16px;font-size:13px;font-weight:700;color:#173b63;border-top:1px solid #e3edf8">
+${esc(newStatus)}
+</td>
+</tr>
+
+</table>
+
+${reasonHtml}
+
+<p style="margin:24px 0 0;font-size:15px;line-height:1.75">
+Warm regards,<br>
+<strong>Master Chew Wai Soon</strong><br>
+<span style="color:#526a85">Founder &amp; Chief Instructor</span>
+</p>
+
+</td>
+</tr>
+
+<tr>
+<td style="padding:8px 34px 26px">
+
+<div style="border-top:1px solid #dce7f4;padding-top:26px">
+
+<div style="font-size:12px;font-weight:800;letter-spacing:1.4px;color:#1768c4">
+联盟计划
+</div>
+
+<h2 style="margin:10px 0 20px;font-size:23px;line-height:1.4;color:#0b2f66">
+${esc(headlineZh)}
+</h2>
+
+<p style="margin:0 0 16px;font-size:15px;line-height:1.85">
+尊敬的 ${safeName}：
+</p>
+
+<p style="margin:0 0 16px;font-size:15px;line-height:1.85">
+${esc(bodyZh)}
+</p>
+
+<p style="margin:18px 0;font-size:15px;line-height:1.85">
+<strong>联盟编号：</strong> ${safeCode || '—'}
+</p>
+
+<p style="margin:24px 0 0;font-size:15px;line-height:1.85">
+敬祝安好！<br>
+<strong>赵辉顺导师</strong><br>
+<span style="color:#526a85">创办人｜首席导师</span>
+</p>
+
+</div>
+</td>
+</tr>
+
+<tr>
+<td align="center"
+style="padding:22px 26px;background:#f7f9fc;border-top:1px solid #e0e8f2;color:#5d7189;font-size:12px;line-height:1.8">
+
+<a href="https://quantumyijing.com"
+style="color:#1768c4;text-decoration:none;font-weight:700">
+quantumyijing.com
+</a>
+
+&nbsp;&nbsp;•&nbsp;&nbsp;
+
+<a href="mailto:info@quantumyijing.com"
+style="color:#1768c4;text-decoration:none;font-weight:700">
+info@quantumyijing.com
+</a>
+
+<br>
+
+<span style="color:#7a8ca2">
+Where Ancient Wisdom Meets Modern Scientific Thinking
+</span>
+
+<br>
+
+<span style="color:#9aa8b8">
+© ${new Date().getFullYear()} Quantum YiJing International Academy
+</span>
+
+</td>
+</tr>
+
+</table>
+</td>
+</tr>
+</table>
+
+</body>
+</html>`;
 
 
   const r = await fetch(
