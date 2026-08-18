@@ -120,11 +120,12 @@ async function sendEmail(apiKey, payload) {
   return body;
 }
 
-function acknowledgementHtml(name, reference, interest, submitted) {
+function acknowledgementHtml(name, reference, interest, submitted, message) {
   const safeName = escapeHtml(name);
   const safeReference = escapeHtml(reference);
   const safeInterest = escapeHtml(interest);
   const safeSubmitted = escapeHtml(submitted);
+  const safeMessage = escapeHtml(message);
   const logoUrl = 'https://quantumyijing.com/images/quantum-yijing-3d-logo.png';
 
   return `<!doctype html>
@@ -159,6 +160,7 @@ function acknowledgementHtml(name, reference, interest, submitted) {
                   <tr><td style="padding:13px 16px;color:#58708d;font-size:13px;width:145px">Reference</td><td style="padding:13px 16px;font-size:13px;font-weight:700;color:#173b63">${safeReference}</td></tr>
                   <tr><td style="padding:13px 16px;color:#58708d;font-size:13px;border-top:1px solid #e3edf8">Area of interest</td><td style="padding:13px 16px;font-size:13px;font-weight:700;color:#173b63;border-top:1px solid #e3edf8">${safeInterest}</td></tr>
                   <tr><td style="padding:13px 16px;color:#58708d;font-size:13px;border-top:1px solid #e3edf8">Received</td><td style="padding:13px 16px;font-size:13px;font-weight:700;color:#173b63;border-top:1px solid #e3edf8">${safeSubmitted}</td></tr>
+                  <tr><td style="padding:13px 16px;color:#58708d;font-size:13px;border-top:1px solid #e3edf8;vertical-align:top">Your Message / Question</td><td style="padding:13px 16px;font-size:13px;font-weight:700;color:#173b63;border-top:1px solid #e3edf8;white-space:pre-wrap;line-height:1.6">${safeMessage}</td></tr>
                 </table>
                 <p style="margin:24px 0 0;font-size:15px;line-height:1.75">Warm regards,<br><strong>Master Chew Wai Soon</strong><br><span style="color:#526a85">Founder &amp; Chief Instructor</span></p>
               </td>
@@ -170,6 +172,10 @@ function acknowledgementHtml(name, reference, interest, submitted) {
                   <h2 style="margin:10px 0 20px;font-size:23px;line-height:1.4;color:#0b2f66">感谢您联系我们</h2>
                   <p style="margin:0 0 16px;font-size:15px;line-height:1.85">尊敬的 ${safeName}：</p>
                   <p style="margin:0 0 16px;font-size:15px;line-height:1.85">感谢您联系<strong>量子易经国际学院</strong>。我们已成功收到您的咨询，一般会在 <strong>1–2 个工作日内</strong>回复。</p>
+                  <div style="margin:20px 0;padding:14px 16px;background:#f7faff;border:1px solid #dce8f6;border-radius:10px">
+                    <div style="font-size:13px;color:#58708d;margin-bottom:7px">您的留言 / 问题</div>
+                    <div style="font-size:14px;font-weight:700;color:#173b63;white-space:pre-wrap;line-height:1.7">${safeMessage}</div>
+                  </div>
                   <p style="margin:24px 0 0;font-size:15px;line-height:1.85">敬祝安好！<br><strong>赵辉顺导师</strong><br><span style="color:#526a85">创办人｜首席导师</span></p>
                 </div>
               </td>
@@ -209,13 +215,24 @@ export async function onRequestPost(context) {
   // Honeypot: bots often fill hidden fields. Return success without sending.
   if (clean(body.website, 200)) return json({ ok: true });
 
+  const requestedRegistration =
+    body.createOrder === true ||
+    body.createOrder === 'true' ||
+    body.submissionType === 'registration';
+
+  const fallbackEnquiryMessage = body.language === 'zh'
+    ? '我想进一步了解此课程。请提供更多有关课程的资料，谢谢。'
+    : 'I would like to know more about this course. Please provide me with more information about the course.';
+
+  const incomingMessage = clean(body.message, 3000);
+
   const data = {
     name: clean(body.name, 100),
     email: clean(body.email, 160).toLowerCase(),
     phone: clean(body.phone, 60),
     country: clean(body.country, 80),
     interest: clean(body.interest, 100),
-    message: clean(body.message, 3000),
+    message: requestedRegistration ? incomingMessage : (incomingMessage || fallbackEnquiryMessage),
     language: body.language === 'zh' ? 'zh' : 'en'
   };
 
@@ -232,7 +249,7 @@ export async function onRequestPost(context) {
     affiliateCode: clean(body.affiliateCode, 80),
     productId: Number(body.productId || 0),
     productSlug: clean(body.productSlug, 120),
-    createOrder: body.createOrder === true || body.createOrder === 'true',
+    createOrder: requestedRegistration,
     displayCurrency: clean(body.displayCurrency, 10),
     displayExchangeRate: Number(body.displayExchangeRate || 0),
     displayAmount: Number(body.displayAmount || 0)
@@ -242,7 +259,7 @@ export async function onRequestPost(context) {
   const startedAt = Number(body.startedAt || 0);
   const elapsed = Date.now() - startedAt;
 
-  if (!data.name || !validEmail(data.email) || !allowedInterests.has(data.interest) || data.message.length < 10 || body.consent !== 'on') {
+  if (!data.name || !validEmail(data.email) || !allowedInterests.has(data.interest) || (!requestedRegistration && data.message.length < 10) || body.consent !== 'on') {
     return json({ error: 'Please complete all required fields.' }, 400);
   }
   if (!Number.isFinite(startedAt) || elapsed < 2500 || elapsed > 86_400_000) {
@@ -272,9 +289,7 @@ export async function onRequestPost(context) {
     return json({ error: 'Unable to record registration. Please try again.' }, 500);
   }
 
-  const isRegistration =
-    attribution.createOrder === true ||
-    body.submissionType === 'registration';
+  const isRegistration = requestedRegistration;
 
   let emailWarning = false;
 
@@ -297,8 +312,22 @@ export async function onRequestPost(context) {
           to: [data.email],
           reply_to: INTERNAL_ADDRESS,
           subject: 'Enquiry Received | 已收到您的咨询',
-          html: acknowledgementHtml(data.name, reference, data.interest, submitted),
-          text: `Dear ${data.name},\n\nThank you for contacting ${ACADEMY_NAME}. Reference: ${reference}. We have received your enquiry and will normally reply within 1–2 working days.\n\n尊敬的 ${data.name}：\n\n感谢您联系量子易经国际学院。我们已收到您的咨询，一般会在 1–2 个工作日内回复。\n\ninfo@quantumyijing.com`
+          html: acknowledgementHtml(data.name, reference, data.interest, submitted, data.message),
+          text: `Dear ${data.name},
+
+Thank you for contacting ${ACADEMY_NAME}. Reference: ${reference}. We have received your enquiry and will normally reply within 1–2 working days.
+
+Your Message / Question:
+${data.message}
+
+尊敬的 ${data.name}：
+
+感谢您联系量子易经国际学院。我们已收到您的咨询，一般会在 1–2 个工作日内回复。
+
+您的留言 / 问题：
+${data.message}
+
+info@quantumyijing.com`
         })
       ]);
     } catch (error) {

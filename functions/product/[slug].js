@@ -49,12 +49,17 @@ async function submitCourseAction(action){
   const fd=new FormData(f),q=new URLSearchParams(location.search);
   const source=q.get('utm_source')||q.get('source')||'Website';
   const isRegistration=action==='register';
+  const typedMessage=String(fd.get('message')||'').trim();
+  const defaultEnquiryMessage=root.dataset.lang==='zh'
+    ?('我想进一步了解 '+P.name+'。请提供更多有关此课程的资料，谢谢。')
+    :('I would like to know more about '+P.name+'. Please provide me with more information about the course.');
+  const submittedMessage=isRegistration?typedMessage:(typedMessage||defaultEnquiryMessage);
   m.textContent=root.dataset.lang==='zh'?(isRegistration?'正在提交报名…':'正在提交咨询…'):(isRegistration?'Submitting registration…':'Sending enquiry…');
   m.className='product-message';
   enquiryBtn.disabled=true;registerBtn.disabled=true;
   const body={
     name:fd.get('name'),email:fd.get('email'),phone:fd.get('phone'),country:fd.get('country'),
-    interest:'Academy Course',message:fd.get('message'),consent:fd.get('consent'),website:fd.get('website'),
+    interest:'Academy Course',message:submittedMessage,consent:fd.get('consent'),website:fd.get('website'),
     startedAt:Number(fd.get('startedAt')),language:root.dataset.lang,marketingSource:source,
     campaignCode:q.get('utm_campaign')||q.get('campaign')||'',landingPage:location.pathname,referrer:document.referrer,
     utmSource:q.get('utm_source')||'',utmMedium:q.get('utm_medium')||'',utmCampaign:q.get('utm_campaign')||'',
