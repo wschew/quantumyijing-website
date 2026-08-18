@@ -46,11 +46,10 @@ console.log('=== END DOKU NOTIFICATION REQUEST DEBUG ===');
 const calculatedDigest = await digest(raw);
 
 const canonical = [
-  `Client-Id:${client}`,
-  `Request-Id:${rid}`,
-  `Request-Timestamp:${ts}`,
-  `Request-Target:${target}`,
-  `Digest:${calculatedDigest}`
+  client,
+  ts,
+  target,
+  calculatedDigest
 ].join('\n');
 
 const expected =
