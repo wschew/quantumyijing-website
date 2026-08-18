@@ -272,6 +272,8 @@ export async function onRequestPost(context) {
     return json({ error: 'Unable to record registration. Please try again.' }, 500);
   }
 
+  const isCourseRegistration = !!orderInfo?.orderReference;
+
   let emailWarning = false;
   try {
     const emailJobs = [
@@ -279,19 +281,21 @@ export async function onRequestPost(context) {
         from: FROM_ADDRESS,
         to: [INTERNAL_ADDRESS],
         reply_to: data.email,
-        subject: attribution.createOrder
+        subject: isCourseRegistration
           ? `[Course Registration] ${orderInfo?.productName || data.interest} — ${data.name}`
           : `[Website Enquiry] ${subjectTag} — ${data.name}`,
         html: internalHtml({ ...data, ...attribution }, meta),
-        text: attribution.createOrder
+        text: isCourseRegistration
           ? `New course registration\nReference: ${reference}\nOrder: ${orderInfo?.orderReference || ''}\nProduct: ${orderInfo?.productName || ''}\nName: ${data.name}\nEmail: ${data.email}\nPhone: ${data.phone}\nCountry: ${data.country}`
           : `New website enquiry\nReference: ${reference}\nName: ${data.name}\nEmail: ${data.email}\nPhone: ${data.phone}\nCountry: ${data.country}\nInterest: ${data.interest}\nMessage: ${data.message}`
       })
     ];
 
-    // Course registration / checkout must not send the generic
-    // enquiry acknowledgement to the customer.
-    if (!attribution.createOrder) {
+    // IMPORTANT:
+    // Only genuine enquiries receive the customer acknowledgement.
+    // If an actual course order was created, do NOT send the generic
+    // "we will reply within 1–2 working days" email.
+    if (!isCourseRegistration) {
       emailJobs.push(
         sendEmail(context.env.RESEND_API_KEY, {
           from: FROM_ADDRESS,
