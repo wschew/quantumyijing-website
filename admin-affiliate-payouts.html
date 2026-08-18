@@ -1,6 +1,89 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Affiliate Monthly Payouts</title><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/affiliate-portal.css"></head><body>
-<header class="qy-portal-header"><a href="/" class="qy-brand-lockup"><img src="/images/quantum-yijing-3d-logo.png" class="qy-brand-logo"><span class="qy-brand-name">Quantum YiJing®</span></a><div class="qy-portal-header-right"><div class="qy-portal-section">Affiliate Payout Admin</div><a href="/admin-affiliates.html" class="portal-outline-link">← Affiliate Admin</a></div></header>
-<main class="portal-main"><h1>Affiliate Monthly Payout & Reconciliation</h1><section class="panel"><label>Admin Token<input id="token" type="password"></label><label>Affiliate ID<input id="affiliateId" type="number"></label><label>Payout Month<input id="period" type="month"></label><button id="load">Load Eligible Commissions</button><p id="status"></p></section>
-<section class="panel"><h2>Eligible Commissions</h2><div id="summary"></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Invoice</th><th>Customer</th><th>Product</th><th>Sale</th><th>Rate</th><th>Commission</th><th>Status</th></tr></thead><tbody id="eligible"></tbody></table></div><button id="create">Create Draft Payout</button></section>
-<section class="panel"><h2>Payout Batches</h2><div class="table-wrap"><table><thead><tr><th>Ref</th><th>Affiliate</th><th>Period</th><th>Sales</th><th>Commission</th><th>Status</th><th>Payment Date</th><th>Payment Ref</th><th>Action</th></tr></thead><tbody id="payouts"></tbody></table></div></section>
-<section class="panel"><h2>Record Bank Transfer</h2><label>Payout ID<input id="payPayout" type="number"></label><label>Payment Date<input id="paymentDate" type="date"></label><label>Payment Reference<input id="paymentRef"></label><button id="markPaid">Mark Paid</button></section></main><script src="/admin-affiliate-payouts.js" defer></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Affiliate Monthly Payouts</title>
+<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/affiliate-portal.css">
+<link rel="stylesheet" href="/admin-affiliate-payouts.css">
+</head>
+<body>
+<header class="qy-portal-header">
+  <a href="/" class="qy-brand-lockup" aria-label="Quantum YiJing Home">
+    <img src="/images/quantum-yijing-3d-logo.png" alt="Quantum YiJing® Logo" class="qy-brand-logo">
+    <span class="qy-brand-name">Quantum YiJing®</span>
+  </a>
+  <div class="qy-portal-header-right">
+    <div class="qy-portal-section">Affiliate Payout Admin</div>
+    <a href="/admin-affiliates.html" class="portal-outline-link">← Affiliate Admin</a>
+  </div>
+</header>
+
+<main class="payout-page">
+  <section class="page-heading">
+    <p class="eyebrow">AFFILIATE ACCOUNTING</p>
+    <h1>Affiliate Monthly Payout & Reconciliation</h1>
+    <p class="subtext">Prepare monthly affiliate payouts, approve payout batches, and record completed bank transfers.</p>
+  </section>
+
+  <section class="payout-card">
+    <div class="section-heading">
+      <div><h2>1. Select Payout Period</h2><p>Choose the affiliate and month to review eligible commissions.</p></div>
+    </div>
+    <div class="control-grid">
+      <label class="field"><span>Admin Token</span><input id="token" type="password" autocomplete="off"></label>
+      <label class="field"><span>Affiliate ID</span><input id="affiliateId" type="number" min="1"></label>
+      <label class="field"><span>Payout Month</span><input id="period" type="month"></label>
+      <div class="field action-field"><span>&nbsp;</span><button id="load" class="primary-btn">Load Eligible Commissions</button></div>
+    </div>
+    <p id="status" class="status-message"></p>
+  </section>
+
+  <section class="payout-card">
+    <div class="section-heading">
+      <div><h2>2. Eligible Commissions</h2><p>Approved or payable commissions not already assigned to a payout.</p></div>
+      <button id="create" class="primary-btn">Create Draft Payout</button>
+    </div>
+    <div class="summary-strip">
+      <div class="summary-box"><span>Eligible Sales</span><b id="sumCount">0</b></div>
+      <div class="summary-box"><span>Total Sales</span><b id="sumSales">MYR 0.00</b></div>
+      <div class="summary-box"><span>Total Commission</span><b id="sumCommission">MYR 0.00</b></div>
+    </div>
+    <div class="table-wrap">
+      <table class="qy-table">
+        <thead><tr><th>Date</th><th>Invoice</th><th>Customer</th><th>Product</th><th>Sale</th><th>Rate</th><th>Commission</th><th>Status</th></tr></thead>
+        <tbody id="eligible"><tr><td colspan="8" class="empty-cell">Load an affiliate and payout month to begin.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="payout-card">
+    <div class="section-heading">
+      <div><h2>3. Payout Batches</h2><p>Draft, approved and paid payout batches.</p></div>
+    </div>
+    <div class="table-wrap">
+      <table class="qy-table">
+        <thead><tr><th>Reference</th><th>Affiliate</th><th>Period</th><th>Sales</th><th>Commission</th><th>Status</th><th>Payment Date</th><th>Payment Ref</th><th>Action</th></tr></thead>
+        <tbody id="payouts"><tr><td colspan="9" class="empty-cell">No payout batches loaded yet.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="payout-card bank-card">
+    <div class="section-heading">
+      <div><h2>4. Record Bank Transfer</h2><p>Use this only after the payout is approved and the bank transfer is completed.</p></div>
+    </div>
+    <div class="bank-grid">
+      <label class="field"><span>Payout ID</span><input id="payPayout" type="number" min="1"></label>
+      <label class="field"><span>Payment Date</span><input id="paymentDate" type="date"></label>
+      <label class="field"><span>Payment Reference</span><input id="paymentRef" type="text" placeholder="e.g. BANK-20260818-001"></label>
+      <div class="field action-field"><span>&nbsp;</span><button id="markPaid" class="success-btn">Mark Paid</button></div>
+    </div>
+    <div class="bank-note"><strong>Accounting note:</strong> Marking a payout as Paid also marks all linked commissions as Paid and records their paid date.</div>
+  </section>
+</main>
+
+<script src="/admin-affiliate-payouts.js" defer></script>
+</body>
+</html>
