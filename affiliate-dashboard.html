@@ -5,26 +5,31 @@
 <link rel="stylesheet" href="/styles.css">
 <link rel="stylesheet" href="/affiliate-portal.css">
 <style>
-  .portal-main.compact-dashboard{max-width:1500px;margin:0 auto;padding:26px 20px 34px}
-  .compact-dashboard .welcome{margin-bottom:18px}
-  .compact-dashboard .metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin:16px 0 18px}
-  .compact-dashboard .metric{min-height:104px;padding:20px 22px}
-  .compact-dashboard .dashboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
-  .compact-dashboard .panel{padding:22px 24px;margin:0}
-  .compact-dashboard .panel h2{margin-top:0}
-  .compact-dashboard .chart{min-height:250px}
-  .compact-dashboard .compact-chart{min-height:245px}
-  .compact-dashboard .product-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-  .compact-dashboard .affiliate-offer{margin:0}
-  .compact-dashboard .table-wrap{max-height:300px;overflow:auto}
-  .compact-dashboard .table-wrap table{font-size:14px}
-  .compact-dashboard .bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-  .compact-dashboard .link-row{align-items:stretch}
-  @media(max-width:1100px){
-    .compact-dashboard .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .compact-dashboard .dashboard-grid,.compact-dashboard .bottom-grid{grid-template-columns:1fr}
-    .compact-dashboard .product-links{grid-template-columns:1fr}
-  }
+.portal-main.compact-dashboard{max-width:1500px;margin:0 auto;padding:26px 20px 34px}
+.compact-dashboard .welcome{margin-bottom:18px}
+.compact-dashboard .metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin:16px 0 18px}
+.compact-dashboard .metric{min-height:104px;padding:20px 22px}
+.compact-dashboard .top-grid{display:grid;grid-template-columns:.9fr 1fr 1fr;gap:18px;margin-bottom:18px}
+.compact-dashboard .panel{padding:22px 24px;margin:0}
+.compact-dashboard .panel h2{margin-top:0}
+.compact-dashboard .chart{min-height:245px}
+.compact-dashboard .stack{display:grid;grid-template-columns:1fr;gap:18px}
+.compact-dashboard .table-wrap{overflow:auto}
+.compact-dashboard .table-wrap table{font-size:14px;min-width:900px}
+.compact-dashboard .product-table{width:100%;border-collapse:collapse;min-width:1080px}
+.compact-dashboard .product-table th,.compact-dashboard .product-table td{padding:13px 11px;border-bottom:1px solid #e5eaf0;text-align:left;vertical-align:middle}
+.compact-dashboard .product-table th{background:#f8fbff;color:#334155;font-size:13px}
+.compact-dashboard .product-name{font-weight:700;color:#172033}
+.compact-dashboard .product-zh{display:block;color:#667085;font-size:13px;margin-top:3px}
+.compact-dashboard .offer-category{display:inline-block;padding:4px 9px;border:1px solid #c9d9ec;border-radius:999px;font-size:12px;color:#0b56a5;font-weight:700;background:#f8fbff}
+.compact-dashboard .commission-source{display:block;color:#667085;font-size:12px;margin-top:4px}
+.compact-dashboard .product-link-input{width:100%;min-width:300px}
+.compact-dashboard .referral-note{margin-top:14px;padding:13px 15px;border:1px solid #cfe0f5;border-radius:12px;background:#f5f9ff;color:#4b5f78;font-size:14px}
+.compact-dashboard .link-row{align-items:stretch}
+@media(max-width:1150px){
+  .compact-dashboard .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .compact-dashboard .top-grid{grid-template-columns:1fr}
+}
 </style>
 </head><body>
 <header class="qy-portal-header">
@@ -51,36 +56,32 @@
 
 <section id="metrics" class="metrics"></section>
 
-<section class="dashboard-grid">
+<section class="top-grid">
   <section class="panel">
-    <div class="panel-head"><div><h2>Your Referral Link</h2><p>Use this permanent link for general Quantum YiJing referrals.</p></div></div>
+    <h2>Your Referral Link</h2>
+    <p>Use this permanent link for general Quantum YiJing referrals.</p>
     <div class="link-row">
       <input id="generalLink" readonly>
-      <button id="copyGeneral">Copy General Link</button>
+      <button id="copyGeneral">Copy Link</button>
     </div>
+    <div class="referral-note">Promotion links are shown below. Your permanent Affiliate Code is automatically included in every link.</div>
     <p id="copyStatus" class="status" aria-live="polite"></p>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><div><h2>Monthly Total Sales</h2><p>Successfully paid affiliate sales — latest 12 months</p></div></div>
-    <div id="salesChart" class="chart compact-chart"></div>
-  </section>
-</section>
-
-<section class="dashboard-grid">
-  <section class="panel">
-    <div class="panel-head"><div><h2>Monthly Sales by Product Category</h2><p>Courses, consultations, books/eBooks, digital products, physical products, memberships, events and other</p></div></div>
-    <div id="categoryChart" class="chart compact-chart"></div>
+    <h2>Monthly Total Sales</h2>
+    <p>Successfully paid affiliate sales — latest 12 months</p>
+    <div id="salesChart" class="chart"></div>
   </section>
 
   <section class="panel">
-    <h2>Eligible Products to Promote</h2>
-    <p class="muted">Only Quantum YiJing offerings currently approved for affiliate promotion are shown below. Your permanent Affiliate Code is automatically included in every link.</p>
-    <div id="productLinks" class="product-links"></div>
+    <h2>Monthly Sales by Category</h2>
+    <p>Successful sales by product category — latest 12 months</p>
+    <div id="categoryChart" class="chart"></div>
   </section>
 </section>
 
-<section class="bottom-grid">
+<section class="stack">
   <section class="panel">
     <h2>Sales & Commission Statement</h2>
     <div class="table-wrap"><table>
@@ -96,8 +97,18 @@
       <tbody id="payouts"></tbody>
     </table></div>
   </section>
+
+  <section class="panel">
+    <h2>Eligible Products to Promote</h2>
+    <p class="muted">Promote eligible Quantum YiJing offerings below. Your Affiliate Code is automatically included in every link.</p>
+    <div class="table-wrap">
+      <table class="product-table">
+        <thead><tr><th>Product</th><th>Type</th><th>SKU</th><th>Price</th><th>Commission</th><th>Your Link</th><th>Copy</th></tr></thead>
+        <tbody id="productLinks"></tbody>
+      </table>
+    </div>
+  </section>
 </section>
 </main>
-
 <script src="/affiliate-dashboard.js" defer></script>
 </body></html>

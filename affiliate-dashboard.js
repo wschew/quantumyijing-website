@@ -114,17 +114,20 @@ async function api(url){
 }
 
 function renderProducts(l){
-  const box=$('#productLinks');
+  const body=$('#productLinks');
   if(!Array.isArray(l.products)||!l.products.length){
-    box.innerHTML='<div class="product-link affiliate-offer"><b>No affiliate-eligible products are currently available.</b><small>Please check again later.</small></div>';
+    body.innerHTML='<tr><td colspan="7">No affiliate-eligible products are currently available.</td></tr>';
     return;
   }
-  box.innerHTML=l.products.map((p,i)=>`<div class="product-link affiliate-offer">
-    <div class="offer-top"><div><b>${esc(p.name_en)}</b>${p.name_zh?`<small>${esc(p.name_zh)}</small>`:''}</div><span class="offer-category">${esc(p.product_type)}</span></div>
-    <div class="offer-meta"><span><strong>SKU:</strong> ${esc(p.sku)}</span><span><strong>Price:</strong> ${esc(p.currency||'MYR')} ${Number(p.price||0).toFixed(2)}</span><span><strong>Commission:</strong> ${esc(commissionText(p))}</span></div>
-    <small class="commission-source">${esc(p.commission_source||'')}</small>
-    <div class="link-row"><input id="affProductLink${i}" value="${esc(p.url)}" readonly><button class="copy-product" data-target="affProductLink${i}">Copy Link</button></div>
-  </div>`).join('');
+  body.innerHTML=l.products.map((p,i)=>`<tr>
+    <td><span class="product-name">${esc(p.name_en)}</span>${p.name_zh?`<span class="product-zh">${esc(p.name_zh)}</span>`:''}</td>
+    <td><span class="offer-category">${esc(p.product_type)}</span></td>
+    <td>${esc(p.sku)}</td>
+    <td>${esc(p.currency||'MYR')} ${Number(p.price||0).toFixed(2)}</td>
+    <td>${esc(commissionText(p))}<span class="commission-source">${esc(p.commission_source||'')}</span></td>
+    <td><input class="product-link-input" id="affProductLink${i}" value="${esc(p.url)}" readonly></td>
+    <td><button class="copy-product" data-target="affProductLink${i}">Copy Link</button></td>
+  </tr>`).join('');
 }
 
 function renderCommissions(rows){
