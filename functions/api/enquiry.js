@@ -272,29 +272,39 @@ export async function onRequestPost(context) {
     return json({ error: 'Unable to record registration. Please try again.' }, 500);
   }
 
+  const isRegistration =
+    attribution.createOrder === true ||
+    body.submissionType === 'registration';
+
   let emailWarning = false;
-  try {
-    await Promise.all([
-      sendEmail(context.env.RESEND_API_KEY, {
-        from: FROM_ADDRESS,
-        to: [INTERNAL_ADDRESS],
-        reply_to: data.email,
-        subject: `[Website Enquiry] ${subjectTag} — ${data.name}`,
-        html: internalHtml({ ...data, ...attribution }, meta),
-        text: `New website enquiry\nReference: ${reference}\nName: ${data.name}\nEmail: ${data.email}\nPhone: ${data.phone}\nCountry: ${data.country}\nInterest: ${data.interest}\nMessage: ${data.message}`
-      }),
-      sendEmail(context.env.RESEND_API_KEY, {
-        from: FROM_ADDRESS,
-        to: [data.email],
-        reply_to: INTERNAL_ADDRESS,
-        subject: 'Enquiry Received | 已收到您的咨询',
-        html: acknowledgementHtml(data.name, reference, data.interest, submitted),
-        text: `Dear ${data.name},\n\nThank you for contacting ${ACADEMY_NAME}. Reference: ${reference}.  We have received your enquiry and will normally reply within 1–2 working days.\n\n尊敬的 ${data.name}：\n\n感谢您联系量子易经国际学院。我们已收到您的咨询，一般会在 1–2 个工作日内回复。\n\ninfo@quantumyijing.com`
-      })
-    ]);
-  } catch (error) {
-    emailWarning = true;
-    console.error('Email delivery failed after registration/order was recorded', error);
+
+  // Explicit two-button flow:
+  // enquiry => normal QY + customer enquiry emails
+  // registration => no enquiry emails; payment confirmation is sent after verified payment
+  if (!isRegistration) {
+    try {
+      await Promise.all([
+        sendEmail(context.env.RESEND_API_KEY, {
+          from: FROM_ADDRESS,
+          to: [INTERNAL_ADDRESS],
+          reply_to: data.email,
+          subject: `[Website Enquiry] ${subjectTag} — ${data.name}`,
+          html: internalHtml({ ...data, ...attribution }, meta),
+          text: `New website enquiry\nReference: ${reference}\nName: ${data.name}\nEmail: ${data.email}\nPhone: ${data.phone}\nCountry: ${data.country}\nInterest: ${data.interest}\nMessage: ${data.message}`
+        }),
+        sendEmail(context.env.RESEND_API_KEY, {
+          from: FROM_ADDRESS,
+          to: [data.email],
+          reply_to: INTERNAL_ADDRESS,
+          subject: 'Enquiry Received | 已收到您的咨询',
+          html: acknowledgementHtml(data.name, reference, data.interest, submitted),
+          text: `Dear ${data.name},\n\nThank you for contacting ${ACADEMY_NAME}. Reference: ${reference}. We have received your enquiry and will normally reply within 1–2 working days.\n\n尊敬的 ${data.name}：\n\n感谢您联系量子易经国际学院。我们已收到您的咨询，一般会在 1–2 个工作日内回复。\n\ninfo@quantumyijing.com`
+        })
+      ]);
+    } catch (error) {
+      emailWarning = true;
+      console.error('Enquiry email delivery failed after enquiry was recorded', error);
+    }
   }
 
   return json({
