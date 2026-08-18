@@ -275,28 +275,21 @@ export async function onRequestPost(context) {
   const isCourseRegistration = !!orderInfo?.orderReference;
 
   let emailWarning = false;
-  try {
-    const emailJobs = [
-      sendEmail(context.env.RESEND_API_KEY, {
-        from: FROM_ADDRESS,
-        to: [INTERNAL_ADDRESS],
-        reply_to: data.email,
-        subject: isCourseRegistration
-          ? `[Course Registration] ${orderInfo?.productName || data.interest} — ${data.name}`
-          : `[Website Enquiry] ${subjectTag} — ${data.name}`,
-        html: internalHtml({ ...data, ...attribution }, meta),
-        text: isCourseRegistration
-          ? `New course registration\nReference: ${reference}\nOrder: ${orderInfo?.orderReference || ''}\nProduct: ${orderInfo?.productName || ''}\nName: ${data.name}\nEmail: ${data.email}\nPhone: ${data.phone}\nCountry: ${data.country}`
-          : `New website enquiry\nReference: ${reference}\nName: ${data.name}\nEmail: ${data.email}\nPhone: ${data.phone}\nCountry: ${data.country}\nInterest: ${data.interest}\nMessage: ${data.message}`
-      })
-    ];
 
-    // IMPORTANT:
-    // Only genuine enquiries receive the customer acknowledgement.
-    // If an actual course order was created, do NOT send the generic
-    // "we will reply within 1–2 working days" email.
-    if (!isCourseRegistration) {
-      emailJobs.push(
+  // Genuine enquiries keep the normal enquiry email workflow.
+  // Course registrations that successfully created an order must NOT
+  // send enquiry emails to either the customer or QY.
+  if (!isCourseRegistration) {
+    try {
+      await Promise.all([
+        sendEmail(context.env.RESEND_API_KEY, {
+          from: FROM_ADDRESS,
+          to: [INTERNAL_ADDRESS],
+          reply_to: data.email,
+          subject: `[Website Enquiry] ${subjectTag} — ${data.name}`,
+          html: internalHtml({ ...data, ...attribution }, meta),
+          text: `New website enquiry\nReference: ${reference}\nName: ${data.name}\nEmail: ${data.email}\nPhone: ${data.phone}\nCountry: ${data.country}\nInterest: ${data.interest}\nMessage: ${data.message}`
+        }),
         sendEmail(context.env.RESEND_API_KEY, {
           from: FROM_ADDRESS,
           to: [data.email],
@@ -305,13 +298,11 @@ export async function onRequestPost(context) {
           html: acknowledgementHtml(data.name, reference, data.interest, submitted),
           text: `Dear ${data.name},\n\nThank you for contacting ${ACADEMY_NAME}. Reference: ${reference}. We have received your enquiry and will normally reply within 1–2 working days.\n\n尊敬的 ${data.name}：\n\n感谢您联系量子易经国际学院。我们已收到您的咨询，一般会在 1–2 个工作日内回复。\n\ninfo@quantumyijing.com`
         })
-      );
+      ]);
+    } catch (error) {
+      emailWarning = true;
+      console.error('Enquiry email delivery failed after enquiry was recorded', error);
     }
-
-    await Promise.all(emailJobs);
-  } catch (error) {
-    emailWarning = true;
-    console.error('Email delivery failed after registration/order was recorded', error);
   }
 
   return json({
