@@ -41,9 +41,9 @@ small{color:#637b94}.toplinks{display:flex;gap:9px;flex-wrap:wrap}.toplinks a{co
       <thead><tr>
         <th>Order Ref</th><th>Type / Purpose</th><th>Customer</th><th>Amount</th>
         <th>Order Status</th><th>Payment Status</th><th>Verification</th><th>Provider</th>
-        <th>Transaction ID</th><th>Paid At</th><th>Created</th>
+        <th>Transaction ID</th><th>Paid At</th><th>Customer Email</th><th>QY Internal Email</th><th>Created</th>
       </tr></thead>
-      <tbody id="rows"><tr><td colspan="11">Enter Admin Token and load records.</td></tr></tbody>
+      <tbody id="rows"><tr><td colspan="13">Enter Admin Token and load records.</td></tr></tbody>
     </table>
   </div>
 </section>
@@ -69,8 +69,10 @@ async function load(){
       <td>${esc(x.payment_provider)}</td>
       <td><small>${esc(x.transaction_id||x.external_order_id)}</small></td>
       <td>${esc(x.paid_at)}</td>
+      <td class="${String(x.customer_email_status).toLowerCase()}">${esc(x.customer_email_status||'—')}${x.customer_email_error?'<br><small>'+esc(x.customer_email_error)+'</small>':''}</td>
+      <td class="${String(x.internal_email_status).toLowerCase()}">${esc(x.internal_email_status||'—')}${x.internal_email_error?'<br><small>'+esc(x.internal_email_error)+'</small>':''}</td>
       <td>${esc(x.created_at)}</td>
-    </tr>`).join('')||'<tr><td colspan="11">No records found.</td></tr>';
+    </tr>`).join('')||'<tr><td colspan="13">No records found.</td></tr>';
     $('#status').textContent=(d.rows||[]).length+' record(s) loaded.';
   }catch(e){$('#status').textContent=e.message}
 }

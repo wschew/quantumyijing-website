@@ -54,7 +54,13 @@ export async function onRequestGet({request,env}){
       COALESCE(py.status,'') AS payment_record_status,
       COALESCE(py.verification_status,'') AS verification_status,
       COALESCE(py.paid_at,'') AS paid_at,
-      COALESCE(py.gateway_mode,'') AS gateway_mode
+      COALESCE(py.gateway_mode,'') AS gateway_mode,
+      COALESCE(cn.status,'') AS customer_email_status,
+      COALESCE(cn.sent_at,'') AS customer_email_sent_at,
+      COALESCE(cn.last_error,'') AS customer_email_error,
+      COALESCE(inot.status,'') AS internal_email_status,
+      COALESCE(inot.sent_at,'') AS internal_email_sent_at,
+      COALESCE(inot.last_error,'') AS internal_email_error
     FROM orders o
     LEFT JOIN generic_payment_requests g ON g.order_id=o.id
     LEFT JOIN payments py ON py.id=(
@@ -62,6 +68,10 @@ export async function onRequestGet({request,env}){
       WHERE p2.order_id=o.id
       ORDER BY p2.id DESC LIMIT 1
     )
+    LEFT JOIN payment_email_notifications cn
+      ON cn.order_id=o.id AND cn.notification_type='CustomerReceipt'
+    LEFT JOIN payment_email_notifications inot
+      ON inot.order_id=o.id AND inot.notification_type='InternalPaymentNotice'
     ${where.length?'WHERE '+where.join(' AND '):''}
     ORDER BY o.id DESC
     LIMIT ?
