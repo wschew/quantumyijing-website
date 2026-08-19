@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Course WhatsApp Invitations</title>
+<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/affiliate-portal.css">
+<style>
+body{background:#f5f8fc}
+.portal-main{max-width:1500px;margin:auto;padding:38px 24px 60px}
+.panel{background:#fff;border:1px solid #d9e4f2;border-radius:20px;padding:28px;margin:0 0 24px}
+.panel h2{margin-top:0;color:#0b2f66}
+.control-grid{display:grid;grid-template-columns:1fr 1.3fr 2fr auto;gap:16px;align-items:end}
+.control-grid label{font-weight:700;color:#173b63}
+.control-grid input,.control-grid select{width:100%;box-sizing:border-box;padding:12px;border:1px solid #bdd0e6;border-radius:10px;background:#fff}
+.primary{background:#1468c5;color:#fff;border:0;border-radius:10px;padding:13px 20px;font-weight:800;cursor:pointer}
+.secondary{background:#fff;color:#0b58a5;border:1px solid #9fc1e6;border-radius:10px;padding:12px 18px;font-weight:800;cursor:pointer}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:20px 0}
+.stat{background:#f4f8fd;border:1px solid #d8e5f4;border-radius:14px;padding:18px}
+.stat small{color:#60758d}.stat strong{display:block;font-size:28px;color:#0f61b8;margin-top:6px}
+.table-wrap{overflow:auto;border:1px solid #dce6f2;border-radius:14px}
+table{width:100%;border-collapse:collapse;min-width:1050px}
+th,td{padding:13px 14px;text-align:left;border-bottom:1px solid #e3ebf4}
+th{background:#f1f6fc;color:#163657}
+.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-weight:700;font-size:12px}
+.badge.sent{background:#e4f6eb;color:#117b42}.badge.pending{background:#fff3d9;color:#8a5a00}.badge.failed{background:#fde8e8;color:#a32323}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:18px 0}
+#status{font-weight:700}.success{color:#07823e}.error{color:#b42318}
+@media(max-width:900px){.control-grid{grid-template-columns:1fr}.summary{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="qy-portal-header">
+  <a href="/" class="qy-brand-lockup">
+    <img src="/images/quantum-yijing-3d-logo.png" class="qy-brand-logo">
+    <span class="qy-brand-name">Quantum YiJing®</span>
+  </a>
+  <div class="qy-portal-header-right">
+    <div class="qy-portal-section">Course Communication Admin</div>
+    <a href="/admin.html" class="portal-outline-link">← Admin</a>
+  </div>
+</header>
+
+<main class="portal-main">
+  <h1>Course WhatsApp Invitations</h1>
+  <p>Select a course, review paid registrants, and send the official WhatsApp group invitation in one controlled batch.</p>
+
+  <section class="panel">
+    <h2>1. Select Course & WhatsApp Group</h2>
+    <div class="control-grid">
+      <label>Admin Token<input id="token" type="password" autocomplete="off"></label>
+      <label>Course<select id="course"><option value="">Select course…</option></select></label>
+      <label>WhatsApp Group Invite URL<input id="groupUrl" type="url" placeholder="https://chat.whatsapp.com/..."></label>
+      <button class="primary" id="load">Load Paid Registrants</button>
+    </div>
+    <p id="status"></p>
+  </section>
+
+  <section class="panel">
+    <h2>2. Paid Registrants</h2>
+    <div class="summary">
+      <div class="stat"><small>Paid Registrants</small><strong id="paidCount">0</strong></div>
+      <div class="stat"><small>Invitation Sent</small><strong id="sentCount">0</strong></div>
+      <div class="stat"><small>Pending Invitation</small><strong id="pendingCount">0</strong></div>
+    </div>
+    <div class="toolbar">
+      <button class="secondary" id="selectPending">Select All Pending</button>
+      <button class="secondary" id="clearSelection">Clear Selection</button>
+      <label><input id="allowResend" type="checkbox"> Allow resend to already-sent customers</label>
+      <button class="primary" id="send">Send WhatsApp Invitation</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th><input id="selectAll" type="checkbox"></th>
+          <th>Name</th><th>Email</th><th>Order Ref</th><th>Amount</th><th>Paid Date</th><th>Invite Status</th><th>Sent At</th>
+        </tr></thead>
+        <tbody id="rows"><tr><td colspan="8">Load a course to view paid registrants.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<script src="/admin-course-whatsapp.js" defer></script>
+</body></html>
