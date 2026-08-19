@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Secure Payment | Quantum YiJing®</title>
+<link rel="stylesheet" href="/marketing.css?v=3.0">
+<link rel="stylesheet" href="/product-funnel.css?v=3.2">
+<style>
+body{background:#f5f8fc}
+.pay-shell{max-width:980px;margin:42px auto;padding:0 22px}
+.pay-card{background:#fff;border:1px solid #d9e4f2;border-radius:24px;overflow:hidden;box-shadow:0 18px 50px rgba(18,58,104,.08)}
+.pay-head{display:flex;align-items:center;gap:18px;padding:24px 30px;background:#edf5ff;border-bottom:4px solid #d3a62c}
+.pay-head img{width:70px;height:70px}
+.pay-head strong{display:block;font-size:24px;color:#082b63}
+.pay-head small{font-weight:700;letter-spacing:2px;color:#45688f}
+.pay-body{display:grid;grid-template-columns:1fr 1.15fr;gap:30px;padding:34px}
+.pay-copy h1{color:#0b2f66;margin-top:0}
+.pay-copy p{line-height:1.75;color:#445d77}
+.pay-form label{display:block;margin-bottom:16px;font-weight:700;color:#173b63}
+.pay-form input,.pay-form textarea{width:100%;box-sizing:border-box;margin-top:7px;padding:12px 13px;border:1px solid #bdd0e6;border-radius:10px;background:#fff;font:inherit}
+.amount-wrap{display:grid;grid-template-columns:90px 1fr;gap:8px}
+.amount-code{display:flex;align-items:center;justify-content:center;margin-top:7px;border:1px solid #bdd0e6;border-radius:10px;background:#f4f8fd;font-weight:800;color:#0b58a5}
+.consent{display:flex!important;gap:10px;align-items:flex-start;font-weight:500!important}
+.consent input{width:auto;margin-top:3px}
+.primary{width:100%;border:0;border-radius:11px;padding:15px 18px;background:#1468c5;color:#fff;font-weight:800;font-size:16px;cursor:pointer}
+.primary:disabled{opacity:.6}
+.note{font-size:12px;color:#647b93;line-height:1.6;margin-top:12px}
+.message{margin-top:14px;font-weight:700}.message.error{color:#b42318}.message.success{color:#07823e}
+@media(max-width:760px){.pay-body{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="pay-shell">
+  <div class="pay-card">
+    <div class="pay-head">
+      <img src="/images/quantum-yijing-3d-logo.png" alt="Quantum YiJing®">
+      <div><strong>Quantum YiJing®</strong><small>INTERNATIONAL ACADEMY</small></div>
+    </div>
+    <div class="pay-body">
+      <section class="pay-copy">
+        <p style="font-size:12px;font-weight:800;letter-spacing:1.5px;color:#1768c4" data-en="SECURE GENERAL PAYMENT" data-zh="安全通用付款">SECURE GENERAL PAYMENT</p>
+        <h1 data-en="Make a payment to Quantum YiJing" data-zh="付款给量子易经">Make a payment to Quantum YiJing</h1>
+        <p data-en="Use this page for a token payment, contribution, balance payment, deposit, or other approved payment that is not tied to a course or product purchase." data-zh="此页面可用于心意款、补款、订金或其他不属于课程或产品购买的付款。">Use this page for a token payment, contribution, balance payment, deposit, or other approved payment that is not tied to a course or product purchase.</p>
+        <p data-en="After you continue, you will be redirected to DOKU's secure checkout. Quantum YiJing does not collect your card, banking or e-wallet credentials." data-zh="继续后，您将被转至 DOKU 的安全付款页面。量子易经不会收集您的银行卡、网银或电子钱包认证资料。">After you continue, you will be redirected to DOKU's secure checkout. Quantum YiJing does not collect your card, banking or e-wallet credentials.</p>
+        <button id="lang" type="button" style="border:1px solid #9fc1e6;background:#fff;color:#0b58a5;border-radius:9px;padding:9px 14px;font-weight:800">中文</button>
+      </section>
+
+      <form id="paymentForm" class="pay-form">
+        <input name="website" style="display:none" tabindex="-1" autocomplete="off">
+        <input type="hidden" name="startedAt" id="startedAt">
+
+        <label><span data-en="Full Name *" data-zh="姓名 *">Full Name *</span>
+          <input name="name" required maxlength="100">
+        </label>
+
+        <label><span data-en="Email *" data-zh="电邮 *">Email *</span>
+          <input name="email" type="email" required maxlength="160">
+        </label>
+
+        <label><span data-en="WhatsApp / Phone" data-zh="WhatsApp / 电话">WhatsApp / Phone</span>
+          <input name="phone" maxlength="60">
+        </label>
+
+        <label><span data-en="Amount *" data-zh="付款金额 *">Amount *</span>
+          <div class="amount-wrap">
+            <div class="amount-code">MYR</div>
+            <input name="amount" type="number" min="1" max="100000" step="0.01" required placeholder="100.00">
+          </div>
+        </label>
+
+        <label><span data-en="Payment Purpose" data-zh="付款用途">Payment Purpose</span>
+          <input name="purpose" maxlength="160" placeholder="Token payment / General payment">
+        </label>
+
+        <label><span data-en="Note (optional)" data-zh="备注（可选）">Note (optional)</span>
+          <textarea name="note" rows="3" maxlength="1000"></textarea>
+        </label>
+
+        <label class="consent">
+          <input name="consent" type="checkbox" required>
+          <span data-en="I confirm the payment details above are correct and agree to the Privacy Policy and Terms of Use." data-zh="我确认以上付款资料正确，并同意隐私政策及使用条款。">I confirm the payment details above are correct and agree to the Privacy Policy and Terms of Use.</span>
+        </label>
+
+        <button id="payBtn" class="primary" type="submit" data-en="Proceed to Secure DOKU Payment" data-zh="继续前往 DOKU 安全付款">Proceed to Secure DOKU Payment</button>
+        <div id="msg" class="message"></div>
+        <div class="note" data-en="Please check the amount carefully before continuing. The checkout currency is MYR." data-zh="继续前请仔细确认付款金额。付款币种为马币 MYR。">Please check the amount carefully before continuing. The checkout currency is MYR.</div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s),root=document.documentElement;
+function setLang(lang){
+  root.dataset.lang=lang;root.lang=lang==='zh'?'zh-CN':'en';
+  document.querySelectorAll('[data-en]').forEach(el=>el.textContent=el.dataset[lang]||el.dataset.en);
+  $('#lang').textContent=lang==='zh'?'EN':'中文';
+}
+$('#lang').onclick=()=>setLang(root.dataset.lang==='zh'?'en':'zh');
+setLang('en');
+$('#startedAt').value=Date.now();
+
+$('#paymentForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(!e.currentTarget.reportValidity())return;
+  const fd=new FormData(e.currentTarget),btn=$('#payBtn'),msg=$('#msg');
+  btn.disabled=true;
+  msg.className='message';
+  msg.textContent=root.dataset.lang==='zh'?'正在建立安全付款…':'Preparing secure payment…';
+
+  const body={
+    name:fd.get('name'),
+    email:fd.get('email'),
+    phone:fd.get('phone'),
+    amount:fd.get('amount'),
+    purpose:fd.get('purpose'),
+    note:fd.get('note'),
+    consent:fd.get('consent'),
+    website:fd.get('website'),
+    startedAt:Number(fd.get('startedAt')),
+    language:root.dataset.lang
+  };
+
+  try{
+    const r=await fetch('/api/payment/generic/create',{
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||'Unable to create payment.');
+
+    msg.className='message success';
+    msg.textContent=root.dataset.lang==='zh'
+      ?'付款资料已建立。正在连接 DOKU…'
+      :'Payment record created. Connecting to DOKU…';
+
+    const f=document.createElement('form');
+    f.method='post';
+    f.action='/api/payment/doku/generic-start';
+    f.style.display='none';
+    const i=document.createElement('input');
+    i.type='hidden';
+    i.name='order_reference';
+    i.value=d.orderReference;
+    f.appendChild(i);
+    document.body.appendChild(f);
+    f.submit();
+  }catch(err){
+    msg.className='message error';
+    msg.textContent=err.message;
+    btn.disabled=false;
+    $('#startedAt').value=Date.now();
+  }
+});
+</script>
+</body>
+</html>
