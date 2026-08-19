@@ -51,9 +51,16 @@ th{background:#f1f6fc;color:#163657}
     <div class="control-grid">
       <label>Admin Token<input id="token" type="password" autocomplete="off"></label>
       <label>Course<select id="course"><option value="">Select course…</option></select></label>
-      <label>WhatsApp Group Invite URL<input id="groupUrl" type="url" placeholder="https://chat.whatsapp.com/..."></label>
+      <label>WhatsApp Group Name<input id="groupName" type="text" placeholder="e.g. YJ12 | 2026"></label>
       <button class="primary" id="load">Load Paid Registrants</button>
     </div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end;margin-top:16px">
+      <label style="font-weight:700;color:#173b63">Saved WhatsApp Group Invite URL
+        <input id="groupUrl" type="url" placeholder="https://chat.whatsapp.com/..." style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #bdd0e6;border-radius:10px;background:#fff">
+      </label>
+      <button class="secondary" id="saveGroup">Save Group for Selected Course</button>
+    </div>
+    <p style="margin:12px 0 0;color:#60758d">Each course keeps its own saved WhatsApp group link. The batch sender always uses the saved link for the selected course.</p>
     <p id="status"></p>
   </section>
 

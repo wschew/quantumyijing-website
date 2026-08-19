@@ -45,11 +45,16 @@ async function loadRecipients(){
   const productId=Number($('#course').value||0);
   if(!productId){status('Please select a course.',true);return}
   try{
-    const d=await api(`/api/admin/course-whatsapp-recipients?product_id=${productId}`);
+    const [d,g]=await Promise.all([
+      api(`/api/admin/course-whatsapp-recipients?product_id=${productId}`),
+      api(`/api/admin/course-whatsapp-group?product_id=${productId}`)
+    ]);
     recipients=d.recipients||[];
     $('#paidCount').textContent=d.summary.paid;
     $('#sentCount').textContent=d.summary.sent;
     $('#pendingCount').textContent=d.summary.pending;
+    $('#groupName').value=g.group?.group_name||'';
+    $('#groupUrl').value=g.group?.invite_url||'';
     render();
     status(`Loaded ${d.summary.paid} paid registrant(s).`);
   }catch(e){status(e.message,true)}
@@ -59,6 +64,34 @@ function selectedIds(){
 }
 $('#token').addEventListener('change',loadCourses);
 $('#load').onclick=loadRecipients;
+$('#course').addEventListener('change',async()=>{
+  const productId=Number($('#course').value||0);
+  if(!productId){$('#groupName').value='';$('#groupUrl').value='';return}
+  try{
+    const g=await api(`/api/admin/course-whatsapp-group?product_id=${productId}`);
+    $('#groupName').value=g.group?.group_name||'';
+    $('#groupUrl').value=g.group?.invite_url||'';
+    status(g.group?.invite_url?'Saved WhatsApp group loaded.':'No WhatsApp group saved yet for this course.');
+  }catch(e){status(e.message,true)}
+});
+$('#saveGroup').onclick=async()=>{
+  const productId=Number($('#course').value||0);
+  const groupName=$('#groupName').value.trim();
+  const inviteUrl=$('#groupUrl').value.trim();
+  if(!productId){status('Please select a course.',true);return}
+  if(!groupName){status('Please enter a WhatsApp group name.',true);return}
+  if(!inviteUrl){status('Please enter the WhatsApp group invite URL.',true);return}
+  $('#saveGroup').disabled=true;
+  try{
+    await api('/api/admin/course-whatsapp-group',{
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({product_id:productId,group_name:groupName,invite_url:inviteUrl,is_active:true})
+    });
+    status('WhatsApp group saved for this course.');
+  }catch(e){status(e.message,true)}
+  finally{$('#saveGroup').disabled=false}
+};
 $('#selectPending').onclick=()=>{
   document.querySelectorAll('.pick').forEach(cb=>{
     const r=recipients.find(x=>Number(x.order_id)===Number(cb.dataset.id));
@@ -69,10 +102,9 @@ $('#clearSelection').onclick=()=>document.querySelectorAll('.pick').forEach(x=>x
 $('#selectAll').onchange=e=>document.querySelectorAll('.pick').forEach(x=>x.checked=e.target.checked);
 $('#send').onclick=async()=>{
   const productId=Number($('#course').value||0);
-  const groupUrl=$('#groupUrl').value.trim();
   const orderIds=selectedIds();
   if(!productId){status('Please select a course.',true);return}
-  if(!groupUrl){status('Please enter the WhatsApp group invite URL.',true);return}
+  if(!$('#groupUrl').value.trim()){status('Please save a WhatsApp group for this course first.',true);return}
   if(!orderIds.length){status('Please select at least one paid registrant.',true);return}
   const courseText=$('#course').selectedOptions[0]?.textContent||'selected course';
   if(!confirm(`Send WhatsApp invitation to ${orderIds.length} selected registrant(s) for ${courseText}?`)) return;
@@ -84,7 +116,6 @@ $('#send').onclick=async()=>{
       headers:{'content-type':'application/json'},
       body:JSON.stringify({
         product_id:productId,
-        whatsapp_group_url:groupUrl,
         order_ids:orderIds,
         resend:$('#allowResend').checked
       })

@@ -74,21 +74,30 @@ export async function onRequestPost({request,env}){
   try{body=await request.json()}catch{return json({error:'Invalid request body'},400)}
 
   const productId=Number(body.product_id||0);
-  const groupUrl=clean(body.whatsapp_group_url,1000);
   const resend=body.resend===true;
   const ids=Array.isArray(body.order_ids)
     ? [...new Set(body.order_ids.map(Number).filter(Boolean))].slice(0,100)
     : [];
 
   if(!productId) return json({error:'product_id is required'},400);
-  if(!/^https:\/\/(chat\.whatsapp\.com|wa\.me)\//i.test(groupUrl))
-    return json({error:'Please enter a valid WhatsApp group/invite URL beginning with https://chat.whatsapp.com/ or https://wa.me/'},400);
   if(!ids.length) return json({error:'Select at least one paid registrant'},400);
 
   const product=await db.prepare(`
     SELECT id,sku,name_en,name_zh FROM products WHERE id=? LIMIT 1
   `).bind(productId).first();
   if(!product) return json({error:'Course not found'},404);
+
+  const group=await db.prepare(`
+    SELECT group_name,invite_url,is_active
+    FROM course_whatsapp_groups WHERE product_id=? LIMIT 1
+  `).bind(productId).first();
+
+  if(!group || Number(group.is_active)!==1 || !group.invite_url)
+    return json({error:'No active WhatsApp group has been saved for this course.'},400);
+
+  const groupUrl=clean(group.invite_url,1000);
+  if(!/^https:\/\/chat\.whatsapp\.com\/[A-Za-z0-9_-]+(?:[?#].*)?$/i.test(groupUrl))
+    return json({error:'The saved WhatsApp group invitation link is invalid.'},400);
 
   const placeholders=ids.map(()=>'?').join(',');
   const rows=await db.prepare(`
@@ -119,7 +128,7 @@ export async function onRequestPost({request,env}){
         from:FROM,
         to:[row.customer_email],
         reply_to:REPLY,
-        subject:`Welcome to ${product.name_en || product.sku} — Join the WhatsApp Group`,
+        subject:`Welcome to ${product.name_en || product.sku} — Join ${group.group_name || 'the WhatsApp Group'}`,
         html:mailHtml(row,product,groupUrl),
         text:`Dear ${row.customer_name || 'Customer'},
 
