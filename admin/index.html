@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin Tools | Quantum YiJing®</title>
+<style>
+body{margin:0;background:#f5f8fc;font-family:Arial,sans-serif;color:#112640}
+header{background:#fff;border-bottom:1px solid #dce6f2;padding:18px 28px;display:flex;align-items:center;gap:14px}
+header img{width:62px;height:62px}header strong{font-size:24px;color:#0758a7}
+main{max-width:1100px;margin:auto;padding:42px 22px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:25px}
+.card{display:block;background:#fff;border:1px solid #d8e4f1;border-radius:18px;padding:24px;text-decoration:none;color:#10243f;box-shadow:0 10px 30px rgba(22,66,110,.05)}
+.card:hover{border-color:#7eb2e6}.card h2{margin:0 0 9px;color:#0b5daf}.card p{margin:0;color:#5c728a;line-height:1.6}
+.public{border-top:4px solid #d3a62c}.admin{border-top:4px solid #1468c5}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><img src="/images/quantum-yijing-3d-logo.png" alt=""><strong>Quantum YiJing® Admin Tools</strong></header>
+<main>
+<h1>Quick Access</h1>
+<p>Frequently used operational and payment tools.</p>
+<div class="grid">
+  <a class="card admin" href="/admin.html"><h2>Main Admin</h2><p>CRM, orders, accounting and administration.</p></a>
+  <a class="card admin" href="/admin-payment-records.html"><h2>Payment Records</h2><p>Review all payments or generic payments and their verification status.</p></a>
+  <a class="card admin" href="/admin-course-whatsapp.html"><h2>Course WhatsApp Invitations</h2><p>Load paid course registrants and send the saved course WhatsApp group invitation.</p></a>
+  <a class="card public" href="/generic-payment.html"><h2>Generic DOKU Payment Form</h2><p>Open the customer-facing general payment form for token, deposit, balance or other payments.</p></a>
+</div>
+</main>
+</body></html>

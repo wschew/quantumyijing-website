@@ -57,11 +57,13 @@ async function orderMailData(db,orderRef){
           END,
           ' + '
         ),
-        'Quantum YiJing Purchase'
+        MAX(g.payment_purpose),
+        'Quantum YiJing Payment'
       ) AS product_name
     FROM orders o
     LEFT JOIN order_items oi ON oi.order_id=o.id
     LEFT JOIN products p ON p.id=oi.product_id
+    LEFT JOIN generic_payment_requests g ON g.order_id=o.id
     WHERE o.order_reference=?
     GROUP BY o.id
     LIMIT 1
@@ -84,8 +86,11 @@ function customerHtml(o){
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:680px;background:#fff;border:1px solid #dce7f4;border-radius:20px;overflow:hidden">
             <tr>
               <td style="padding:24px 30px;background:#edf5ff;border-bottom:4px solid #d3a62c">
-                <strong style="font-size:21px;color:#082b63">Quantum YiJing®</strong>
-                <div style="margin-top:4px;font-size:11px;font-weight:700;letter-spacing:2px;color:#45688f">INTERNATIONAL ACADEMY</div>
+                <table role="presentation" cellspacing="0" cellpadding="0"><tr>
+                  <td width="82"><img src="https://quantumyijing.com/images/quantum-yijing-3d-logo.png" width="68" height="68" alt="Quantum YiJing®" style="display:block"></td>
+                  <td><div style="font-size:21px;font-weight:800;color:#082b63">Quantum YiJing</div>
+                  <div style="margin-top:4px;font-size:11px;font-weight:700;letter-spacing:2px;color:#45688f">INTERNATIONAL ACADEMY</div></td>
+                </tr></table>
               </td>
             </tr>
             <tr>
@@ -142,8 +147,11 @@ function internalHtml(o,{checkoutId,state,channel}){
       <tr><td align="center" style="padding:28px 12px">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:680px;background:#fff;border:1px solid #dce7f4;border-radius:20px;overflow:hidden">
           <tr><td style="padding:24px 30px;background:#edf5ff;border-bottom:4px solid #d3a62c">
-            <strong style="font-size:21px;color:#082b63">Quantum YiJing®</strong>
-            <div style="margin-top:4px;font-size:11px;font-weight:700;letter-spacing:2px;color:#45688f">PAYMENT NOTIFICATION</div>
+            <table role="presentation" cellspacing="0" cellpadding="0"><tr>
+              <td width="82"><img src="https://quantumyijing.com/images/quantum-yijing-3d-logo.png" width="68" height="68" alt="Quantum YiJing®" style="display:block"></td>
+              <td><div style="font-size:21px;font-weight:800;color:#082b63">Quantum YiJing</div>
+              <div style="margin-top:4px;font-size:11px;font-weight:700;letter-spacing:2px;color:#45688f">PAYMENT NOTIFICATION</div></td>
+            </tr></table>
           </td></tr>
           <tr><td style="padding:34px">
             <h1 style="margin:0 0 20px;font-size:25px;color:#0b2f66">Payment Received</h1>

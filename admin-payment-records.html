@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Payment Records | Quantum YiJing®</title>
+<link rel="stylesheet" href="/affiliate-portal.css">
+<style>
+body{margin:0;background:#f5f8fc;font-family:Arial,sans-serif;color:#10243f}
+main{max-width:1500px;margin:auto;padding:34px 22px 60px}
+header{background:#fff;border-bottom:1px solid #dce6f2;padding:16px 24px;display:flex;justify-content:space-between;align-items:center}
+.brand{display:flex;align-items:center;gap:12px;font-weight:800;color:#0758a7;font-size:22px}.brand img{width:56px;height:56px}
+.panel{background:#fff;border:1px solid #d9e4f2;border-radius:18px;padding:24px;margin-top:22px}
+.controls{display:grid;grid-template-columns:1fr 180px 1.3fr auto;gap:12px;align-items:end}
+label{font-weight:700;color:#173b63}input,select{width:100%;box-sizing:border-box;padding:11px;border:1px solid #bdd0e6;border-radius:9px;margin-top:6px}
+button,.btn{border:0;border-radius:9px;background:#1468c5;color:#fff;padding:12px 18px;font-weight:800;cursor:pointer;text-decoration:none}
+.table-wrap{overflow:auto;border:1px solid #dce6f2;border-radius:12px;margin-top:20px}
+table{width:100%;border-collapse:collapse;min-width:1450px}th,td{padding:11px 12px;border-bottom:1px solid #e5edf6;text-align:left;vertical-align:top}
+th{background:#f1f6fc;color:#173b63}.paid{color:#087e43;font-weight:800}.pending{color:#9b6600;font-weight:800}.failed{color:#b42318;font-weight:800}
+small{color:#637b94}.toplinks{display:flex;gap:9px;flex-wrap:wrap}.toplinks a{color:#0b58a5;text-decoration:none;font-weight:700}
+@media(max-width:900px){.controls{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><img src="/images/quantum-yijing-3d-logo.png" alt="">Quantum YiJing®</div>
+  <div class="toplinks"><a href="/admin/">Admin Tools</a><a href="/admin.html">Main Admin</a></div>
+</header>
+<main>
+<h1>Payment Records</h1>
+<p>Review DOKU and other payment records, including generic payments.</p>
+<section class="panel">
+  <div class="controls">
+    <label>Admin Token<input id="token" type="password" autocomplete="off"></label>
+    <label>Type<select id="type"><option value="all">All Payments</option><option value="generic">Generic Payments</option></select></label>
+    <label>Search<input id="q" placeholder="Order ref, customer, email, purpose or transaction ID"></label>
+    <button id="load">Load Records</button>
+  </div>
+  <p id="status"></p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Order Ref</th><th>Type / Purpose</th><th>Customer</th><th>Amount</th>
+        <th>Order Status</th><th>Payment Status</th><th>Verification</th><th>Provider</th>
+        <th>Transaction ID</th><th>Paid At</th><th>Created</th>
+      </tr></thead>
+      <tbody id="rows"><tr><td colspan="11">Enter Admin Token and load records.</td></tr></tbody>
+    </table>
+  </div>
+</section>
+</main>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function load(){
+  const token=$('#token').value.trim(),type=$('#type').value,q=$('#q').value.trim();
+  $('#status').textContent='Loading…';
+  try{
+    const r=await fetch('/api/admin/payment-records?type='+encodeURIComponent(type)+'&q='+encodeURIComponent(q),{
+      headers:{authorization:'Bearer '+token},cache:'no-store'
+    });
+    const d=await r.json();if(!r.ok)throw new Error(d.error||('HTTP '+r.status));
+    $('#rows').innerHTML=(d.rows||[]).map(x=>`<tr>
+      <td><strong>${esc(x.order_reference)}</strong></td>
+      <td>${esc(x.payment_type)}${x.payment_purpose?'<br><small>'+esc(x.payment_purpose)+'</small>':''}</td>
+      <td>${esc(x.customer_name)}<br><small>${esc(x.customer_email)}</small></td>
+      <td>${esc(x.currency)} ${Number(x.total||0).toFixed(2)}</td>
+      <td class="${String(x.payment_status).toLowerCase()}">${esc(x.payment_status)}</td>
+      <td class="${String(x.payment_record_status).toLowerCase()}">${esc(x.payment_record_status)}</td>
+      <td>${esc(x.verification_status)}</td>
+      <td>${esc(x.payment_provider)}</td>
+      <td><small>${esc(x.transaction_id||x.external_order_id)}</small></td>
+      <td>${esc(x.paid_at)}</td>
+      <td>${esc(x.created_at)}</td>
+    </tr>`).join('')||'<tr><td colspan="11">No records found.</td></tr>';
+    $('#status').textContent=(d.rows||[]).length+' record(s) loaded.';
+  }catch(e){$('#status').textContent=e.message}
+}
+$('#load').onclick=load;$('#q').addEventListener('keydown',e=>{if(e.key==='Enter')load()});
+</script>
+</body></html>
