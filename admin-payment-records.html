@@ -59,7 +59,7 @@ async function load(){
     });
     const d=await r.json();if(!r.ok)throw new Error(d.error||('HTTP '+r.status));
     $('#rows').innerHTML=(d.rows||[]).map(x=>`<tr>
-      <td><strong>${esc(x.order_reference)}</strong></td>
+      <td data-order-ref="${esc(x.order_reference)}"><strong>${esc(x.order_reference)}</strong></td>
       <td>${esc(x.payment_type)}${x.payment_purpose?'<br><small>'+esc(x.payment_purpose)+'</small>':''}</td>
       <td>${esc(x.customer_name)}<br><small>${esc(x.customer_email)}</small></td>
       <td>${esc(x.currency)} ${Number(x.total||0).toFixed(2)}</td>
@@ -79,6 +79,21 @@ async function load(){
   }catch(e){$('#status').textContent=e.message}
 }
 $('#load').onclick=load;$('#q').addEventListener('keydown',e=>{if(e.key==='Enter')load()});
+const directOrder=new URLSearchParams(location.search).get('order')||'';
+if(directOrder){
+  $('#q').value=directOrder;
+  setTimeout(async()=>{
+    if(!$('#token').value.trim())return;
+    await load();
+    const cell=[...document.querySelectorAll('[data-order-ref]')].find(x=>x.dataset.orderRef===directOrder);
+    if(cell){
+      const row=cell.closest('tr');
+      row.style.background='#fff8df';
+      row.style.boxShadow='inset 4px 0 0 #d4a520';
+      row.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+  },250);
+}
 document.addEventListener('click',async e=>{const btn=e.target.closest('.verify-btn');if(!btn)return;const orderId=Number(btn.dataset.orderId||0);if(!confirm('Verify and confirm this generic payment? This will issue the QY receipt to the customer and send the accounting email to QY.'))return;btn.disabled=true;try{const r=await fetch('/api/admin/generic-payment-verify',{method:'POST',headers:{authorization:'Bearer '+$('#token').value.trim(),'content-type':'application/json'},body:JSON.stringify({order_id:orderId})});const d=await r.json();if(!r.ok)throw new Error(d.error||('HTTP '+r.status));$('#status').textContent='Payment verified. Receipt and accounting email processed.';await load();}catch(err){$('#status').textContent=err.message;btn.disabled=false;}});
 </script>
 </body></html>

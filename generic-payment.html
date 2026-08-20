@@ -1,52 +1,27 @@
 <!doctype html>
 <html lang="en" data-lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Secure Payment | Quantum YiJing®</title>
-<link rel="stylesheet" href="/marketing.css?v=3.0">
-<link rel="stylesheet" href="/product-funnel.css?v=3.2">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>General Payment | Quantum YiJing®</title>
 <style>
-body{background:#f5f8fc}
-.pay-shell{max-width:980px;margin:42px auto;padding:0 22px}
-.pay-card{background:#fff;border:1px solid #d9e4f2;border-radius:24px;overflow:hidden;box-shadow:0 18px 50px rgba(18,58,104,.08)}
-.pay-head{display:flex;align-items:center;gap:18px;padding:24px 30px;background:#edf5ff;border-bottom:4px solid #d3a62c}
-.pay-head img{width:70px;height:70px}
-.pay-head strong{display:block;font-size:24px;color:#082b63}
-.pay-head small{font-weight:700;letter-spacing:2px;color:#45688f}
-.pay-body{display:grid;grid-template-columns:1fr 1.15fr;gap:30px;padding:34px}
-.pay-copy h1{color:#0b2f66;margin-top:0}
-.pay-copy p{line-height:1.75;color:#445d77}
-.pay-form label{display:block;margin-bottom:16px;font-weight:700;color:#173b63}
-.pay-form input,.pay-form textarea{width:100%;box-sizing:border-box;margin-top:7px;padding:12px 13px;border:1px solid #bdd0e6;border-radius:10px;background:#fff;font:inherit}
-.amount-wrap{display:grid;grid-template-columns:90px 1fr;gap:8px}
-.amount-code{display:flex;align-items:center;justify-content:center;margin-top:7px;border:1px solid #bdd0e6;border-radius:10px;background:#f4f8fd;font-weight:800;color:#0b58a5}
-.consent{display:flex!important;gap:10px;align-items:flex-start;font-weight:500!important}
-.consent input{width:auto;margin-top:3px}
-.primary{width:100%;border:0;border-radius:11px;padding:15px 18px;background:#1468c5;color:#fff;font-weight:800;font-size:16px;cursor:pointer}
-.primary:disabled{opacity:.6}
-.note{font-size:12px;color:#647b93;line-height:1.6;margin-top:12px}
-.message{margin-top:14px;font-weight:700}.message.error{color:#b42318}.message.success{color:#07823e}
-@media(max-width:760px){.pay-body{grid-template-columns:1fr}}
+:root{--blue:#1468c5;--deep:#0a2f63;--line:#d8e4f1;--muted:#5e738b}
+*{box-sizing:border-box}body{margin:0;background:#f4f7fb;color:#14283f;font-family:Arial,"Noto Sans SC","Microsoft YaHei",sans-serif}
+header{height:108px;background:#fff;border-bottom:1px solid #dce6f2;display:flex;align-items:center;justify-content:space-between;padding:0 32px}
+.brand{display:flex;align-items:center;gap:15px;text-decoration:none}.brand img{width:72px;height:72px}.brand-title{font-size:27px;font-weight:800;color:#0756a3}.brand-sub{font-size:12px;letter-spacing:2.4px;font-weight:700;color:#55708e}
+nav{display:flex;align-items:center;gap:26px;font-weight:700}nav a{color:#203d5d;text-decoration:none}#lang{border:1px solid #a9c6e7;background:#fff;color:#0b5eae;border-radius:999px;padding:11px 18px;font-weight:800}
+.hero{max-width:1180px;margin:auto;padding:52px 28px 26px}.eyebrow{font-size:13px;font-weight:800;letter-spacing:2.3px;color:#1768c4}.hero h1{font-size:46px;line-height:1.08;color:var(--deep);margin:11px 0 13px}.hero p{font-size:18px;color:var(--muted);line-height:1.65;max-width:850px}
+.shell{max-width:1180px;margin:auto;padding:0 28px 60px}.card{background:#fff;border:1px solid var(--line);border-radius:24px;overflow:hidden;box-shadow:0 16px 45px rgba(21,60,105,.07)}.body{display:grid;grid-template-columns:.85fr 1.15fr}
+.copy{padding:38px;background:linear-gradient(#edf5ff,#f8fbff);border-right:1px solid #dfeaf6}.copy h2,.formbox h2{color:var(--deep);font-size:29px;margin:10px 0 20px}.copy p{font-size:15px;line-height:1.75;color:#506b86}.secure{margin-top:24px;padding:17px;border:1px solid #cfdfef;border-radius:14px;background:#fff;color:#4e6780;line-height:1.65}
+.formbox{padding:38px}.formbox label{display:block;margin-bottom:18px;font-weight:700;color:#173b63;font-size:15px}.formbox input,.formbox textarea{width:100%;margin-top:7px;padding:13px 14px;border:1px solid #bcd0e5;border-radius:11px;font:inherit;outline:none}.formbox input:focus,.formbox textarea:focus{border-color:#4d91d2;box-shadow:0 0 0 3px rgba(20,104,197,.09)}
+.amount-wrap{display:grid;grid-template-columns:95px 1fr;gap:9px}.amount-code{display:flex;align-items:center;justify-content:center;margin-top:7px;border:1px solid #bcd0e5;border-radius:11px;background:#eef5fd;font-weight:800;color:#0b5eae}.consent{display:flex!important;gap:10px;align-items:flex-start;font-weight:500!important;line-height:1.5}.consent input{width:auto;margin-top:3px}
+.primary{width:100%;border:0;border-radius:11px;padding:15px 18px;background:var(--blue);color:#fff;font-weight:800;font-size:17px;cursor:pointer}.primary:disabled{opacity:.6}.note{font-size:12px;color:#647b93;line-height:1.6;margin-top:12px}.message{margin-top:14px;font-weight:700}.message.error{color:#b42318}.message.success{color:#07823e}footer{text-align:center;color:#8193a8;font-size:13px;padding:0 20px 38px}
+@media(max-width:850px){nav a{display:none}header{padding:0 18px}.body{grid-template-columns:1fr}.copy{border-right:0;border-bottom:1px solid #dfeaf6}.hero h1{font-size:36px}}
 </style>
 </head>
 <body>
-<div class="pay-shell">
-  <div class="pay-card">
-    <div class="pay-head">
-      <img src="/images/quantum-yijing-3d-logo.png" alt="Quantum YiJing®">
-      <div><strong>Quantum YiJing®</strong><small>INTERNATIONAL ACADEMY</small></div>
-    </div>
-    <div class="pay-body">
-      <section class="pay-copy">
-        <p style="font-size:12px;font-weight:800;letter-spacing:1.5px;color:#1768c4" data-en="SECURE GENERAL PAYMENT" data-zh="安全通用付款">SECURE GENERAL PAYMENT</p>
-        <h1 data-en="Make a payment to Quantum YiJing" data-zh="付款给量子易经">Make a payment to Quantum YiJing</h1>
-        <p data-en="Use this page for a token payment, contribution, balance payment, deposit, or other approved payment that is not tied to a course or product purchase." data-zh="此页面可用于心意款、补款、订金或其他不属于课程或产品购买的付款。">Use this page for a token payment, contribution, balance payment, deposit, or other approved payment that is not tied to a course or product purchase.</p>
-        <p data-en="After you continue, you will be redirected to DOKU's secure checkout. Quantum YiJing does not collect your card, banking or e-wallet credentials." data-zh="继续后，您将被转至 DOKU 的安全付款页面。量子易经不会收集您的银行卡、网银或电子钱包认证资料。">After you continue, you will be redirected to DOKU's secure checkout. Quantum YiJing does not collect your card, banking or e-wallet credentials.</p>
-        <button id="lang" type="button" style="border:1px solid #9fc1e6;background:#fff;color:#0b58a5;border-radius:9px;padding:9px 14px;font-weight:800">中文</button>
-      </section>
-
-      <form id="paymentForm" class="pay-form">
+<header><a class="brand" href="/"><img src="/images/quantum-yijing-3d-logo.png"><div><div class="brand-title">Quantum YiJing®</div><div class="brand-sub">INTERNATIONAL ACADEMY</div></div></a><nav><a href="/">Home</a><a href="/products.html">Products</a><a href="/enquire.html">Enquire</a><button id="lang" type="button">中文</button></nav></header>
+<section class="hero"><div class="eyebrow" data-en="SECURE PAYMENT" data-zh="安全付款">SECURE PAYMENT</div><h1 data-en="General Payment" data-zh="通用付款">General Payment</h1><p data-en="A secure payment page for token payments, deposits, balance payments and other approved payments to Quantum YiJing." data-zh="用于心意款、订金、补款及其他经确认付款的安全付款页面。">A secure payment page for token payments, deposits, balance payments and other approved payments to Quantum YiJing.</p></section>
+<div class="shell"><div class="card"><div class="body"><section class="copy"><div class="eyebrow" data-en="QUANTUM YIJING® PAYMENT" data-zh="量子易经® 付款">QUANTUM YIJING® PAYMENT</div><h2 data-en="Payment details" data-zh="付款说明">Payment details</h2><p data-en="Use this form only when Quantum YiJing has asked you to make a general payment that is not linked to a course or product checkout." data-zh="当量子易经要求您进行不属于课程或产品结账的通用付款时，请使用此表格。">Use this form only when Quantum YiJing has asked you to make a general payment that is not linked to a course or product checkout.</p><div class="secure" data-en="After submitting, you will be redirected to DOKU's secure checkout. Card, banking and e-wallet credentials are handled by DOKU and are not stored on the Quantum YiJing website." data-zh="提交后，您将被转至 DOKU 安全结账页面。银行卡、网银及电子钱包认证资料由 DOKU 处理，不会储存在量子易经网站。">After submitting, you will be redirected to DOKU's secure checkout. Card, banking and e-wallet credentials are handled by DOKU and are not stored on the Quantum YiJing website.</div></section><section class="formbox"><h2 data-en="Enter your payment information" data-zh="填写付款资料">Enter your payment information</h2><form id="paymentForm" >
         <input name="website" style="display:none" tabindex="-1" autocomplete="off">
         <input type="hidden" name="startedAt" id="startedAt">
 
@@ -85,11 +60,8 @@ body{background:#f5f8fc}
         <button id="payBtn" class="primary" type="submit" data-en="Proceed to Secure DOKU Payment" data-zh="继续前往 DOKU 安全付款">Proceed to Secure DOKU Payment</button>
         <div id="msg" class="message"></div>
         <div class="note" data-en="Please check the amount carefully before continuing. The checkout currency is MYR." data-zh="继续前请仔细确认付款金额。付款币种为马币 MYR。">Please check the amount carefully before continuing. The checkout currency is MYR.</div>
-      </form>
-    </div>
-  </div>
-</div>
-
+      </form></section></div></div></div>
+<footer>© 2026 Quantum YiJing® • Registered Trademark • All Rights Reserved.</footer>
 <script>
 const $=s=>document.querySelector(s),root=document.documentElement;
 function setLang(lang){
@@ -157,3 +129,4 @@ $('#paymentForm').addEventListener('submit',async e=>{
 </script>
 </body>
 </html>
+

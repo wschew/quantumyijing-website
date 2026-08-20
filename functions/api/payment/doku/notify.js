@@ -277,8 +277,11 @@ async function sendGenericVerificationNotice(env,db,o,meta){
   try{
     await resend(env.RESEND_API_KEY,{from:FROM_ADDRESS,to:[INTERNAL_ADDRESS],reply_to:o.customer_email||INTERNAL_ADDRESS,
       subject:`Generic Payment Notice — Verification Required — ${o.order_reference}`,
-      html:`<!doctype html><html><body style="font-family:Arial;background:#f4f7fb"><div style="max-width:680px;margin:30px auto;background:#fff;border:1px solid #dce7f4;border-radius:18px;overflow:hidden">${header('GENERIC PAYMENT NOTICE')}<div style="padding:32px"><h2 style="color:#0b2f66">Payment received — verification required</h2><p>DOKU has reported a successful payment. Please review the payment record and click <strong>Verify & Confirm</strong> in QY Admin before a QY receipt is issued.</p><p><strong>Purpose:</strong> ${esc(o.payment_purpose||'General Payment')}<br><strong>Customer:</strong> ${esc(o.customer_name||'')}<br><strong>Order:</strong> ${esc(o.order_reference)}<br><strong>Amount:</strong> ${esc(o.currency||'MYR')} ${Number(o.total||0).toFixed(2)}<br><strong>DOKU Transaction:</strong> ${esc(meta.checkoutId||'')}<br><strong>Status:</strong> SUCCESS / ${esc(meta.state||'')}<br><strong>QY Verification:</strong> PENDING ADMIN REVIEW</p></div></div></body></html>`,
-      text:`Generic Payment Notice — Verification Required\n\nPurpose: ${o.payment_purpose||'General Payment'}\nCustomer: ${o.customer_name||''}\nOrder: ${o.order_reference}\nAmount: ${o.currency||'MYR'} ${Number(o.total||0).toFixed(2)}\nDOKU Transaction: ${meta.checkoutId||''}\nStatus: SUCCESS / ${meta.state||''}\nQY Verification: PENDING ADMIN REVIEW`});
+      html:`<!doctype html><html><body style="font-family:Arial;background:#f4f7fb"><div style="max-width:680px;margin:30px auto;background:#fff;border:1px solid #dce7f4;border-radius:18px;overflow:hidden">${header('GENERIC PAYMENT NOTICE')}<div style="padding:32px"><h2 style="color:#0b2f66">Payment received — verification required</h2><p>DOKU has reported a successful payment. Please review the payment record and click <strong>Verify & Confirm</strong> in QY Admin before a QY receipt is issued.</p><p style="text-align:center;margin:26px 0"><a href="${esc(meta.reviewUrl||'')}" style="display:inline-block;background:#1468c5;color:#fff;text-decoration:none;font-weight:800;padding:14px 24px;border-radius:10px">Review &amp; Verify Payment</a></p><p><strong>Purpose:</strong> ${esc(o.payment_purpose||'General Payment')}<br><strong>Customer:</strong> ${esc(o.customer_name||'')}<br><strong>Order:</strong> ${esc(o.order_reference)}<br><strong>Amount:</strong> ${esc(o.currency||'MYR')} ${Number(o.total||0).toFixed(2)}<br><strong>DOKU Transaction:</strong> ${esc(meta.checkoutId||'')}<br><strong>Status:</strong> SUCCESS / ${esc(meta.state||'')}<br><strong>QY Verification:</strong> PENDING ADMIN REVIEW</p></div></div></body></html>`,
+      text:`Generic Payment Notice — Verification Required\n\nPurpose: ${o.payment_purpose||'General Payment'}\nCustomer: ${o.customer_name||''}\nOrder: ${o.order_reference}\nAmount: ${o.currency||'MYR'} ${Number(o.total||0).toFixed(2)}\nDOKU Transaction: ${meta.checkoutId||''}\nStatus: SUCCESS / ${meta.state||''}\nQY Verification: PENDING ADMIN REVIEW
+
+Review this payment:
+${meta.reviewUrl||''}`});
     await db.prepare(`UPDATE generic_payment_reviews SET gateway_notice_status='Sent',gateway_notice_sent_at=?,gateway_notice_error='',updated_at=CURRENT_TIMESTAMP WHERE order_id=?`).bind(new Date().toISOString(),o.id).run();
   }catch(e){
     await db.prepare(`UPDATE generic_payment_reviews SET gateway_notice_status='Failed',gateway_notice_error=?,updated_at=CURRENT_TIMESTAMP WHERE order_id=?`).bind(clean(e?.message||'Email failed',1000),o.id).run();
@@ -335,7 +338,10 @@ export async function onRequestPost(context){
     if(generic){
       await markGenericGatewayPaid(db,{orderRef:ref,checkoutId,statusMessage:`SUCCESS${state?` / ${state}`:''}${channel?` / ${channel}`:''}`,mode:cfg.mode});
       const o=await loadOrder(db,ref);
-      if(o)await sendGenericVerificationNotice(context.env,db,o,{checkoutId,state,channel});
+      if(o){
+        const reviewUrl=`${new URL(context.request.url).origin}/admin-payment-records.html?order=${encodeURIComponent(ref)}`;
+        await sendGenericVerificationNotice(context.env,db,o,{checkoutId,state,channel,reviewUrl});
+      }
     }else{
       await markPaid(db,{orderRef:ref,checkoutId,statusMessage:`SUCCESS${state?` / ${state}`:''}${channel?` / ${channel}`:''}`,mode:cfg.mode});
       const o=await loadOrder(db,ref);
