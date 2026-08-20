@@ -238,10 +238,7 @@
         </section>
 
         <section class="panel records-panel">
-          <div class="panel-heading records-heading">
-            <div><h2>Payment & Accounting Records</h2><p>Gross sale, provider fee, net settlement and bank receipt are stored separately.</p></div>
-            <button id="newPaymentButton" class="primary-button" type="button">+ Record Payment</button>
-          </div>
+          
           <div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer / Product</th><th>Method / Provider</th><th>Gross</th><th>Fees</th><th>Net</th><th>Bank received</th><th>Verification / Receipt</th></tr></thead><tbody id="commercePaymentsBody"></tbody></table></div>
           <p id="commercePaymentMessage" class="form-message" aria-live="polite"></p>
         </section>
@@ -379,10 +376,6 @@
         <input id="paymentFee" type="hidden" value="">
         <input id="paymentNet" type="hidden" value="">
         <input id="paymentBank" type="hidden" value="">
-        <div style="grid-column:1/-1;padding:14px 16px;border:1px solid #d9e4f0;background:#f7fbff;border-radius:12px;color:#4d6580;line-height:1.55">
-          <strong>Settlement values are reconciled later from the DOKU / platform settlement report.</strong><br>
-          During payment verification, confirm only the Gross Sale (the amount paid by the customer). Provider fee, net settlement and bank receipt are not manually keyed here.
-        </div>
         <label>Settlement / payment date<input id="paymentSettlementDate" type="date"></label>
         <label>Customer receipt issuer<select id="paymentReceiptIssuer"><option>Quantum YiJing</option><option>External Platform</option><option>Not Applicable</option></select></label>
       </div>
@@ -395,12 +388,11 @@
           <span>I have independently verified this payment against DOKU / bank / payment evidence.</span>
         </label>
       </div>
-      <p class="helper-text">Gross Sale is confirmed during payment verification. Provider Fee, Net Settlement and Amount Received in Bank are reconciled later from DOKU / external-platform settlement records.</p>
       <div class="dialog-actions"><button id="paymentSave" class="primary-button" type="button">Save Payment Record</button><button id="paymentClose" class="secondary-button" type="button">Close</button></div>
       <p id="paymentDialogMessage" class="form-message" aria-live="polite"></p>
     </form>
   </dialog>
 
-  <script src="admin.js?v=3.3.15f" defer></script>
+  <script src="admin.js?v=3.3.15g" defer></script>
 </body>
 </html>

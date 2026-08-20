@@ -329,7 +329,6 @@
   async function loadCommerceStats(){
     const response=await api('/api/admin?action=commercestats'), data=await response.json();
     $('commerceStatProducts').textContent=data.summary.products; $('commerceStatOrders').textContent=data.summary.orders; $('commerceStatPaid').textContent=data.summary.paid; $('commerceStatPending').textContent=data.summary.pending;
-    $('commerceStatGross').textContent=money(data.summary.grossSales); $('commerceStatFees').textContent=money(data.summary.providerFees); $('commerceStatNet').textContent=money(data.summary.netSales); $('commerceStatBank').textContent=money(data.summary.bankReceived);
     renderBars('commerceChannelChart',data.byChannel||[],'label'); renderBars('commerceProviderChart',data.byProvider||[],'label'); renderBars('commerceStatusChart',data.byStatus||[],'label'); renderBars('commerceMethodChart',data.byMethod||[],'label');
   }
   async function loadCommerceProducts(){
@@ -354,7 +353,7 @@
     if(!(data.results||[]).length) body.innerHTML='<tr><td colspan="8">No payment records yet.</td></tr>';
   }
 
-  async function loadCommerceAll(){await Promise.all([loadCommerceStats(),loadCommerceProducts(),loadCommerceOrders(),loadCommercePayments()]);}
+  async function loadCommerceAll(){await Promise.all([loadCommerceStats(),loadCommerceProducts(),loadCommerceOrders()]);}
   function slugify(value){return String(value||'').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,120);}
   function openProduct(row=null){delete $('productSlug').dataset.manual; $('productId').value=row?.id||''; $('productDialogTitle').textContent=row?'Edit Product':'New Product'; $('productSku').value=row?.sku||''; $('productSlug').value=row?.slug||''; $('productType').value=row?.product_type||'course'; $('productStatus').value=row?.status||'Draft'; $('productPrice').value=row?.price??''; $('productCurrency').value=row?.currency||'MYR'; $('productChannel').value=row?.sales_channel||'Website'; $('productProvider').value=row?.payment_provider||'SenangPay'; $('productNameEn').value=row?.name_en||''; $('productNameZh').value=row?.name_zh||''; $('productDescriptionEn').value=row?.description_en||''; $('productDescriptionZh').value=row?.description_zh||''; $('productStartsOn').value=row?.starts_on||''; $('productEndsOn').value=row?.ends_on||''; $('productTimeEn').value=row?.time_en||''; $('productTimeZh').value=row?.time_zh||''; $('productDeliveryEn').value=row?.delivery_en||''; $('productDeliveryZh').value=row?.delivery_zh||''; $('productInstructor').value=row?.instructor||''; $('productHeroImage').value=row?.hero_image_url||''; $('productEarlyBirdPrice').value=row?.early_bird_price??''; $('productEarlyBirdEnd').value=row?.early_bird_end||''; $('productExternalUrl').value=row?.external_purchase_url||''; setMessage('productDialogMessage','',true); $('productDialog').showModal();}
   async function saveProduct(){try{const id=$('productId').value, response=await api(`/api/admin?action=productsave${id?`&id=${id}`:''}`,{method:id?'PATCH':'POST',body:JSON.stringify({sku:$('productSku').value,slug:$('productSlug').value||slugify($('productNameEn').value),productType:$('productType').value,status:$('productStatus').value,price:$('productPrice').value,currency:$('productCurrency').value,salesChannel:$('productChannel').value,paymentProvider:$('productProvider').value,nameEn:$('productNameEn').value,nameZh:$('productNameZh').value,descriptionEn:$('productDescriptionEn').value,descriptionZh:$('productDescriptionZh').value,startsOn:$('productStartsOn').value,endsOn:$('productEndsOn').value,timeEn:$('productTimeEn').value,timeZh:$('productTimeZh').value,deliveryEn:$('productDeliveryEn').value,deliveryZh:$('productDeliveryZh').value,instructor:$('productInstructor').value,heroImageUrl:$('productHeroImage').value,earlyBirdPrice:$('productEarlyBirdPrice').value,earlyBirdEnd:$('productEarlyBirdEnd').value,externalPurchaseUrl:$('productExternalUrl').value})}); const data=await response.json(); setMessage('productDialogMessage',`Product saved. Public page: /product/${data.slug||$('productSlug').value}`,true); $('productSlug').value=data.slug||$('productSlug').value; await loadCommerceAll();}catch(e){setMessage('productDialogMessage',e.message);}}
@@ -437,8 +436,6 @@
           verificationStatus:requestedVerification,
           grossAmount:$('paymentGross').value,
           providerFee:'',
-          netAmount:'',
-          bankReceivedAmount:'',
           settlementDate:$('paymentSettlementDate').value,
           customerReceiptIssuer:$('paymentReceiptIssuer').value,
           notes:$('paymentNotes').value,
