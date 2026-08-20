@@ -348,7 +348,7 @@ export async function onRequestPost(context){
 
     const o=await loadOrder(db,ref);
     if(o){
-      const reviewUrl=`${new URL(context.request.url).origin}/admin-payment-records.html?order=${encodeURIComponent(ref)}`;
+      const reviewUrl=`${new URL(context.request.url).origin}/admin?module=commerce&order=${encodeURIComponent(ref)}`;
 
       if(generic){
         await sendGenericVerificationNotice(

@@ -74,7 +74,7 @@ async function load(){
       <td>${esc(x.verification_method||(x.verification_status==='Verified'?'Legacy / Existing':'—'))}</td>
       <td>${Number(x.accounting_eligible)===1?'<strong class="paid">YES</strong>':'No'}</td>
       <td>${esc(x.admin_verification_status||(x.payment_record_status==='Paid'&&x.verification_status!=='Verified'?'Pending':(x.verification_status==='Verified'?'Verified':'—')))}</td>
-      <td>${x.payment_record_status==='Paid'&&x.verification_status!=='Verified'?'<button class="verify-btn" data-order-id="'+x.order_id+'" data-payment-type="'+esc(x.payment_type)+'">Verify & Confirm</button>':(x.verification_status==='Verified'?'<strong class="paid">Verified</strong>':'—')}</td>
+      <td>${x.payment_record_status==='Paid'&&x.verification_status!=='Verified'?'<a class="verify-btn" href="/admin?module=commerce&order='+encodeURIComponent(x.order_reference)+'">Review in Sales & Commerce</a>':(x.verification_status==='Verified'?'<strong class="paid">Verified</strong>':'—')}</td>
       <td>${esc(x.created_at)}</td>
     </tr>`).join('')||'<tr><td colspan="17">No records found.</td></tr>';
     $('#status').textContent=(d.rows||[]).length+' record(s) loaded.';
@@ -96,6 +96,6 @@ if(directOrder){
     }
   },250);
 }
-document.addEventListener('click',async e=>{const btn=e.target.closest('.verify-btn');if(!btn)return;const orderId=Number(btn.dataset.orderId||0);if(!confirm('Verify and confirm this payment? This will release it to accounting and issue the applicable QY receipt emails.'))return;btn.disabled=true;try{const endpoint=btn.dataset.paymentType==='Generic'?'/api/admin/generic-payment-verify':'/api/admin/payment-verify';const r=await fetch(endpoint,{method:'POST',headers:{authorization:'Bearer '+$('#token').value.trim(),'content-type':'application/json'},body:JSON.stringify({order_id:orderId})});const d=await r.json();if(!r.ok)throw new Error(d.error||('HTTP '+r.status));$('#status').textContent='Payment verified. Accounting eligibility and receipt processing completed.';await load();}catch(err){$('#status').textContent=err.message;btn.disabled=false;}});
+const d=await r.json();if(!r.ok)throw new Error(d.error||('HTTP '+r.status));$('#status').textContent='Payment verified. Accounting eligibility and receipt processing completed.';await load();}catch(err){$('#status').textContent=err.message;btn.disabled=false;}});
 </script>
 </body></html>

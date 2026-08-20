@@ -390,12 +390,16 @@
 
     $('paymentGross').value=gross.toFixed(2);
     $('paymentNet').value=net.toFixed(2);
-    $('paymentBank').value=existing?.bank_received_amount==null||existing?.bank_received_amount===''?'':Number(existing.bank_received_amount).toFixed(2);
+    {
+      const recordedBank=Number(existing?.bank_received_amount||0);
+      const paidLike=(existing?.status||'Paid')==='Paid';
+      $('paymentBank').value=recordedBank>0 ? recordedBank.toFixed(2) : (paidLike ? net.toFixed(2) : '');
+    }
 
     setMessage(
       'paymentDialogMessage',
       existing
-        ? `Editing payment #${existing.id}. ${existing.verification_status==='Verified'?'Already verified.':'Set Verification to Verified to confirm and issue both QY receipt emails.'}`
+        ? `Editing payment #${existing.id}. ${existing.verification_status==='Verified'?'Already verified.':'Confirm Gross, Fee, Net and Amount received in bank, then set Verification to Verified. Saving will issue both QY receipt emails.'}`
         : 'New payment record.',
       true
     );
@@ -482,7 +486,14 @@
   $('loginForm').addEventListener('submit', async event => {
     event.preventDefault(); state.token = $('adminToken').value.trim();
     if (!state.token) return;
-    try { await api('/api/admin?action=stats'); sessionStorage.setItem('qyAdminToken', state.token); showDashboard(); await loadAll(); }
+    try {
+      await api('/api/admin?action=stats');
+      sessionStorage.setItem('qyAdminToken', state.token);
+      showDashboard();
+      const launchUrl=new URL(window.location.href);
+      if(launchUrl.searchParams.get('module')==='commerce') await openCommercePaymentFromUrl();
+      else await loadAll();
+    }
     catch (error) { setMessage('loginMessage', error.status === 401 ? 'Incorrect administrator token.' : error.message); }
   });
   $('logoutButton').addEventListener('click', () => { sessionStorage.removeItem('qyAdminToken'); state.token=''; $('adminToken').value=''; showLogin(); });
@@ -547,5 +558,25 @@
     else setMessage('dashboardMessage',error.message);
   }
 
-  if (state.token) { showDashboard(); loadAll().catch(handleError); } else showLogin();
+  async function openCommercePaymentFromUrl(){
+    const url=new URL(window.location.href);
+    if(url.searchParams.get('module')!=='commerce') return;
+    switchModule('commerce');
+    await loadCommerceAll();
+    const orderRef=(url.searchParams.get('order')||'').trim();
+    if(!orderRef) return;
+    const order=state.orders.find(o=>String(o.order_reference||'')===orderRef);
+    if(!order){
+      setMessage('commerceDashboardMessage',`Order ${orderRef} was not found.`);
+      return;
+    }
+    openPayment(order.id);
+  }
+
+  if (state.token) {
+    showDashboard();
+    const launchUrl=new URL(window.location.href);
+    if(launchUrl.searchParams.get('module')==='commerce') openCommercePaymentFromUrl().catch(handleCommerceError);
+    else loadAll().catch(handleError);
+  } else showLogin();
 })();
