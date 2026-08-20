@@ -60,7 +60,9 @@ export async function onRequestGet({request,env}){
       COALESCE(cn.last_error,'') AS customer_email_error,
       COALESCE(inot.status,'') AS internal_email_status,
       COALESCE(inot.sent_at,'') AS internal_email_sent_at,
-      COALESCE(inot.last_error,'') AS internal_email_error
+      COALESCE(inot.last_error,'') AS internal_email_error,
+      COALESCE(gpr.admin_verification_status,'') AS admin_verification_status,
+      COALESCE(gpr.gateway_notice_status,'') AS gateway_notice_status
     FROM orders o
     LEFT JOIN generic_payment_requests g ON g.order_id=o.id
     LEFT JOIN payments py ON py.id=(
@@ -72,6 +74,7 @@ export async function onRequestGet({request,env}){
       ON cn.order_id=o.id AND cn.notification_type='CustomerReceipt'
     LEFT JOIN payment_email_notifications inot
       ON inot.order_id=o.id AND inot.notification_type='InternalPaymentNotice'
+    LEFT JOIN generic_payment_reviews gpr ON gpr.order_id=o.id
     ${where.length?'WHERE '+where.join(' AND '):''}
     ORDER BY o.id DESC
     LIMIT ?

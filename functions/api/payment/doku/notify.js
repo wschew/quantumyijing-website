@@ -254,6 +254,37 @@ Status: PAID / VERIFIED`
   }
 }
 
+
+async function isGenericOrder(db,orderId){
+  return !!(await db.prepare(`SELECT order_id FROM generic_payment_requests WHERE order_id=? LIMIT 1`).bind(orderId).first());
+}
+async function markGenericGatewayPaid(db,{orderRef,checkoutId,statusMessage,mode}){
+  const o=await db.prepare(`SELECT id,total,currency FROM orders WHERE order_reference=? LIMIT 1`).bind(orderRef).first();
+  if(!o)return {ok:false};
+  const now=new Date().toISOString();
+  let py=await db.prepare(`SELECT id FROM payments WHERE order_id=? AND provider='DOKU' ORDER BY id DESC LIMIT 1`).bind(o.id).first();
+  if(py){
+    await db.prepare(`UPDATE payments SET provider_transaction_id=?,amount=?,currency=?,status='Paid',raw_reference=?,paid_at=?,payment_method='DOKU',gross_amount=?,verification_status='Unverified',verified_at='',customer_receipt_issuer='Quantum YiJing',gateway_mode=?,gateway_message=?,gateway_hash_verified=1 WHERE id=?`)
+      .bind(checkoutId,Number(o.total||0),o.currency||'MYR',`DOKU:${checkoutId||orderRef}`,now,Number(o.total||0),mode,statusMessage,py.id).run();
+  }
+  await db.prepare(`UPDATE orders SET payment_provider='DOKU',payment_status='Paid',external_order_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(checkoutId||'',o.id).run();
+  await db.prepare(`INSERT INTO generic_payment_reviews(order_id,gateway_notice_status,admin_verification_status,created_at,updated_at) VALUES(?,'Pending','Pending',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP) ON CONFLICT(order_id) DO UPDATE SET updated_at=CURRENT_TIMESTAMP`).bind(o.id).run();
+  return {ok:true,orderId:o.id};
+}
+async function sendGenericVerificationNotice(env,db,o,meta){
+  const row=await db.prepare(`SELECT gateway_notice_status FROM generic_payment_reviews WHERE order_id=? LIMIT 1`).bind(o.id).first();
+  if(row?.gateway_notice_status==='Sent')return;
+  try{
+    await resend(env.RESEND_API_KEY,{from:FROM_ADDRESS,to:[INTERNAL_ADDRESS],reply_to:o.customer_email||INTERNAL_ADDRESS,
+      subject:`Generic Payment Notice — Verification Required — ${o.order_reference}`,
+      html:`<!doctype html><html><body style="font-family:Arial;background:#f4f7fb"><div style="max-width:680px;margin:30px auto;background:#fff;border:1px solid #dce7f4;border-radius:18px;overflow:hidden">${header('GENERIC PAYMENT NOTICE')}<div style="padding:32px"><h2 style="color:#0b2f66">Payment received — verification required</h2><p>DOKU has reported a successful payment. Please review the payment record and click <strong>Verify & Confirm</strong> in QY Admin before a QY receipt is issued.</p><p><strong>Purpose:</strong> ${esc(o.payment_purpose||'General Payment')}<br><strong>Customer:</strong> ${esc(o.customer_name||'')}<br><strong>Order:</strong> ${esc(o.order_reference)}<br><strong>Amount:</strong> ${esc(o.currency||'MYR')} ${Number(o.total||0).toFixed(2)}<br><strong>DOKU Transaction:</strong> ${esc(meta.checkoutId||'')}<br><strong>Status:</strong> SUCCESS / ${esc(meta.state||'')}<br><strong>QY Verification:</strong> PENDING ADMIN REVIEW</p></div></div></body></html>`,
+      text:`Generic Payment Notice — Verification Required\n\nPurpose: ${o.payment_purpose||'General Payment'}\nCustomer: ${o.customer_name||''}\nOrder: ${o.order_reference}\nAmount: ${o.currency||'MYR'} ${Number(o.total||0).toFixed(2)}\nDOKU Transaction: ${meta.checkoutId||''}\nStatus: SUCCESS / ${meta.state||''}\nQY Verification: PENDING ADMIN REVIEW`});
+    await db.prepare(`UPDATE generic_payment_reviews SET gateway_notice_status='Sent',gateway_notice_sent_at=?,gateway_notice_error='',updated_at=CURRENT_TIMESTAMP WHERE order_id=?`).bind(new Date().toISOString(),o.id).run();
+  }catch(e){
+    await db.prepare(`UPDATE generic_payment_reviews SET gateway_notice_status='Failed',gateway_notice_error=?,updated_at=CURRENT_TIMESTAMP WHERE order_id=?`).bind(clean(e?.message||'Email failed',1000),o.id).run();
+  }
+}
+
 export async function onRequestPost(context){
   const raw=await context.request.text();
   let p={};try{p=JSON.parse(raw)}catch{return new Response(null,{status:400})}
@@ -300,18 +331,16 @@ export async function onRequestPost(context){
   if(!amountVerified||!currencyVerified)return new Response(null,{status:409});
 
   if(paymentStatus==='SUCCESS'){
-    await markPaid(db,{
-      orderRef:ref,checkoutId,
-      statusMessage:`SUCCESS${state?` / ${state}`:''}${channel?` / ${channel}`:''}`,
-      mode:cfg.mode
-    });
-
-    const o=await loadOrder(db,ref);
-    if(o){
-      await sendCustomerReceipt(context.env,db,o);
-      await sendInternalNotice(context.env,db,o,{checkoutId,state,channel});
+    const generic=await isGenericOrder(db,local.id);
+    if(generic){
+      await markGenericGatewayPaid(db,{orderRef:ref,checkoutId,statusMessage:`SUCCESS${state?` / ${state}`:''}${channel?` / ${channel}`:''}`,mode:cfg.mode});
+      const o=await loadOrder(db,ref);
+      if(o)await sendGenericVerificationNotice(context.env,db,o,{checkoutId,state,channel});
+    }else{
+      await markPaid(db,{orderRef:ref,checkoutId,statusMessage:`SUCCESS${state?` / ${state}`:''}${channel?` / ${channel}`:''}`,mode:cfg.mode});
+      const o=await loadOrder(db,ref);
+      if(o){await sendCustomerReceipt(context.env,db,o);await sendInternalNotice(context.env,db,o,{checkoutId,state,channel});}
     }
-
   }else if(paymentStatus==='FAILED'){
     await markTerminal(db,{
       orderRef:ref,checkoutId,status:'Failed',
