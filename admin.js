@@ -350,7 +350,7 @@
   async function loadCommercePayments(){
     const response=await api('/api/admin?action=commercepayments'), data=await response.json(); const body=$('commercePaymentsBody'); body.innerHTML='';
     state.payments=data.results||[];
-    state.payments.forEach(r=>body.insertAdjacentHTML('beforeend',`<tr><td><strong>${esc(r.order_reference)}</strong><br><small>${esc(r.settlement_date||String(r.paid_at||'').slice(0,10)||'')}</small></td><td><strong>${esc(r.customer_name)}</strong><br><small>${esc(r.product_name||r.sku||'—')}</small></td><td>${esc(r.payment_method||r.provider)}<br><small>${esc(r.provider||'')}</small></td><td class="money">${money(r.gross_amount,r.currency)}</td><td class="money">${money(r.provider_fee,r.currency)}</td><td class="money">${money(r.net_amount,r.currency)}</td><td class="money">${money(r.bank_received_amount,r.currency)}</td><td><strong>${esc(r.verification_status||'Unverified')}</strong><br><small>Accounting: ${Number(r.accounting_eligible)===1?'Eligible':'Not yet eligible'}</small><br><small>Customer email: ${esc(r.customer_email_status||'—')} · QY email: ${esc(r.internal_email_status||'—')}</small><br><small>Receipt: ${esc(r.customer_receipt_issuer||'—')}</small></td></tr>`));
+    state.payments.forEach(r=>body.insertAdjacentHTML('beforeend',`<tr><td><strong>${esc(r.order_reference)}</strong><br><small>${esc(r.settlement_date||String(r.paid_at||'').slice(0,10)||'')}</small></td><td><strong>${esc(r.customer_name)}</strong><br><small>${esc(r.product_name||r.sku||'—')}</small></td><td>${esc(r.payment_method||r.provider)}<br><small>${esc(r.provider||'')}</small></td><td class="money">${money(r.gross_amount,r.currency)}</td><td class="money">${r.settlement_status==='Reconciled'||r.settlement_status==='Settled'?money(r.provider_fee,r.currency):'<span class="muted">Pending</span>'}</td><td class="money">${r.settlement_status==='Reconciled'||r.settlement_status==='Settled'?money(r.net_amount,r.currency):'<span class="muted">Pending</span>'}</td><td class="money">${r.settlement_status==='Reconciled'||r.settlement_status==='Settled'?money(r.bank_received_amount,r.currency):'<span class="muted">Pending</span>'}</td><td><strong>${esc(r.verification_status||'Unverified')}</strong><br><small>Accounting: ${Number(r.accounting_eligible)===1?'Eligible':'Not yet eligible'}</small><br><small>Customer email: ${esc(r.customer_email_status||'—')} · QY email: ${esc(r.internal_email_status||'—')}</small><br><small>Receipt: ${esc(r.customer_receipt_issuer||'—')}</small></td></tr>`));
     if(!(data.results||[]).length) body.innerHTML='<tr><td colspan="8">No payment records yet.</td></tr>';
   }
 
@@ -361,9 +361,11 @@
   function openOrder(){if(!state.products.length){setMessage('commerceDashboardMessage','Create an active product first.');return;} $('orderCustomerName').value='';$('orderCustomerEmail').value='';$('orderCustomerPhone').value='';$('orderQuantity').value='1';$('orderCampaign').value='';$('orderAffiliate').value='';setMessage('orderDialogMessage','',true);$('orderDialog').showModal();}
   async function saveOrder(){try{const response=await api('/api/admin?action=ordercreate',{method:'POST',body:JSON.stringify({customerName:$('orderCustomerName').value,customerEmail:$('orderCustomerEmail').value,customerPhone:$('orderCustomerPhone').value,productId:Number($('orderProduct').value),quantity:Number($('orderQuantity').value),salesChannel:$('orderChannel').value,paymentProvider:$('orderProvider').value,paymentStatus:$('orderPaymentStatus').value,campaignCode:$('orderCampaign').value,affiliateCode:$('orderAffiliate').value})});const data=await response.json();setMessage('orderDialogMessage',`Order ${data.orderReference} created — ${money(data.total,data.currency)}${data.discount>0?` (discount ${money(data.discount,data.currency)} · ${data.pricingRule})`:''}.`,true);await loadCommerceAll();}catch(e){setMessage('orderDialogMessage',e.message);}}
   function recalcPayment(){
-    const gross=Number($('paymentGross').value||0), fee=Number($('paymentFee').value||0), net=Math.max(gross-fee,0);
-    if(document.activeElement!==$('paymentNet')) if($('paymentNet')) $('paymentNet').value=net.toFixed(2);
-    if(!$('paymentBank').dataset.manual) $('paymentBank').value=net.toFixed(2);
+    // v3.3.15f: Gross Sale is verified now.
+    // Provider fee / net / bank receipt are reconciled later from settlement reports.
+    $('paymentFee').value='';
+    $('paymentNet').value='';
+    $('paymentBank').value='';
   }
   function openPayment(orderId=''){
     const oid=Number(orderId||0);
@@ -376,24 +378,18 @@
     $('paymentTransactionRef').value=existing?.provider_transaction_id||'';
     $('paymentRecordStatus').value=existing?.status||'Paid';
     $('paymentVerification').value=existing?.verification_status==='Verified'?'Verified':'Unverified';
-    if($('paymentFee')) $('paymentFee').value=Number(existing?.provider_fee||0).toFixed(2);
+    $('paymentFee').value='';
     $('paymentSettlementDate').value=existing?.settlement_date||String(existing?.paid_at||new Date().toISOString()).slice(0,10);
     $('paymentReceiptIssuer').value=existing?.customer_receipt_issuer||'Quantum YiJing';
     $('paymentNotes').value=existing?.notes||'';
-    delete $('paymentBank').dataset.manual;
 
     const option=$('paymentOrder').selectedOptions[0];
     const orderTotal=Number(option?.dataset.total||0);
     const gross=Number(existing?.gross_amount||existing?.amount||orderTotal||0);
-    const fee=Number(existing?.provider_fee||0);
-    const net=Number(existing?.net_amount||0)>0?Number(existing.net_amount):Math.max(gross-fee,0);
-
     $('paymentGross').value=gross.toFixed(2);
-    if($('paymentNet')) $('paymentNet').value=net.toFixed(2);
-    {
-      const recordedBank=Number(existing?.bank_received_amount||0);
-      if($('paymentBank')) $('paymentBank').value=recordedBank>0?recordedBank.toFixed(2):'';
-    }
+    $('paymentFee').value='';
+    $('paymentNet').value='';
+    $('paymentBank').value='';
 
     const isDoku=String(existing?.provider||existing?.payment_method||$('paymentMethod').value||'').toUpperCase()==='DOKU';
     const needsOverride=!!existing && isDoku && Number(existing.gateway_hash_verified||0)!==1 && existing.verification_status!=='Verified';
@@ -482,7 +478,7 @@
       }else{
         setMessage(
           'paymentDialogMessage',
-          `Payment record saved. Net ${money(data.netAmount)}${data.bankReceivedAmount==null?'':` · Bank received ${money(data.bankReceivedAmount)}`}.`,
+          'Payment record saved. Settlement values remain pending reconciliation from the provider report.',
           true
         );
       }
@@ -524,7 +520,7 @@
   $('newOrderButton').addEventListener('click', openOrder);
   $('newPaymentButton').addEventListener('click',()=>openPayment());
   $('paymentDialogClose').addEventListener('click',()=>$('paymentDialog').close()); $('paymentClose').addEventListener('click',()=>$('paymentDialog').close()); $('paymentSave').addEventListener('click',savePayment);
-  $('paymentMethod').addEventListener('change',applyPaymentMethodDefaults); $('paymentGross').addEventListener('input',()=>{}); if($('paymentFee')) $('paymentFee').addEventListener('input',recalcPayment); $('paymentBank').addEventListener('input',()=>{$('paymentBank').dataset.manual='1';}); $('paymentOrder').addEventListener('change',()=>{const o=$('paymentOrder').selectedOptions[0]; const t=Number(o?.dataset.total||0); $('paymentGross').value=t.toFixed(2); recalcPayment();});
+  $('paymentMethod').addEventListener('change',applyPaymentMethodDefaults); $('paymentGross').addEventListener('input',recalcPayment); $('paymentOrder').addEventListener('change',()=>{const o=$('paymentOrder').selectedOptions[0]; const t=Number(o?.dataset.total||0); $('paymentGross').value=t.toFixed(2); recalcPayment();});
   $('productDialogClose').addEventListener('click',()=>$('productDialog').close()); $('productClose').addEventListener('click',()=>$('productDialog').close()); $('productSave').addEventListener('click',saveProduct);
   $('productNameEn').addEventListener('input',()=>{if(!$('productId').value && !$('productSlug').dataset.manual){$('productSlug').value=slugify($('productNameEn').value);}}); $('productSlug').addEventListener('input',()=>{$('productSlug').dataset.manual='1';});
   $('orderDialogClose').addEventListener('click',()=>$('orderDialog').close()); $('orderClose').addEventListener('click',()=>$('orderDialog').close()); $('orderSave').addEventListener('click',saveOrder);
