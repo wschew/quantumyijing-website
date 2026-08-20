@@ -483,92 +483,24 @@ const settlementStatuses = new Set([
 
 async function commerceStats(context) {
   const db=context.env.ENQUIRIES_DB;
-
-  const products=await db.prepare(`
-    SELECT COUNT(*) total,
-      SUM(CASE WHEN status='Active' THEN 1 ELSE 0 END) active
-    FROM products
-  `).first();
-
-  const orders=await db.prepare(`
-    SELECT
-      COUNT(*) total,
-      SUM(CASE WHEN COALESCE(final_agreed_total,total) > 0 AND COALESCE(v.paid_to_date,0) >= COALESCE(final_agreed_total,total) - 0.005 THEN 1 ELSE 0 END) paid,
-      SUM(CASE WHEN COALESCE(v.paid_to_date,0) < COALESCE(final_agreed_total,total) - 0.005 THEN 1 ELSE 0 END) pending
-    FROM orders o
-    LEFT JOIN (
-      SELECT order_id,
-        SUM(COALESCE(NULLIF(gross_amount,0),amount,0)) AS paid_to_date
-      FROM payments
-      WHERE status IN ('Paid','External')
-        AND verification_status='Verified'
-      GROUP BY order_id
-    ) v ON v.order_id=o.id
-  `).first();
-
-  const moneySummary=await db.prepare(`
-    SELECT
+  const products=await db.prepare(`SELECT COUNT(*) total, SUM(CASE WHEN status='Active' THEN 1 ELSE 0 END) active FROM products`).first();
+  const orders=await db.prepare(`SELECT COUNT(*) total, SUM(CASE WHEN payment_status IN ('Paid','External') THEN 1 ELSE 0 END) paid, SUM(CASE WHEN payment_status='Pending' THEN 1 ELSE 0 END) pending FROM orders`).first();
+  const moneySummary=await db.prepare(`SELECT
       COALESCE(SUM(gross_amount),0) gross_sales,
       COALESCE(SUM(provider_fee),0) provider_fees,
       COALESCE(SUM(net_amount),0) net_sales,
       COALESCE(SUM(bank_received_amount),0) bank_received
-    FROM payments
-    WHERE status IN ('Paid','External')
-      AND verification_status='Verified'
-  `).first();
-
+    FROM payments WHERE status IN ('Paid','External') OR verification_status IN ('Verified','Reconciled')`).first();
   const byChannel=await db.prepare(`SELECT sales_channel label, COUNT(*) count FROM orders GROUP BY sales_channel ORDER BY count DESC`).all();
   const byProvider=await db.prepare(`SELECT payment_provider label, COUNT(*) count FROM orders GROUP BY payment_provider ORDER BY count DESC`).all();
-
-  const byStatus=await db.prepare(`
-    SELECT calculated_status label, COUNT(*) count
-    FROM (
-      SELECT o.id,
-        CASE
-          WHEN COALESCE(o.final_agreed_total,o.total) > 0 AND COALESCE(v.paid_to_date,0) >= COALESCE(o.final_agreed_total,o.total) - 0.005 THEN 'Paid'
-          WHEN COALESCE(v.paid_to_date,0) > 0 THEN 'Partially Paid'
-          ELSE 'Pending'
-        END AS calculated_status
-      FROM orders o
-      LEFT JOIN (
-        SELECT order_id,
-          SUM(COALESCE(NULLIF(gross_amount,0),amount,0)) AS paid_to_date
-        FROM payments
-        WHERE status IN ('Paid','External')
-          AND verification_status='Verified'
-        GROUP BY order_id
-      ) v ON v.order_id=o.id
-    )
-    GROUP BY calculated_status
-    ORDER BY count DESC
-  `).all();
-
-  const byMethod=await db.prepare(`
-    SELECT CASE WHEN trim(payment_method)='' THEN provider ELSE payment_method END label, COUNT(*) count
-    FROM payments
-    GROUP BY CASE WHEN trim(payment_method)='' THEN provider ELSE payment_method END
-    ORDER BY count DESC
-  `).all();
-
-  return json({
-    ok:true,
-    summary:{
-      products:Number(products?.active||0),
-      orders:Number(orders?.total||0),
-      paid:Number(orders?.paid||0),
-      pending:Number(orders?.pending||0),
-      grossSales:Number(moneySummary?.gross_sales||0),
-      providerFees:Number(moneySummary?.provider_fees||0),
-      netSales:Number(moneySummary?.net_sales||0),
-      bankReceived:Number(moneySummary?.bank_received||0)
-    },
-    byChannel:byChannel.results||[],
-    byProvider:byProvider.results||[],
-    byStatus:byStatus.results||[],
-    byMethod:byMethod.results||[]
-  });
+  const byStatus=await db.prepare(`SELECT payment_status label, COUNT(*) count FROM orders GROUP BY payment_status ORDER BY count DESC`).all();
+  const byMethod=await db.prepare(`SELECT CASE WHEN trim(payment_method)='' THEN provider ELSE payment_method END label, COUNT(*) count FROM payments GROUP BY CASE WHEN trim(payment_method)='' THEN provider ELSE payment_method END ORDER BY count DESC`).all();
+  return json({ok:true,summary:{
+    products:Number(products?.active||0),orders:Number(orders?.total||0),paid:Number(orders?.paid||0),pending:Number(orders?.pending||0),
+    grossSales:Number(moneySummary?.gross_sales||0),providerFees:Number(moneySummary?.provider_fees||0),
+    netSales:Number(moneySummary?.net_sales||0),bankReceived:Number(moneySummary?.bank_received||0)
+  },byChannel:byChannel.results||[],byProvider:byProvider.results||[],byStatus:byStatus.results||[],byMethod:byMethod.results||[]});
 }
-
 
 async function commerceProducts(context) {
   const result=await context.env.ENQUIRIES_DB.prepare(`SELECT id,sku,slug,product_type,name_en,name_zh,description_en,description_zh,status,price,currency,sales_channel,payment_provider,external_purchase_url,senangpay_enabled,affiliate_enabled,commission_type,commission_value,starts_on,ends_on,time_en,time_zh,delivery_en,delivery_zh,instructor,early_bird_price,early_bird_end,hero_image_url FROM products ORDER BY CASE status WHEN 'Active' THEN 1 WHEN 'Draft' THEN 2 ELSE 3 END, id DESC`).all();
@@ -593,35 +525,11 @@ async function saveProduct(context,url) {
 async function commerceOrders(context) {
   const result=await context.env.ENQUIRIES_DB.prepare(`
     SELECT o.id,o.order_reference,o.customer_name,o.customer_email,o.customer_phone,o.currency,o.total,
-      o.final_agreed_total,o.fee_adjustment_reason,
       o.sales_channel,o.payment_provider,o.payment_status,o.campaign_code,o.affiliate_code,o.external_order_id,o.created_at,
       p.name_en product_name,p.sku,oi.quantity,oi.list_unit_price,oi.discount_amount,oi.final_unit_price,oi.pricing_rule,
       py.id payment_id,py.payment_method,py.provider_transaction_id,py.gross_amount,py.provider_fee,py.net_amount,
       py.bank_received_amount,py.settlement_date,py.verification_status,py.customer_receipt_issuer,py.status payment_record_status,
-      COALESCE((
-        SELECT SUM(COALESCE(NULLIF(p3.gross_amount,0),p3.amount,0))
-        FROM payments p3
-        WHERE p3.order_id=o.id
-          AND p3.status IN ('Paid','External')
-          AND p3.verification_status='Verified'
-      ),0) AS paid_to_date,
-      CASE
-        WHEN COALESCE(o.final_agreed_total,o.total) > 0 AND COALESCE((
-          SELECT SUM(COALESCE(NULLIF(p4.gross_amount,0),p4.amount,0))
-          FROM payments p4
-          WHERE p4.order_id=o.id
-            AND p4.status IN ('Paid','External')
-            AND p4.verification_status='Verified'
-        ),0) >= COALESCE(o.final_agreed_total,o.total) - 0.005 THEN 'Paid'
-        WHEN COALESCE((
-          SELECT SUM(COALESCE(NULLIF(p5.gross_amount,0),p5.amount,0))
-          FROM payments p5
-          WHERE p5.order_id=o.id
-            AND p5.status IN ('Paid','External')
-            AND p5.verification_status='Verified'
-        ),0) > 0 THEN 'Partially Paid'
-        ELSE 'Pending'
-      END AS calculated_payment_status
+       COALESCE(py.accounting_eligible,0) accounting_eligible,COALESCE(py.accounting_eligible_at,'') accounting_eligible_at
     FROM orders o
     LEFT JOIN order_items oi ON oi.order_id=o.id
     LEFT JOIN products p ON p.id=oi.product_id
@@ -636,7 +544,6 @@ async function commercePayments(context) {
     SELECT py.id,py.order_id,o.order_reference,o.customer_name,o.customer_email,o.sales_channel,
       py.provider,py.payment_method,py.provider_transaction_id,py.amount,py.gross_amount,py.provider_fee,
       py.net_amount,py.bank_received_amount,py.currency,py.status,py.settlement_date,py.verification_status,
-      py.settlement_status,py.reconciled_at,
       py.verified_at,py.customer_receipt_issuer,py.notes,py.paid_at,py.created_at,
       p.name_en product_name,p.sku
     FROM payments py
@@ -647,317 +554,168 @@ async function commercePayments(context) {
   `).all();
   return json({ok:true,results:result.results||[]});
 }
-
-
-async function paymentBalance(context, url) {
-  const orderId=Number(url.searchParams.get('id'));
-  if(!Number.isInteger(orderId)||orderId<1)
-    return json({error:'Invalid order ID.'},400);
-
-  const db=context.env.ENQUIRIES_DB;
-  const order=await db.prepare(`
-    SELECT id,total,final_agreed_total,fee_adjustment_reason,currency,payment_status
-    FROM orders WHERE id=?
-  `).bind(orderId).first();
-
-  if(!order) return json({error:'Order not found.'},404);
-
-  const paidRow=await db.prepare(`
-    SELECT COALESCE(SUM(COALESCE(NULLIF(gross_amount,0),amount,0)),0) AS paid
-    FROM payments
-    WHERE order_id=?
-      AND status IN ('Paid','External')
-      AND verification_status='Verified'
-  `).bind(orderId).first();
-
-  const originalTotal=Number(order.total||0);
-  const finalAgreedTotal=order.final_agreed_total==null ? originalTotal : Number(order.final_agreed_total);
-  const paidToDate=Number(paidRow?.paid||0);
-  const balanceDue=Math.max(finalAgreedTotal-paidToDate,0);
-
-  let calculatedStatus='Pending';
-  if(finalAgreedTotal>0 && paidToDate>=finalAgreedTotal-0.005) calculatedStatus='Paid';
-  else if(paidToDate>0) calculatedStatus='Partially Paid';
-
-  return json({
-    ok:true,orderId,originalTotal,finalAgreedTotal,paidToDate,balanceDue,
-    currency:clean(order.currency,10)||'MYR',
-    feeAdjustmentReason:order.fee_adjustment_reason||'',
-    calculatedStatus
-  });
-}
-
-
 async function savePayment(context) {
   let body;
   try { body = await context.request.json(); }
   catch { return json({error:'Invalid request.'},400); }
 
   const orderId = Number(body.orderId);
+  const paymentId = Number(body.paymentId || 0);
   const method = clean(body.paymentMethod,60);
   const provider = clean(body.provider,80) || method;
   const tx = clean(body.transactionReference,200);
   const status = clean(body.status,30) || 'Pending';
+  const requestedVerification = clean(body.verificationStatus,30) || 'Unverified';
   const currency = clean(body.currency,10) || 'MYR';
   const settlementDate = clean(body.settlementDate,20);
-  const verification = clean(body.verificationStatus,30) || 'Unverified';
   const settlementStatus = clean(body.settlementStatus,30) || 'Pending';
   const issuer = clean(body.customerReceiptIssuer,100) || 'Quantum YiJing';
   const notes = clean(body.notes,1000);
-  const finalAgreedRaw = body.finalAgreedTotal;
-  const feeAdjustmentReason = clean(body.feeAdjustmentReason,300);
 
   const gross = Number(body.grossAmount || 0);
-  const feeBlank = body.providerFee === '' || body.providerFee == null;
-  const netBlank = body.netAmount === '' || body.netAmount == null;
-  const fee = feeBlank ? 0 : Number(body.providerFee);
-
-  // DOKU settlement accounting may be unknown even after customer payment is verified.
-  // Existing schema uses numeric NOT NULL settlement fields, so use 0 as an internal
-  // placeholder while settlement_status is Pending; Admin UI displays these as "—".
-  const dokuSettlementPending =
-    String(provider||'').trim().toUpperCase()==='DOKU' &&
-    settlementStatus==='Pending';
-
-  const net = netBlank
-    ? (dokuSettlementPending ? 0 : gross-fee)
-    : Number(body.netAmount);
-
+  const fee = body.providerFee === '' || body.providerFee == null ? 0 : Number(body.providerFee);
+  const net = body.netAmount === '' || body.netAmount == null ? gross - fee : Number(body.netAmount);
   const bank = body.bankReceivedAmount === '' || body.bankReceivedAmount == null
     ? null
     : Number(body.bankReceivedAmount);
 
   if (!Number.isInteger(orderId) || orderId < 1)
     return json({error:'Select a valid order.'},400);
-
   if (!paymentMethods.has(method))
     return json({error:'Invalid payment method.'},400);
-
   if (!paymentStatuses.has(status))
     return json({error:'Invalid payment status.'},400);
-
-  if (!verificationStatuses.has(verification))
+  if (!verificationStatuses.has(requestedVerification))
     return json({error:'Invalid verification status.'},400);
-
   if (!settlementStatuses.has(settlementStatus))
     return json({error:'Invalid settlement status.'},400);
-
-  if (!Number.isFinite(gross) || gross <= 0)
-    return json({error:'This payment amount must be greater than zero.'},400);
-
-  if ([fee,net].some(v => !Number.isFinite(v) || v < 0) ||
+  if ([gross,fee,net].some(v => !Number.isFinite(v) || v < 0) ||
       (bank !== null && (!Number.isFinite(bank) || bank < 0)))
     return json({error:'Payment amounts must be valid non-negative numbers.'},400);
 
   const db = context.env.ENQUIRIES_DB;
-
   const order = await db.prepare(
-    `SELECT id,total,final_agreed_total,currency,payment_status FROM orders WHERE id=?`
+    `SELECT id,total,currency,payment_status FROM orders WHERE id=?`
   ).bind(orderId).first();
-
   if (!order) return json({error:'Order not found.'},404);
 
-  const verifiedPaidBefore = await db.prepare(`
-    SELECT COALESCE(SUM(COALESCE(NULLIF(gross_amount,0),amount,0)),0) AS paid
-    FROM payments
-    WHERE order_id=?
-      AND status IN ('Paid','External')
-      AND verification_status='Verified'
-  `).bind(orderId).first();
+  const recordCurrency = clean(order.currency,10) || currency || 'MYR';
+  const now = new Date().toISOString();
 
-  const paidBefore = Number(verifiedPaidBefore?.paid || 0);
-  const originalTotal = Number(order.total || 0);
-  const finalAgreedTotal = finalAgreedRaw==='' || finalAgreedRaw==null
-    ? (order.final_agreed_total==null ? originalTotal : Number(order.final_agreed_total))
-    : Number(finalAgreedRaw);
-
-  if(!Number.isFinite(finalAgreedTotal) || finalAgreedTotal < 0)
-    return json({error:'Final agreed fee must be a valid non-negative amount.'},400);
-
-  if(finalAgreedTotal + 0.005 < paidBefore)
-    return json({error:`Final agreed fee cannot be lower than amount already paid (${paidBefore.toFixed(2)}).`},400);
-
-  const orderTotal = finalAgreedTotal;
-  const balanceBefore = Math.max(orderTotal-paidBefore,0);
-
-  await db.prepare(`
-    UPDATE orders
-    SET final_agreed_total=?, fee_adjustment_reason=?, fee_adjusted_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP
-    WHERE id=?
-  `).bind(finalAgreedTotal,feeAdjustmentReason,orderId).run();
-
-  // Prevent accidental overpayment entries. A separate overpayment/refund workflow
-  // can be added later if needed.
-  if ((status==='Paid' || status==='External') && verification==='Verified' &&
-      gross > balanceBefore + 0.005) {
-    return json({error:`Payment amount exceeds current balance (${balanceBefore.toFixed(2)}).`},400);
+  let existing = null;
+  if (Number.isInteger(paymentId) && paymentId > 0) {
+    existing = await db.prepare(`SELECT id,paid_at,verification_status FROM payments WHERE id=? AND order_id=? LIMIT 1`)
+      .bind(paymentId,orderId).first();
+    if (!existing) return json({error:'Existing payment record was not found for this order.'},404);
   }
 
-  const recordCurrency = clean(order.currency,10) || currency || 'MYR';
+  // Important: the standard verifier owns the transition to Verified and receipt issuance.
+  // paymentsave stores Paid/Unverified first, then the frontend calls the verifier.
+  const storedVerification = requestedVerification === 'Verified'
+    ? 'Unverified'
+    : requestedVerification;
 
   const paidAt = (status === 'Paid' || status === 'External')
-    ? new Date().toISOString()
+    ? (existing?.paid_at || now)
     : '';
 
-  const verifiedAt = verification === 'Verified'
-    ? new Date().toISOString()
-    : '';
+  const reconciledAt = settlementStatus === 'Reconciled' ? now : '';
 
-  const reconciledAt = settlementStatus === 'Reconciled'
-    ? new Date().toISOString()
-    : '';
+  let savedId = paymentId || 0;
 
-  const insert = await db.prepare(`INSERT INTO payments(
-    order_id,provider,provider_transaction_id,amount,currency,status,raw_reference,paid_at,
-    payment_method,gross_amount,provider_fee,net_amount,settlement_date,bank_received_amount,
-    verification_status,verified_at,customer_receipt_issuer,notes,
-    settlement_status,reconciled_at
-  ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(
-    orderId,provider,tx,gross,recordCurrency,status,tx,paidAt,
-    method,gross,fee,net,settlementDate || null,bank,
-    verification,verifiedAt,issuer,notes,
-    settlementStatus,reconciledAt
-  ).run();
+  if (existing) {
+    await db.prepare(`UPDATE payments SET
+      provider=?,
+      provider_transaction_id=?,
+      amount=?,
+      currency=?,
+      status=?,
+      raw_reference=?,
+      paid_at=?,
+      payment_method=?,
+      gross_amount=?,
+      provider_fee=?,
+      net_amount=?,
+      settlement_date=?,
+      bank_received_amount=?,
+      verification_status=?,
+      verified_at=CASE WHEN ?='Unverified' THEN '' ELSE verified_at END,
+      customer_receipt_issuer=?,
+      notes=?,
+      settlement_status=?,
+      reconciled_at=?
+      WHERE id=? AND order_id=?`).bind(
+        provider,tx,gross,recordCurrency,status,tx,paidAt,
+        method,gross,fee,net,settlementDate || null,bank,
+        storedVerification,storedVerification,
+        issuer,notes,settlementStatus,reconciledAt,
+        paymentId,orderId
+      ).run();
+  } else {
+    const insert = await db.prepare(`INSERT INTO payments(
+      order_id,provider,provider_transaction_id,amount,currency,status,raw_reference,paid_at,
+      payment_method,gross_amount,provider_fee,net_amount,settlement_date,bank_received_amount,
+      verification_status,verified_at,customer_receipt_issuer,notes,
+      settlement_status,reconciled_at
+    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(
+      orderId,provider,tx,gross,recordCurrency,status,tx,paidAt,
+      method,gross,fee,net,settlementDate || null,bank,
+      storedVerification,'',issuer,notes,
+      settlementStatus,reconciledAt
+    ).run();
+    savedId = Number(insert.meta?.last_row_id || 0);
+  }
 
-  const verifiedPaidAfter = await db.prepare(`
-    SELECT COALESCE(SUM(COALESCE(NULLIF(gross_amount,0),amount,0)),0) AS paid
-    FROM payments
-    WHERE order_id=?
-      AND status IN ('Paid','External')
-      AND verification_status='Verified'
-  `).bind(orderId).first();
-
-  const paidToDate = Number(verifiedPaidAfter?.paid || 0);
-  const balanceDue = Math.max(orderTotal-paidToDate,0);
-
-  let orderPaymentStatus = 'Pending';
-  if (paidToDate >= orderTotal - 0.005 && orderTotal > 0) orderPaymentStatus = 'Paid';
-  else if (paidToDate > 0) orderPaymentStatus = 'Partially Paid';
-
-  // Existing D1 CHECK constraint does not allow "Partially Paid".
-  // Store Pending for partial balances, but return/display the calculated status separately.
-  const storedOrderStatus = orderPaymentStatus === 'Partially Paid' ? 'Pending' : orderPaymentStatus;
+  const orderStatus = status === 'External'
+    ? 'External'
+    : (status === 'Paid' ? 'Paid' : status);
 
   await db.prepare(`
     UPDATE orders
     SET payment_provider=?, payment_status=?, updated_at=CURRENT_TIMESTAMP
     WHERE id=?
-  `).bind(provider,storedOrderStatus,orderId).run();
+  `).bind(provider,orderStatus,orderId).run();
 
   return json({
     ok:true,
-    id:insert.meta?.last_row_id,
+    id:savedId,
+    orderId,
+    paymentStatus:orderStatus,
+    storedVerification,
+    shouldVerify: requestedVerification === 'Verified' && status === 'Paid',
     netAmount:net,
     bankReceivedAmount:bank,
-    paidToDate,
-    balanceDue,
-    orderPaymentStatus,
     settlementStatus
   });
 }
 
-
-function makeOrderReference(){
-  return `QY-${new Date().toISOString().slice(0,10).replaceAll('-','')}-${crypto.randomUUID().slice(0,6).toUpperCase()}`;
-}
-
+function makeOrderReference(){return `QY-${new Date().toISOString().slice(0,10).replaceAll('-','')}-${crypto.randomUUID().slice(0,6).toUpperCase()}`}
 async function createOrder(context) {
-  let body;
-  try { body=await context.request.json(); }
-  catch { return json({error:'Invalid request.'},400); }
-
-  const productId=Number(body.productId),
-    quantity=Math.max(1,Math.min(Number(body.quantity||1),100)),
-    name=clean(body.customerName,160),
-    email=clean(body.customerEmail,240),
-    phone=clean(body.customerPhone,80),
-    channel=clean(body.salesChannel,80)||'Website',
-    provider=clean(body.paymentProvider,80)||'DOKU',
-    status=clean(body.paymentStatus,20)||'Pending',
-    campaign=clean(body.campaignCode,120),
-    affiliate=clean(body.affiliateCode,100);
-
-  if(!Number.isInteger(productId)||productId<1||!name||!email)
-    return json({error:'Customer name, email and product are required.'},400);
-
-  if(!paymentStatuses.has(status))
-    return json({error:'Invalid payment status.'},400);
-
+  let body; try{body=await context.request.json()}catch{return json({error:'Invalid request.'},400)}
+  const productId=Number(body.productId), quantity=Math.max(1,Math.min(Number(body.quantity||1),100)), name=clean(body.customerName,160), email=clean(body.customerEmail,240), phone=clean(body.customerPhone,80), channel=clean(body.salesChannel,80)||'Website', provider=clean(body.paymentProvider,80)||'SenangPay', status=clean(body.paymentStatus,20)||'Pending', campaign=clean(body.campaignCode,120), affiliate=clean(body.affiliateCode,100);
+  if(!Number.isInteger(productId)||productId<1||!name||!email)return json({error:'Customer name, email and product are required.'},400);
+  if(!paymentStatuses.has(status))return json({error:'Invalid payment status.'},400);
   const db=context.env.ENQUIRIES_DB;
-
-  const product=await db.prepare(`
-    SELECT id,price,currency,name_en,early_bird_price,early_bird_end
-    FROM products WHERE id=?
-  `).bind(productId).first();
-
-  if(!product) return json({error:'Product not found.'},404);
-
-  const today=new Intl.DateTimeFormat('en-CA',{
-    timeZone:'Asia/Kuala_Lumpur',
-    year:'numeric',month:'2-digit',day:'2-digit'
-  }).format(new Date());
-
+  const product=await db.prepare(`SELECT id,price,currency,name_en,early_bird_price,early_bird_end FROM products WHERE id=?`).bind(productId).first();
+  if(!product)return json({error:'Product not found.'},404);
+  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kuala_Lumpur',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
   const listUnit=Number(product.price||0);
-  const early=Number(product.early_bird_price)>0 &&
-    product.early_bird_end && today<=product.early_bird_end;
+  const early=Number(product.early_bird_price)>0 && product.early_bird_end && today<=product.early_bird_end;
   const finalUnit=early?Number(product.early_bird_price):listUnit;
   const discount=Math.max(listUnit-finalUnit,0);
-  const total=finalUnit*quantity;
-  const ref=makeOrderReference();
-
-  const order=await db.prepare(`
-    INSERT INTO orders(
-      order_reference,customer_name,customer_email,customer_phone,
-      currency,subtotal,total,sales_channel,payment_provider,payment_status,
-      campaign_code,affiliate_code
-    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
-  `).bind(
-    ref,name,email,phone,product.currency||'MYR',total,total,
-    channel,provider,status,campaign,affiliate
-  ).run();
-
+  const total=finalUnit*quantity, ref=makeOrderReference();
+  const order=await db.prepare(`INSERT INTO orders(order_reference,customer_name,customer_email,customer_phone,currency,subtotal,total,sales_channel,payment_provider,payment_status,campaign_code,affiliate_code) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`).bind(ref,name,email,phone,product.currency||'MYR',total,total,channel,provider,status,campaign,affiliate).run();
   const orderId=order.meta?.last_row_id;
-
-  await db.prepare(`
-    INSERT INTO order_items(
-      order_id,product_id,quantity,unit_price,line_total,
-      list_unit_price,discount_amount,final_unit_price,pricing_rule
-    ) VALUES(?,?,?,?,?,?,?,?,?)
-  `).bind(
-    orderId,productId,quantity,finalUnit,total,
-    listUnit,discount*quantity,finalUnit,early?'Early Bird':'Standard'
-  ).run();
-
-  // If an Admin-created order is entered as already paid, create a basic payment row.
-  // It is intentionally NOT auto-verified; the admin should verify it separately.
-  if(status==='Paid'||status==='External'){
-    await db.prepare(`
-      INSERT INTO payments(
-        order_id,provider,amount,currency,status,paid_at,
-        payment_method,gross_amount,provider_fee,net_amount,
-        verification_status,settlement_status
-      ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
-    `).bind(
-      orderId,provider,total,product.currency||'MYR',status,new Date().toISOString(),
-      provider,total,0,total,'Unverified','Pending'
-    ).run();
-  }
-
-  return json({
-    ok:true,id:orderId,orderReference:ref,total,
-    currency:product.currency||'MYR',
-    listUnit,discount:discount*quantity,finalUnit,
-    pricingRule:early?'Early Bird':'Standard'
-  });
+  await db.prepare(`INSERT INTO order_items(order_id,product_id,quantity,unit_price,line_total,list_unit_price,discount_amount,final_unit_price,pricing_rule) VALUES(?,?,?,?,?,?,?,?,?)`).bind(orderId,productId,quantity,finalUnit,total,listUnit,discount*quantity,finalUnit,early?'Early Bird':'Standard').run();
+  if(status==='Paid'||status==='External') await db.prepare(`INSERT INTO payments(order_id,provider,amount,currency,status,paid_at) VALUES(?,?,?,?,?,?)`).bind(orderId,provider,total,product.currency||'MYR',status,new Date().toISOString()).run();
+  return json({ok:true,id:orderId,orderReference:ref,total,currency:product.currency||'MYR',listUnit,discount:discount*quantity,finalUnit,pricingRule:early?'Early Bird':'Standard'});
 }
 
 export async function onRequest(context) {
   const blocked = requireConfigured(context);
   if (blocked) return blocked;
-
   const url = new URL(context.request.url);
   const action = url.searchParams.get('action') || '';
-
   try {
     if (context.request.method === 'GET' && action === 'stats') return await stats(context);
     if (context.request.method === 'GET' && action === 'enquiries') return await enquiries(context, url);
@@ -967,24 +725,19 @@ export async function onRequest(context) {
     if (context.request.method === 'POST' && action === 'quickfollowup') return await quickFollowUp(context, url);
     if (context.request.method === 'POST' && action === 'convert') return await convert(context, url);
     if (context.request.method === 'POST' && action === 'activity') return await addActivity(context, url);
-
     if (context.request.method === 'GET' && action === 'marketingstats') return await marketingStats(context);
-
     if (context.request.method === 'GET' && action === 'studentstats') return await studentStats(context);
     if (context.request.method === 'GET' && action === 'students') return await students(context, url);
     if (context.request.method === 'GET' && action === 'studentdetail') return await studentDetail(context, url);
     if (context.request.method === 'PATCH' && action === 'studentupdate') return await studentUpdate(context, url);
     if (context.request.method === 'GET' && action === 'studentexport') return await studentExport(context, url);
-
     if (context.request.method === 'GET' && action === 'commercestats') return await commerceStats(context);
     if (context.request.method === 'GET' && action === 'commerceproducts') return await commerceProducts(context);
     if ((context.request.method === 'POST' || context.request.method === 'PATCH') && action === 'productsave') return await saveProduct(context, url);
     if (context.request.method === 'GET' && action === 'commerceorders') return await commerceOrders(context);
-    if (context.request.method === 'GET' && action === 'paymentbalance') return await paymentBalance(context, url);
     if (context.request.method === 'GET' && action === 'commercepayments') return await commercePayments(context);
     if (context.request.method === 'POST' && action === 'paymentsave') return await savePayment(context);
     if (context.request.method === 'POST' && action === 'ordercreate') return await createOrder(context);
-
     return json({ error: 'Unknown admin action.' }, 404);
   } catch (error) {
     console.error('Admin API failed', error);

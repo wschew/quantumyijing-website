@@ -7,7 +7,9 @@
     studentPage: 1, studentPageSize: 25, studentTotal: 0, selectedStudent: null,
     activeModule: 'crm',
     products: [],
-    orders: []
+    orders: [],
+    payments: [],
+    selectedPaymentId: 0
   };
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 
@@ -324,7 +326,6 @@
 
 
   const money = (value,currency='MYR') => `${currency === 'MYR' ? 'RM' : currency} ${Number(value||0).toFixed(2)}`;
-  const displayMoney = (value,currency='MYR') => (value === null || value === undefined || value === '') ? '—' : money(value,currency);
   async function loadCommerceStats(){
     const response=await api('/api/admin?action=commercestats'), data=await response.json();
     $('commerceStatProducts').textContent=data.summary.products; $('commerceStatOrders').textContent=data.summary.orders; $('commerceStatPaid').textContent=data.summary.paid; $('commerceStatPending').textContent=data.summary.pending;
@@ -341,29 +342,15 @@
   async function loadCommerceOrders(){
     setMessage('commerceDashboardMessage','Loading…',true); const response=await api('/api/admin?action=commerceorders'), data=await response.json(); const body=$('commerceOrdersBody'); body.innerHTML='';
     state.orders=data.results||[];
-    state.orders.forEach(r=>{
-      const effectiveTotal=Number(r.final_agreed_total ?? r.total ?? 0);
-      const paid=Number(r.paid_to_date||0);
-      const balance=Math.max(effectiveTotal-paid,0);
-      body.insertAdjacentHTML('beforeend',`<tr><td><strong>${esc(r.order_reference)}</strong><br><small>${esc(String(r.created_at||'').slice(0,16).replace('T',' '))}</small></td><td><strong>${esc(r.customer_name)}</strong><br><small>${esc(r.customer_email)}</small></td><td>${esc(r.product_name||'—')}<br><small>${r.quantity||1} × ${esc(r.sku||'')}</small></td><td>${esc(r.sales_channel)}</td><td>${esc(r.payment_provider)}<br><span class="payment-pill ${esc(r.calculated_payment_status||r.payment_status)}">${esc(r.calculated_payment_status||r.payment_status)}</span>${r.payment_id?`<br><small>${esc(r.verification_status||'Unverified')}</small>`:''}</td><td>${r.list_unit_price!=null&&Number(r.list_unit_price)!==effectiveTotal?`<small>List ${money(r.list_unit_price,r.currency)}</small><br>`:''}${r.final_agreed_total!=null&&Number(r.final_agreed_total)!==Number(r.total||0)?`<small>Agreed ${money(effectiveTotal,r.currency)}</small><br>`:''}<strong>${money(effectiveTotal,r.currency)}</strong></td><td class="money">${money(paid,r.currency)}</td><td class="money">${money(balance,r.currency)}</td><td>${esc(r.campaign_code||'—')}<br><small>${esc(r.affiliate_code||'')}</small></td><td><button class="link-button" type="button" data-record-payment="${r.id}">Record<br>Payment</button></td></tr>`);
-    });
+    state.orders.forEach(r=>body.insertAdjacentHTML('beforeend',`<tr><td><strong>${esc(r.order_reference)}</strong><br><small>${esc(String(r.created_at||'').slice(0,16).replace('T',' '))}</small></td><td><strong>${esc(r.customer_name)}</strong><br><small>${esc(r.customer_email)}</small></td><td>${esc(r.product_name||'—')}<br><small>${r.quantity||1} × ${esc(r.sku||'')}</small></td><td>${esc(r.sales_channel)}</td><td>${esc(r.payment_provider)}<br><span class="payment-pill ${esc(r.payment_status)}">${esc(r.payment_status)}</span>${r.verification_status?`<br><small>${esc(r.verification_status)}</small>`:''}</td><td class="money">${Number(r.discount_amount||0)>0?`<small>List ${money(r.list_unit_price,r.currency)}</small><br><small>Discount −${money(r.discount_amount,r.currency)} (${esc(r.pricing_rule||'Discount')})</small><br><strong>${money(r.total,r.currency)}</strong>`:`<strong>${money(r.total,r.currency)}</strong>`}</td><td>${esc(r.campaign_code||'—')}<br><small>${r.affiliate_code?`Affiliate: ${esc(r.affiliate_code)}`:''}</small></td><td><button type="button" class="view-button" data-record-payment="${r.id}">Record Payment</button></td></tr>`));
     if(!state.orders.length) body.innerHTML='<tr><td colspan="8">No orders yet.</td></tr>'; $('commerceOrderCount').textContent=`${state.orders.length} order${state.orders.length===1?'':'s'}`;
-    const paymentOrder=$('paymentOrder'); if(paymentOrder) paymentOrder.innerHTML='<option value="">Select order</option>'+state.orders.map(o=>`<option value="${o.id}" data-total="${Number(o.total||0)}" data-agreed="${Number(o.final_agreed_total ?? o.total ?? 0)}" data-paid="${Number(o.paid_to_date||0)}" data-currency="${esc(o.currency||'MYR')}" data-provider="${esc(o.payment_provider||'')}" data-status="${esc(o.payment_status||'Pending')}">${esc(o.order_reference)} — ${esc(o.customer_name)} — ${money(o.total,o.currency)}</option>`).join('');
+    const paymentOrder=$('paymentOrder'); if(paymentOrder) paymentOrder.innerHTML='<option value="">Select order</option>'+state.orders.map(o=>`<option value="${o.id}" data-total="${Number(o.total||0)}" data-currency="${esc(o.currency||'MYR')}">${esc(o.order_reference)} — ${esc(o.customer_name)} — ${money(o.total,o.currency)}</option>`).join('');
     setMessage('commerceDashboardMessage','',true);
   }
   async function loadCommercePayments(){
     const response=await api('/api/admin?action=commercepayments'), data=await response.json(); const body=$('commercePaymentsBody'); body.innerHTML='';
-    (data.results||[]).forEach(r=>{
-      const unsettledDoku =
-        String(r.provider||'').trim().toUpperCase()==='DOKU' &&
-        (r.settlement_status||'Pending')==='Pending';
-
-      const feeDisplay = unsettledDoku ? '—' : displayMoney(r.provider_fee,r.currency);
-      const netDisplay = unsettledDoku ? '—' : displayMoney(r.net_amount,r.currency);
-      const bankDisplay = unsettledDoku ? '—' : displayMoney(r.bank_received_amount,r.currency);
-
-      body.insertAdjacentHTML('beforeend',`<tr><td><strong>${esc(r.order_reference)}</strong><br><small>${esc(r.settlement_date||String(r.paid_at||'').slice(0,10)||'')}</small></td><td><strong>${esc(r.customer_name)}</strong><br><small>${esc(r.product_name||r.sku||'—')}</small></td><td>${esc(r.payment_method||r.provider)}<br><small>${esc(r.provider||'')}</small></td><td class="money">${displayMoney(r.gross_amount,r.currency)}</td><td class="money">${feeDisplay}</td><td class="money">${netDisplay}</td><td class="money">${bankDisplay}</td><td><strong>Verification: ${esc(r.verification_status||'Unverified')}</strong><br><small>Settlement: ${esc(r.settlement_status||'Pending')}</small><br><small>Receipt: ${esc(r.customer_receipt_issuer||'—')}</small></td></tr>`);
-    });
+    state.payments=data.results||[];
+    state.payments.forEach(r=>body.insertAdjacentHTML('beforeend',`<tr><td><strong>${esc(r.order_reference)}</strong><br><small>${esc(r.settlement_date||String(r.paid_at||'').slice(0,10)||'')}</small></td><td><strong>${esc(r.customer_name)}</strong><br><small>${esc(r.product_name||r.sku||'—')}</small></td><td>${esc(r.payment_method||r.provider)}<br><small>${esc(r.provider||'')}</small></td><td class="money">${money(r.gross_amount,r.currency)}</td><td class="money">${money(r.provider_fee,r.currency)}</td><td class="money">${money(r.net_amount,r.currency)}</td><td class="money">${money(r.bank_received_amount,r.currency)}</td><td><strong>${esc(r.verification_status||'Unverified')}</strong><br><small>Accounting: ${Number(r.accounting_eligible)===1?'Eligible':'Not yet eligible'}</small><br><small>Customer email: ${esc(r.customer_email_status||'—')} · QY email: ${esc(r.internal_email_status||'—')}</small><br><small>Receipt: ${esc(r.customer_receipt_issuer||'—')}</small></td></tr>`));
     if(!(data.results||[]).length) body.innerHTML='<tr><td colspan="8">No payment records yet.</td></tr>';
   }
 
@@ -374,170 +361,116 @@
   function openOrder(){if(!state.products.length){setMessage('commerceDashboardMessage','Create an active product first.');return;} $('orderCustomerName').value='';$('orderCustomerEmail').value='';$('orderCustomerPhone').value='';$('orderQuantity').value='1';$('orderCampaign').value='';$('orderAffiliate').value='';setMessage('orderDialogMessage','',true);$('orderDialog').showModal();}
   async function saveOrder(){try{const response=await api('/api/admin?action=ordercreate',{method:'POST',body:JSON.stringify({customerName:$('orderCustomerName').value,customerEmail:$('orderCustomerEmail').value,customerPhone:$('orderCustomerPhone').value,productId:Number($('orderProduct').value),quantity:Number($('orderQuantity').value),salesChannel:$('orderChannel').value,paymentProvider:$('orderProvider').value,paymentStatus:$('orderPaymentStatus').value,campaignCode:$('orderCampaign').value,affiliateCode:$('orderAffiliate').value})});const data=await response.json();setMessage('orderDialogMessage',`Order ${data.orderReference} created — ${money(data.total,data.currency)}${data.discount>0?` (discount ${money(data.discount,data.currency)} · ${data.pricingRule})`:''}.`,true);await loadCommerceAll();}catch(e){setMessage('orderDialogMessage',e.message);}}
   function recalcPayment(){
-    const gross=Number($('paymentGross').value||0);
-    const feeRaw=$('paymentFee').value;
-    const method=$('paymentMethod').value;
-
-    // For pending DOKU settlements, a blank fee means the net is not known yet.
-    if(method==='DOKU' && feeRaw===''){
-      if(document.activeElement!==$('paymentNet')) $('paymentNet').value='';
-      return;
-    }
-
-    const fee=Number(feeRaw||0);
-    const net=Math.max(gross-fee,0);
+    const gross=Number($('paymentGross').value||0), fee=Number($('paymentFee').value||0), net=Math.max(gross-fee,0);
     if(document.activeElement!==$('paymentNet')) $('paymentNet').value=net.toFixed(2);
+    if(!$('paymentBank').dataset.manual) $('paymentBank').value=net.toFixed(2);
   }
-
-  function derivePaymentMethod(provider=''){
-    const p=String(provider||'').trim().toLowerCase();
-    if(p==='doku' || p.includes('doku')) return 'DOKU';
-    if(p.includes('bank')) return 'Bank Transfer';
-    if(p.includes('google play')) return 'External Platform';
-    if(p.includes('bookstera')) return 'External Platform';
-    if(p.includes('cash')) return 'Cash';
-    return p ? 'Other' : 'Manual';
-  }
-
-  function setPaymentBalanceSummary(order=null, option=null, authoritative=null){
-    const originalTotal=Number(authoritative?.originalTotal ?? order?.total ?? option?.dataset.total ?? 0);
-    const finalAgreedTotal=Number(authoritative?.finalAgreedTotal ?? order?.final_agreed_total ?? option?.dataset.agreed ?? originalTotal);
-    const paid=Number(authoritative?.paidToDate ?? order?.paid_to_date ?? option?.dataset.paid ?? 0);
-    const balance=Math.max(Number(authoritative?.balanceDue ?? (finalAgreedTotal-paid)),0);
-    const currency=authoritative?.currency || order?.currency || option?.dataset.currency || 'MYR';
-
-    $('paymentOriginalTotal').value=money(originalTotal,currency);
-    $('paymentFinalAgreedTotal').value=finalAgreedTotal.toFixed(2);
-    $('paymentPaidToDate').value=money(paid,currency);
-    $('paymentBalanceDue').value=money(balance,currency);
-    $('paymentFeeAdjustmentReason').value=authoritative?.feeAdjustmentReason || order?.fee_adjustment_reason || '';
-    return {originalTotal,finalAgreedTotal,paid,balance,currency};
-  }
-
-  async function fetchPaymentBalance(orderId){
-    if(!orderId) return null;
-    const response=await api(`/api/admin?action=paymentbalance&id=${encodeURIComponent(orderId)}`);
-    return await response.json();
-  }
-
-  async function openPayment(orderId=''){
+  function openPayment(orderId=''){
+    const oid=Number(orderId||0);
     $('paymentOrder').value=String(orderId||'');
+    const existing=state.payments.find(p=>Number(p.order_id)===oid) || null;
+    state.selectedPaymentId=Number(existing?.id||0);
+
+    $('paymentMethod').value=existing?.payment_method||existing?.provider||'DOKU';
+    $('paymentProviderName').value=existing?.provider||$('paymentMethod').value||'DOKU';
+    $('paymentTransactionRef').value=existing?.provider_transaction_id||'';
+    $('paymentRecordStatus').value=existing?.status||'Paid';
+    $('paymentVerification').value=existing?.verification_status==='Verified'?'Verified':'Unverified';
+    $('paymentFee').value=Number(existing?.provider_fee||0).toFixed(2);
+    $('paymentSettlementDate').value=existing?.settlement_date||String(existing?.paid_at||new Date().toISOString()).slice(0,10);
+    $('paymentReceiptIssuer').value=existing?.customer_receipt_issuer||'Quantum YiJing';
+    $('paymentNotes').value=existing?.notes||'';
+    delete $('paymentBank').dataset.manual;
+
     const option=$('paymentOrder').selectedOptions[0];
-    const order=state.orders.find(o=>Number(o.id)===Number(orderId)) || null;
-    const provider=order?.payment_provider || option?.dataset.provider || '';
-    const method=derivePaymentMethod(provider);
+    const orderTotal=Number(option?.dataset.total||0);
+    const gross=Number(existing?.gross_amount||existing?.amount||orderTotal||0);
+    const fee=Number(existing?.provider_fee||0);
+    const net=Number(existing?.net_amount||0)>0?Number(existing.net_amount):Math.max(gross-fee,0);
 
-    let authoritative=null;
-    try{
-      authoritative=await fetchPaymentBalance(orderId);
-    }catch(error){
-      console.warn('Could not load authoritative payment balance',error);
-    }
-    const summary=setPaymentBalanceSummary(order,option,authoritative);
+    $('paymentGross').value=gross.toFixed(2);
+    $('paymentNet').value=net.toFixed(2);
+    $('paymentBank').value=existing?.bank_received_amount==null||existing?.bank_received_amount===''?'':Number(existing.bank_received_amount).toFixed(2);
 
-    $('paymentMethod').value=method;
-    $('paymentProviderName').value=provider || (method==='DOKU'?'DOKU':'');
-    $('paymentTransactionRef').value='';
-    $('paymentRecordStatus').value='Pending';
-    $('paymentVerification').value='Unverified';
-    $('paymentSettlementStatus').value='Pending';
-    $('paymentSettlementDate').value='';
-    $('paymentNotes').value='';
-
-    // Default the next payment to the actual outstanding balance.
-    $('paymentGross').value=summary.balance>0 ? summary.balance.toFixed(2) : '0.00';
-
-    if(method==='DOKU'){
-      $('paymentFee').value='';
-      $('paymentNet').value='';
-      $('paymentBank').value='';
-      $('paymentReceiptIssuer').value='Quantum YiJing';
-    } else if(method==='Bank Transfer'){
-      $('paymentFee').value='0.00';
-      $('paymentNet').value=summary.balance>0 ? summary.balance.toFixed(2) : '0.00';
-      $('paymentBank').value='';
-      $('paymentReceiptIssuer').value='Quantum YiJing';
-    } else if(method==='External Platform'){
-      $('paymentFee').value='';
-      $('paymentNet').value='';
-      $('paymentBank').value='';
-      $('paymentReceiptIssuer').value='External Platform';
-    } else {
-      $('paymentFee').value='';
-      $('paymentNet').value='';
-      $('paymentBank').value='';
-      $('paymentReceiptIssuer').value='Quantum YiJing';
-    }
-
-    if(summary.balance<=0){
-      setMessage('paymentDialogMessage','This order has no outstanding balance.',true);
-    } else {
-      setMessage('paymentDialogMessage','',true);
-    }
+    setMessage(
+      'paymentDialogMessage',
+      existing
+        ? `Editing payment #${existing.id}. ${existing.verification_status==='Verified'?'Already verified.':'Set Verification to Verified to confirm and issue both QY receipt emails.'}`
+        : 'New payment record.',
+      true
+    );
     $('paymentDialog').showModal();
   }
-
   function applyPaymentMethodDefaults(){
     const method=$('paymentMethod').value;
-    const gross=Number($('paymentGross').value||0);
-
-    if(method==='DOKU'){
-      $('paymentProviderName').value='DOKU';
-      $('paymentReceiptIssuer').value='Quantum YiJing';
-      $('paymentFee').value='';
-      $('paymentNet').value='';
-      $('paymentBank').value='';
-      $('paymentSettlementStatus').value='Pending';
-      $('paymentSettlementDate').value='';
-    } else if(method==='Bank Transfer'){
-      if(!$('paymentProviderName').value || $('paymentProviderName').value==='DOKU') $('paymentProviderName').value='Bank Transfer';
-      $('paymentReceiptIssuer').value='Quantum YiJing';
-      $('paymentFee').value='0.00';
-      $('paymentNet').value=gross.toFixed(2);
-      $('paymentBank').value='';
-      $('paymentSettlementStatus').value='Pending';
-      $('paymentSettlementDate').value='';
-    } else if(method==='External Platform'){
-      if(!$('paymentProviderName').value || $('paymentProviderName').value==='DOKU') $('paymentProviderName').value='';
-      $('paymentReceiptIssuer').value='External Platform';
-      $('paymentFee').value='';
-      $('paymentNet').value='';
-      $('paymentBank').value='';
-      $('paymentSettlementStatus').value='Pending';
-      $('paymentSettlementDate').value='';
-    } else if(method==='Cash'){
-      $('paymentProviderName').value='Cash';
-      $('paymentReceiptIssuer').value='Quantum YiJing';
-      $('paymentFee').value='0.00';
-      $('paymentNet').value=gross.toFixed(2);
-      $('paymentBank').value='';
-    } else if(method==='Manual'){
-      if($('paymentProviderName').value==='DOKU') $('paymentProviderName').value='';
-      $('paymentReceiptIssuer').value='Quantum YiJing';
-      $('paymentFee').value='';
-      $('paymentNet').value='';
-      $('paymentBank').value='';
-    }
+    if(method==='Google Play Books'){ $('paymentProviderName').value='Google Play Books'; $('paymentRecordStatus').value='External'; $('paymentReceiptIssuer').value='External Platform'; $('paymentVerification').value='Reconciled'; }
+    else if(method==='Bank Transfer'){ $('paymentProviderName').value='Bank Transfer'; $('paymentRecordStatus').value='Paid'; $('paymentReceiptIssuer').value='Quantum YiJing'; $('paymentVerification').value='Unverified'; }
+    else if(method==='DOKU'){ $('paymentProviderName').value='DOKU'; $('paymentRecordStatus').value='Paid'; $('paymentReceiptIssuer').value='Quantum YiJing'; $('paymentVerification').value='Unverified'; }
+    else if(method==='Marketplace'){ $('paymentProviderName').value='Marketplace'; $('paymentRecordStatus').value='External'; $('paymentReceiptIssuer').value='External Platform'; }
   }
   async function savePayment(){
     try{
-      const selected=$('paymentOrder').selectedOptions[0];
-      const currency=selected?.dataset.currency||'MYR';
-      const response=await api('/api/admin?action=paymentsave',{method:'POST',body:JSON.stringify({
-        orderId:Number($('paymentOrder').value),paymentMethod:$('paymentMethod').value,provider:$('paymentProviderName').value,
-        transactionReference:$('paymentTransactionRef').value,status:$('paymentRecordStatus').value,
-        verificationStatus:$('paymentVerification').value,settlementStatus:$('paymentSettlementStatus').value,
-        finalAgreedTotal:$('paymentFinalAgreedTotal').value,feeAdjustmentReason:$('paymentFeeAdjustmentReason').value,
-        grossAmount:$('paymentGross').value,providerFee:$('paymentFee').value,
-        netAmount:$('paymentNet').value,bankReceivedAmount:$('paymentBank').value,settlementDate:$('paymentSettlementDate').value,
-        customerReceiptIssuer:$('paymentReceiptIssuer').value,notes:$('paymentNotes').value,currency
-      })});
+      const requestedVerification=$('paymentVerification').value;
+      const orderId=Number($('paymentOrder').value);
+
+      const response=await api('/api/admin?action=paymentsave',{
+        method:'POST',
+        body:JSON.stringify({
+          paymentId:Number(state.selectedPaymentId||0),
+          orderId,
+          paymentMethod:$('paymentMethod').value,
+          provider:$('paymentProviderName').value,
+          transactionReference:$('paymentTransactionRef').value,
+          status:$('paymentRecordStatus').value,
+          verificationStatus:requestedVerification,
+          grossAmount:$('paymentGross').value,
+          providerFee:$('paymentFee').value,
+          netAmount:$('paymentNet').value,
+          bankReceivedAmount:$('paymentBank').value,
+          settlementDate:$('paymentSettlementDate').value,
+          customerReceiptIssuer:$('paymentReceiptIssuer').value,
+          notes:$('paymentNotes').value,
+          currency:'MYR',
+          settlementStatus:'Pending'
+        })
+      });
+
       const data=await response.json();
-      const bankText=data.bankReceivedAmount==null?'Pending':money(data.bankReceivedAmount,currency);
-      const balanceText=money(data.balanceDue||0,currency);
-      setMessage('paymentDialogMessage',`Payment record saved. Paid to date ${money(data.paidToDate||0,currency)} · Balance ${balanceText} · Order status ${data.orderPaymentStatus||'Pending'}.`,true);
+
+      if(data.shouldVerify){
+        setMessage('paymentDialogMessage','Payment saved. Verifying and issuing QY receipts…',true);
+
+        const order=state.orders.find(o=>Number(o.id)===orderId);
+        const isGeneric=!order?.product_name && !order?.sku;
+        const endpoint=isGeneric
+          ? '/api/admin/generic-payment-verify'
+          : '/api/admin/payment-verify';
+
+        const verifyResponse=await api(endpoint,{
+          method:'POST',
+          body:JSON.stringify({order_id:orderId})
+        });
+        const verified=await verifyResponse.json();
+
+        setMessage(
+          'paymentDialogMessage',
+          `Payment verified. Customer receipt and QY accounting receipt processed${verified.receipt_date?` · Receipt date ${verified.receipt_date}`:''}.`,
+          true
+        );
+      }else{
+        setMessage(
+          'paymentDialogMessage',
+          `Payment record saved. Net ${money(data.netAmount)}${data.bankReceivedAmount==null?'':` · Bank received ${money(data.bankReceivedAmount)}`}.`,
+          true
+        );
+      }
+
+      // Synchronize every Sales & Commerce view from the same database state.
       await loadCommerceAll();
-    }catch(e){setMessage('paymentDialogMessage',e.message);}
+
+    }catch(e){
+      setMessage('paymentDialogMessage',e.message);
+    }
   }
   function handleCommerceError(error){if(error.status===401){sessionStorage.removeItem('qyAdminToken');showLogin();setMessage('loginMessage','Your session is not authorized. Please log in again.');}else setMessage('commerceDashboardMessage',error.message);}
 
@@ -562,18 +495,7 @@
   $('newOrderButton').addEventListener('click', openOrder);
   $('newPaymentButton').addEventListener('click',()=>openPayment());
   $('paymentDialogClose').addEventListener('click',()=>$('paymentDialog').close()); $('paymentClose').addEventListener('click',()=>$('paymentDialog').close()); $('paymentSave').addEventListener('click',savePayment);
-  $('paymentFinalAgreedTotal').addEventListener('input',()=>{
-    const agreed=Number($('paymentFinalAgreedTotal').value||0);
-    const paidText=String($('paymentPaidToDate').value||'').replace(/[^0-9.-]/g,'');
-    const paid=Number(paidText||0);
-    const balance=Math.max(agreed-paid,0);
-    const option=$('paymentOrder').selectedOptions[0];
-    const currency=option?.dataset.currency||'MYR';
-    $('paymentBalanceDue').value=money(balance,currency);
-    if(document.activeElement!==$('paymentGross')) $('paymentGross').value=balance.toFixed(2);
-    if($('paymentMethod').value==='Bank Transfer' && document.activeElement!==$('paymentNet')) $('paymentNet').value=balance.toFixed(2);
-  });
-  $('paymentMethod').addEventListener('change',applyPaymentMethodDefaults); $('paymentGross').addEventListener('input',recalcPayment); $('paymentFee').addEventListener('input',recalcPayment); $('paymentOrder').addEventListener('change',async()=>{const o=$('paymentOrder').selectedOptions[0]; const order=state.orders.find(x=>Number(x.id)===Number(o?.value))||null; let authoritative=null; try{authoritative=await fetchPaymentBalance(o?.value);}catch(error){console.warn('Could not load authoritative payment balance',error);} const summary=setPaymentBalanceSummary(order,o,authoritative); const provider=order?.payment_provider||o?.dataset.provider||''; $('paymentMethod').value=derivePaymentMethod(provider); $('paymentProviderName').value=provider; $('paymentGross').value=summary.balance>0?summary.balance.toFixed(2):'0.00'; applyPaymentMethodDefaults(); if($('paymentMethod').value==='Bank Transfer') $('paymentNet').value=summary.balance>0?summary.balance.toFixed(2):'0.00';});
+  $('paymentMethod').addEventListener('change',applyPaymentMethodDefaults); $('paymentGross').addEventListener('input',recalcPayment); $('paymentFee').addEventListener('input',recalcPayment); $('paymentBank').addEventListener('input',()=>{$('paymentBank').dataset.manual='1';}); $('paymentOrder').addEventListener('change',()=>{const o=$('paymentOrder').selectedOptions[0]; const t=Number(o?.dataset.total||0); $('paymentGross').value=t.toFixed(2); recalcPayment();});
   $('productDialogClose').addEventListener('click',()=>$('productDialog').close()); $('productClose').addEventListener('click',()=>$('productDialog').close()); $('productSave').addEventListener('click',saveProduct);
   $('productNameEn').addEventListener('input',()=>{if(!$('productId').value && !$('productSlug').dataset.manual){$('productSlug').value=slugify($('productNameEn').value);}}); $('productSlug').addEventListener('input',()=>{$('productSlug').dataset.manual='1';});
   $('orderDialogClose').addEventListener('click',()=>$('orderDialog').close()); $('orderClose').addEventListener('click',()=>$('orderDialog').close()); $('orderSave').addEventListener('click',saveOrder);

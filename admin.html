@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Academy Operating System | Quantum YiJing International Academy</title>
   <link rel="icon" href="images/quantum-yijing-logo.png">
-  <link rel="stylesheet" href="admin.css?v=3.3.7">
+  <link rel="stylesheet" href="admin.css?v=3.1.1">
 </head>
 <body>
   <main class="crm-shell">
@@ -27,7 +27,7 @@
       <header class="topbar">
         <div class="brand-lockup">
           <img src="images/quantum-yijing-logo.png" alt="" class="topbar-logo">
-          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v3.3.7</span></div>
+          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v3.1.1</span></div>
         </div>
         <div class="topbar-actions">
           <a href="index.html" class="text-link">View website</a>
@@ -208,7 +208,7 @@
           <div>
             <p class="eyebrow">QY-AOS · SALES & COMMERCE</p>
             <h1>Sales & Commerce Dashboard</h1>
-            <p>Manage products, orders, payments and multi-channel settlements across website and external sales channels.</p>
+            <p>Manage products and multi-channel orders while keeping SenangPay and external marketplaces separate.</p>
           </div>
           <div class="topbar-actions"><button id="newProductButton" class="secondary-button" type="button">+ Product</button><button id="newOrderButton" class="primary-button" type="button">+ Order</button></div>
         </section>
@@ -217,7 +217,7 @@
           <article><span>Active products</span><strong id="commerceStatProducts">0</strong></article>
           <article><span>Total orders</span><strong id="commerceStatOrders">0</strong></article>
           <article><span>Paid / External</span><strong id="commerceStatPaid">0</strong></article>
-          <article><span>Pending / Partial</span><strong id="commerceStatPending">0</strong></article>
+          <article><span>Pending</span><strong id="commerceStatPending">0</strong></article>
           <article><span>Gross sales</span><strong id="commerceStatGross">RM 0.00</strong></article>
           <article><span>Platform / provider fees</span><strong id="commerceStatFees">RM 0.00</strong></article>
           <article><span>Net amount</span><strong id="commerceStatNet">RM 0.00</strong></article>
@@ -242,7 +242,7 @@
             <div><h2>Payment & Accounting Records</h2><p>Gross sale, provider fee, net settlement and bank receipt are stored separately.</p></div>
             <button id="newPaymentButton" class="primary-button" type="button">+ Record Payment</button>
           </div>
-          <div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer / Product</th><th>Method / Provider</th><th>Gross</th><th>Fees</th><th>Net</th><th>Bank received</th><th>Verification / Settlement / Receipt</th></tr></thead><tbody id="commercePaymentsBody"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer / Product</th><th>Method / Provider</th><th>Gross</th><th>Fees</th><th>Net</th><th>Bank received</th><th>Verification / Receipt</th></tr></thead><tbody id="commercePaymentsBody"></tbody></table></div>
           <p id="commercePaymentMessage" class="form-message" aria-live="polite"></p>
         </section>
 
@@ -330,7 +330,7 @@
         <label>Status<select id="productStatus"><option>Draft</option><option>Active</option><option>Inactive</option><option>Archived</option></select></label>
         <label>Price<input id="productPrice" type="number" min="0" step="0.01"></label><label>Currency<input id="productCurrency" value="MYR" maxlength="10"></label>
         <label>Sales channel<select id="productChannel"><option>Website</option><option>Google Play Books</option><option>Manual</option><option>Marketplace</option></select></label>
-        <label>Payment provider<select id="productProvider"><option>SenangPay</option><option>Google</option><option>Manual</option><option>Marketplace</option></select></label>
+        <label>Payment provider<select id="productProvider"><option>DOKU</option><option>Google</option><option>Manual</option><option>Marketplace</option></select></label>
       </div>
       <label>English name<input id="productNameEn" maxlength="200"></label><label>Chinese name<input id="productNameZh" maxlength="200"></label>
       <label>English description<textarea id="productDescriptionEn" rows="3" maxlength="1200"></textarea></label>
@@ -355,7 +355,7 @@
         <label>Customer name<input id="orderCustomerName" maxlength="160"></label><label>Email<input id="orderCustomerEmail" type="email" maxlength="240"></label>
         <label>Phone<input id="orderCustomerPhone" maxlength="80"></label><label>Product<select id="orderProduct"></select></label>
         <label>Quantity<input id="orderQuantity" type="number" min="1" value="1"></label><label>Sales channel<select id="orderChannel"><option>Website</option><option>Google Play Books</option><option>Manual</option><option>Marketplace</option></select></label>
-        <label>Payment provider<select id="orderProvider"><option>SenangPay</option><option>Google</option><option>Manual</option><option>Marketplace</option></select></label>
+        <label>Payment provider<select id="orderProvider"><option>DOKU</option><option>Google</option><option>Manual</option><option>Marketplace</option></select></label>
         <label>Payment status<select id="orderPaymentStatus"><option>Pending</option><option>Paid</option><option>External</option><option>Failed</option><option>Cancelled</option><option>Refunded</option></select></label>
         <label>Campaign<input id="orderCampaign" maxlength="120"></label><label>Affiliate code<input id="orderAffiliate" maxlength="100"></label>
       </div>
@@ -366,110 +366,29 @@
 
 
   <dialog id="paymentDialog" class="record-dialog record-dialog-v24">
-  <form method="dialog">
-    <div class="dialog-header">
-      <div>
-        <p class="eyebrow">PAYMENT & ACCOUNTING</p>
-        <h2>Record Payment / Settlement</h2>
+    <form method="dialog">
+      <div class="dialog-header"><div><p class="eyebrow">PAYMENT & ACCOUNTING</p><h2>Record Payment / Settlement</h2></div><button id="paymentDialogClose" class="icon-button" type="button" aria-label="Close">×</button></div>
+      <div class="edit-grid edit-grid-v25">
+        <label>Order<select id="paymentOrder"></select></label>
+        <label>Payment method<select id="paymentMethod"><option>DOKU</option><option>Bank Transfer</option><option>Google Play Books</option><option>Cash</option><option>Manual</option><option>Marketplace</option><option>Other</option></select></label>
+        <label>Provider / platform<input id="paymentProviderName" maxlength="80" placeholder="SenangPay / Google / Bank"></label>
+        <label class="payment-reference-field"><span>Transaction / Settlement Reference</span><input id="paymentTransactionRef" maxlength="200" placeholder="e.g. BANK-20260809-001 / Google settlement ID"></label>
+        <label>Payment status<select id="paymentRecordStatus"><option>Paid</option><option>External</option><option>Pending</option><option>Failed</option><option>Cancelled</option><option>Refunded</option></select></label>
+        <label>Verification<select id="paymentVerification"><option>Unverified</option><option>Verified</option><option>Reconciled</option></select></label>
+        <label>Gross sale<input id="paymentGross" type="number" min="0" step="0.01"></label>
+        <label>Provider / platform fee<input id="paymentFee" type="number" min="0" step="0.01" value="0"></label>
+        <label>Net amount<input id="paymentNet" type="number" min="0" step="0.01"></label>
+        <label>Amount received in bank<input id="paymentBank" type="number" min="0" step="0.01"></label>
+        <label>Settlement / payment date<input id="paymentSettlementDate" type="date"></label>
+        <label>Customer receipt issuer<select id="paymentReceiptIssuer"><option>Quantum YiJing</option><option>External Platform</option><option>Not Applicable</option></select></label>
       </div>
-      <button id="paymentDialogClose" class="icon-button" type="button" aria-label="Close">×</button>
-    </div>
+      <label>Accounting notes<textarea id="paymentNotes" rows="3" maxlength="1000" placeholder="e.g. Google payout after platform fee; bank transfer verified against statement."></textarea></label>
+      <p class="helper-text">External-platform sales should normally preserve Gross Sale, Platform Fee and Net Settlement separately. Customer receipt can be marked “External Platform”.</p>
+      <div class="dialog-actions"><button id="paymentSave" class="primary-button" type="button">Save Payment Record</button><button id="paymentClose" class="secondary-button" type="button">Close</button></div>
+      <p id="paymentDialogMessage" class="form-message" aria-live="polite"></p>
+    </form>
+  </dialog>
 
-    <div class="edit-grid edit-grid-v25">
-      <label>Order<select id="paymentOrder"></select></label>
-
-      <label>Payment method
-        <select id="paymentMethod">
-          <option>DOKU</option>
-          <option>Bank Transfer</option>
-          <option>External Platform</option>
-          <option>Cash</option>
-          <option>Manual</option>
-          <option>Other</option>
-        </select>
-      </label>
-
-      <label>Provider / platform
-        <input id="paymentProviderName" maxlength="80" placeholder="DOKU / Google Play Books / Bookstera / Bank">
-      </label>
-    </div>
-
-    <div class="section-title"><h3>Order balance</h3></div>
-    <div class="edit-grid edit-grid-v25">
-      <label>Original order total<input id="paymentOriginalTotal" type="text" readonly></label>
-      <label>Final agreed fee<input id="paymentFinalAgreedTotal" type="number" min="0" step="0.01"></label>
-      <label>Paid to date<input id="paymentPaidToDate" type="text" readonly></label>
-      <label>Balance due<input id="paymentBalanceDue" type="text" readonly></label>
-      <label>Fee adjustment reason<input id="paymentFeeAdjustmentReason" maxlength="300" placeholder="e.g. Sales-approved discount RM200"></label>
-    </div>
-
-    <label class="payment-reference-field">
-      <span>Transaction Reference</span>
-      <input id="paymentTransactionRef" maxlength="200" placeholder="e.g. DOKU transaction ID / bank reference / platform settlement ID">
-    </label>
-
-    <div class="edit-grid edit-grid-v25">
-      <label>Payment status
-        <select id="paymentRecordStatus">
-          <option>Pending</option>
-          <option>Paid</option>
-          <option>External</option>
-          <option>Failed</option>
-          <option>Cancelled</option>
-          <option>Refunded</option>
-        </select>
-      </label>
-
-      <label>Verification
-        <select id="paymentVerification">
-          <option>Unverified</option>
-          <option>Verified</option>
-          <option>Review</option>
-        </select>
-      </label>
-
-      <label>This payment amount<input id="paymentGross" type="number" min="0" step="0.01"></label>
-      <label>Provider / platform fee<input id="paymentFee" type="number" min="0" step="0.01"></label>
-      <label>Net amount<input id="paymentNet" type="number" min="0" step="0.01"></label>
-      <label>Amount received in bank<input id="paymentBank" type="number" min="0" step="0.01" placeholder="Leave blank until received"></label>
-
-      <label>Settlement status
-        <select id="paymentSettlementStatus">
-          <option>Pending</option>
-          <option>Settled</option>
-          <option>Reconciled</option>
-          <option>Exception</option>
-        </select>
-      </label>
-
-      <label>Settlement date<input id="paymentSettlementDate" type="date"></label>
-
-      <label>Customer receipt issuer
-        <select id="paymentReceiptIssuer">
-          <option>Quantum YiJing</option>
-          <option>External Platform</option>
-          <option>Not Applicable</option>
-        </select>
-      </label>
-    </div>
-
-    <label>Accounting notes
-      <textarea id="paymentNotes" rows="3" maxlength="1000"
-        placeholder="e.g. Deposit / installment #1; DOKU settlement pending; bank transfer verified against statement."></textarea>
-    </label>
-
-    <p class="helper-text">
-      The original order total remains as the sales snapshot. Admin may set a lower Final Agreed Fee for an approved flexible discount. QY calculates Paid to Date and Balance Due against the Final Agreed Fee. Verification and settlement remain separate.
-    </p>
-
-    <div class="dialog-actions">
-      <button id="paymentSave" class="primary-button" type="button">Save Payment Record</button>
-      <button id="paymentClose" class="secondary-button" type="button">Close</button>
-    </div>
-    <p id="paymentDialogMessage" class="form-message" aria-live="polite"></p>
-  </form>
-</dialog>
-
-  <script src="admin.js?v=3.3.7" defer></script>
+  <script src="admin.js?v=3.3.15b" defer></script>
 </body>
 </html>
