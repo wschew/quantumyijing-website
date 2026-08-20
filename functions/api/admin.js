@@ -545,6 +545,7 @@ async function commercePayments(context) {
       py.provider,py.payment_method,py.provider_transaction_id,py.amount,py.gross_amount,py.provider_fee,
       py.net_amount,py.bank_received_amount,py.currency,py.status,py.settlement_date,py.verification_status,
       py.verified_at,py.customer_receipt_issuer,py.notes,py.paid_at,py.created_at,
+       COALESCE(py.gateway_hash_verified,0) gateway_hash_verified,
       p.name_en product_name,p.sku
     FROM payments py
     JOIN orders o ON o.id=py.order_id

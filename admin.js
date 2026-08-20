@@ -396,10 +396,15 @@
       $('paymentBank').value=recordedBank>0 ? recordedBank.toFixed(2) : (paidLike ? net.toFixed(2) : '');
     }
 
+    const isDoku=String(existing?.provider||existing?.payment_method||$('paymentMethod').value||'').toUpperCase()==='DOKU';
+    const needsOverride=!!existing && isDoku && Number(existing.gateway_hash_verified||0)!==1 && existing.verification_status!=='Verified';
+    $('manualVerificationOverrideBox').style.display=needsOverride?'block':'none';
+    $('manualVerificationOverride').checked=false;
+
     setMessage(
       'paymentDialogMessage',
       existing
-        ? `Editing payment #${existing.id}. ${existing.verification_status==='Verified'?'Already verified.':'Confirm Gross, Fee, Net and Amount received in bank, then set Verification to Verified. Saving will issue both QY receipt emails.'}`
+        ? `Editing payment #${existing.id}. ${existing.verification_status==='Verified'?'Already verified.':(needsOverride?'Gateway notification is not hash verified. Independently check the payment and use the manual verification override if appropriate.':'Confirm Gross, Fee, Net and Amount received in bank, then set Verification to Verified. Saving will issue both QY receipt emails.')}`
         : 'New payment record.',
       true
     );
@@ -416,6 +421,14 @@
     try{
       const requestedVerification=$('paymentVerification').value;
       const orderId=Number($('paymentOrder').value);
+      const selectedPayment=state.payments.find(p=>Number(p.id)===Number(state.selectedPaymentId||0)) || null;
+      const isDoku=String(selectedPayment?.provider||selectedPayment?.payment_method||$('paymentMethod').value||'').toUpperCase()==='DOKU';
+      const gatewayHashVerified=Number(selectedPayment?.gateway_hash_verified||0)===1;
+      const manualOverride=$('manualVerificationOverride')?.checked===true;
+
+      if(requestedVerification==='Verified' && isDoku && !gatewayHashVerified && !manualOverride){
+        throw new Error('Gateway notification is not hash verified. Independently verify the payment and tick the manual verification override checkbox before continuing.');
+      }
 
       const response=await api('/api/admin?action=paymentsave',{
         method:'POST',
@@ -452,7 +465,13 @@
 
         const verifyResponse=await api(endpoint,{
           method:'POST',
-          body:JSON.stringify({order_id:orderId})
+          body:JSON.stringify({
+            order_id:orderId,
+            manual_override:manualOverride,
+            manual_override_note:manualOverride
+              ? 'QY Admin independently verified the payment against DOKU / bank / payment evidence.'
+              : ''
+          })
         });
         const verified=await verifyResponse.json();
 

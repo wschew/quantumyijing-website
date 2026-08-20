@@ -383,12 +383,20 @@
         <label>Customer receipt issuer<select id="paymentReceiptIssuer"><option>Quantum YiJing</option><option>External Platform</option><option>Not Applicable</option></select></label>
       </div>
       <label>Accounting notes<textarea id="paymentNotes" rows="3" maxlength="1000" placeholder="e.g. Google payout after platform fee; bank transfer verified against statement."></textarea></label>
+      <div id="manualVerificationOverrideBox" style="display:none;margin-top:16px;padding:16px;border:1px solid #e0b44f;background:#fff9e8;border-radius:12px">
+        <div style="font-weight:800;color:#8a5b00;margin-bottom:8px">Gateway verification unavailable</div>
+        <div style="font-size:14px;line-height:1.55;color:#5f4b1e;margin-bottom:12px">The DOKU notification was not hash verified. Only continue after independently checking the transaction in DOKU, bank records, or other reliable payment evidence.</div>
+        <label style="display:flex;gap:10px;align-items:flex-start;font-weight:700;color:#3c3320">
+          <input id="manualVerificationOverride" type="checkbox" style="width:auto;margin-top:3px">
+          <span>I have independently verified this payment against DOKU / bank / payment evidence.</span>
+        </label>
+      </div>
       <p class="helper-text">External-platform sales should normally preserve Gross Sale, Platform Fee and Net Settlement separately. Customer receipt can be marked “External Platform”.</p>
       <div class="dialog-actions"><button id="paymentSave" class="primary-button" type="button">Save Payment Record</button><button id="paymentClose" class="secondary-button" type="button">Close</button></div>
       <p id="paymentDialogMessage" class="form-message" aria-live="polite"></p>
     </form>
   </dialog>
 
-  <script src="admin.js?v=3.3.15c" defer></script>
+  <script src="admin.js?v=3.3.15d" defer></script>
 </body>
 </html>
