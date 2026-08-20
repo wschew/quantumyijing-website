@@ -344,6 +344,15 @@ export async function onRequestPost(context){
       }
     }else{
       await markPaid(db,{orderRef:ref,checkoutId,statusMessage:`SUCCESS${state?` / ${state}`:''}${channel?` / ${channel}`:''}`,mode:cfg.mode});
+      const latestPayment=await db.prepare(`SELECT id FROM payments WHERE order_id=? ORDER BY id DESC LIMIT 1`).bind(local.id).first();
+      if(latestPayment?.id){
+        const verifiedAt=new Date().toISOString();
+        await db.prepare(`UPDATE payments SET accounting_eligible=1,accounting_eligible_at=? WHERE id=?`).bind(verifiedAt,latestPayment.id).run();
+        const prior=await db.prepare(`SELECT id FROM payment_verification_events WHERE order_id=? AND payment_id=? AND verification_method='Automatic' AND verification_status='Verified' LIMIT 1`).bind(local.id,latestPayment.id).first();
+        if(!prior){
+          await db.prepare(`INSERT INTO payment_verification_events(order_id,payment_id,verification_method,verification_source,verified_by,verification_status,notes) VALUES(?,?,'Automatic','DOKU verified webhook','System','Verified','Signature, order, amount and currency verified.')`).bind(local.id,latestPayment.id).run();
+        }
+      }
       const o=await loadOrder(db,ref);
       if(o){await sendCustomerReceipt(context.env,db,o);await sendInternalNotice(context.env,db,o,{checkoutId,state,channel});}
     }

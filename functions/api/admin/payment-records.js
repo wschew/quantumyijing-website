@@ -55,6 +55,10 @@ export async function onRequestGet({request,env}){
       COALESCE(py.verification_status,'') AS verification_status,
       COALESCE(py.paid_at,'') AS paid_at,
       COALESCE(py.gateway_mode,'') AS gateway_mode,
+      COALESCE(py.accounting_eligible,0) AS accounting_eligible,
+      COALESCE(py.accounting_eligible_at,'') AS accounting_eligible_at,
+      COALESCE(ve.verification_method,'') AS verification_method,
+      COALESCE(ve.verification_source,'') AS verification_source,
       COALESCE(cn.status,'') AS customer_email_status,
       COALESCE(cn.sent_at,'') AS customer_email_sent_at,
       COALESCE(cn.last_error,'') AS customer_email_error,
@@ -69,6 +73,10 @@ export async function onRequestGet({request,env}){
       SELECT p2.id FROM payments p2
       WHERE p2.order_id=o.id
       ORDER BY p2.id DESC LIMIT 1
+    )
+    LEFT JOIN payment_verification_events ve ON ve.id=(
+      SELECT ve2.id FROM payment_verification_events ve2
+      WHERE ve2.order_id=o.id ORDER BY ve2.id DESC LIMIT 1
     )
     LEFT JOIN payment_email_notifications cn
       ON cn.order_id=o.id AND cn.notification_type='CustomerReceipt'
