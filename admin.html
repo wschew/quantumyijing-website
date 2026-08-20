@@ -375,10 +375,11 @@
         <label class="payment-reference-field"><span>Transaction / Settlement Reference</span><input id="paymentTransactionRef" maxlength="200" placeholder="e.g. BANK-20260809-001 / Google settlement ID"></label>
         <label>Payment status<select id="paymentRecordStatus"><option>Paid</option><option>External</option><option>Pending</option><option>Failed</option><option>Cancelled</option><option>Refunded</option></select></label>
         <label>Verification<select id="paymentVerification"><option>Unverified</option><option>Verified</option><option>Reconciled</option></select></label>
-        <label>Gross sale<input id="paymentGross" type="number" min="0" step="0.01"></label>
-        <label>Provider / platform fee<input id="paymentFee" type="number" min="0" step="0.01" value="0"></label>
-        <label>Net amount<input id="paymentNet" type="number" min="0" step="0.01"></label>
-        <label>Amount received in bank<input id="paymentBank" type="number" min="0" step="0.01"></label>
+        <label>Gross sale<input id="paymentGross" type="number" step="0.01" min="0"></label>
+      <div class="field-wide" style="grid-column:1/-1;padding:14px 16px;border:1px solid #d9e4f0;background:#f7fbff;border-radius:12px;color:#4d6580;line-height:1.55">
+        <strong>Provider fee, net settlement and bank receipt are reconciled from DOKU settlement records.</strong><br>
+        During payment verification, only the Gross Sale (customer payment amount) is confirmed. This reduces manual accounting errors.
+      </div>
         <label>Settlement / payment date<input id="paymentSettlementDate" type="date"></label>
         <label>Customer receipt issuer<select id="paymentReceiptIssuer"><option>Quantum YiJing</option><option>External Platform</option><option>Not Applicable</option></select></label>
       </div>
@@ -391,12 +392,12 @@
           <span>I have independently verified this payment against DOKU / bank / payment evidence.</span>
         </label>
       </div>
-      <p class="helper-text">External-platform sales should normally preserve Gross Sale, Platform Fee and Net Settlement separately. Customer receipt can be marked “External Platform”.</p>
+      <p class="helper-text">Gross Sale is confirmed during payment verification. Provider fee, Net Settlement and Amount Received in Bank are reconciled later from DOKU / external-platform settlement reports. Customer receipt can be marked “External Platform”.</p>
       <div class="dialog-actions"><button id="paymentSave" class="primary-button" type="button">Save Payment Record</button><button id="paymentClose" class="secondary-button" type="button">Close</button></div>
       <p id="paymentDialogMessage" class="form-message" aria-live="polite"></p>
     </form>
   </dialog>
 
-  <script src="admin.js?v=3.3.15d" defer></script>
+  <script src="admin.js?v=3.3.15e" defer></script>
 </body>
 </html>

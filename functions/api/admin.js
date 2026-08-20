@@ -574,11 +574,12 @@ async function savePayment(context) {
   const notes = clean(body.notes,1000);
 
   const gross = Number(body.grossAmount || 0);
-  const fee = body.providerFee === '' || body.providerFee == null ? 0 : Number(body.providerFee);
-  const net = body.netAmount === '' || body.netAmount == null ? gross - fee : Number(body.netAmount);
-  const bank = body.bankReceivedAmount === '' || body.bankReceivedAmount == null
-    ? null
-    : Number(body.bankReceivedAmount);
+  const feeProvided = !(body.providerFee === '' || body.providerFee == null);
+  const netProvided = !(body.netAmount === '' || body.netAmount == null);
+  const bankProvided = !(body.bankReceivedAmount === '' || body.bankReceivedAmount == null);
+  const fee = feeProvided ? Number(body.providerFee) : null;
+  const net = netProvided ? Number(body.netAmount) : null;
+  const bank = bankProvided ? Number(body.bankReceivedAmount) : null;
 
   if (!Number.isInteger(orderId) || orderId < 1)
     return json({error:'Select a valid order.'},400);
@@ -590,7 +591,9 @@ async function savePayment(context) {
     return json({error:'Invalid verification status.'},400);
   if (!settlementStatuses.has(settlementStatus))
     return json({error:'Invalid settlement status.'},400);
-  if ([gross,fee,net].some(v => !Number.isFinite(v) || v < 0) ||
+  if (!Number.isFinite(gross) || gross < 0 ||
+      (fee !== null && (!Number.isFinite(fee) || fee < 0)) ||
+      (net !== null && (!Number.isFinite(net) || net < 0)) ||
       (bank !== null && (!Number.isFinite(bank) || bank < 0)))
     return json({error:'Payment amounts must be valid non-negative numbers.'},400);
 
@@ -635,10 +638,10 @@ async function savePayment(context) {
       paid_at=?,
       payment_method=?,
       gross_amount=?,
-      provider_fee=?,
-      net_amount=?,
-      settlement_date=?,
-      bank_received_amount=?,
+      provider_fee=CASE WHEN ? IS NULL THEN provider_fee ELSE ? END,
+      net_amount=CASE WHEN ? IS NULL THEN net_amount ELSE ? END,
+      settlement_date=CASE WHEN ?='' THEN settlement_date ELSE ? END,
+      bank_received_amount=CASE WHEN ? IS NULL THEN bank_received_amount ELSE ? END,
       verification_status=?,
       verified_at=CASE WHEN ?='Unverified' THEN '' ELSE verified_at END,
       customer_receipt_issuer=?,
@@ -647,7 +650,11 @@ async function savePayment(context) {
       reconciled_at=?
       WHERE id=? AND order_id=?`).bind(
         provider,tx,gross,recordCurrency,status,tx,paidAt,
-        method,gross,fee,net,settlementDate || null,bank,
+        method,gross,
+        fee,fee,
+        net,net,
+        settlementDate,settlementDate,
+        bank,bank,
         storedVerification,storedVerification,
         issuer,notes,settlementStatus,reconciledAt,
         paymentId,orderId
@@ -660,7 +667,11 @@ async function savePayment(context) {
       settlement_status,reconciled_at
     ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(
       orderId,provider,tx,gross,recordCurrency,status,tx,paidAt,
-      method,gross,fee,net,settlementDate || null,bank,
+      method,gross,
+      fee===null?0:fee,
+      net===null?0:net,
+      settlementDate || null,
+      bank,
       storedVerification,'',issuer,notes,
       settlementStatus,reconciledAt
     ).run();

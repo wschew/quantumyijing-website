@@ -362,7 +362,7 @@
   async function saveOrder(){try{const response=await api('/api/admin?action=ordercreate',{method:'POST',body:JSON.stringify({customerName:$('orderCustomerName').value,customerEmail:$('orderCustomerEmail').value,customerPhone:$('orderCustomerPhone').value,productId:Number($('orderProduct').value),quantity:Number($('orderQuantity').value),salesChannel:$('orderChannel').value,paymentProvider:$('orderProvider').value,paymentStatus:$('orderPaymentStatus').value,campaignCode:$('orderCampaign').value,affiliateCode:$('orderAffiliate').value})});const data=await response.json();setMessage('orderDialogMessage',`Order ${data.orderReference} created — ${money(data.total,data.currency)}${data.discount>0?` (discount ${money(data.discount,data.currency)} · ${data.pricingRule})`:''}.`,true);await loadCommerceAll();}catch(e){setMessage('orderDialogMessage',e.message);}}
   function recalcPayment(){
     const gross=Number($('paymentGross').value||0), fee=Number($('paymentFee').value||0), net=Math.max(gross-fee,0);
-    if(document.activeElement!==$('paymentNet')) $('paymentNet').value=net.toFixed(2);
+    if(document.activeElement!==$('paymentNet')) if($('paymentNet')) $('paymentNet').value=net.toFixed(2);
     if(!$('paymentBank').dataset.manual) $('paymentBank').value=net.toFixed(2);
   }
   function openPayment(orderId=''){
@@ -376,7 +376,7 @@
     $('paymentTransactionRef').value=existing?.provider_transaction_id||'';
     $('paymentRecordStatus').value=existing?.status||'Paid';
     $('paymentVerification').value=existing?.verification_status==='Verified'?'Verified':'Unverified';
-    $('paymentFee').value=Number(existing?.provider_fee||0).toFixed(2);
+    if($('paymentFee')) $('paymentFee').value=Number(existing?.provider_fee||0).toFixed(2);
     $('paymentSettlementDate').value=existing?.settlement_date||String(existing?.paid_at||new Date().toISOString()).slice(0,10);
     $('paymentReceiptIssuer').value=existing?.customer_receipt_issuer||'Quantum YiJing';
     $('paymentNotes').value=existing?.notes||'';
@@ -389,11 +389,10 @@
     const net=Number(existing?.net_amount||0)>0?Number(existing.net_amount):Math.max(gross-fee,0);
 
     $('paymentGross').value=gross.toFixed(2);
-    $('paymentNet').value=net.toFixed(2);
+    if($('paymentNet')) $('paymentNet').value=net.toFixed(2);
     {
       const recordedBank=Number(existing?.bank_received_amount||0);
-      const paidLike=(existing?.status||'Paid')==='Paid';
-      $('paymentBank').value=recordedBank>0 ? recordedBank.toFixed(2) : (paidLike ? net.toFixed(2) : '');
+      if($('paymentBank')) $('paymentBank').value=recordedBank>0?recordedBank.toFixed(2):'';
     }
 
     const isDoku=String(existing?.provider||existing?.payment_method||$('paymentMethod').value||'').toUpperCase()==='DOKU';
@@ -404,7 +403,7 @@
     setMessage(
       'paymentDialogMessage',
       existing
-        ? `Editing payment #${existing.id}. ${existing.verification_status==='Verified'?'Already verified.':(needsOverride?'Gateway notification is not hash verified. Independently check the payment and use the manual verification override if appropriate.':'Confirm Gross, Fee, Net and Amount received in bank, then set Verification to Verified. Saving will issue both QY receipt emails.')}`
+        ? `Editing payment #${existing.id}. ${existing.verification_status==='Verified'?'Already verified.':(needsOverride?'Gateway notification is not hash verified. Independently check the payment and use the manual verification override if appropriate.':'Confirm the Gross Sale and payment evidence, then set Verification to Verified. Saving will issue both QY receipt emails.')}`
         : 'New payment record.',
       true
     );
@@ -441,9 +440,9 @@
           status:$('paymentRecordStatus').value,
           verificationStatus:requestedVerification,
           grossAmount:$('paymentGross').value,
-          providerFee:$('paymentFee').value,
-          netAmount:$('paymentNet').value,
-          bankReceivedAmount:$('paymentBank').value,
+          providerFee:'',
+          netAmount:'',
+          bankReceivedAmount:'',
           settlementDate:$('paymentSettlementDate').value,
           customerReceiptIssuer:$('paymentReceiptIssuer').value,
           notes:$('paymentNotes').value,
@@ -525,7 +524,7 @@
   $('newOrderButton').addEventListener('click', openOrder);
   $('newPaymentButton').addEventListener('click',()=>openPayment());
   $('paymentDialogClose').addEventListener('click',()=>$('paymentDialog').close()); $('paymentClose').addEventListener('click',()=>$('paymentDialog').close()); $('paymentSave').addEventListener('click',savePayment);
-  $('paymentMethod').addEventListener('change',applyPaymentMethodDefaults); $('paymentGross').addEventListener('input',recalcPayment); $('paymentFee').addEventListener('input',recalcPayment); $('paymentBank').addEventListener('input',()=>{$('paymentBank').dataset.manual='1';}); $('paymentOrder').addEventListener('change',()=>{const o=$('paymentOrder').selectedOptions[0]; const t=Number(o?.dataset.total||0); $('paymentGross').value=t.toFixed(2); recalcPayment();});
+  $('paymentMethod').addEventListener('change',applyPaymentMethodDefaults); $('paymentGross').addEventListener('input',()=>{}); if($('paymentFee')) $('paymentFee').addEventListener('input',recalcPayment); $('paymentBank').addEventListener('input',()=>{$('paymentBank').dataset.manual='1';}); $('paymentOrder').addEventListener('change',()=>{const o=$('paymentOrder').selectedOptions[0]; const t=Number(o?.dataset.total||0); $('paymentGross').value=t.toFixed(2); recalcPayment();});
   $('productDialogClose').addEventListener('click',()=>$('productDialog').close()); $('productClose').addEventListener('click',()=>$('productDialog').close()); $('productSave').addEventListener('click',saveProduct);
   $('productNameEn').addEventListener('input',()=>{if(!$('productId').value && !$('productSlug').dataset.manual){$('productSlug').value=slugify($('productNameEn').value);}}); $('productSlug').addEventListener('input',()=>{$('productSlug').dataset.manual='1';});
   $('orderDialogClose').addEventListener('click',()=>$('orderDialog').close()); $('orderClose').addEventListener('click',()=>$('orderDialog').close()); $('orderSave').addEventListener('click',saveOrder);
