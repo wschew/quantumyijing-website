@@ -335,27 +335,100 @@ export async function onRequestPost(context){
 
   if(paymentStatus==='SUCCESS'){
     const generic=await isGenericOrder(db,local.id);
-    if(generic){
-      await markGenericGatewayPaid(db,{orderRef:ref,checkoutId,statusMessage:`SUCCESS${state?` / ${state}`:''}${channel?` / ${channel}`:''}`,mode:cfg.mode});
-      const o=await loadOrder(db,ref);
-      if(o){
-        const reviewUrl=`${new URL(context.request.url).origin}/admin-payment-records.html?order=${encodeURIComponent(ref)}`;
-        await sendGenericVerificationNotice(context.env,db,o,{checkoutId,state,channel,reviewUrl});
-      }
-    }else{
-      await markPaid(db,{orderRef:ref,checkoutId,statusMessage:`SUCCESS${state?` / ${state}`:''}${channel?` / ${channel}`:''}`,mode:cfg.mode});
-      const latestPayment=await db.prepare(`SELECT id FROM payments WHERE order_id=? ORDER BY id DESC LIMIT 1`).bind(local.id).first();
-      if(latestPayment?.id){
-        const verifiedAt=new Date().toISOString();
-        await db.prepare(`UPDATE payments SET accounting_eligible=1,accounting_eligible_at=? WHERE id=?`).bind(verifiedAt,latestPayment.id).run();
-        const prior=await db.prepare(`SELECT id FROM payment_verification_events WHERE order_id=? AND payment_id=? AND verification_method='Automatic' AND verification_status='Verified' LIMIT 1`).bind(local.id,latestPayment.id).first();
-        if(!prior){
-          await db.prepare(`INSERT INTO payment_verification_events(order_id,payment_id,verification_method,verification_source,verified_by,verification_status,notes) VALUES(?,?,'Automatic','DOKU verified webhook','System','Verified','Signature, order, amount and currency verified.')`).bind(local.id,latestPayment.id).run();
+
+    // v3.3.15a STANDARD:
+    // Every DOKU payment is first recorded as Paid / Unverified.
+    // QY Admin verification is required before QY receipts are issued.
+    await markGenericGatewayPaid(db,{
+      orderRef:ref,
+      checkoutId,
+      statusMessage:`SUCCESS${state?` / ${state}`:''}${channel?` / ${channel}`:''}`,
+      mode:cfg.mode
+    });
+
+    const o=await loadOrder(db,ref);
+    if(o){
+      const reviewUrl=`${new URL(context.request.url).origin}/admin-payment-records.html?order=${encodeURIComponent(ref)}`;
+
+      if(generic){
+        await sendGenericVerificationNotice(
+          context.env,db,o,{checkoutId,state,channel,reviewUrl}
+        );
+      }else{
+        // For non-generic DOKU orders, use the verification-event table
+        // to make the pre-verification notice retry-safe without consuming
+        // the final InternalPaymentNotice receipt slot.
+        const priorReview=await db.prepare(`
+          SELECT id FROM payment_verification_events
+          WHERE order_id=? AND verification_status='Review'
+            AND verification_source='DOKU payment notice'
+          ORDER BY id DESC LIMIT 1
+        `).bind(o.id).first();
+
+        if(!priorReview){
+          try{
+            const descriptor=o.product_name||'Quantum YiJing Purchase';
+            await resend(context.env.RESEND_API_KEY,{
+              from:FROM_ADDRESS,
+              to:[INTERNAL_ADDRESS],
+              reply_to:o.customer_email||INTERNAL_ADDRESS,
+              subject:`Payment Notice — Verification Required — ${descriptor} — ${o.order_reference}`,
+              html:`<!doctype html><html><body style="margin:0;background:#f4f7fb;font-family:Arial,'Noto Sans SC','Microsoft YaHei',sans-serif;color:#17243a">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:28px 12px">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:680px;background:#fff;border:1px solid #dce7f4;border-radius:20px;overflow:hidden">
+                  ${header('PAYMENT VERIFICATION REQUIRED')}
+                  <tr><td style="padding:34px">
+                    <h1 style="margin:0 0 20px;font-size:25px;color:#0b2f66">Payment received — verification required</h1>
+                    <p style="font-size:15px;line-height:1.7">DOKU has reported a successful payment. Please review the payment record and click <strong>Verify &amp; Confirm</strong> before the QY receipt is issued.</p>
+                    <p style="text-align:center;margin:26px 0">
+                      <a href="${esc(reviewUrl)}" style="display:inline-block;background:#1468c5;color:#fff;text-decoration:none;font-weight:800;padding:14px 24px;border-radius:10px">Review &amp; Verify Payment</a>
+                    </p>
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f7faff;border:1px solid #dce8f6;border-radius:12px">
+                      <tr><td style="padding:12px 16px;color:#58708d;width:180px">Product / Course</td><td style="padding:12px 16px;font-weight:700">${esc(descriptor)}</td></tr>
+                      <tr><td style="padding:12px 16px;color:#58708d;border-top:1px solid #e3edf8">Customer</td><td style="padding:12px 16px;border-top:1px solid #e3edf8">${esc(o.customer_name||'')}</td></tr>
+                      <tr><td style="padding:12px 16px;color:#58708d;border-top:1px solid #e3edf8">Order Reference</td><td style="padding:12px 16px;border-top:1px solid #e3edf8">${esc(o.order_reference)}</td></tr>
+                      <tr><td style="padding:12px 16px;color:#58708d;border-top:1px solid #e3edf8">Amount</td><td style="padding:12px 16px;border-top:1px solid #e3edf8">${esc(o.currency||'MYR')} ${Number(o.total||0).toFixed(2)}</td></tr>
+                      <tr><td style="padding:12px 16px;color:#58708d;border-top:1px solid #e3edf8">DOKU Transaction</td><td style="padding:12px 16px;border-top:1px solid #e3edf8">${esc(checkoutId||'')}</td></tr>
+                      <tr><td style="padding:12px 16px;color:#58708d;border-top:1px solid #e3edf8">Gateway Status</td><td style="padding:12px 16px;font-weight:800;color:#11814a;border-top:1px solid #e3edf8">SUCCESS / ${esc(state||'')}</td></tr>
+                      <tr><td style="padding:12px 16px;color:#58708d;border-top:1px solid #e3edf8">QY Verification</td><td style="padding:12px 16px;font-weight:800;color:#9b6600;border-top:1px solid #e3edf8">PENDING ADMIN REVIEW</td></tr>
+                    </table>
+                  </td></tr>
+                </table>
+              </td></tr></table></body></html>`,
+              text:`Payment received — verification required
+
+Product / Course: ${descriptor}
+Customer: ${o.customer_name||''}
+Order Reference: ${o.order_reference}
+Amount: ${o.currency||'MYR'} ${Number(o.total||0).toFixed(2)}
+DOKU Transaction: ${checkoutId||''}
+Gateway Status: SUCCESS / ${state||''}
+QY Verification: PENDING ADMIN REVIEW
+
+Review & verify:
+${reviewUrl}`
+            });
+
+            await db.prepare(`
+              INSERT INTO payment_verification_events(
+                order_id,payment_id,verification_method,verification_source,
+                verified_by,verification_status,notes
+              )
+              VALUES(
+                ?,
+                (SELECT id FROM payments WHERE order_id=? ORDER BY id DESC LIMIT 1),
+                'Manual','DOKU payment notice','System','Review',
+                'Payment received from DOKU; awaiting QY Admin verification.'
+              )
+            `).bind(o.id,o.id).run();
+
+          }catch(e){
+            console.error('Non-generic verification-required notice failed',e);
+          }
         }
       }
-      const o=await loadOrder(db,ref);
-      if(o){await sendCustomerReceipt(context.env,db,o);await sendInternalNotice(context.env,db,o,{checkoutId,state,channel});}
     }
+
   }else if(paymentStatus==='FAILED'){
     await markTerminal(db,{
       orderRef:ref,checkoutId,status:'Failed',

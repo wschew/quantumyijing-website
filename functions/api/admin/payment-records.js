@@ -59,6 +59,7 @@ export async function onRequestGet({request,env}){
       COALESCE(py.accounting_eligible_at,'') AS accounting_eligible_at,
       COALESCE(ve.verification_method,'') AS verification_method,
       COALESCE(ve.verification_source,'') AS verification_source,
+      COALESCE(ve.verification_status,'') AS verification_event_status,
       COALESCE(cn.status,'') AS customer_email_status,
       COALESCE(cn.sent_at,'') AS customer_email_sent_at,
       COALESCE(cn.last_error,'') AS customer_email_error,

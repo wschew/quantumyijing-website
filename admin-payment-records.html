@@ -73,7 +73,7 @@ async function load(){
       <td class="${String(x.internal_email_status).toLowerCase()}">${esc(x.internal_email_status||'—')}${x.internal_email_error?'<br><small>'+esc(x.internal_email_error)+'</small>':''}</td>
       <td>${esc(x.verification_method||(x.verification_status==='Verified'?'Legacy / Existing':'—'))}</td>
       <td>${Number(x.accounting_eligible)===1?'<strong class="paid">YES</strong>':'No'}</td>
-      <td>${esc(x.admin_verification_status||(x.payment_type==='Generic'?'Pending':'—'))}</td>
+      <td>${esc(x.admin_verification_status||(x.payment_record_status==='Paid'&&x.verification_status!=='Verified'?'Pending':(x.verification_status==='Verified'?'Verified':'—')))}</td>
       <td>${x.payment_record_status==='Paid'&&x.verification_status!=='Verified'?'<button class="verify-btn" data-order-id="'+x.order_id+'" data-payment-type="'+esc(x.payment_type)+'">Verify & Confirm</button>':(x.verification_status==='Verified'?'<strong class="paid">Verified</strong>':'—')}</td>
       <td>${esc(x.created_at)}</td>
     </tr>`).join('')||'<tr><td colspan="17">No records found.</td></tr>';
