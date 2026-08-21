@@ -328,8 +328,29 @@
   const money = (value,currency='MYR') => `${currency === 'MYR' ? 'RM' : currency} ${Number(value||0).toFixed(2)}`;
   async function loadCommerceStats(){
     const response=await api('/api/admin?action=commercestats'), data=await response.json();
-    $('commerceStatProducts').textContent=data.summary.products; $('commerceStatOrders').textContent=data.summary.orders; $('commerceStatPaid').textContent=data.summary.paid; $('commerceStatPending').textContent=data.summary.pending;
-    renderBars('commerceChannelChart',data.byChannel||[],'label'); renderBars('commerceProviderChart',data.byProvider||[],'label'); renderBars('commerceStatusChart',data.byStatus||[],'label'); renderBars('commerceMethodChart',data.byMethod||[],'label');
+    $('commerceStatProducts').textContent=data.summary.products;
+    $('commerceStatOrders').textContent=data.summary.orders;
+    $('commerceStatPaid').textContent=data.summary.paid;
+    $('commerceStatPending').textContent=data.summary.pending;
+    $('commerceStatGross').textContent=money(data.summary.grossSales,'MYR');
+
+    renderBars('commerceChannelChart',data.byChannel||[],'label');
+    renderBars('commerceProviderChart',data.byProvider||[],'label');
+    renderBars('commerceStatusChart',data.byStatus||[],'label');
+    renderBars('commerceMethodChart',data.byMethod||[],'label');
+
+    const monthly=(data.monthlyGross||[]).map(r=>({label:r.label,count:Number(r.amount||0)}));
+    renderBars('commerceMonthlyGrossChart',monthly,'label');
+    const chart=$('commerceMonthlyGrossChart');
+    if(chart){
+      [...chart.querySelectorAll('.bar-row')].forEach((row,i)=>{
+        const item=monthly[i];
+        if(!item)return;
+        const value=row.querySelector('strong');
+        if(value)value.textContent=money(item.count,'MYR');
+      });
+      if(!monthly.length) chart.innerHTML='<p class="muted">No gross sales data yet.</p>';
+    }
   }
   async function loadCommerceProducts(){
     const response=await api('/api/admin?action=commerceproducts'), data=await response.json(); state.products=data.results||[];
@@ -347,13 +368,12 @@
     setMessage('commerceDashboardMessage','',true);
   }
   async function loadCommercePayments(){
-    const response=await api('/api/admin?action=commercepayments'), data=await response.json(); const body=$('commercePaymentsBody'); body.innerHTML='';
+    const response=await api('/api/admin?action=commercepayments');
+    const data=await response.json();
     state.payments=data.results||[];
-    state.payments.forEach(r=>body.insertAdjacentHTML('beforeend',`<tr><td><strong>${esc(r.order_reference)}</strong><br><small>${esc(r.settlement_date||String(r.paid_at||'').slice(0,10)||'')}</small></td><td><strong>${esc(r.customer_name)}</strong><br><small>${esc(r.product_name||r.sku||'—')}</small></td><td>${esc(r.payment_method||r.provider)}<br><small>${esc(r.provider||'')}</small></td><td class="money">${money(r.gross_amount,r.currency)}</td><td class="money">${r.settlement_status==='Reconciled'||r.settlement_status==='Settled'?money(r.provider_fee,r.currency):'<span class="muted">Pending</span>'}</td><td class="money">${r.settlement_status==='Reconciled'||r.settlement_status==='Settled'?money(r.net_amount,r.currency):'<span class="muted">Pending</span>'}</td><td class="money">${r.settlement_status==='Reconciled'||r.settlement_status==='Settled'?money(r.bank_received_amount,r.currency):'<span class="muted">Pending</span>'}</td><td><strong>${esc(r.verification_status||'Unverified')}</strong><br><small>Accounting: ${Number(r.accounting_eligible)===1?'Eligible':'Not yet eligible'}</small><br><small>Customer email: ${esc(r.customer_email_status||'—')} · QY email: ${esc(r.internal_email_status||'—')}</small><br><small>Receipt: ${esc(r.customer_receipt_issuer||'—')}</small></td></tr>`));
-    if(!(data.results||[]).length) body.innerHTML='<tr><td colspan="8">No payment records yet.</td></tr>';
   }
 
-  async function loadCommerceAll(){await Promise.all([loadCommerceStats(),loadCommerceProducts(),loadCommerceOrders()]);}
+  async function loadCommerceAll(){await Promise.all([loadCommerceStats(),loadCommerceProducts(),loadCommerceOrders(),loadCommercePayments()]);}
   function slugify(value){return String(value||'').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,120);}
   function openProduct(row=null){delete $('productSlug').dataset.manual; $('productId').value=row?.id||''; $('productDialogTitle').textContent=row?'Edit Product':'New Product'; $('productSku').value=row?.sku||''; $('productSlug').value=row?.slug||''; $('productType').value=row?.product_type||'course'; $('productStatus').value=row?.status||'Draft'; $('productPrice').value=row?.price??''; $('productCurrency').value=row?.currency||'MYR'; $('productChannel').value=row?.sales_channel||'Website'; $('productProvider').value=row?.payment_provider||'SenangPay'; $('productNameEn').value=row?.name_en||''; $('productNameZh').value=row?.name_zh||''; $('productDescriptionEn').value=row?.description_en||''; $('productDescriptionZh').value=row?.description_zh||''; $('productStartsOn').value=row?.starts_on||''; $('productEndsOn').value=row?.ends_on||''; $('productTimeEn').value=row?.time_en||''; $('productTimeZh').value=row?.time_zh||''; $('productDeliveryEn').value=row?.delivery_en||''; $('productDeliveryZh').value=row?.delivery_zh||''; $('productInstructor').value=row?.instructor||''; $('productHeroImage').value=row?.hero_image_url||''; $('productEarlyBirdPrice').value=row?.early_bird_price??''; $('productEarlyBirdEnd').value=row?.early_bird_end||''; $('productExternalUrl').value=row?.external_purchase_url||''; setMessage('productDialogMessage','',true); $('productDialog').showModal();}
   async function saveProduct(){try{const id=$('productId').value, response=await api(`/api/admin?action=productsave${id?`&id=${id}`:''}`,{method:id?'PATCH':'POST',body:JSON.stringify({sku:$('productSku').value,slug:$('productSlug').value||slugify($('productNameEn').value),productType:$('productType').value,status:$('productStatus').value,price:$('productPrice').value,currency:$('productCurrency').value,salesChannel:$('productChannel').value,paymentProvider:$('productProvider').value,nameEn:$('productNameEn').value,nameZh:$('productNameZh').value,descriptionEn:$('productDescriptionEn').value,descriptionZh:$('productDescriptionZh').value,startsOn:$('productStartsOn').value,endsOn:$('productEndsOn').value,timeEn:$('productTimeEn').value,timeZh:$('productTimeZh').value,deliveryEn:$('productDeliveryEn').value,deliveryZh:$('productDeliveryZh').value,instructor:$('productInstructor').value,heroImageUrl:$('productHeroImage').value,earlyBirdPrice:$('productEarlyBirdPrice').value,earlyBirdEnd:$('productEarlyBirdEnd').value,externalPurchaseUrl:$('productExternalUrl').value})}); const data=await response.json(); setMessage('productDialogMessage',`Product saved. Public page: /product/${data.slug||$('productSlug').value}`,true); $('productSlug').value=data.slug||$('productSlug').value; await loadCommerceAll();}catch(e){setMessage('productDialogMessage',e.message);}}
@@ -436,6 +456,8 @@
           verificationStatus:requestedVerification,
           grossAmount:$('paymentGross').value,
           providerFee:'',
+          netAmount:'',
+          bankReceivedAmount:'',
           settlementDate:$('paymentSettlementDate').value,
           customerReceiptIssuer:$('paymentReceiptIssuer').value,
           notes:$('paymentNotes').value,
@@ -542,12 +564,17 @@
   $('refreshButton').addEventListener('click', () => loadAll().catch(handleError));
   $('prevPage').addEventListener('click', async () => { if(state.page>1){state.page--;await loadRecords().catch(handleError);} });
   $('nextPage').addEventListener('click', async () => { if(state.page*state.pageSize<state.total){state.page++;await loadRecords().catch(handleError);} });
-  document.addEventListener('click', e => {
+  document.addEventListener('click', async e => {
     const openButton=e.target.closest('[data-open-id]'); if(openButton) openRecordById(Number(openButton.dataset.openId));
     const followButton=e.target.closest('[data-follow-days]'); if(followButton) quickFollowUp(Number(followButton.dataset.followDays));
     const studentButton=e.target.closest('[data-open-student]'); if(studentButton) openStudentById(Number(studentButton.dataset.openStudent));
     const productButton=e.target.closest('[data-edit-product]'); if(productButton){const row=state.products.find(p=>Number(p.id)===Number(productButton.dataset.editProduct)); if(row) openProduct(row);}
-    const paymentButton=e.target.closest('[data-record-payment]'); if(paymentButton) openPayment(paymentButton.dataset.recordPayment);
+    const paymentButton=e.target.closest('[data-record-payment]');
+    if(paymentButton){
+      const oid=Number(paymentButton.dataset.recordPayment||0);
+      if(!state.payments.length) await loadCommercePayments();
+      openPayment(oid);
+    }
   });
   $('dialogClose').addEventListener('click', () => $('recordDialog').close());
   $('cancelRecord').addEventListener('click', () => $('recordDialog').close());

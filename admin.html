@@ -219,9 +219,9 @@
           <article><span>Paid / External</span><strong id="commerceStatPaid">0</strong></article>
           <article><span>Pending</span><strong id="commerceStatPending">0</strong></article>
           <article><span>Gross sales</span><strong id="commerceStatGross">RM 0.00</strong></article>
-          <article><span>Platform / provider fees</span><strong id="commerceStatFees">RM 0.00</strong></article>
-          <article><span>Net amount</span><strong id="commerceStatNet">RM 0.00</strong></article>
-          <article><span>Bank received</span><strong id="commerceStatBank">RM 0.00</strong></article>
+          
+          
+          
         </section>
 
         <section class="insights-grid commerce-insights">
@@ -230,17 +230,18 @@
           <article class="panel"><div class="panel-heading"><h2>Payment status</h2></div><div id="commerceStatusChart" class="bar-list"></div></article>
           <article class="panel"><div class="panel-heading"><h2>Recorded payment methods</h2></div><div id="commerceMethodChart" class="bar-list"></div></article>
         </section>
+        <section class="panel records-panel" aria-label="Monthly gross sales">
+          <div class="panel-heading records-heading">
+            <div><h2>Monthly Gross Sales</h2><p>Verified / paid customer payment amount by month.</p></div>
+          </div>
+          <div id="commerceMonthlyGrossChart" class="bar-list" style="padding:8px 4px 4px"></div>
+        </section>
+
 
         <section class="panel records-panel">
           <div class="panel-heading records-heading"><div><h2>Orders</h2><p id="commerceOrderCount">0 orders</p></div><button id="commerceRefreshButton" class="secondary-button" type="button">Refresh</button></div>
           <div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Product</th><th>Channel</th><th>Payment</th><th>Total</th><th>Campaign / Affiliate</th><th>Accounting</th></tr></thead><tbody id="commerceOrdersBody"></tbody></table></div>
           <p id="commerceDashboardMessage" class="form-message" aria-live="polite"></p>
-        </section>
-
-        <section class="panel records-panel">
-          
-          <div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer / Product</th><th>Method / Provider</th><th>Gross</th><th>Fees</th><th>Net</th><th>Bank received</th><th>Verification / Receipt</th></tr></thead><tbody id="commercePaymentsBody"></tbody></table></div>
-          <p id="commercePaymentMessage" class="form-message" aria-live="polite"></p>
         </section>
 
         <section class="panel records-panel commerce-products-panel">
@@ -376,6 +377,10 @@
         <input id="paymentFee" type="hidden" value="">
         <input id="paymentNet" type="hidden" value="">
         <input id="paymentBank" type="hidden" value="">
+        <div style="grid-column:1/-1;padding:14px 16px;border:1px solid #d9e4f0;background:#f7fbff;border-radius:12px;color:#4d6580;line-height:1.55">
+          <strong>Settlement values are reconciled later from the DOKU / platform settlement report.</strong><br>
+          During payment verification, confirm only the Gross Sale (the amount paid by the customer). Provider fee, net settlement and bank receipt are not manually keyed here.
+        </div>
         <label>Settlement / payment date<input id="paymentSettlementDate" type="date"></label>
         <label>Customer receipt issuer<select id="paymentReceiptIssuer"><option>Quantum YiJing</option><option>External Platform</option><option>Not Applicable</option></select></label>
       </div>
@@ -388,11 +393,12 @@
           <span>I have independently verified this payment against DOKU / bank / payment evidence.</span>
         </label>
       </div>
+      <p class="helper-text">Gross Sale is confirmed during payment verification. Provider Fee, Net Settlement and Amount Received in Bank are reconciled later from DOKU / external-platform settlement records.</p>
       <div class="dialog-actions"><button id="paymentSave" class="primary-button" type="button">Save Payment Record</button><button id="paymentClose" class="secondary-button" type="button">Close</button></div>
       <p id="paymentDialogMessage" class="form-message" aria-live="polite"></p>
     </form>
   </dialog>
 
-  <script src="admin.js?v=3.3.15g" defer></script>
+  <script src="admin.js?v=3.3.15h" defer></script>
 </body>
 </html>

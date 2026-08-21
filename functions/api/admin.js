@@ -495,11 +495,21 @@ async function commerceStats(context) {
   const byProvider=await db.prepare(`SELECT payment_provider label, COUNT(*) count FROM orders GROUP BY payment_provider ORDER BY count DESC`).all();
   const byStatus=await db.prepare(`SELECT payment_status label, COUNT(*) count FROM orders GROUP BY payment_status ORDER BY count DESC`).all();
   const byMethod=await db.prepare(`SELECT CASE WHEN trim(payment_method)='' THEN provider ELSE payment_method END label, COUNT(*) count FROM payments GROUP BY CASE WHEN trim(payment_method)='' THEN provider ELSE payment_method END ORDER BY count DESC`).all();
+  const monthlyGross=await db.prepare(`
+    SELECT substr(COALESCE(NULLIF(paid_at,''),created_at),1,7) label,
+           ROUND(COALESCE(SUM(COALESCE(NULLIF(gross_amount,0),amount)),0),2) amount
+    FROM payments
+    WHERE (status IN ('Paid','External') OR verification_status IN ('Verified','Reconciled'))
+      AND substr(COALESCE(NULLIF(paid_at,''),created_at),1,7)<>''
+    GROUP BY substr(COALESCE(NULLIF(paid_at,''),created_at),1,7)
+    ORDER BY label DESC
+    LIMIT 12
+  `).all();
   return json({ok:true,summary:{
     products:Number(products?.active||0),orders:Number(orders?.total||0),paid:Number(orders?.paid||0),pending:Number(orders?.pending||0),
     grossSales:Number(moneySummary?.gross_sales||0),providerFees:Number(moneySummary?.provider_fees||0),
     netSales:Number(moneySummary?.net_sales||0),bankReceived:Number(moneySummary?.bank_received||0)
-  },byChannel:byChannel.results||[],byProvider:byProvider.results||[],byStatus:byStatus.results||[],byMethod:byMethod.results||[]});
+  },byChannel:byChannel.results||[],byProvider:byProvider.results||[],byStatus:byStatus.results||[],byMethod:byMethod.results||[],monthlyGross:(monthlyGross.results||[]).reverse()});
 }
 
 async function commerceProducts(context) {
