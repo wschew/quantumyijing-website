@@ -537,7 +537,7 @@
   $('commerceRefreshButton').addEventListener('click', () => loadCommerceAll().catch(handleCommerceError));
   $('newProductButton').addEventListener('click', () => openProduct());
   $('newOrderButton').addEventListener('click', openOrder);
-  $('newPaymentButton').addEventListener('click',()=>openPayment());
+  if($('newPaymentButton')) $('newPaymentButton').addEventListener('click',()=>openPayment());
   $('paymentDialogClose').addEventListener('click',()=>$('paymentDialog').close()); $('paymentClose').addEventListener('click',()=>$('paymentDialog').close()); $('paymentSave').addEventListener('click',savePayment);
   $('paymentMethod').addEventListener('change',applyPaymentMethodDefaults); $('paymentGross').addEventListener('input',recalcPayment); $('paymentOrder').addEventListener('change',()=>{const o=$('paymentOrder').selectedOptions[0]; const t=Number(o?.dataset.total||0); $('paymentGross').value=t.toFixed(2); recalcPayment();});
   $('productDialogClose').addEventListener('click',()=>$('productDialog').close()); $('productClose').addEventListener('click',()=>$('productDialog').close()); $('productSave').addEventListener('click',saveProduct);
@@ -571,9 +571,15 @@
     const productButton=e.target.closest('[data-edit-product]'); if(productButton){const row=state.products.find(p=>Number(p.id)===Number(productButton.dataset.editProduct)); if(row) openProduct(row);}
     const paymentButton=e.target.closest('[data-record-payment]');
     if(paymentButton){
-      const oid=Number(paymentButton.dataset.recordPayment||0);
-      if(!state.payments.length) await loadCommercePayments();
-      openPayment(oid);
+      e.preventDefault();
+      try{
+        const oid=Number(paymentButton.dataset.recordPayment||0);
+        if(!oid) throw new Error('Invalid order selected.');
+        await loadCommercePayments();
+        openPayment(oid);
+      }catch(error){
+        handleCommerceError(error);
+      }
     }
   });
   $('dialogClose').addEventListener('click', () => $('recordDialog').close());
