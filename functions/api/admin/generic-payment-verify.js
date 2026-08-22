@@ -21,14 +21,7 @@ async function state(db,orderId,type){return db.prepare(`SELECT status FROM paym
 export async function onRequestPost({request,env}){
  if(!ok(request,env))return json({error:'Unauthorized'},401);const db=dbOf(env);if(!db)return json({error:'Database unavailable'},503);let b={};try{b=await request.json()}catch{return json({error:'Invalid request'},400)};const orderId=Number(b.order_id||0);if(!orderId)return json({error:'order_id is required'},400);const manualOverride=b.manual_override===true;const manualOverrideNote=clean(b.manual_override_note||'',1000);
  const o=await db.prepare(`SELECT o.id,o.order_reference,o.customer_name,o.customer_email,o.total,o.currency,o.payment_status,g.payment_purpose,g.affiliate_code,g.affiliate_test_mode,g.affiliate_test_rate,p.id payment_id,p.status payment_record_status,p.verification_status,p.gateway_hash_verified FROM orders o JOIN generic_payment_requests g ON g.order_id=o.id LEFT JOIN payments p ON p.id=(SELECT p2.id FROM payments p2 WHERE p2.order_id=o.id ORDER BY p2.id DESC LIMIT 1) WHERE o.id=? LIMIT 1`).bind(orderId).first();
- if(!o)return json({error:'Generic payment not found'},404);
- if(o.payment_status!=='Paid'||o.payment_record_status!=='Paid')return json({error:'Gateway payment is not recorded as Paid'},409);
- const alreadyVerified=String(o.verification_status||'')==='Verified';
- // If the row is already Verified, this endpoint is now allowed to finish
- // missing idempotent post-processing (receipts, accounting eligibility,
- // affiliate commission) without asking the admin to repeat the override.
- if(!alreadyVerified && Number(o.gateway_hash_verified)!==1 && !manualOverride)
-   return json({error:'Gateway notification is not hash verified. Manual verification override is required after independently checking the payment evidence.'},409);
+ if(!o)return json({error:'Generic payment not found'},404);if(o.payment_status!=='Paid'||o.payment_record_status!=='Paid')return json({error:'Gateway payment is not recorded as Paid'},409);if(Number(o.gateway_hash_verified)!==1&&!manualOverride)return json({error:'Gateway notification is not hash verified. Manual verification override is required after independently checking the payment evidence.'},409);
  const now=new Date().toISOString();const receiptDate=receiptDateMY(now);const paymentDate=receiptDateMY(o.paid_at||now);await db.prepare(`UPDATE payments SET
           verification_status='Verified',
           verified_at=?,
@@ -42,46 +35,66 @@ export async function onRequestPost({request,env}){
           END
         WHERE id=?`).bind(now,now,o.payment_id).run();
  await db.prepare(`INSERT INTO payment_verification_events(order_id,payment_id,verification_method,verification_source,verified_by,verification_status,notes) VALUES(?,?,'Manual',?,'Admin','Verified',?)`).bind(o.id,o.payment_id,manualOverride?'QY Admin Override':'QY Admin',manualOverride?(manualOverrideNote||'Gateway hash unavailable; generic payment independently verified by QY Admin against payment evidence.'):'Generic payment manually verified and released to accounting.').run();await db.prepare(`INSERT INTO generic_payment_reviews(order_id,admin_verification_status,admin_verified_at,admin_verified_by,created_at,updated_at) VALUES(?,'Verified',?,'Admin',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP) ON CONFLICT(order_id) DO UPDATE SET admin_verification_status='Verified',admin_verified_at=excluded.admin_verified_at,admin_verified_by='Admin',updated_at=CURRENT_TIMESTAMP`).bind(orderId,now).run();
- if(Number(o.affiliate_test_mode||0)===1 && clean(o.affiliate_code,100)){
-   const aff=await db.prepare(`
-     SELECT id,affiliate_code,full_name,status
-     FROM affiliates WHERE upper(affiliate_code)=upper(?) LIMIT 1
-   `).bind(o.affiliate_code).first();
-   if(aff?.id && aff.status==='Approved'){
-     const exists=await db.prepare(`
-       SELECT id FROM affiliate_commissions
-       WHERE affiliate_id=? AND order_id=? LIMIT 1
-     `).bind(aff.id,o.id).first();
-     if(!exists){
-       const rate=Math.max(0,Math.min(Number(o.affiliate_test_rate||20),100));
-       const gross=Number(o.total||0);
-       const commission=Math.round(gross*rate)/100;
-       await db.prepare(`
-         INSERT INTO affiliate_commissions(
-           affiliate_id,order_id,product_id,order_reference,customer_name,product_name,
-           gross_sale,currency,commission_rate,commission_amount,status,created_at,updated_at
-         ) VALUES(?,?,NULL,?,?,?,?,?,?,?,'Approved',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
-       `).bind(
-         aff.id,o.id,o.order_reference,o.customer_name,
-         'Generic Affiliate QA Test Payment',gross,o.currency||'MYR',rate,commission
-       ).run();
+ const cust=await state(db,orderId,'CustomerReceipt');if(cust?.status!=='Sent'&&o.customer_email){try{const r=await send(env.RESEND_API_KEY,{from:FROM,to:[o.customer_email],reply_to:INTERNAL,subject:`Payment Receipt — ${o.payment_purpose||o.order_reference}`,html:`<!doctype html><html><body style="font-family:Arial;background:#f4f7fb"><div style="max-width:680px;margin:30px auto;background:#fff;border:1px solid #dce7f4;border-radius:18px;overflow:hidden">${header('PAYMENT RECEIPT')}<div style="padding:32px"><h2 style="color:#0b2f66">Payment Receipt</h2><p>Dear ${esc(o.customer_name||'Customer')},</p><p>Quantum YiJing has verified and confirmed your payment.</p><p><strong>Payment Purpose:</strong> ${esc(o.payment_purpose||'General Payment')}<br><strong>Order Reference:</strong> ${esc(o.order_reference)}<br><strong>Payment Date:</strong> ${esc(paymentDate)}<br><strong>Receipt Date:</strong> ${esc(receiptDate)}<br><strong>Amount Paid:</strong> ${esc(o.currency||'MYR')} ${Number(o.total||0).toFixed(2)}<br><strong>Payment Method:</strong> DOKU<br><strong>Payment Status:</strong> PAID / VERIFIED</p><p>Please keep this email for your records.</p></div></div></body></html>`,text:`Payment Receipt\n\nPayment Purpose: ${o.payment_purpose||'General Payment'}\nOrder Reference: ${o.order_reference}\nAmount Paid: ${o.currency||'MYR'} ${Number(o.total||0).toFixed(2)}\nPayment Method: DOKU\nPayment Status: PAID / VERIFIED`});await markNotice(db,orderId,'CustomerReceipt','Sent',o.customer_email,r?.id||'','')}catch(e){await markNotice(db,orderId,'CustomerReceipt','Failed',o.customer_email||'','',clean(e?.message||'',1000));return json({error:'Verified, but customer receipt email failed.'},502)}}
+ const intl=await state(db,orderId,'InternalPaymentNotice');if(intl?.status!=='Sent'){try{const r=await send(env.RESEND_API_KEY,{from:FROM,to:[INTERNAL],reply_to:o.customer_email||INTERNAL,subject:`Payment Verified & Confirmed — ${o.payment_purpose||'Generic Payment'} — ${o.order_reference}`,html:`<!doctype html><html><body style="font-family:Arial;background:#f4f7fb"><div style="max-width:680px;margin:30px auto;background:#fff;border:1px solid #dce7f4;border-radius:18px;overflow:hidden">${header('ACCOUNTING PAYMENT RECORD')}<div style="padding:32px"><h2 style="color:#0b2f66">Payment Verified & Confirmed</h2><p><strong>Purpose:</strong> ${esc(o.payment_purpose||'General Payment')}<br><strong>Customer:</strong> ${esc(o.customer_name||'')}<br><strong>Order:</strong> ${esc(o.order_reference)}<br><strong>Payment Date:</strong> ${esc(paymentDate)}<br><strong>Receipt Date:</strong> ${esc(receiptDate)}<br><strong>Amount:</strong> ${esc(o.currency||'MYR')} ${Number(o.total||0).toFixed(2)}<br><strong>Status:</strong> PAID / VERIFIED</p><p>Customer receipt has been issued.</p></div></div></body></html>`,text:`Payment Verified & Confirmed\n\nPurpose: ${o.payment_purpose||'General Payment'}\nCustomer: ${o.customer_name||''}\nOrder: ${o.order_reference}\nAmount: ${o.currency||'MYR'} ${Number(o.total||0).toFixed(2)}\nStatus: PAID / VERIFIED\nCustomer receipt issued.`});await markNotice(db,orderId,'InternalPaymentNotice','Sent',INTERNAL,r?.id||'','')}catch(e){await markNotice(db,orderId,'InternalPaymentNotice','Failed',INTERNAL,'',clean(e?.message||'',1000));return json({error:'Verified, but QY accounting email failed.'},502)}}
+
+ let affiliateCommission=null;
+ let affiliateCommissionError='';
+ try{
+   if(Number(o.affiliate_test_mode||0)===1 && clean(o.affiliate_code,100)){
+     const aff=await db.prepare(`
+       SELECT id,affiliate_code,full_name,status
+       FROM affiliates
+       WHERE upper(affiliate_code)=upper(?)
+       LIMIT 1
+     `).bind(o.affiliate_code).first();
+
+     if(aff?.id && aff.status==='Approved'){
+       affiliateCommission=await db.prepare(`
+         SELECT id,commission_amount,status
+         FROM affiliate_commissions
+         WHERE affiliate_id=? AND order_id=?
+         LIMIT 1
+       `).bind(aff.id,o.id).first();
+
+       if(!affiliateCommission){
+         const rate=Math.max(0,Math.min(Number(o.affiliate_test_rate||20),100));
+         const gross=Number(o.total||0);
+         const commission=Math.round(gross*rate)/100;
+
+         const ins=await db.prepare(`
+           INSERT INTO affiliate_commissions(
+             affiliate_id,order_id,product_id,order_reference,customer_name,product_name,
+             gross_sale,currency,commission_rate,commission_amount,status,created_at,updated_at
+           ) VALUES(?,?,NULL,?,?,?,?,?,?,?,'Approved',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+         `).bind(
+           aff.id,o.id,o.order_reference,o.customer_name,
+           'Generic Affiliate QA Test Payment',
+           gross,o.currency||'MYR',rate,commission
+         ).run();
+
+         affiliateCommission={
+           id:Number(ins.meta?.last_row_id||0),
+           commission_amount:commission,
+           status:'Approved'
+         };
+       }
      }
    }
+ }catch(e){
+   affiliateCommissionError=clean(e?.message||'Affiliate commission post-processing failed.',1000);
+   console.error('AFFILIATE COMMISSION POST-HOOK FAILED',affiliateCommissionError);
  }
- const cust=await state(db,orderId,'CustomerVerifiedReceipt');if(cust?.status!=='Sent'&&o.customer_email){try{const r=await send(env.RESEND_API_KEY,{from:FROM,to:[o.customer_email],reply_to:INTERNAL,subject:`Payment Receipt — ${o.payment_purpose||o.order_reference}`,html:`<!doctype html><html><body style="font-family:Arial;background:#f4f7fb"><div style="max-width:680px;margin:30px auto;background:#fff;border:1px solid #dce7f4;border-radius:18px;overflow:hidden">${header('PAYMENT RECEIPT')}<div style="padding:32px"><h2 style="color:#0b2f66">Payment Receipt</h2><p>Dear ${esc(o.customer_name||'Customer')},</p><p>Quantum YiJing has verified and confirmed your payment.</p><p><strong>Payment Purpose:</strong> ${esc(o.payment_purpose||'General Payment')}<br><strong>Order Reference:</strong> ${esc(o.order_reference)}<br><strong>Payment Date:</strong> ${esc(paymentDate)}<br><strong>Receipt Date:</strong> ${esc(receiptDate)}<br><strong>Amount Paid:</strong> ${esc(o.currency||'MYR')} ${Number(o.total||0).toFixed(2)}<br><strong>Payment Method:</strong> DOKU<br><strong>Payment Status:</strong> PAID / VERIFIED</p><p>Please keep this email for your records.</p></div></div></body></html>`,text:`Payment Receipt\n\nPayment Purpose: ${o.payment_purpose||'General Payment'}\nOrder Reference: ${o.order_reference}\nAmount Paid: ${o.currency||'MYR'} ${Number(o.total||0).toFixed(2)}\nPayment Method: DOKU\nPayment Status: PAID / VERIFIED`});await markNotice(db,orderId,'CustomerVerifiedReceipt','Sent',o.customer_email,r?.id||'','')}catch(e){await markNotice(db,orderId,'CustomerVerifiedReceipt','Failed',o.customer_email||'','',clean(e?.message||'',1000));return json({error:'Verified, but customer receipt email failed.'},502)}}
- const intl=await state(db,orderId,'InternalAccountingReceipt');if(intl?.status!=='Sent'){try{const r=await send(env.RESEND_API_KEY,{from:FROM,to:[INTERNAL],reply_to:o.customer_email||INTERNAL,subject:`Payment Verified & Confirmed — ${o.payment_purpose||'Generic Payment'} — ${o.order_reference}`,html:`<!doctype html><html><body style="font-family:Arial;background:#f4f7fb"><div style="max-width:680px;margin:30px auto;background:#fff;border:1px solid #dce7f4;border-radius:18px;overflow:hidden">${header('ACCOUNTING PAYMENT RECORD')}<div style="padding:32px"><h2 style="color:#0b2f66">Payment Verified & Confirmed</h2><p><strong>Purpose:</strong> ${esc(o.payment_purpose||'General Payment')}<br><strong>Customer:</strong> ${esc(o.customer_name||'')}<br><strong>Order:</strong> ${esc(o.order_reference)}<br><strong>Payment Date:</strong> ${esc(paymentDate)}<br><strong>Receipt Date:</strong> ${esc(receiptDate)}<br><strong>Amount:</strong> ${esc(o.currency||'MYR')} ${Number(o.total||0).toFixed(2)}<br><strong>Status:</strong> PAID / VERIFIED</p><p>Customer receipt has been issued.</p></div></div></body></html>`,text:`Payment Verified & Confirmed\n\nPurpose: ${o.payment_purpose||'General Payment'}\nCustomer: ${o.customer_name||''}\nOrder: ${o.order_reference}\nAmount: ${o.currency||'MYR'} ${Number(o.total||0).toFixed(2)}\nStatus: PAID / VERIFIED\nCustomer receipt issued.`});await markNotice(db,orderId,'InternalAccountingReceipt','Sent',INTERNAL,r?.id||'','')}catch(e){await markNotice(db,orderId,'InternalAccountingReceipt','Failed',INTERNAL,'',clean(e?.message||'',1000));return json({error:'Verified, but QY accounting email failed.'},502)}}
- const commissionRow=await db.prepare(`
-   SELECT id,commission_amount,status FROM affiliate_commissions
-   WHERE order_id=? ORDER BY id DESC LIMIT 1
- `).bind(orderId).first();
+
  return json({
    ok:true,
    verified_at:now,
    receipt_date:receiptDate,
    accounting_eligible:true,
    affiliate_code:clean(o.affiliate_code,100),
-   affiliate_commission_id:commissionRow?.id||null,
-   affiliate_commission_amount:Number(commissionRow?.commission_amount||0),
-   affiliate_commission_status:commissionRow?.status||''
+   affiliate_commission_id:affiliateCommission?.id||null,
+   affiliate_commission_amount:Number(affiliateCommission?.commission_amount||0),
+   affiliate_commission_status:affiliateCommission?.status||'',
+   affiliate_commission_error:affiliateCommissionError
  })
 }

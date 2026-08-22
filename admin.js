@@ -468,14 +468,8 @@
 
       const data=await response.json();
 
-      // v3.3.16d:
-      // A payment saved as Verified must always pass through the same
-      // idempotent post-verification processor, even if the payment row
-      // was already marked Verified by an earlier admin action.
-      // This prevents "Paid + Verified" records from missing receipts,
-      // accounting eligibility or affiliate commission creation.
-      if(requestedVerification==='Verified'){
-        setMessage('paymentDialogMessage','Payment saved. Completing verified-payment processing…',true);
+      if(data.shouldVerify){
+        setMessage('paymentDialogMessage','Payment saved. Verifying and issuing QY receipts…',true);
 
         const order=state.orders.find(o=>Number(o.id)===orderId);
         const isGeneric=!order?.product_name && !order?.sku;
@@ -490,21 +484,20 @@
             manual_override:manualOverride,
             manual_override_note:manualOverride
               ? 'QY Admin independently verified the payment against DOKU / bank / payment evidence.'
-              : '',
-            post_process_existing_verified:true
+              : ''
           })
         });
         const verified=await verifyResponse.json();
 
         setMessage(
           'paymentDialogMessage',
-          `Payment verified. Customer receipt, QY accounting receipt and related accounting actions processed${verified.receipt_date?` · Receipt date ${verified.receipt_date}`:''}.`,
+          `Payment verified. Customer receipt and QY accounting receipt processed${verified.receipt_date?` · Receipt date ${verified.receipt_date}`:''}${verified.affiliate_commission_error?` · Affiliate commission warning: ${verified.affiliate_commission_error}`:''}.`,
           true
         );
       }else{
         setMessage(
           'paymentDialogMessage',
-          'Payment record saved.',
+          'Payment record saved. Settlement values remain pending reconciliation from the provider report.',
           true
         );
       }
