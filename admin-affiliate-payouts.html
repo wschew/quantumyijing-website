@@ -33,7 +33,7 @@
     </div>
     <div class="control-grid">
       <label class="field"><span>Admin Token</span><input id="token" type="password" autocomplete="off"></label>
-      <label class="field"><span>Affiliate ID</span><input id="affiliateId" type="number" min="1"></label>
+      <label class="field"><span>Affiliate</span><select id="affiliateId"><option value="">Select affiliate…</option></select></label>
       <label class="field"><span>Payout Month</span><input id="period" type="month"></label>
       <div class="field action-field"><span>&nbsp;</span><button id="load" class="primary-btn">Load Eligible Commissions</button></div>
     </div>
@@ -42,8 +42,8 @@
 
   <section class="payout-card">
     <div class="section-heading">
-      <div><h2>2. Eligible Commissions</h2><p>Approved or payable commissions not already assigned to a payout.</p></div>
-      <button id="create" class="primary-btn">Create Draft Payout</button>
+      <div><h2>2. Eligible Commissions</h2><p>Review the eligible commissions first. When the month is complete and the figures are correct, create one monthly payout draft for this affiliate.</p></div>
+      <button id="create" class="primary-btn">Create Monthly Payout Draft</button>
     </div>
     <div class="summary-strip">
       <div class="summary-box"><span>Eligible Sales</span><b id="sumCount">0</b></div>
@@ -60,7 +60,7 @@
 
   <section class="payout-card">
     <div class="section-heading">
-      <div><h2>3. Payout Batches</h2><p>Draft, approved and paid payout batches.</p></div>
+      <div><h2>3. Monthly Payouts</h2><p>Each monthly payout belongs to one affiliate. Review it, approve it, then record the completed bank transfer on the same payout row.</p></div>
     </div>
     <div class="table-wrap">
       <table class="qy-table">
@@ -70,20 +70,9 @@
     </div>
   </section>
 
-  <section class="payout-card bank-card">
-    <div class="section-heading">
-      <div><h2>4. Record Bank Transfer</h2><p>Use this only after the payout is approved and the bank transfer is completed.</p></div>
-    </div>
-    <div class="bank-grid">
-      <label class="field"><span>Payout ID</span><input id="payPayout" type="number" min="1"></label>
-      <label class="field"><span>Payment Date</span><input id="paymentDate" type="date"></label>
-      <label class="field"><span>Payment Reference</span><input id="paymentRef" type="text" placeholder="e.g. BANK-20260818-001"></label>
-      <div class="field action-field"><span>&nbsp;</span><button id="markPaid" class="success-btn">Mark Paid</button></div>
-    </div>
-    <div class="bank-note"><strong>Accounting rule:</strong> Only customer payments that are Paid + Verified + Accounting Eligible = YES can enter an affiliate payout. Eligibility is rechecked again before approval and before bank payment.</div>
-  </section>
+  
 </main>
 
-<script src="/admin-affiliate-payouts.js?v=3.3.16" defer></script>
+<script src="/admin-affiliate-payouts.js?v=3.3.16b" defer></script>
 </body>
 </html>

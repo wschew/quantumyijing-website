@@ -51,7 +51,17 @@ export async function onRequestGet({request,env}){
             AND COALESCE(py.accounting_eligible,0)=1
             AND COALESCE(o.payment_status,'')='Paid'
           )
-      ) AS invalid_items
+      ) AS invalid_items,
+      COALESCE((
+        SELECT l.status FROM affiliate_payout_email_log l
+        WHERE l.payout_id=ap.id AND l.recipient_type='Affiliate'
+        ORDER BY l.id DESC LIMIT 1
+      ),'') AS affiliate_email_status,
+      COALESCE((
+        SELECT l.status FROM affiliate_payout_email_log l
+        WHERE l.payout_id=ap.id AND l.recipient_type='Accounting'
+        ORDER BY l.id DESC LIMIT 1
+      ),'') AS accounting_email_status
     FROM affiliate_payouts ap
     JOIN affiliates a ON a.id=ap.affiliate_id
     ORDER BY ap.id DESC
