@@ -100,6 +100,19 @@ function stacked(el,data,labels){
   el.innerHTML=svg;
 }
 
+
+function normalizeAffiliateProductUrl(raw){
+  try{
+    const u=new URL(raw,location.origin);
+    if(u.pathname==='/lp/yj12-yijing-science-of-prediction.html'){
+      u.pathname='/product/yj12-yijing-science-of-prediction';
+    }
+    return u.toString();
+  }catch{
+    return raw||'';
+  }
+}
+
 function commissionText(p){
   if(String(p.commission_type)==='fixed')return `${p.currency||'MYR'} ${Number(p.commission_value||0).toFixed(2)} per eligible sale`;
   return `${Number(p.commission_value||0).toFixed(2)}%`;
@@ -125,7 +138,7 @@ function renderProducts(l){
     <td>${esc(p.sku)}</td>
     <td>${esc(p.currency||'MYR')} ${Number(p.price||0).toFixed(2)}</td>
     <td>${esc(commissionText(p))}<span class="commission-source">${esc(p.commission_source||'')}</span></td>
-    <td><input class="product-link-input" id="affProductLink${i}" value="${esc(p.url)}" readonly></td>
+    <td><input class="product-link-input" id="affProductLink${i}" value="${esc(normalizeAffiliateProductUrl(p.url))}" readonly></td>
     <td><button class="copy-product" data-target="affProductLink${i}">Copy Link</button></td>
   </tr>`).join('');
 }
@@ -144,6 +157,17 @@ async function load(){
     const aff=me.affiliate||{},s=me.summary||{},currentMonth=Array.isArray(a.monthly_sales)&&a.monthly_sales.length?a.monthly_sales[a.monthly_sales.length-1]:{sales:0};
     $('#welcome').textContent=`Welcome, ${aff.display_name||aff.full_name||'Affiliate'}`;
     $('#affiliateCode').textContent=aff.affiliate_code||'—';
+    const qaBox=$('#affiliateQaBox'),qaLink=$('#affiliateQaLink');
+    const isPreview=location.hostname.endsWith('.pages.dev');
+    if(qaBox&&qaLink&&isPreview&&aff.affiliate_code){
+      const q=new URL('/generic-payment.html',location.origin);
+      q.searchParams.set('aff',aff.affiliate_code);
+      q.searchParams.set('affiliate_test','1');
+      q.searchParams.set('amount','10');
+      q.searchParams.set('purpose','Affiliate QA Test Payment');
+      qaLink.value=q.toString();
+      qaBox.style.display='';
+    }
     $('#membership').textContent=`Membership expires: ${String(aff.membership_expires_at||'—').slice(0,10)}`;
     $('#accountStatus').textContent=`Account status: ${aff.status||'—'}${aff.renewal_status?` · Renewal: ${aff.renewal_status}`:''}`;
     $('#metrics').innerHTML=[
@@ -171,6 +195,7 @@ function copied(message){
 }
 
 $('#copyGeneral').addEventListener('click',async()=>{const v=$('#generalLink').value;if(v){await navigator.clipboard?.writeText(v);copied('General referral link copied.')}});
+$('#copyAffiliateQa')?.addEventListener('click',async()=>{const v=$('#affiliateQaLink')?.value;if(v){await navigator.clipboard?.writeText(v);copied('RM10 affiliate QA payment link copied.')}});
 $('#productLinks').addEventListener('click',async e=>{const b=e.target.closest('.copy-product');if(!b)return;const inp=document.getElementById(b.dataset.target);if(inp){await navigator.clipboard?.writeText(inp.value);copied('Product referral link copied.')}});
 $('#logout').addEventListener('click',async()=>{await fetch('/api/affiliate/auth/logout',{method:'POST'});location.href='/affiliate-login.html'});
 load();

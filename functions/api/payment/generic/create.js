@@ -19,6 +19,10 @@ export async function onRequestPost({request,env}){
   const purpose=clean(b.purpose,160)||'General Payment';
   const note=clean(b.note,1000);
   const amount=Number(b.amount);
+  const affiliateCode=clean(b.affiliateCode,100).toUpperCase();
+  const requestedAffiliateTest=b.affiliateTest===true;
+  const host=new URL(request.url).hostname.toLowerCase();
+  const affiliateTest=requestedAffiliateTest && host.endsWith('.pages.dev');
 
   if(!name||!validEmail(email)||b.consent!=='on')
     return json({error:'Please complete all required fields.'},400);
@@ -29,28 +33,46 @@ export async function onRequestPost({request,env}){
   const db=env.ENQUIRIES_DB;
   if(!db)return json({error:'Database unavailable.'},503);
 
+  let affiliate=null;
+  if(affiliateCode){
+    affiliate=await db.prepare(`
+      SELECT id,affiliate_code,full_name,status,membership_expires_at
+      FROM affiliates WHERE upper(affiliate_code)=? LIMIT 1
+    `).bind(affiliateCode).first();
+    if(!affiliate || affiliate.status!=='Approved')
+      return json({error:'Affiliate code is not active.'},400);
+  }
+  if(requestedAffiliateTest&&!affiliateTest)
+    return json({error:'Affiliate QA test mode is available only on the Cloudflare Preview site.'},403);
+
   const orderReference=ref();
   const fixed=Math.round(amount*100)/100;
 
   const inserted=await db.prepare(`
     INSERT INTO orders(
       order_reference,customer_name,customer_email,customer_phone,
-      currency,subtotal,total,sales_channel,payment_provider,payment_status
-    ) VALUES(?,?,?,?,? ,?,?, 'Website','DOKU','Pending')
+      currency,subtotal,total,sales_channel,payment_provider,payment_status,affiliate_code
+    ) VALUES(?,?,?,?,? ,?,?, 'Website','DOKU','Pending',?)
     RETURNING id
   `).bind(
-    orderReference,name,email,phone,'MYR',fixed,fixed
+    orderReference,name,email,phone,'MYR',fixed,fixed,affiliateCode
   ).first();
 
   if(!inserted?.id)return json({error:'Unable to create payment record.'},500);
 
   await db.prepare(`
     INSERT INTO generic_payment_requests(
-      order_id,payment_purpose,customer_note,created_at,updated_at
-    ) VALUES(?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
-  `).bind(inserted.id,purpose,note).run();
+      order_id,payment_purpose,customer_note,affiliate_code,affiliate_test_mode,affiliate_test_rate,
+      created_at,updated_at
+    ) VALUES(?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+  `).bind(
+    inserted.id,purpose,note,affiliateCode,affiliateTest?1:0,affiliateTest?20:0
+  ).run();
 
-  return json({ok:true,orderReference,amount:fixed,currency:'MYR'});
+  return json({
+    ok:true,orderReference,amount:fixed,currency:'MYR',
+    affiliateCode,affiliateTest
+  });
 }
 
 export function onRequest(c){
