@@ -28,6 +28,14 @@ body{background:#f5f8fc}
 .note{font-size:12px;color:#647b93;line-height:1.6;margin-top:12px}
 .message{margin-top:14px;font-weight:700}.message.error{color:#b42318}.message.success{color:#07823e}
 @media(max-width:760px){.pay-body{grid-template-columns:1fr}}
+
+html,body,input,textarea,button,select{font-family:Inter,Arial,"Noto Sans SC","Microsoft YaHei",sans-serif!important}
+.pay-head strong{font-family:Inter,Arial,"Noto Sans SC","Microsoft YaHei",sans-serif!important;font-size:25px;font-weight:800;letter-spacing:-.3px}
+.pay-head small{display:block;margin-top:4px;font-family:Inter,Arial,"Noto Sans SC","Microsoft YaHei",sans-serif!important;font-size:12px}
+.pay-copy h1{font-family:Inter,Arial,"Noto Sans SC","Microsoft YaHei",sans-serif!important;font-size:42px;line-height:1.08;letter-spacing:-1.2px;font-weight:800}
+.pay-copy p,.pay-form label,.pay-form input,.pay-form textarea{font-family:Inter,Arial,"Noto Sans SC","Microsoft YaHei",sans-serif!important}
+.pay-form label{font-size:16px}
+
 </style>
 </head>
 <body>
@@ -104,8 +112,10 @@ function setLang(lang){
 $('#lang').onclick=()=>setLang(root.dataset.lang==='zh'?'en':'zh');
 setLang('en');
 $('#startedAt').value=Date.now();
-if(pageParams.get('amount')&&$('#amount')) $('#amount').value=pageParams.get('amount');
-if(pageParams.get('purpose')&&$('#purpose')) $('#purpose').value=pageParams.get('purpose');
+const amountField=document.querySelector('[name="amount"]');
+const purposeField=document.querySelector('[name="purpose"]');
+if(pageParams.get('amount')&&amountField) amountField.value=pageParams.get('amount');
+if(pageParams.get('purpose')&&purposeField) purposeField.value=pageParams.get('purpose');
 if(affiliateCode&&affiliateTest){
   const n=$('#affiliateTestNotice');
   if(n){
