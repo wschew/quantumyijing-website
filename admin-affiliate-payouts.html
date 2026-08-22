@@ -24,7 +24,7 @@
   <section class="page-heading">
     <p class="eyebrow">AFFILIATE ACCOUNTING</p>
     <h1>Affiliate Monthly Payout & Reconciliation</h1>
-    <p class="subtext">Prepare monthly affiliate payouts, approve payout batches, and record completed bank transfers.</p>
+    <p class="subtext">Prepare monthly affiliate payouts from verified, accounting-eligible customer payments only.</p>
   </section>
 
   <section class="payout-card">
@@ -48,7 +48,7 @@
     <div class="summary-strip">
       <div class="summary-box"><span>Eligible Sales</span><b id="sumCount">0</b></div>
       <div class="summary-box"><span>Total Sales</span><b id="sumSales">MYR 0.00</b></div>
-      <div class="summary-box"><span>Total Commission</span><b id="sumCommission">MYR 0.00</b></div>
+      <div class="summary-box"><span>Total Commission</span><b id="sumCommission">MYR 0.00</b></div><div class="summary-box"><span>Blocked / Ineligible</span><b id="sumBlocked">0</b></div>
     </div>
     <div class="table-wrap">
       <table class="qy-table">
@@ -80,10 +80,10 @@
       <label class="field"><span>Payment Reference</span><input id="paymentRef" type="text" placeholder="e.g. BANK-20260818-001"></label>
       <div class="field action-field"><span>&nbsp;</span><button id="markPaid" class="success-btn">Mark Paid</button></div>
     </div>
-    <div class="bank-note"><strong>Accounting note:</strong> Marking a payout as Paid also marks all linked commissions as Paid and records their paid date.</div>
+    <div class="bank-note"><strong>Accounting rule:</strong> Only customer payments that are Paid + Verified + Accounting Eligible = YES can enter an affiliate payout. Eligibility is rechecked again before approval and before bank payment.</div>
   </section>
 </main>
 
-<script src="/admin-affiliate-payouts.js" defer></script>
+<script src="/admin-affiliate-payouts.js?v=3.3.16" defer></script>
 </body>
 </html>

@@ -17,6 +17,7 @@ async function loadEligible(){
   $('#sumCount').textContent=Number(s.eligible_sales_count||0);
   $('#sumSales').textContent=money(s.currency,s.total_sales);
   $('#sumCommission').textContent=money(s.currency,s.total_commission);
+  $('#sumBlocked').textContent=Number(s.blocked_count||0);
   const rows=d.items||[];
   $('#eligible').innerHTML=rows.length?rows.map(x=>`<tr><td>${esc(x.created_at)}</td><td>${esc(x.order_reference)}</td><td>${esc(x.customer_name)}</td><td>${esc(x.product_name)}</td><td>${money(x.currency,x.gross_sale)}</td><td>${Number(x.commission_rate||0).toFixed(2)}%</td><td>${money(x.currency,x.commission_amount)}</td><td>${pill(x.status)}</td></tr>`).join(''):`<tr><td colspan="8" class="empty-cell">No eligible commissions for this period.</td></tr>`;
   msg('Eligible commissions loaded.');
@@ -27,7 +28,7 @@ async function loadEligible(){
 async function loadPayouts(){
  try{
   const d=await api('/api/admin/affiliate-payout-list'),rows=d.payouts||[];
-  $('#payouts').innerHTML=rows.length?rows.map(x=>`<tr><td>${esc(x.payout_reference)}</td><td><strong>${esc(x.full_name)}</strong><br><small>${esc(x.affiliate_code||'')}</small></td><td>${esc(x.payout_period)}</td><td>${money(x.currency,x.total_sales)}</td><td>${money(x.currency,x.total_commission)}</td><td>${pill(x.status)}</td><td>${esc(x.payment_date||'—')}</td><td>${esc(x.payment_reference||'—')}</td><td>${x.status==='Draft'?`<button class="action-btn approve-btn" data-id="${x.id}">Approve</button>`:''}</td></tr>`).join(''):`<tr><td colspan="9" class="empty-cell">No payout batches yet.</td></tr>`;
+  $('#payouts').innerHTML=rows.length?rows.map(x=>`<tr><td>${esc(x.payout_reference)}</td><td><strong>${esc(x.full_name)}</strong><br><small>${esc(x.affiliate_code||'')}</small></td><td>${esc(x.payout_period)}</td><td>${money(x.currency,x.total_sales)}</td><td>${money(x.currency,x.total_commission)}</td><td>${pill(x.status)}${Number(x.invalid_items||0)>0?'<br><small style="color:#b42318">Eligibility changed</small>':''}</td><td>${esc(x.payment_date||'—')}</td><td>${esc(x.payment_reference||'—')}</td><td>${x.status==='Draft'?`<button class="action-btn approve-btn" data-id="${x.id}">Approve</button>`:''}</td></tr>`).join(''):`<tr><td colspan="9" class="empty-cell">No payout batches yet.</td></tr>`;
  }catch(e){msg(e.message,true)}
 }
 
