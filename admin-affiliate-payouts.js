@@ -12,6 +12,32 @@ function msg(text,error=false){const el=$('#status');el.textContent=text||'';el.
 function money(c,v){return `${c||'MYR'} ${Number(v||0).toFixed(2)}`}
 function pill(s){s=esc(s||'');return `<span class="status-pill status-${s}">${s}</span>`}
 
+
+async function loadCommissionSettings(){
+  const d=await api('/api/admin/affiliate-accounting-settings');
+  const s=d.settings||{};
+  $('#genericCommissionEnabled').value=Number(s.generic_payment_commission_enabled||0)===1?'1':'0';
+  $('#genericCommissionRate').value=Number(s.generic_payment_commission_rate||0).toFixed(2);
+  $('#genericCommissionProduct').textContent=`${s.product_name||'Generic Affiliate Payment'} · ${s.product_sku||'GEN-AFF'}`;
+}
+async function saveCommissionSettings(){
+  try{
+    const rate=Number($('#genericCommissionRate').value);
+    const enabled=$('#genericCommissionEnabled').value==='1';
+    if(!Number.isFinite(rate)||rate<0||rate>100) throw new Error('Commission rate must be between 0% and 100%.');
+    const d=await api('/api/admin/affiliate-accounting-settings',{
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({
+        generic_payment_commission_enabled:enabled,
+        generic_payment_commission_rate:rate
+      })
+    });
+    msg(`Generic payment affiliate commission saved: ${enabled?'Enabled':'Disabled'} · ${Number(d.settings.generic_payment_commission_rate).toFixed(2)}%.`);
+    await loadCommissionSettings();
+  }catch(e){msg(e.message,true)}
+}
+
 async function loadAffiliates(){
   const d=await api('/api/admin/affiliate-payout-affiliates');
   const rows=d.affiliates||[];
@@ -125,5 +151,27 @@ $('#payouts').addEventListener('click',e=>{
 });
 $('#period').value=new Date().toISOString().slice(0,7);
 
-$('#token').addEventListener('change',()=>loadAffiliates().catch(e=>msg(e.message,true)));
-$('#token').addEventListener('blur',()=>{if(token())loadAffiliates().catch(e=>msg(e.message,true))});
+$('#token').addEventListener('change',()=>Promise.all([loadAffiliates(),loadCommissionSettings()]).catch(e=>msg(e.message,true)));
+$('#token').addEventListener('blur',()=>{if(token())Promise.all([loadAffiliates(),loadCommissionSettings()]).catch(e=>msg(e.message,true))});
+
+$('#saveGenericCommission')?.addEventListener('click',saveCommissionSettings);
+
+
+async function repairGenericCommission(){
+  try{
+    const ref=$('#repairAffiliateOrder').value.trim();
+    if(!ref) throw new Error('Enter the QY order reference.');
+    const d=await api('/api/admin/affiliate-generic-commission-repair',{
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({order_reference:ref})
+    });
+    const c=d.commission||{};
+    if(d.already_exists){
+      msg(`Commission already exists · ${Number(c.commission_rate||0).toFixed(2)}% · MYR ${Number(c.commission_amount||0).toFixed(2)}.`);
+    }else{
+      msg(`Missing affiliate commission created · ${c.affiliate_code||''} · ${Number(c.commission_rate||0).toFixed(2)}% · MYR ${Number(c.commission_amount||0).toFixed(2)}.`);
+    }
+  }catch(e){msg(e.message,true)}
+}
+$('#repairAffiliateCommission')?.addEventListener('click',repairGenericCommission);

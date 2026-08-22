@@ -27,7 +27,51 @@
     <p class="subtext">Prepare monthly affiliate payouts from verified, accounting-eligible customer payments only.</p>
   </section>
 
-  <section class="payout-card">
+  
+<section class="payout-card">
+  <div class="section-head">
+    <div>
+      <h2>Generic Payment Affiliate Commission</h2>
+      <p>QY controls whether affiliate-attributed generic payments earn commission and the percentage used for future verified payments.</p>
+    </div>
+  </div>
+  <div class="settings-grid">
+    <label class="field">
+      <span>Commission Status</span>
+      <select id="genericCommissionEnabled">
+        <option value="1">Enabled</option>
+        <option value="0">Disabled</option>
+      </select>
+    </label>
+    <label class="field">
+      <span>Generic Payment Commission Rate (%)</span>
+      <input id="genericCommissionRate" type="number" min="0" max="100" step="0.01">
+    </label>
+    <div class="field">
+      <span>Internal Accounting Product</span>
+      <div class="readonly-value" id="genericCommissionProduct">—</div>
+    </div>
+    <div class="settings-action">
+      <button id="saveGenericCommission" class="primary-btn" type="button">Save Commission Setting</button>
+    </div>
+  </div>
+  <p class="settings-note">
+    This setting applies to future affiliate-attributed generic payments when their commission is created.
+    Existing commission records keep the rate already recorded on them.
+  </p>
+
+  <div class="repair-box">
+    <strong>Repair Missing Generic Commission</strong>
+    <p>For a previously verified affiliate generic payment whose commission failed to create, enter its QY order reference. This does not re-run payment or receipt emails.</p>
+    <div class="repair-row">
+      <input id="repairAffiliateOrder" placeholder="e.g. QY-20260822-840C66">
+      <button id="repairAffiliateCommission" class="secondary-btn" type="button">Create Missing Commission</button>
+    </div>
+  </div>
+
+</section>
+
+<section class="payout-card">
     <div class="section-heading">
       <div><h2>1. Select Payout Period</h2><p>Choose the affiliate and month to review eligible commissions.</p></div>
     </div>
@@ -73,6 +117,6 @@
   
 </main>
 
-<script src="/admin-affiliate-payouts.js?v=3.3.16b" defer></script>
+<script src="/admin-affiliate-payouts.js?v=3.3.16f" defer></script>
 </body>
 </html>

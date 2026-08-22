@@ -40,44 +40,79 @@ export async function onRequestPost({request,env}){
 
  let affiliateCommission=null;
  let affiliateCommissionError='';
+ let affiliateCommissionRate=0;
+ let affiliateCommissionEnabled=false;
  try{
    if(Number(o.affiliate_test_mode||0)===1 && clean(o.affiliate_code,100)){
-     const aff=await db.prepare(`
-       SELECT id,affiliate_code,full_name,status
-       FROM affiliates
-       WHERE upper(affiliate_code)=upper(?)
-       LIMIT 1
-     `).bind(o.affiliate_code).first();
+     const settings=await db.prepare(`
+       SELECT
+         generic_payment_commission_enabled,
+         generic_payment_commission_rate,
+         generic_payment_product_id
+       FROM affiliate_accounting_settings
+       WHERE id=1
+     `).first();
 
-     if(aff?.id && aff.status==='Approved'){
-       affiliateCommission=await db.prepare(`
-         SELECT id,commission_amount,status
-         FROM affiliate_commissions
-         WHERE affiliate_id=? AND order_id=?
+     if(!settings){
+       throw new Error('Affiliate accounting settings are not initialized. Run migrate-v3.3.16f.sql.');
+     }
+
+     affiliateCommissionEnabled=Number(settings.generic_payment_commission_enabled||0)===1;
+     affiliateCommissionRate=Math.max(0,Math.min(Number(settings.generic_payment_commission_rate||0),100));
+
+     if(affiliateCommissionEnabled && affiliateCommissionRate>0){
+       const productId=Number(settings.generic_payment_product_id||0);
+       if(!productId) throw new Error('Generic affiliate accounting product is not configured.');
+
+       const product=await db.prepare(`
+         SELECT id,sku,name_en FROM products WHERE id=? LIMIT 1
+       `).bind(productId).first();
+       if(!product) throw new Error('Configured generic affiliate accounting product does not exist.');
+
+       const aff=await db.prepare(`
+         SELECT id,affiliate_code,full_name,status
+         FROM affiliates
+         WHERE upper(affiliate_code)=upper(?)
          LIMIT 1
-       `).bind(aff.id,o.id).first();
+       `).bind(o.affiliate_code).first();
 
-       if(!affiliateCommission){
-         const rate=Math.max(0,Math.min(Number(o.affiliate_test_rate||20),100));
-         const gross=Number(o.total||0);
-         const commission=Math.round(gross*rate)/100;
+       if(aff?.id && aff.status==='Approved'){
+         affiliateCommission=await db.prepare(`
+           SELECT id,commission_amount,commission_rate,status
+           FROM affiliate_commissions
+           WHERE affiliate_id=? AND order_id=?
+           LIMIT 1
+         `).bind(aff.id,o.id).first();
 
-         const ins=await db.prepare(`
-           INSERT INTO affiliate_commissions(
-             affiliate_id,order_id,product_id,order_reference,customer_name,product_name,
-             gross_sale,currency,commission_rate,commission_amount,status,created_at,updated_at
-           ) VALUES(?,?,NULL,?,?,?,?,?,?,?,'Approved',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
-         `).bind(
-           aff.id,o.id,o.order_reference,o.customer_name,
-           'Generic Affiliate QA Test Payment',
-           gross,o.currency||'MYR',rate,commission
-         ).run();
+         if(!affiliateCommission){
+           const gross=Number(o.total||0);
+           const commission=Math.round((gross*affiliateCommissionRate/100)*100)/100;
 
-         affiliateCommission={
-           id:Number(ins.meta?.last_row_id||0),
-           commission_amount:commission,
-           status:'Approved'
-         };
+           const ins=await db.prepare(`
+             INSERT INTO affiliate_commissions(
+               affiliate_id,order_id,product_id,order_reference,customer_name,product_name,
+               gross_sale,currency,commission_rate,commission_amount,status,created_at,updated_at
+             ) VALUES(?,?,?,?,?,?,?,?,?,?,'Approved',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+           `).bind(
+             aff.id,
+             o.id,
+             product.id,
+             o.order_reference,
+             o.customer_name,
+             product.name_en||'Generic Affiliate Payment',
+             gross,
+             o.currency||'MYR',
+             affiliateCommissionRate,
+             commission
+           ).run();
+
+           affiliateCommission={
+             id:Number(ins.meta?.last_row_id||0),
+             commission_amount:commission,
+             commission_rate:affiliateCommissionRate,
+             status:'Approved'
+           };
+         }
        }
      }
    }
@@ -85,13 +120,14 @@ export async function onRequestPost({request,env}){
    affiliateCommissionError=clean(e?.message||'Affiliate commission post-processing failed.',1000);
    console.error('AFFILIATE COMMISSION POST-HOOK FAILED',affiliateCommissionError);
  }
-
  return json({
    ok:true,
    verified_at:now,
    receipt_date:receiptDate,
    accounting_eligible:true,
    affiliate_code:clean(o.affiliate_code,100),
+   affiliate_commission_enabled:affiliateCommissionEnabled,
+   affiliate_commission_rate:Number(affiliateCommission?.commission_rate??affiliateCommissionRate??0),
    affiliate_commission_id:affiliateCommission?.id||null,
    affiliate_commission_amount:Number(affiliateCommission?.commission_amount||0),
    affiliate_commission_status:affiliateCommission?.status||'',
