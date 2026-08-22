@@ -43,7 +43,7 @@ export async function onRequestPost({request,env}){
  let affiliateCommissionRate=0;
  let affiliateCommissionEnabled=false;
  try{
-   if(Number(o.affiliate_test_mode||0)===1 && clean(o.affiliate_code,100)){
+   if(clean(o.affiliate_code,100)){
      const settings=await db.prepare(`
        SELECT
          generic_payment_commission_enabled,

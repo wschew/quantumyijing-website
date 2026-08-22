@@ -126,21 +126,31 @@ async function api(url){
   return d;
 }
 
-function renderProducts(l){
+function renderProducts(l,affiliateCode=''){
   const body=$('#productLinks');
   if(!Array.isArray(l.products)||!l.products.length){
     body.innerHTML='<tr><td colspan="7">No affiliate-eligible products are currently available.</td></tr>';
     return;
   }
-  body.innerHTML=l.products.map((p,i)=>`<tr>
+  body.innerHTML=l.products.map((p,i)=>{
+    let productUrl=normalizeAffiliateProductUrl(p.url);
+    let typeLabel=p.product_type;
+    if(String(p.sku||'').toUpperCase()==='GEN-AFF'){
+      const u=new URL('/generic-payment.html',location.origin);
+      if(affiliateCode)u.searchParams.set('aff',affiliateCode);
+      u.searchParams.set('purpose','General Affiliate Payment');
+      productUrl=u.toString();
+      typeLabel='Generic Payment';
+    }
+    return `<tr>
     <td><span class="product-name">${esc(p.name_en)}</span>${p.name_zh?`<span class="product-zh">${esc(p.name_zh)}</span>`:''}</td>
-    <td><span class="offer-category">${esc(p.product_type)}</span></td>
+    <td><span class="offer-category">${esc(typeLabel)}</span></td>
     <td>${esc(p.sku)}</td>
     <td>${esc(p.currency||'MYR')} ${Number(p.price||0).toFixed(2)}</td>
     <td>${esc(commissionText(p))}<span class="commission-source">${esc(p.commission_source||'')}</span></td>
-    <td><input class="product-link-input" id="affProductLink${i}" value="${esc(normalizeAffiliateProductUrl(p.url))}" readonly></td>
+    <td><input class="product-link-input" id="affProductLink${i}" value="${esc(productUrl)}" readonly></td>
     <td><button class="copy-product" data-target="affProductLink${i}">Copy Link</button></td>
-  </tr>`).join('');
+  </tr>`}).join('');
 }
 
 function renderCommissions(rows){
@@ -180,7 +190,7 @@ async function load(){
     lineChart($('#salesChart'),a.monthly_sales);
     stacked($('#categoryChart'),a.monthly_category_sales,a.category_labels||{});
     $('#generalLink').value=l.general_url||'';
-    renderProducts(l);
+    renderProducts(l,aff.affiliate_code||'');
     renderCommissions(t.commissions);
     renderPayouts(t.payouts);
   }catch(e){
