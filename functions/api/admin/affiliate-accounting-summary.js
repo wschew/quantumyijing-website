@@ -34,8 +34,11 @@ export async function onRequestGet({request,env}){
     JOIN payments py ON py.id=(
       SELECT p2.id FROM payments p2 WHERE p2.order_id=ac.order_id ORDER BY p2.id DESC LIMIT 1
     )
+    LEFT JOIN affiliate_payout_items api ON api.commission_id=ac.id
+    LEFT JOIN affiliate_payouts ap ON ap.id=api.payout_id
     WHERE ac.status IN ('Approved','Payable')
       AND ${ELIGIBLE}
+      AND COALESCE(ap.status,'') <> 'Paid'
   `).first();
 
   const batches=await db.prepare(`
@@ -90,6 +93,29 @@ export async function onRequestGet({request,env}){
     ORDER BY total_commission DESC, sales_channel
   `).all();
 
+  const ledger=await db.prepare(`
+    SELECT
+      ac.id,ac.created_at,ac.order_reference,ac.customer_name,ac.product_name,
+      ac.gross_sale,ac.currency,ac.commission_rate,ac.commission_amount,
+      ac.status AS commission_status,
+      a.affiliate_code,a.full_name,a.email,
+      ${ELIGIBILITY_DATE} AS eligibility_date,
+      ap.payout_reference,ap.payout_period,ap.status AS payout_status,
+      ap.payment_date,ap.payment_reference
+    FROM affiliate_commissions ac
+    JOIN affiliates a ON a.id=ac.affiliate_id
+    JOIN orders o ON o.id=ac.order_id
+    JOIN payments py ON py.id=(
+      SELECT p2.id FROM payments p2 WHERE p2.order_id=ac.order_id ORDER BY p2.id DESC LIMIT 1
+    )
+    LEFT JOIN affiliate_payout_items api ON api.commission_id=ac.id
+    LEFT JOIN affiliate_payouts ap ON ap.id=api.payout_id
+    WHERE ac.status IN ('Approved','Payable','Paid')
+      AND ${ELIGIBLE}
+    ORDER BY ${ELIGIBILITY_DATE} DESC,ac.id DESC
+    LIMIT 250
+  `).all();
+
   const countryCol=await affiliateCountryColumn(db);
   let countries=[];
   if(countryCol){
@@ -122,6 +148,7 @@ export async function onRequestGet({request,env}){
     monthly:monthly.results||[],
     paid_history:paid.results||[],
     channels:channels.results||[],
+    ledger:ledger.results||[],
     countries,
     country_source:countryCol||null,
     accounting_rule:'Paid + Verified + Accounting Eligible = YES'

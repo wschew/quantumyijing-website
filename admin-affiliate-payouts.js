@@ -38,6 +38,9 @@ async function loadAccounting(){
 
     const paid=d.paid_history||[];
     $('#accPaidHistory').innerHTML=paid.length?paid.map(x=>`<tr><td>${esc(x.payment_date||'—')}</td><td><strong>${esc(x.full_name)}</strong><br><small>${esc(x.affiliate_code||'')}</small></td><td>${esc(x.payout_period)}</td><td>${money(x.currency,x.total_commission)}</td><td>${esc(x.payment_reference||x.payout_reference||'—')}</td></tr>`).join(''):'<tr><td colspan="5" class="empty-cell">No paid payouts yet.</td></tr>';
+
+    const ledger=d.ledger||[];
+    $('#accLedger').innerHTML=ledger.length?ledger.map(x=>`<tr><td>${esc(x.eligibility_date||x.created_at||'—')}</td><td><strong>${esc(x.full_name||'—')}</strong><br><small>${esc(x.affiliate_code||'')}</small></td><td>${esc(x.order_reference||'—')}</td><td>${esc(x.customer_name||'—')}</td><td>${esc(x.product_name||'—')}</td><td>${money(x.currency,x.gross_sale)}</td><td>${Number(x.commission_rate||0).toFixed(2)}%</td><td>${money(x.currency,x.commission_amount)}</td><td>${pill(x.commission_status||'—')}</td><td>${x.payout_status?`${pill(x.payout_status)}<br><small>${esc(x.payout_reference||'')}${x.payment_date?` · ${esc(x.payment_date)}`:''}</small>`:'—'}</td></tr>`).join(''):'<tr><td colspan="10" class="empty-cell">No affiliate commission transactions recorded yet.</td></tr>';
     msg('Affiliate accounting overview loaded.');
   }catch(e){msg(e.message,true)}
 }

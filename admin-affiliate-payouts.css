@@ -38,3 +38,28 @@
 .accounting-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:22px}
 .accounting-grid h3{margin:0 0 10px;color:#17324d;font-size:18px}
 @media(max-width:900px){.accounting-grid{grid-template-columns:1fr}}
+
+
+/* v3.3.16q1 — typography normalization to match QY admin pages */
+body{font-size:16px;line-height:1.45}
+.payout-page{max-width:1450px;padding-top:28px}
+.page-heading{margin-bottom:18px}
+.page-heading h1{font-size:38px;line-height:1.15;margin:5px 0 7px}
+.eyebrow{font-size:12px;letter-spacing:.14em}
+.subtext,.section-heading p{font-size:15px;line-height:1.5}
+.payout-card{padding:23px 25px;margin-top:16px}
+.section-heading{margin-bottom:17px}
+.section-heading h2{font-size:23px;line-height:1.25}
+.field span{font-size:14px}
+.primary-btn,.success-btn{font-size:14px;min-height:44px}
+.summary-box{padding:16px 18px}
+.summary-box span{font-size:14px}
+.summary-box b{font-size:22px}
+.accounting-grid h3{font-size:17px}
+.qy-table th{font-size:13px;padding:12px 14px}
+.qy-table td{font-size:14px;padding:13px 14px}
+.status-pill{font-size:12px}
+.bank-note{font-size:14px}
+@media(max-width:720px){.page-heading h1{font-size:31px}.section-heading h2{font-size:21px}}
+
+.accounting-ledger-block{margin-top:22px}.accounting-ledger-block h3{margin:0 0 4px;color:#17324d;font-size:17px}.ledger-note{margin:0 0 10px;color:#70839a;font-size:13px}.accounting-ledger-table{min-width:1420px}
