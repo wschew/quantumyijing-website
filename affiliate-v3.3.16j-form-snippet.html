@@ -1,0 +1,52 @@
+
+<!-- v3.3.16j: insert inside the existing Affiliate Application form, before its submit button -->
+<section id="affiliateComplianceFields" class="qy-aff-compliance">
+  <h3>Affiliate Compliance & Terms</h3>
+  <label>Nationality *
+    <select name="nationality" id="affiliateNationality" required>
+      <option value="">Select nationality…</option>
+      <option>Malaysia</option><option>Singapore</option><option>China</option>
+      <option>Indonesia</option><option>Thailand</option><option>Japan</option>
+      <option>United States</option><option>United Kingdom</option>
+      <option value="Other">Other</option>
+    </select>
+  </label>
+  <label>Identification Type *
+    <select name="identification_type" id="affiliateIdentificationType" required>
+      <option value="">Select…</option>
+      <option value="NRIC / MyKad">NRIC / MyKad</option>
+      <option value="Passport">Passport</option>
+      <option value="National ID">National ID</option>
+    </select>
+  </label>
+  <label>Identification Number *
+    <input name="identification_number" id="affiliateIdentificationNumber" maxlength="120" autocomplete="off" required>
+    <small>Required for affiliate payment, accounting and statutory reporting purposes. Routine admin screens display only a masked value.</small>
+  </label>
+  <details class="qy-aff-terms">
+    <summary>Read Affiliate Program Terms & Conditions</summary>
+    <div class="terms-body">
+<strong>Quantum YiJing® Affiliate Program Terms & Conditions — QY-AFF-2026-08-V1</strong>
+<ol>
+<li><strong>Eligibility & approval.</strong> Affiliate participation is subject to QY approval. QY may suspend, reject or terminate an account for fraud, abuse, misleading promotion, brand misuse or breach of these terms.</li>
+<li><strong>Attribution.</strong> A qualifying customer referred through an affiliate link may remain attributed to that affiliate for up to 12 months from the first qualifying verified order, unless the attribution has expired or QY determines that fraud, duplication or another valid attribution rule applies.</li>
+<li><strong>Commission eligibility.</strong> Commission is based only on qualifying sales that are Paid, Verified and Accounting Eligible in QY records. Cancelled, refunded, reversed, fraudulent or chargeback transactions may be excluded or adjusted.</li>
+<li><strong>Commission rates.</strong> Rates may vary by product/service. The rate recorded on the commission transaction is the applicable historical rate for that sale.</li>
+<li><strong>Normal payout timing.</strong> Eligible commissions for the previous calendar month are normally paid by bank transfer within the first 7 days of the following month, subject to verification and administrative processing.</li>
+<li><strong>Live-course payout timing.</strong> For a live course, commission is not payable until the live course has actually been conducted. Example: a customer pays on 17 Aug for a course conducted on 26 Sep; the commission enters the Sep payout cycle and is normally paid within 1–7 Oct.</li>
+<li><strong>Bank/tax/accounting information.</strong> Affiliates must provide accurate bank, nationality and identification details. Malaysian affiliates must provide NRIC/MyKad information for accounting/statutory records. Non-Malaysian affiliates provide Passport or National ID details as applicable.</li>
+<li><strong>Marketing conduct.</strong> Affiliates must not make false claims, impersonate QY, spam, bid on restricted brand terms where prohibited by QY, or use unlawful/misleading advertising. Affiliates should clearly disclose that they may earn commission from qualifying referrals.</li>
+<li><strong>Intellectual property.</strong> QY names, logos, course materials and promotional assets remain QY property and may be used only for approved affiliate promotion.</li>
+<li><strong>Changes.</strong> QY may update program rules, commission rates or operating procedures prospectively. Material updates may require renewed acceptance.</li>
+<li><strong>Records.</strong> QY's verified order/payment/commission ledger is the operational record used for reconciliation and payout, subject to correction of proven errors.</li>
+</ol>
+<p>This program operates under QY administrative rules and applicable law. Affiliates are responsible for their own tax obligations. Final legal wording should be reviewed by QY's professional adviser before Production launch.</p>
+</div>
+  </details>
+  <label class="qy-aff-agree">
+    <input type="checkbox" id="affiliateTermsAccepted" required>
+    <span>I have read and agree to the Quantum YiJing® Affiliate Program Terms & Conditions (QY-AFF-2026-08-V1).</span>
+  </label>
+</section>
+<script src="/affiliate-v3.3.16j.js" defer></script>
+<link rel="stylesheet" href="/affiliate-v3.3.16j.css">

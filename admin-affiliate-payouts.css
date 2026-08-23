@@ -50,3 +50,11 @@
 .repair-row{display:grid;grid-template-columns:minmax(260px,1fr) auto;gap:10px}
 .repair-row input{min-height:48px;border:1px solid #bfd0e3;border-radius:11px;padding:10px 12px;font:inherit}
 @media(max-width:650px){.repair-row{grid-template-columns:1fr}}
+
+/* v3.3.16j typography normalization */
+body{font-size:15px!important}
+.payout-shell h1,.page-title{font-size:2rem!important;line-height:1.18!important}
+.payout-card h2{font-size:1.25rem!important;line-height:1.3!important}
+.payout-card h3{font-size:1rem!important}
+.payout-card p,.field span,label,button,input,select,table{font-size:.95rem!important}
+.summary-box b{font-size:1.5rem!important}

@@ -11,6 +11,7 @@ const ELIGIBLE_PAYMENT_JOIN = `
    ORDER BY p2.id DESC LIMIT 1
  )
  JOIN orders o ON o.id=ac.order_id
+ LEFT JOIN products pr ON pr.id=ac.product_id
 `;
 
 const ELIGIBLE_PAYMENT_WHERE = `
@@ -18,15 +19,25 @@ const ELIGIBLE_PAYMENT_WHERE = `
  AND py.verification_status='Verified'
  AND COALESCE(py.accounting_eligible,0)=1
  AND o.payment_status='Paid'
+ AND (
+   lower(COALESCE(pr.product_type,'')) NOT IN ('course','live course','live_course')
+   OR COALESCE(NULLIF(pr.starts_on,''),'')=''
+   OR date(pr.starts_on) <= date('now')
+ )
 `;
 
 const ELIGIBILITY_DATE = `
- COALESCE(
-   NULLIF(py.accounting_eligible_at,''),
-   NULLIF(py.verified_at,''),
-   NULLIF(py.paid_at,''),
-   ac.created_at
- )
+CASE
+  WHEN lower(COALESCE(pr.product_type,'')) IN ('course','live course','live_course')
+       AND COALESCE(NULLIF(pr.starts_on,''),'')<>''
+    THEN pr.starts_on
+  ELSE COALESCE(
+    NULLIF(py.accounting_eligible_at,''),
+    NULLIF(py.verified_at,''),
+    NULLIF(py.paid_at,''),
+    ac.created_at
+  )
+END
 `;
 
 export async function onRequestGet({request,env}){

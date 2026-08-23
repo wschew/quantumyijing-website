@@ -18,6 +18,58 @@ async function send(apiKey,payload){const r=await fetch(RESEND_ENDPOINT,{method:
 function header(sub){return `<div style="padding:22px 28px;background:#edf5ff;border-bottom:4px solid #d3a62c"><table><tr><td width="82"><img src="${LOGO}" width="68" height="68"></td><td><div style="font-size:21px;font-weight:800;color:#082b63">Quantum YiJing</div><div style="font-size:11px;font-weight:700;letter-spacing:2px;color:#45688f">${esc(sub)}</div></td></tr></table></div>`}
 async function markNotice(db,orderId,type,status,recipient,msgId='',err=''){const sent=status==='Sent'?new Date().toISOString():'';await db.prepare(`INSERT INTO payment_email_notifications(order_id,notification_type,status,recipient,provider_message_id,last_error,sent_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP) ON CONFLICT(order_id,notification_type) DO UPDATE SET status=excluded.status,recipient=excluded.recipient,provider_message_id=excluded.provider_message_id,last_error=excluded.last_error,sent_at=CASE WHEN excluded.status='Sent' THEN excluded.sent_at ELSE payment_email_notifications.sent_at END,updated_at=CURRENT_TIMESTAMP`).bind(orderId,type,status,recipient,msgId,err,sent).run()}
 async function state(db,orderId,type){return db.prepare(`SELECT status FROM payment_email_notifications WHERE order_id=? AND notification_type=? LIMIT 1`).bind(orderId,type).first()}
+
+async function ensureCustomerAttribution(db,o,affiliateCode){
+  const code=clean(affiliateCode||'',100);
+  const email=clean(o.customer_email||'',200).toLowerCase();
+  if(!code||!email)return {created:false,reason:'missing-code-or-email'};
+
+  const aff=await db.prepare(`
+    SELECT id,status FROM affiliates WHERE upper(affiliate_code)=upper(?) LIMIT 1
+  `).bind(code).first();
+  if(!aff?.id||aff.status!=='Approved')return {created:false,reason:'affiliate-not-approved'};
+
+  const existing=await db.prepare(`
+    SELECT id,affiliate_id,expires_at,status
+    FROM affiliate_customer_attributions
+    WHERE customer_email_normalized=? LIMIT 1
+  `).bind(email).first();
+
+  const now=new Date();
+  const expires=new Date(now);
+  expires.setUTCFullYear(expires.getUTCFullYear()+1);
+
+  if(!existing){
+    await db.prepare(`
+      INSERT INTO affiliate_customer_attributions(
+        affiliate_id,customer_email_normalized,customer_name,
+        first_order_id,first_order_reference,started_at,expires_at,status
+      ) VALUES(?,?,?,?,?,?,?,'Active')
+    `).bind(
+      aff.id,email,clean(o.customer_name||'',160),
+      o.id,clean(o.order_reference||'',100),now.toISOString(),expires.toISOString()
+    ).run();
+    return {created:true,affiliate_id:aff.id};
+  }
+
+  const exp=new Date(existing.expires_at||0);
+  if(existing.status!=='Active'||Number.isNaN(exp.getTime())||exp.getTime()<=now.getTime()){
+    await db.prepare(`
+      UPDATE affiliate_customer_attributions SET
+        affiliate_id=?,customer_name=?,first_order_id=?,first_order_reference=?,
+        started_at=?,expires_at=?,status='Active',updated_at=CURRENT_TIMESTAMP
+      WHERE id=?
+    `).bind(
+      aff.id,clean(o.customer_name||'',160),o.id,clean(o.order_reference||'',100),
+      now.toISOString(),expires.toISOString(),existing.id
+    ).run();
+    return {created:true,reassigned:true,affiliate_id:aff.id};
+  }
+
+  // Active attribution remains with its original affiliate and its original expiry.
+  return {created:false,existing:true,affiliate_id:existing.affiliate_id,expires_at:existing.expires_at};
+}
+
 export async function onRequestPost({request,env}){
  if(!ok(request,env))return json({error:'Unauthorized'},401);const db=dbOf(env);if(!db)return json({error:'Database unavailable'},503);let b={};try{b=await request.json()}catch{return json({error:'Invalid request'},400)};const orderId=Number(b.order_id||0);if(!orderId)return json({error:'order_id is required'},400);const manualOverride=b.manual_override===true;const manualOverrideNote=clean(b.manual_override_note||'',1000);
  const o=await db.prepare(`SELECT o.id,o.order_reference,o.customer_name,o.customer_email,o.total,o.currency,o.payment_status,g.payment_purpose,g.affiliate_code,g.affiliate_test_mode,g.affiliate_test_rate,p.id payment_id,p.status payment_record_status,p.verification_status,p.gateway_hash_verified FROM orders o JOIN generic_payment_requests g ON g.order_id=o.id LEFT JOIN payments p ON p.id=(SELECT p2.id FROM payments p2 WHERE p2.order_id=o.id ORDER BY p2.id DESC LIMIT 1) WHERE o.id=? LIMIT 1`).bind(orderId).first();
@@ -120,6 +172,7 @@ export async function onRequestPost({request,env}){
    affiliateCommissionError=clean(e?.message||'Affiliate commission post-processing failed.',1000);
    console.error('AFFILIATE COMMISSION POST-HOOK FAILED',affiliateCommissionError);
  }
+ const customerAttribution=await ensureCustomerAttribution(db,o,o.affiliate_code);
  return json({
    ok:true,
    verified_at:now,
@@ -131,6 +184,7 @@ export async function onRequestPost({request,env}){
    affiliate_commission_id:affiliateCommission?.id||null,
    affiliate_commission_amount:Number(affiliateCommission?.commission_amount||0),
    affiliate_commission_status:affiliateCommission?.status||'',
-   affiliate_commission_error:affiliateCommissionError
+   affiliate_commission_error:affiliateCommissionError,
+   customer_attribution:customerAttribution
  })
 }
