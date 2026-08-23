@@ -10,12 +10,132 @@ async function send(key,payload){if(!key)throw new Error('RESEND_API_KEY is not 
 function header(sub){return `<div style="padding:22px 28px;background:#edf5ff;border-bottom:4px solid #d3a62c"><table><tr><td width="82"><img src="${LOGO}" width="68" height="68"></td><td><div style="font-size:21px;font-weight:800;color:#082b63">Quantum YiJing</div><div style="font-size:11px;font-weight:700;letter-spacing:2px;color:#45688f">${esc(sub)}</div></td></tr></table></div>`}
 async function state(db,id,type){return db.prepare(`SELECT status FROM payment_email_notifications WHERE order_id=? AND notification_type=? LIMIT 1`).bind(id,type).first()}
 async function mark(db,id,type,status,to,msg='',err=''){const sent=status==='Sent'?new Date().toISOString():'';await db.prepare(`INSERT INTO payment_email_notifications(order_id,notification_type,status,recipient,provider_message_id,last_error,sent_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP) ON CONFLICT(order_id,notification_type) DO UPDATE SET status=excluded.status,recipient=excluded.recipient,provider_message_id=excluded.provider_message_id,last_error=excluded.last_error,sent_at=CASE WHEN excluded.status='Sent' THEN excluded.sent_at ELSE payment_email_notifications.sent_at END,updated_at=CURRENT_TIMESTAMP`).bind(id,type,status,to,msg,err,sent).run()}
+
+async function ensureProductAffiliateCommission(db,o){
+  const result={created:0,existing:0,total_commission:0,items:[],warning:''};
+  try{
+    const code=clean(o.affiliate_code||'',100);
+    if(!code)return result;
+
+    const aff=await db.prepare(`
+      SELECT id,affiliate_code,full_name,status,membership_expires_at
+      FROM affiliates
+      WHERE upper(affiliate_code)=upper(?)
+      LIMIT 1
+    `).bind(code).first();
+    if(!aff?.id||aff.status!=='Approved')return result;
+
+    if(aff.membership_expires_at){
+      const expiry=new Date(aff.membership_expires_at);
+      if(!Number.isNaN(expiry.getTime()) && expiry.getTime()<Date.now()){
+        result.warning='Affiliate membership has expired; commission was not created.';
+        return result;
+      }
+    }
+
+    const products=await db.prepare(`
+      SELECT DISTINCT
+        pr.id AS product_id,
+        pr.sku,
+        pr.name_en,
+        pr.affiliate_enabled,
+        pr.commission_type,
+        pr.commission_value
+      FROM order_items oi
+      JOIN products pr ON pr.id=oi.product_id
+      WHERE oi.order_id=?
+        AND COALESCE(pr.affiliate_enabled,0)=1
+      ORDER BY pr.id
+    `).bind(o.id).all();
+
+    const eligible=products.results||[];
+    if(!eligible.length){
+      result.warning='No affiliate-enabled product was found on this order.';
+      return result;
+    }
+
+    // Current QY orders are single-product orders. If more than one affiliate-enabled
+    // product exists, use the first one as the commission anchor to avoid duplicating
+    // the full order total across several products.
+    const pr=eligible[0];
+    const existing=await db.prepare(`
+      SELECT id,commission_rate,commission_amount,status
+      FROM affiliate_commissions
+      WHERE affiliate_id=? AND order_id=? AND product_id=?
+      LIMIT 1
+    `).bind(aff.id,o.id,pr.product_id).first();
+
+    if(existing){
+      result.existing=1;
+      result.total_commission=Number(existing.commission_amount||0);
+      result.items.push(existing);
+      return result;
+    }
+
+    const gross=Number(o.payment_amount||o.total||0);
+    const type=clean(pr.commission_type||'percentage',30).toLowerCase();
+    const value=Math.max(0,Number(pr.commission_value||0));
+    let rate=0,commission=0;
+
+    if(type==='fixed'){
+      commission=Math.round(value*100)/100;
+      rate=gross>0?(commission/gross*100):0;
+    }else{
+      rate=Math.min(value,100);
+      commission=Math.round((gross*rate/100)*100)/100;
+    }
+
+    if(commission<=0){
+      result.warning=`Affiliate product ${pr.sku||pr.product_id} has no positive commission configured.`;
+      return result;
+    }
+
+    const ins=await db.prepare(`
+      INSERT INTO affiliate_commissions(
+        affiliate_id,order_id,product_id,order_reference,customer_name,product_name,
+        gross_sale,currency,commission_rate,commission_amount,status,created_at,updated_at
+      ) VALUES(?,?,?,?,?,?,?,?,?,?,'Approved',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+    `).bind(
+      aff.id,
+      o.id,
+      pr.product_id,
+      o.order_reference,
+      o.customer_name,
+      pr.name_en||pr.sku||'Quantum YiJing Product',
+      gross,
+      o.currency||'MYR',
+      rate,
+      commission
+    ).run();
+
+    const item={
+      id:Number(ins.meta?.last_row_id||0),
+      affiliate_code:aff.affiliate_code,
+      product_id:pr.product_id,
+      sku:pr.sku,
+      product_name:pr.name_en,
+      gross_sale:gross,
+      commission_rate:rate,
+      commission_amount:commission,
+      status:'Approved'
+    };
+    result.created=1;
+    result.total_commission=commission;
+    result.items.push(item);
+    return result;
+  }catch(e){
+    result.warning=clean(e?.message||'Product affiliate commission post-processing failed.',1000);
+    console.error('PRODUCT AFFILIATE COMMISSION POST-HOOK FAILED',result.warning);
+    return result;
+  }
+}
+
 export async function onRequestPost({request,env}){
  if(!ok(request,env))return json({error:'Unauthorized'},401);const db=dbOf(env);if(!db)return json({error:'Database unavailable'},503);
  let b={};try{b=await request.json()}catch{return json({error:'Invalid request'},400)};const orderId=Number(b.order_id||0);if(!orderId)return json({error:'order_id is required'},400);const manualOverride=b.manual_override===true;const manualOverrideNote=clean(b.manual_override_note||'',1000);
  if(await db.prepare(`SELECT order_id FROM generic_payment_requests WHERE order_id=? LIMIT 1`).bind(orderId).first())return json({error:'Generic Payment uses the frozen v3.3.14e verifier.'},409);
- const o=await db.prepare(`SELECT o.id,o.order_reference,o.customer_name,o.customer_email,o.total,o.currency,o.payment_status,o.payment_provider,p.id payment_id,p.status payment_record_status,p.verification_status,p.payment_method,p.provider_transaction_id transaction_id,p.paid_at,p.amount payment_amount,p.gateway_hash_verified,COALESCE(GROUP_CONCAT(CASE WHEN pr.name_en IS NOT NULL AND pr.name_en<>'' THEN pr.name_en END,' + '),'Quantum YiJing Payment') description FROM orders o LEFT JOIN payments p ON p.id=(SELECT p2.id FROM payments p2 WHERE p2.order_id=o.id ORDER BY p2.id DESC LIMIT 1) LEFT JOIN order_items oi ON oi.order_id=o.id LEFT JOIN products pr ON pr.id=oi.product_id WHERE o.id=? GROUP BY o.id LIMIT 1`).bind(orderId).first();
- if(!o)return json({error:'Payment order not found'},404);if(o.payment_status!=='Paid'||o.payment_record_status!=='Paid')return json({error:'Payment must be Paid before verification.'},409);if(o.verification_status==='Verified')return json({ok:true,already_verified:true});const isDoku=String(o.payment_provider||o.payment_method||'').toUpperCase()==='DOKU';if(isDoku&&Number(o.gateway_hash_verified||0)!==1&&!manualOverride)return json({error:'Gateway notification is not hash verified. Manual verification override is required after independently checking the payment evidence.'},409);
+ const o=await db.prepare(`SELECT o.id,o.order_reference,o.customer_name,o.customer_email,o.total,o.currency,o.payment_status,o.payment_provider,o.affiliate_code,p.id payment_id,p.status payment_record_status,p.verification_status,p.payment_method,p.provider_transaction_id transaction_id,p.paid_at,p.amount payment_amount,p.gateway_hash_verified,COALESCE(GROUP_CONCAT(CASE WHEN pr.name_en IS NOT NULL AND pr.name_en<>'' THEN pr.name_en END,' + '),'Quantum YiJing Payment') description FROM orders o LEFT JOIN payments p ON p.id=(SELECT p2.id FROM payments p2 WHERE p2.order_id=o.id ORDER BY p2.id DESC LIMIT 1) LEFT JOIN order_items oi ON oi.order_id=o.id LEFT JOIN products pr ON pr.id=oi.product_id WHERE o.id=? GROUP BY o.id LIMIT 1`).bind(orderId).first();
+ if(!o)return json({error:'Payment order not found'},404);if(o.payment_status!=='Paid'||o.payment_record_status!=='Paid')return json({error:'Payment must be Paid before verification.'},409);if(o.verification_status==='Verified'){const ac=await ensureProductAffiliateCommission(db,o);return json({ok:true,already_verified:true,affiliate_commission:ac});}const isDoku=String(o.payment_provider||o.payment_method||'').toUpperCase()==='DOKU';if(isDoku&&Number(o.gateway_hash_verified||0)!==1&&!manualOverride)return json({error:'Gateway notification is not hash verified. Manual verification override is required after independently checking the payment evidence.'},409);
  const now=new Date().toISOString(),receipt=dateMY(now),paid=o.paid_at?dateMY(o.paid_at):'—';
  await db.prepare(`UPDATE payments SET
           verification_status='Verified',
@@ -33,6 +153,7 @@ export async function onRequestPost({request,env}){
  const rows=`<strong>Product / Course:</strong> ${esc(o.description)}<br><strong>Order Reference:</strong> ${esc(o.order_reference)}<br><strong>Payment Date:</strong> ${esc(paid)}<br><strong>Receipt Date:</strong> ${esc(receipt)}<br><strong>Amount Paid:</strong> ${esc(o.currency||'MYR')} ${Number(o.payment_amount||o.total||0).toFixed(2)}<br><strong>Payment Method:</strong> ${esc(o.payment_method||o.payment_provider||'Manual')}<br><strong>Provider / Platform:</strong> ${esc(o.payment_provider||'Quantum YiJing')}<br><strong>Transaction Reference:</strong> ${esc(o.transaction_id||'—')}<br><strong>Payment Status:</strong> PAID / VERIFIED`;
  const c=await state(db,o.id,'CustomerReceipt');if(c?.status!=='Sent'&&o.customer_email){try{const r=await send(env.RESEND_API_KEY,{from:FROM,to:[o.customer_email],reply_to:INTERNAL,subject:`Payment & Registration Confirmed — ${o.description} — ${o.order_reference}`,html:`<!doctype html><html><body style="font-family:Arial;background:#f4f7fb"><div style="max-width:680px;margin:30px auto;background:#fff;border:1px solid #dce7f4;border-radius:18px;overflow:hidden">${header('PAYMENT & REGISTRATION RECEIPT')}<div style="padding:32px"><div style="font-size:12px;font-weight:800;letter-spacing:1.6px;color:#1768c4">PAYMENT & REGISTRATION CONFIRMED</div><h2 style="color:#0b2f66">Your registration is confirmed</h2><p>Dear ${esc(o.customer_name||'Customer')},</p><p>Quantum YiJing has verified and confirmed your payment. Your registration is now confirmed.</p><p>${rows}</p><p><strong>A separate follow-up email will be sent with the WhatsApp group joining details for the course, where applicable.</strong></p><p>Please keep this email for your records.</p></div></div></body></html>`,text:`Payment Receipt\nOrder: ${o.order_reference}\nPayment Date: ${paid}\nReceipt Date: ${receipt}\nAmount: ${o.currency||'MYR'} ${Number(o.payment_amount||o.total||0).toFixed(2)}\nStatus: PAID / VERIFIED`});await mark(db,o.id,'CustomerReceipt','Sent',o.customer_email,r?.id||'','')}catch(e){await mark(db,o.id,'CustomerReceipt','Failed',o.customer_email||'','',clean(e?.message||''));return json({error:'Verified, but customer receipt email failed.'},502)}}
  const q=await state(db,o.id,'InternalPaymentNotice');if(q?.status!=='Sent'){try{const r=await send(env.RESEND_API_KEY,{from:FROM,to:[INTERNAL],reply_to:o.customer_email||INTERNAL,subject:`Accounting Receipt — Payment Verified & Confirmed — ${o.description} — ${o.order_reference}`,html:`<!doctype html><html><body style="font-family:Arial;background:#f4f7fb"><div style="max-width:680px;margin:30px auto;background:#fff;border:1px solid #dce7f4;border-radius:18px;overflow:hidden">${header('ACCOUNTING PAYMENT RECEIPT')}<div style="padding:32px"><h2 style="color:#0b2f66">Payment Verified & Confirmed</h2><p><strong>Customer:</strong> ${esc(o.customer_name||'')}<br><strong>Email:</strong> ${esc(o.customer_email||'')}<br>${rows}<br><strong>Accounting Eligible:</strong> YES</p><p>The QY customer receipt has been issued.</p></div></div></body></html>`,text:`Payment Verified & Confirmed\nOrder: ${o.order_reference}\nPayment Date: ${paid}\nReceipt Date: ${receipt}\nStatus: PAID / VERIFIED\nAccounting Eligible: YES`});await mark(db,o.id,'InternalPaymentNotice','Sent',INTERNAL,r?.id||'','')}catch(e){await mark(db,o.id,'InternalPaymentNotice','Failed',INTERNAL,'',clean(e?.message||''));return json({error:'Verified, but QY accounting email failed.'},502)}}
- return json({ok:true,verified_at:now,receipt_date:receipt,accounting_eligible:true})
+ const affiliateCommission=await ensureProductAffiliateCommission(db,o);
+ return json({ok:true,verified_at:now,receipt_date:receipt,accounting_eligible:true,affiliate_commission:affiliateCommission})
 }
 export function onRequest(c){return c.request.method==='POST'?onRequestPost(c):json({error:'Method not allowed'},405)}

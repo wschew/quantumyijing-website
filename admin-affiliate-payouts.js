@@ -175,3 +175,23 @@ async function repairGenericCommission(){
   }catch(e){msg(e.message,true)}
 }
 $('#repairAffiliateCommission')?.addEventListener('click',repairGenericCommission);
+
+
+async function repairProductAffiliateCommission(){
+  try{
+    const ref=$('#repairProductAffiliateOrder').value.trim();
+    if(!ref)throw new Error('Enter the QY product/course order reference.');
+    const d=await api('/api/admin/affiliate-product-commission-repair',{
+      method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify({order_reference:ref})
+    });
+    const c=d.commission||{};
+    if(d.already_exists){
+      msg(`Product commission already exists · ${Number(c.commission_rate||0).toFixed(2)}% · MYR ${Number(c.commission_amount||0).toFixed(2)}.`);
+    }else{
+      msg(`Missing product commission created · ${c.affiliate_code||''} · ${c.product_name||c.sku||''} · ${Number(c.commission_rate||0).toFixed(2)}% · MYR ${Number(c.commission_amount||0).toFixed(2)}.`);
+    }
+    if($('#affiliateId').value&&$('#period').value)await loadEligible();
+  }catch(e){msg(e.message,true)}
+}
+$('#repairProductAffiliateCommission')?.addEventListener('click',repairProductAffiliateCommission);
