@@ -286,41 +286,64 @@ export async function onRequestPost({request,env}){
 
   const items=itemRows.results||[];
 
-  await db.prepare('BEGIN').run();
   try{
-    await db.prepare(`
-      UPDATE affiliate_payouts
-      SET status='Paid',payment_reference=?,payment_date=?,updated_at=CURRENT_TIMESTAMP
-      WHERE id=?
-    `).bind(paymentReference,paymentDate,id).run();
+    // Cloudflare D1 does not allow SQL BEGIN / COMMIT / ROLLBACK statements
+    // from Pages Functions. Build every state-changing statement first and
+    // execute them as one atomic D1 batch instead.
+    const statements=[
+      db.prepare(`
+        UPDATE affiliate_payouts
+        SET status='Paid',payment_reference=?,payment_date=?,updated_at=CURRENT_TIMESTAMP
+        WHERE id=? AND status='Approved'
+      `).bind(paymentReference,paymentDate,id),
 
-    await db.prepare(`
-      UPDATE affiliate_commissions
-      SET status='Paid',paid_at=?,updated_at=CURRENT_TIMESTAMP
-      WHERE id IN(
-        SELECT commission_id FROM affiliate_payout_items WHERE payout_id=?
-      )
-    `).bind(paymentDate,id).run();
+      db.prepare(`
+        UPDATE affiliate_commissions
+        SET status='Paid',paid_at=?,updated_at=CURRENT_TIMESTAMP
+        WHERE id IN(
+          SELECT commission_id FROM affiliate_payout_items WHERE payout_id=?
+        )
+      `).bind(paymentDate,id)
+    ];
 
-    const allocated=await db.prepare(`SELECT adjustment_id FROM affiliate_payout_adjustments WHERE payout_id=?`).bind(id).all();
+    // Determine which carry-forward adjustments become fully consumed by
+    // this payout. At this point the current payout is still Approved, so
+    // explicitly add its reserved applied_amount to the total previously
+    // consumed by Paid payouts.
+    const allocated=await db.prepare(`
+      SELECT pa.adjustment_id,pa.applied_amount
+      FROM affiliate_payout_adjustments pa
+      WHERE pa.payout_id=?
+    `).bind(id).all();
+
     for(const row of (allocated.results||[])){
       const bal=await db.prepare(`
         SELECT aa.adjustment_amount,COALESCE((
-          SELECT SUM(pa.applied_amount)
-          FROM affiliate_payout_adjustments pa
-          JOIN affiliate_payouts ap2 ON ap2.id=pa.payout_id
-          WHERE pa.adjustment_id=aa.id AND ap2.status='Paid'
-        ),0) paid_applied
-        FROM affiliate_commission_adjustments aa WHERE aa.id=?
+          SELECT SUM(pa2.applied_amount)
+          FROM affiliate_payout_adjustments pa2
+          JOIN affiliate_payouts ap2 ON ap2.id=pa2.payout_id
+          WHERE pa2.adjustment_id=aa.id AND ap2.status='Paid'
+        ),0) AS paid_applied
+        FROM affiliate_commission_adjustments aa
+        WHERE aa.id=?
       `).bind(row.adjustment_id).first();
-      if(bal && Math.abs(Number(bal.adjustment_amount||0)-Number(bal.paid_applied||0))<=0.005){
-        await db.prepare(`UPDATE affiliate_commission_adjustments SET status='Applied',updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(row.adjustment_id).run();
+
+      if(bal){
+        const afterThisPayout=Number(bal.paid_applied||0)+Number(row.applied_amount||0);
+        if(Math.abs(Number(bal.adjustment_amount||0)-afterThisPayout)<=0.005){
+          statements.push(
+            db.prepare(`
+              UPDATE affiliate_commission_adjustments
+              SET status='Applied',updated_at=CURRENT_TIMESTAMP
+              WHERE id=?
+            `).bind(row.adjustment_id)
+          );
+        }
       }
     }
 
-    await db.prepare('COMMIT').run();
+    await db.batch(statements);
   }catch(e){
-    try{await db.prepare('ROLLBACK').run()}catch{}
     console.error(e);
     return Response.json({error:'Unable to record payout payment.'},{status:500});
   }
