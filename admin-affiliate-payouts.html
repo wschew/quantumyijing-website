@@ -128,7 +128,7 @@
       <div><h2>4. Record Bank Transfer</h2><p>Use this only after the payout is approved and the bank transfer is completed.</p></div>
     </div>
     <div class="bank-grid">
-      <label class="field"><span>Payout ID</span><input id="payPayout" type="number" min="1"></label>
+      <label class="field"><span>Selected Approved Payout</span><input id="payPayoutRef" type="text" readonly placeholder="Click Record Payment on an Approved payout"><input id="payPayout" type="hidden"></label>
       <label class="field"><span>Payment Date</span><input id="paymentDate" type="date"></label>
       <label class="field"><span>Payment Reference</span><input id="paymentRef" type="text" placeholder="e.g. BANK-20260818-001"></label>
       <div class="field action-field"><span>&nbsp;</span><button id="markPaid" class="success-btn">Mark Paid</button></div>
@@ -137,6 +137,6 @@
   </section>
 </main>
 
-<script src="/admin-affiliate-payouts.js?v=3.3.16r" defer></script>
+<script src="/admin-affiliate-payouts.js?v=3.3.16s2" defer></script>
 </body>
 </html>

@@ -71,7 +71,7 @@ async function loadEligible(){
 async function loadPayouts(){
  try{
   const d=await api('/api/admin/affiliate-payout-list'),rows=d.payouts||[];
-  $('#payouts').innerHTML=rows.length?rows.map(x=>`<tr><td>${esc(x.payout_reference)}</td><td><strong>${esc(x.full_name)}</strong><br><small>${esc(x.affiliate_code||'')}</small></td><td>${esc(x.payout_period)}</td><td>${money(x.currency,x.total_sales)}</td><td><strong>${money(x.currency,x.total_commission)}</strong>${Number(x.adjustment_total||0)<-0.005?`<span class="net-payout-note">Gross ${money(x.currency,x.gross_commission||x.total_commission)} · Adjustments ${money(x.currency,x.adjustment_total)}</span>`:''}</td><td>${pill(x.status)}${Number(x.invalid_items||0)>0?'<br><small style="color:#b42318">Eligibility changed</small>':''}</td><td>${esc(x.payment_date||'—')}</td><td>${esc(x.payment_reference||'—')}</td><td>${x.status==='Draft'?`<button class="action-btn approve-btn" data-id="${x.id}">Approve</button>`:''}${['Draft','Approved'].includes(x.status)?`<br><button class="cancel-rebuild-btn" data-id="${x.id}">Cancel / Rebuild</button>`:''}</td></tr>`).join(''):`<tr><td colspan="9" class="empty-cell">No payout batches yet.</td></tr>`;
+  $('#payouts').innerHTML=rows.length?rows.map(x=>`<tr><td>${esc(x.payout_reference)}</td><td><strong>${esc(x.full_name)}</strong><br><small>${esc(x.affiliate_code||'')}</small></td><td>${esc(x.payout_period)}</td><td>${money(x.currency,x.total_sales)}</td><td><strong>${money(x.currency,x.total_commission)}</strong>${Number(x.adjustment_total||0)<-0.005?`<span class="net-payout-note">Gross ${money(x.currency,x.gross_commission||x.total_commission)} · Adjustments ${money(x.currency,x.adjustment_total)}</span>`:''}</td><td>${pill(x.status)}${Number(x.invalid_items||0)>0?'<br><small style="color:#b42318">Eligibility changed</small>':''}</td><td>${esc(x.payment_date||'—')}</td><td>${esc(x.payment_reference||'—')}</td><td>${x.status==='Draft'?`<button class="action-btn approve-btn" data-id="${x.id}">Approve</button>`:''}${x.status==='Approved'?`<button class="action-btn record-payment-btn" data-id="${x.id}" data-ref="${esc(x.payout_reference)}" data-amount="${Number(x.total_commission||0)}" data-currency="${esc(x.currency||'MYR')}">Record Payment</button>`:''}${['Draft','Approved'].includes(x.status)?`<br><button class="cancel-rebuild-btn" data-id="${x.id}">Cancel / Rebuild</button>`:''}</td></tr>`).join(''):`<tr><td colspan="9" class="empty-cell">No payout batches yet.</td></tr>`;
  }catch(e){msg(e.message,true)}
 }
 
@@ -96,10 +96,26 @@ async function approvePayout(id){
  }catch(e){msg(e.message,true)}
 }
 
+
+function selectPayoutForPayment(btn){
+ const id=Number(btn?.dataset?.id||0);
+ const ref=String(btn?.dataset?.ref||'');
+ const amount=Number(btn?.dataset?.amount||0);
+ const currency=String(btn?.dataset?.currency||'MYR');
+ if(!id||!ref){msg('Unable to select this payout for payment.',true);return;}
+ $('#payPayout').value=String(id);
+ $('#payPayoutRef').value=`${ref} — ${money(currency,amount)}`;
+ $('#paymentDate').value='';
+ $('#paymentRef').value='';
+ msg(`Approved payout selected for bank transfer: ${ref}`);
+ document.querySelector('.bank-card')?.scrollIntoView({behavior:'smooth',block:'start'});
+ setTimeout(()=>$('#paymentDate')?.focus(),350);
+}
+
 async function markPaid(){
  try{
   const id=Number($('#payPayout').value),date=$('#paymentDate').value,ref=$('#paymentRef').value.trim();
-  if(!id)throw new Error('Please enter the Payout ID.');
+  if(!id)throw new Error('Please select an Approved payout using Record Payment.');
   if(!date)throw new Error('Please select the Payment Date.');
   if(!ref)throw new Error('Please enter the Payment Reference.');
   await api('/api/admin/affiliate-payout-pay',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({payout_id:id,payment_date:date,payment_reference:ref})});
@@ -173,7 +189,7 @@ $('#load').addEventListener('click',loadEligible);
 $('#create').addEventListener('click',createPayout);
 $('#markPaid').addEventListener('click',markPaid);
 $('#refreshAccounting').addEventListener('click',async()=>{await Promise.all([loadAffiliates(),loadPayouts(),loadAccounting(),loadAdjustments()])});
-$('#payouts').addEventListener('click',e=>{const a=e.target.closest('.approve-btn');if(a)approvePayout(Number(a.dataset.id));const c=e.target.closest('.cancel-rebuild-btn');if(c)cancelPayout(Number(c.dataset.id))});
+$('#payouts').addEventListener('click',e=>{const a=e.target.closest('.approve-btn');if(a)approvePayout(Number(a.dataset.id));const p=e.target.closest('.record-payment-btn');if(p)selectPayoutForPayment(p);const c=e.target.closest('.cancel-rebuild-btn');if(c)cancelPayout(Number(c.dataset.id))});
 $('#accLedger').addEventListener('click',async e=>{const b=e.target.closest('.reversal-pick-btn');if(!b)return;const row=b.closest('tr');const commissionId=b.dataset.commissionId||'';const ledgerAffiliate=(row?.querySelector('small')?.textContent||'').trim();const opt=[...$('#affiliateId').options].find(o=>ledgerAffiliate&&o.textContent.includes(ledgerAffiliate));if(opt){$('#affiliateId').value=opt.value;await Promise.all([loadAdjustments(),loadCommissionOptions()]);}$('#adjustCommissionId').value=commissionId;syncSelectedCommission();$('#adjustReference').focus();document.querySelector('.reversal-card')?.scrollIntoView({behavior:'smooth',block:'start'});});
 $('#recordAdjustment').addEventListener('click',recordAdjustment);
 $('#period').value=new Date().toISOString().slice(0,7);
