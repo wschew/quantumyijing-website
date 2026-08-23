@@ -1,0 +1,4 @@
+
+/* v3.3.16l: strict single-language display */
+[data-qy-lang][hidden]{display:none!important}
+.qy-aff-full-terms[hidden]{display:none!important}
