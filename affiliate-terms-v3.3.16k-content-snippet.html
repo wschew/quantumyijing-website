@@ -1,47 +1,8 @@
-<!-- v3.3.16k: bilingual affiliate compliance/T&C block. Replace the v3.3.16j block with this block. -->
-<section id="affiliateComplianceFields" class="qy-aff-compliance">
-  <h3>
-    <span data-qy-lang="en">Affiliate Compliance &amp; Terms</span>
-    <span data-qy-lang="zh" hidden>联盟资料与条款</span>
-  </h3>
-
-  <label>
-    <span data-qy-lang="en">Nationality *</span><span data-qy-lang="zh" hidden>国籍 *</span>
-    <select name="nationality" id="affiliateNationality" required>
-      <option value="" data-qy-option-en="Select nationality…" data-qy-option-zh="请选择国籍…">Select nationality…</option>
-      <option>Malaysia</option><option>Singapore</option><option>China</option>
-      <option>Indonesia</option><option>Thailand</option><option>Japan</option>
-      <option>United States</option><option>United Kingdom</option>
-      <option value="Other" data-qy-option-en="Other" data-qy-option-zh="其他">Other</option>
-    </select>
-  </label>
-
-  <label>
-    <span data-qy-lang="en">Identification Type *</span><span data-qy-lang="zh" hidden>身份证明类型 *</span>
-    <select name="identification_type" id="affiliateIdentificationType" required>
-      <option value="" data-qy-option-en="Select…" data-qy-option-zh="请选择…">Select…</option>
-      <option value="NRIC / MyKad">NRIC / MyKad</option>
-      <option value="Passport" data-qy-option-en="Passport" data-qy-option-zh="护照">Passport</option>
-      <option value="National ID" data-qy-option-en="National ID" data-qy-option-zh="国家身份证">National ID</option>
-    </select>
-  </label>
-
-  <label>
-    <span data-qy-lang="en">Identification Number *</span><span data-qy-lang="zh" hidden>身份证明号码 *</span>
-    <input name="identification_number" id="affiliateIdentificationNumber" maxlength="120" autocomplete="off" required>
-    <small>
-      <span data-qy-lang="en">Required for affiliate payment, accounting and statutory reporting purposes. Routine admin screens display only a masked value.</span>
-      <span data-qy-lang="zh" hidden>此资料用于联盟佣金付款、会计及法定申报用途。一般后台页面仅显示遮蔽后的号码。</span>
-    </small>
-  </label>
-
-  <details class="qy-aff-terms">
-    <summary>
-      <span data-qy-lang="en">Read Affiliate Program Terms &amp; Conditions</span>
-      <span data-qy-lang="zh" hidden>阅读联盟计划条款与条件</span>
-    </summary>
-    <div class="terms-body">
-      <div data-qy-lang="en">
+<!-- v3.3.16k CONTENT ONLY
+Replace the main Terms & Conditions content area in the existing affiliate-terms.html.
+Keep the page's existing header/footer/navigation and its existing EN/中文 controls. -->
+<section class="qy-aff-full-terms">
+  <div data-qy-lang="en">
 <strong>Quantum YiJing® Affiliate Program Terms &amp; Conditions — QY-AFF-2026-08-V1</strong>
 <ol>
 <li><strong>Eligibility &amp; approval.</strong> Affiliate participation is subject to QY approval. QY may suspend, reject or terminate an account for fraud, abuse, misleading promotion, brand misuse or breach of these terms.</li>
@@ -58,7 +19,7 @@
 </ol>
 <p>This program operates under QY administrative rules and applicable law. Affiliates are responsible for their own tax obligations.</p>
 </div>
-      <div data-qy-lang="zh" hidden>
+  <div data-qy-lang="zh" hidden>
 <strong>Quantum YiJing® 联盟计划条款与条件 — QY-AFF-2026-08-V1</strong>
 <ol>
 <li><strong>资格与批准。</strong> 参加联盟计划须经 QY 审核批准。如发现欺诈、滥用、误导性宣传、品牌不当使用或违反本条款，QY 有权暂停、拒绝或终止联盟账户。</li>
@@ -75,14 +36,6 @@
 </ol>
 <p>本计划依据 QY 的管理规则及适用法律运作。联盟会员须自行承担其相关税务责任。</p>
 </div>
-    </div>
-  </details>
-
-  <label class="qy-aff-agree">
-    <input type="checkbox" id="affiliateTermsAccepted" required>
-    <span data-qy-lang="en">I have read and agree to the Quantum YiJing® Affiliate Program Terms &amp; Conditions (QY-AFF-2026-08-V1).</span>
-    <span data-qy-lang="zh" hidden>我已阅读并同意 Quantum YiJing® 联盟计划条款与条件（QY-AFF-2026-08-V1）。</span>
-  </label>
 </section>
 <script src="/affiliate-v3.3.16j.js" defer></script>
 <link rel="stylesheet" href="/affiliate-v3.3.16j.css">
