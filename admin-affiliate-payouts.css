@@ -63,3 +63,32 @@ body{font-size:16px;line-height:1.45}
 @media(max-width:720px){.page-heading h1{font-size:31px}.section-heading h2{font-size:21px}}
 
 .accounting-ledger-block{margin-top:22px}.accounting-ledger-block h3{margin:0 0 4px;color:#17324d;font-size:17px}.ledger-note{margin:0 0 10px;color:#70839a;font-size:13px}.accounting-ledger-table{min-width:1420px}
+
+
+/* v3.3.16q2 — accounting two-column width correction only
+   Prevent the general 1050px table minimum from forcing the right-hand reports off-screen. */
+.accounting-grid > div{min-width:0}
+.accounting-grid .table-wrap{min-width:0;width:100%;overflow-x:auto}
+.accounting-grid .qy-table{min-width:0;width:100%}
+
+/* Monthly summary needs slightly more room than the channel summary,
+   but the right panel must remain fully visible. */
+.accounting-grid-summary{grid-template-columns:minmax(0,1.55fr) minmax(360px,.95fr);gap:18px}
+.accounting-grid-summary > div:first-child .qy-table{font-size:13px}
+.accounting-grid-summary > div:first-child .qy-table th,
+.accounting-grid-summary > div:first-child .qy-table td{padding-left:10px;padding-right:10px;white-space:nowrap}
+.accounting-grid-summary > div:last-child .qy-table th,
+.accounting-grid-summary > div:last-child .qy-table td{padding-left:10px;padding-right:10px}
+
+/* Give Paid Payout History enough width to show all five fields. */
+.accounting-grid-history{grid-template-columns:minmax(0,1.18fr) minmax(470px,1fr);gap:18px}
+.accounting-grid-history > div:first-child .qy-table th,
+.accounting-grid-history > div:first-child .qy-table td{padding-left:10px;padding-right:10px;white-space:nowrap}
+.accounting-grid-history > div:last-child .qy-table th,
+.accounting-grid-history > div:last-child .qy-table td{padding-left:10px;padding-right:10px}
+
+@media(max-width:1180px){
+  .accounting-grid-summary,.accounting-grid-history{grid-template-columns:1fr}
+  .accounting-grid-summary > div:last-child,
+  .accounting-grid-history > div:last-child{margin-top:2px}
+}
