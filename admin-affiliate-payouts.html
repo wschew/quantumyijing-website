@@ -15,8 +15,8 @@
     <span class="qy-brand-name">Quantum YiJing®</span>
   </a>
   <div class="qy-portal-header-right">
-    <div class="qy-portal-section">Affiliate Payout Admin</div>
-    <a href="/admin-affiliates.html" class="portal-outline-link">← Affiliate Admin</a>
+    <div class="qy-portal-section">Affiliate Accounting Admin</div>
+    <a href="/admin-affiliate-hub.html" class="portal-outline-link">← Affiliate Hub</a>
   </div>
 </header>
 
@@ -27,73 +27,35 @@
     <p class="subtext">Prepare monthly affiliate payouts from verified, accounting-eligible customer payments only.</p>
   </section>
 
-  
 
-<div class="bank-note">
-  <strong>Payout timing:</strong> Normal eligible sales are normally paid within the first 7 days of the following month.
-  For live courses, commission remains pending until the course has actually been conducted; it then enters the next payout cycle.
-  Example: paid 17 Aug for a live course on 26 Sep → payout is normally processed 1–7 Oct.
-</div>
-
-<section class="payout-card">
-  <div class="section-head">
-    <div>
-      <h2>Generic Payment Affiliate Commission</h2>
-      <p>QY controls whether affiliate-attributed generic payments earn commission and the percentage used for future verified payments.</p>
+  <section class="payout-card accounting-overview">
+    <div class="section-heading">
+      <div><h2>Accounting Overview</h2><p>Read-only affiliate liability, payout history and reporting. No commission or payout rules are changed here.</p></div>
+      <button id="refreshAccounting" class="primary-btn" type="button">Refresh Accounting</button>
     </div>
-  </div>
-  <div class="settings-grid">
-    <label class="field">
-      <span>Commission Status</span>
-      <select id="genericCommissionEnabled">
-        <option value="1">Enabled</option>
-        <option value="0">Disabled</option>
-      </select>
-    </label>
-    <label class="field">
-      <span>Generic Payment Commission Rate (%)</span>
-      <input id="genericCommissionRate" type="number" min="0" max="100" step="0.01">
-    </label>
-    <div class="field">
-      <span>Internal Accounting Product</span>
-      <div class="readonly-value" id="genericCommissionProduct">—</div>
+    <div class="summary-strip accounting-summary">
+      <div class="summary-box"><span>Unpaid Liability</span><b id="accLiability">MYR 0.00</b><small id="accLiabilityCount">0 commissions</small></div>
+      <div class="summary-box"><span>Draft Batches</span><b id="accDraft">0</b></div>
+      <div class="summary-box"><span>Approved Batches</span><b id="accApproved">0</b></div>
+      <div class="summary-box"><span>Total Paid</span><b id="accPaidTotal">MYR 0.00</b><small id="accPaidBatches">0 batches</small></div>
     </div>
-    <div class="settings-action">
-      <button id="saveGenericCommission" class="primary-btn" type="button">Save Commission Setting</button>
+    <div class="accounting-grid">
+      <div><h3>Monthly Payout Summary</h3><div class="table-wrap"><table class="qy-table"><thead><tr><th>Month</th><th>Batches</th><th>Sales</th><th>Commission</th><th>Open</th><th>Paid</th></tr></thead><tbody id="accMonthly"><tr><td colspan="6" class="empty-cell">Load accounting overview.</td></tr></tbody></table></div></div>
+      <div><h3>Commission by Sales Channel</h3><div class="table-wrap"><table class="qy-table"><thead><tr><th>Channel</th><th>Sales</th><th>Commission</th><th>Count</th></tr></thead><tbody id="accChannels"><tr><td colspan="4" class="empty-cell">Load accounting overview.</td></tr></tbody></table></div></div>
     </div>
-  </div>
-  <p class="settings-note">
-    This setting applies to future affiliate-attributed generic payments when their commission is created.
-    Existing commission records keep the rate already recorded on them.
-  </p>
-
-  <div class="repair-box">
-    <strong>Repair Missing Generic Commission</strong>
-    <p>For a previously verified affiliate generic payment whose commission failed to create, enter its QY order reference. This does not re-run payment or receipt emails.</p>
-    <div class="repair-row">
-      <input id="repairAffiliateOrder" placeholder="e.g. QY-20260822-840C66">
-      <button id="repairAffiliateCommission" class="secondary-btn" type="button">Create Missing Commission</button>
+    <div class="accounting-grid">
+      <div><h3>Affiliate Country Report</h3><div class="table-wrap"><table class="qy-table"><thead><tr><th>Country</th><th>Payouts</th><th>Sales</th><th>Commission</th><th>Paid</th></tr></thead><tbody id="accCountries"><tr><td colspan="5" class="empty-cell">Load accounting overview.</td></tr></tbody></table></div></div>
+      <div><h3>Paid Payout History</h3><div class="table-wrap"><table class="qy-table"><thead><tr><th>Paid Date</th><th>Affiliate</th><th>Period</th><th>Commission</th><th>Reference</th></tr></thead><tbody id="accPaidHistory"><tr><td colspan="5" class="empty-cell">Load accounting overview.</td></tr></tbody></table></div></div>
     </div>
-  </div>
+  </section>
 
-  <div class="repair-box">
-    <strong>Repair Missing Product / Course Commission</strong>
-    <p>For a previously verified affiliate product or course payment whose commission did not create, enter its QY order reference. This does not re-run payment or receipt emails.</p>
-    <div class="repair-row">
-      <input id="repairProductAffiliateOrder" placeholder="e.g. QY-20260822-C0EE8A">
-      <button id="repairProductAffiliateCommission" class="secondary-btn" type="button">Create Missing Product Commission</button>
-    </div>
-  </div>
-
-</section>
-
-<section class="payout-card">
+  <section class="payout-card">
     <div class="section-heading">
       <div><h2>1. Select Payout Period</h2><p>Choose the affiliate and month to review eligible commissions.</p></div>
     </div>
     <div class="control-grid">
       <label class="field"><span>Admin Token</span><input id="token" type="password" autocomplete="off"></label>
-      <label class="field"><span>Affiliate</span><select id="affiliateId"><option value="">Select affiliate…</option></select></label>
+      <label class="field"><span>Affiliate</span><select id="affiliateId"><option value="">Select affiliate by name…</option></select><small id="affiliateHint">Name · code · email</small></label>
       <label class="field"><span>Payout Month</span><input id="period" type="month"></label>
       <div class="field action-field"><span>&nbsp;</span><button id="load" class="primary-btn">Load Eligible Commissions</button></div>
     </div>
@@ -102,8 +64,8 @@
 
   <section class="payout-card">
     <div class="section-heading">
-      <div><h2>2. Eligible Commissions</h2><p>Review the eligible commissions first. When the month is complete and the figures are correct, create one monthly payout draft for this affiliate.</p></div>
-      <button id="create" class="primary-btn">Create Monthly Payout Draft</button>
+      <div><h2>2. Eligible Commissions</h2><p>Approved or payable commissions not already assigned to a payout.</p></div>
+      <button id="create" class="primary-btn">Create Draft Payout</button>
     </div>
     <div class="summary-strip">
       <div class="summary-box"><span>Eligible Sales</span><b id="sumCount">0</b></div>
@@ -120,7 +82,7 @@
 
   <section class="payout-card">
     <div class="section-heading">
-      <div><h2>3. Monthly Payouts</h2><p>Each monthly payout belongs to one affiliate. Review it, approve it, then record the completed bank transfer on the same payout row.</p></div>
+      <div><h2>3. Payout Batches</h2><p>Draft, approved and paid payout batches.</p></div>
     </div>
     <div class="table-wrap">
       <table class="qy-table">
@@ -130,9 +92,20 @@
     </div>
   </section>
 
-  
+  <section class="payout-card bank-card">
+    <div class="section-heading">
+      <div><h2>4. Record Bank Transfer</h2><p>Use this only after the payout is approved and the bank transfer is completed.</p></div>
+    </div>
+    <div class="bank-grid">
+      <label class="field"><span>Payout ID</span><input id="payPayout" type="number" min="1"></label>
+      <label class="field"><span>Payment Date</span><input id="paymentDate" type="date"></label>
+      <label class="field"><span>Payment Reference</span><input id="paymentRef" type="text" placeholder="e.g. BANK-20260818-001"></label>
+      <div class="field action-field"><span>&nbsp;</span><button id="markPaid" class="success-btn">Mark Paid</button></div>
+    </div>
+    <div class="bank-note"><strong>Accounting rule:</strong> Only customer payments that are Paid + Verified + Accounting Eligible = YES can enter an affiliate payout. Eligibility is rechecked again before approval and before bank payment.</div>
+  </section>
 </main>
 
-<script src="/admin-affiliate-payouts.js?v=3.3.16j" defer></script>
+<script src="/admin-affiliate-payouts.js?v=3.3.16q" defer></script>
 </body>
 </html>
