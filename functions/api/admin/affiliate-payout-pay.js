@@ -81,7 +81,7 @@ function breakdownRows(items){
       <td style="padding:11px 10px;border-top:1px solid #e2eaf4;font-size:12px">${esc(x.product_name||'—')}</td>
       <td style="padding:11px 10px;border-top:1px solid #e2eaf4;font-size:12px;text-align:right">${money(x.currency,x.gross_sale)}</td>
       <td style="padding:11px 10px;border-top:1px solid #e2eaf4;font-size:12px;text-align:right">${Number(x.commission_rate||0).toFixed(2)}%</td>
-      <td style="padding:11px 10px;border-top:1px solid #e2eaf4;font-size:12px;text-align:right;font-weight:700">${money(x.currency,x.commission_amount)}</td>
+      <td style="padding:11px 10px;border-top:1px solid #e2eaf4;font-size:12px;text-align:right;font-weight:700">${money(x.currency,x.net_commission_amount??x.commission_amount)}</td>
     </tr>
   `).join('');
 }
@@ -96,7 +96,9 @@ function summaryTable(p){
     <tr><td style="padding:12px 16px;color:#58708d;font-size:13px;border-top:1px solid #e3edf8">Paid Date</td><td style="padding:12px 16px;font-size:13px;font-weight:700;border-top:1px solid #e3edf8">${esc(p.payment_date)}</td></tr>
     <tr><td style="padding:12px 16px;color:#58708d;font-size:13px;border-top:1px solid #e3edf8">Bank Transaction Reference</td><td style="padding:12px 16px;font-size:13px;font-weight:700;border-top:1px solid #e3edf8">${esc(p.payment_reference)}</td></tr>
     <tr><td style="padding:12px 16px;color:#58708d;font-size:13px;border-top:1px solid #e3edf8">Total Sales</td><td style="padding:12px 16px;font-size:13px;font-weight:700;border-top:1px solid #e3edf8">${money(p.currency,p.total_sales)}</td></tr>
-    <tr><td style="padding:12px 16px;color:#58708d;font-size:13px;border-top:1px solid #e3edf8">Total Commission Paid</td><td style="padding:12px 16px;font-size:15px;font-weight:800;color:#168346;border-top:1px solid #e3edf8">${money(p.currency,p.total_commission)}</td></tr>
+    <tr><td style="padding:12px 16px;color:#58708d;font-size:13px;border-top:1px solid #e3edf8">Gross Commission</td><td style="padding:12px 16px;font-size:14px;font-weight:700;border-top:1px solid #e3edf8">${money(p.currency,p.gross_commission||p.total_commission)}</td></tr>
+    <tr><td style="padding:12px 16px;color:#58708d;font-size:13px;border-top:1px solid #e3edf8">Refund / Reversal Adjustments</td><td style="padding:12px 16px;font-size:14px;font-weight:700;color:#b42318;border-top:1px solid #e3edf8">${money(p.currency,p.adjustment_total||0)}</td></tr>
+    <tr><td style="padding:12px 16px;color:#58708d;font-size:13px;border-top:1px solid #e3edf8">Net Commission Paid</td><td style="padding:12px 16px;font-size:15px;font-weight:800;color:#168346;border-top:1px solid #e3edf8">${money(p.currency,p.total_commission)}</td></tr>
   </table>`;
 }
 
@@ -183,6 +185,43 @@ async function logEmail(db,payoutId,type,email,result){
   }
 }
 
+
+async function hasStaleAdjustments(db,p){
+  const mismatch=await db.prepare(`
+    SELECT COUNT(*) count
+    FROM affiliate_payout_items pi
+    JOIN affiliate_commissions ac ON ac.id=pi.commission_id
+    WHERE pi.payout_id=?
+      AND ABS(COALESCE(pi.pre_payout_adjustment,0)-COALESCE((
+        SELECT SUM(aa.adjustment_amount)
+        FROM affiliate_commission_adjustments aa
+        WHERE aa.commission_id=ac.id
+          AND aa.recovery_mode='PrePayout'
+          AND aa.status!='Cancelled'
+      ),0))>0.005
+  `).bind(p.id).first();
+  if(Number(mismatch?.count||0)>0) return true;
+  const unreserved=await db.prepare(`
+    SELECT COUNT(*) count
+    FROM affiliate_commission_adjustments aa
+    WHERE aa.affiliate_id=?
+      AND aa.recovery_mode='CarryForward'
+      AND aa.status='Open'
+      AND NOT EXISTS(
+        SELECT 1 FROM affiliate_payout_adjustments pa
+        WHERE pa.payout_id=? AND pa.adjustment_id=aa.id
+      )
+      AND (aa.adjustment_amount-COALESCE((
+        SELECT SUM(pa2.applied_amount)
+        FROM affiliate_payout_adjustments pa2
+        JOIN affiliate_payouts ap2 ON ap2.id=pa2.payout_id
+        WHERE pa2.adjustment_id=aa.id
+          AND ap2.status IN ('Draft','Approved','Paid')
+      ),0))<-0.005
+  `).bind(p.affiliate_id,p.id).first();
+  return Number(unreserved?.count||0)>0;
+}
+
 export async function onRequestPost({request,env}){
   if(!ok(request,env)) return Response.json({error:'Unauthorized'},{status:401});
   const db=dbOf(env); if(!db) return Response.json({error:'Database unavailable'},{status:503});
@@ -227,10 +266,18 @@ export async function onRequestPost({request,env}){
       error:'Payment eligibility changed after approval. Do not pay this batch until the affected sales are reviewed.'
     },{status:409});
 
+  if(await hasStaleAdjustments(db,p))
+    return Response.json({
+      error:'A refund/reversal adjustment changed after approval. Do not pay this batch. Cancel/Rebuild it first.'
+    },{status:409});
+
   const itemRows=await db.prepare(`
     SELECT
       ac.id,ac.order_reference,ac.customer_name,ac.product_name,
-      ac.gross_sale,ac.currency,ac.commission_rate,ac.commission_amount
+      ac.gross_sale,ac.currency,ac.commission_rate,ac.commission_amount,
+      COALESCE(api.original_commission_amount,ac.commission_amount) AS original_commission_amount,
+      COALESCE(api.pre_payout_adjustment,0) AS pre_payout_adjustment,
+      COALESCE(NULLIF(api.net_commission_amount,0),ac.commission_amount) AS net_commission_amount
     FROM affiliate_payout_items api
     JOIN affiliate_commissions ac ON ac.id=api.commission_id
     WHERE api.payout_id=?
@@ -254,6 +301,22 @@ export async function onRequestPost({request,env}){
         SELECT commission_id FROM affiliate_payout_items WHERE payout_id=?
       )
     `).bind(paymentDate,id).run();
+
+    const allocated=await db.prepare(`SELECT adjustment_id FROM affiliate_payout_adjustments WHERE payout_id=?`).bind(id).all();
+    for(const row of (allocated.results||[])){
+      const bal=await db.prepare(`
+        SELECT aa.adjustment_amount,COALESCE((
+          SELECT SUM(pa.applied_amount)
+          FROM affiliate_payout_adjustments pa
+          JOIN affiliate_payouts ap2 ON ap2.id=pa.payout_id
+          WHERE pa.adjustment_id=aa.id AND ap2.status='Paid'
+        ),0) paid_applied
+        FROM affiliate_commission_adjustments aa WHERE aa.id=?
+      `).bind(row.adjustment_id).first();
+      if(bal && Math.abs(Number(bal.adjustment_amount||0)-Number(bal.paid_applied||0))<=0.005){
+        await db.prepare(`UPDATE affiliate_commission_adjustments SET status='Applied',updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(row.adjustment_id).run();
+      }
+    }
 
     await db.prepare('COMMIT').run();
   }catch(e){

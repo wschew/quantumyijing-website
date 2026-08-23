@@ -24,11 +24,13 @@ export async function onRequestGet({request,env}){
   if(!ok(request,env)) return Response.json({error:'Unauthorized'},{status:401});
   const db=dbOf(env); if(!db) return Response.json({error:'Database unavailable'},{status:503});
 
-  const liability=await db.prepare(`
-    SELECT
-      COUNT(*) AS commission_count,
-      COALESCE(SUM(ac.commission_amount),0) AS amount,
-      COALESCE(MAX(ac.currency),'MYR') AS currency
+  const liabilityRows=await db.prepare(`
+    SELECT ac.id,ac.affiliate_id,ac.currency,ac.commission_amount,
+      COALESCE((SELECT SUM(aa.adjustment_amount)
+        FROM affiliate_commission_adjustments aa
+        WHERE aa.commission_id=ac.id
+          AND aa.recovery_mode='PrePayout'
+          AND aa.status!='Cancelled'),0) AS pre_adjustment
     FROM affiliate_commissions ac
     JOIN orders o ON o.id=ac.order_id
     JOIN payments py ON py.id=(
@@ -39,7 +41,25 @@ export async function onRequestGet({request,env}){
     WHERE ac.status IN ('Approved','Payable')
       AND ${ELIGIBLE}
       AND COALESCE(ap.status,'') <> 'Paid'
+  `).all();
+  const liabilityItems=liabilityRows.results||[];
+  const liabilityCurrency=liabilityItems[0]?.currency||'MYR';
+  const positiveLiability=liabilityItems.reduce((sum,x)=>sum+Math.max(Number(x.commission_amount||0)+Number(x.pre_adjustment||0),0),0);
+  const carry=await db.prepare(`
+    SELECT COALESCE(SUM(
+      aa.adjustment_amount-COALESCE((
+        SELECT SUM(pa.applied_amount)
+        FROM affiliate_payout_adjustments pa
+        JOIN affiliate_payouts ap2 ON ap2.id=pa.payout_id
+        WHERE pa.adjustment_id=aa.id AND ap2.status IN ('Draft','Approved','Paid')
+      ),0)
+    ),0) AS amount
+    FROM affiliate_commission_adjustments aa
+    WHERE aa.recovery_mode='CarryForward' AND aa.status='Open'
   `).first();
+  const carryForwardBalance=Number(carry?.amount||0);
+  const netLiability=Math.max(positiveLiability+carryForwardBalance,0);
+  const liability={commission_count:liabilityItems.filter(x=>Number(x.commission_amount||0)+Number(x.pre_adjustment||0)>0.005).length,amount:netLiability,currency:liabilityCurrency};
 
   const batches=await db.prepare(`
     SELECT
@@ -151,6 +171,7 @@ export async function onRequestGet({request,env}){
     ledger:ledger.results||[],
     countries,
     country_source:countryCol||null,
+    carry_forward_balance:carryForwardBalance,
     accounting_rule:'Paid + Verified + Accounting Eligible = YES'
   },{headers:{'cache-control':'no-store'}});
 }

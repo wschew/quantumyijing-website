@@ -92,3 +92,19 @@ body{font-size:16px;line-height:1.45}
   .accounting-grid-summary > div:last-child,
   .accounting-grid-history > div:last-child{margin-top:2px}
 }
+
+/* v3.3.16r — refund / reversal controls only */
+.summary-strip{grid-template-columns:repeat(4,minmax(0,1fr))}
+.reversal-card{border-top:4px solid #b42318}
+.reversal-grid{display:grid;grid-template-columns:.65fr .8fr .9fr .85fr 1.15fr 1.4fr auto;gap:12px;align-items:end}
+.danger-btn{border:0;border-radius:11px;min-height:44px;padding:0 18px;font:inherit;font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap;background:#b42318;color:#fff}
+.danger-btn:hover{background:#8f1b13}
+.reversal-balance{min-width:180px;padding:11px 14px;border-radius:12px;background:#fff3f1;border:1px solid #f1c7c2}
+.reversal-balance span{display:block;font-size:12px;color:#7e514d}.reversal-balance b{display:block;margin-top:3px;color:#b42318;font-size:20px}
+.adjustment-history{margin-top:20px}.adjustment-history h3{font-size:17px;color:#17324d;margin:0 0 10px}.adjustment-table{min-width:1450px}
+.reversal-pick-btn,.cancel-rebuild-btn{border:1px solid #b42318;background:#fff;color:#b42318;border-radius:8px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}
+.cancel-rebuild-btn{margin-top:6px}
+.adjustment-negative{color:#b42318;font-weight:800}.net-payout-note{display:block;margin-top:4px;font-size:11px;color:#687890}
+@media(max-width:1250px){.reversal-grid{grid-template-columns:repeat(3,1fr)}.reversal-reason{grid-column:span 2}}
+@media(max-width:900px){.summary-strip,.reversal-grid{grid-template-columns:1fr 1fr}.reversal-reason{grid-column:span 1}}
+@media(max-width:620px){.summary-strip,.reversal-grid{grid-template-columns:1fr}}

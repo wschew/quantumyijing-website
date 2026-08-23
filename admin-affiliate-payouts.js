@@ -40,7 +40,8 @@ async function loadAccounting(){
     $('#accPaidHistory').innerHTML=paid.length?paid.map(x=>`<tr><td>${esc(x.payment_date||'—')}</td><td><strong>${esc(x.full_name)}</strong><br><small>${esc(x.affiliate_code||'')}</small></td><td>${esc(x.payout_period)}</td><td>${money(x.currency,x.total_commission)}</td><td>${esc(x.payment_reference||x.payout_reference||'—')}</td></tr>`).join(''):'<tr><td colspan="5" class="empty-cell">No paid payouts yet.</td></tr>';
 
     const ledger=d.ledger||[];
-    $('#accLedger').innerHTML=ledger.length?ledger.map(x=>`<tr><td>${esc(x.eligibility_date||x.created_at||'—')}</td><td><strong>${esc(x.full_name||'—')}</strong><br><small>${esc(x.affiliate_code||'')}</small></td><td>${esc(x.order_reference||'—')}</td><td>${esc(x.customer_name||'—')}</td><td>${esc(x.product_name||'—')}</td><td>${money(x.currency,x.gross_sale)}</td><td>${Number(x.commission_rate||0).toFixed(2)}%</td><td>${money(x.currency,x.commission_amount)}</td><td>${pill(x.commission_status||'—')}</td><td>${x.payout_status?`${pill(x.payout_status)}<br><small>${esc(x.payout_reference||'')}${x.payment_date?` · ${esc(x.payment_date)}`:''}</small>`:'—'}</td></tr>`).join(''):'<tr><td colspan="10" class="empty-cell">No affiliate commission transactions recorded yet.</td></tr>';
+    $('#accLedger').innerHTML=ledger.length?ledger.map(x=>`<tr><td><strong>${Number(x.id||x.commission_id||0)}</strong></td><td>${esc(x.eligibility_date||x.created_at||'—')}</td><td><strong>${esc(x.full_name||'—')}</strong><br><small>${esc(x.affiliate_code||'')}</small></td><td>${esc(x.order_reference||'—')}</td><td>${esc(x.customer_name||'—')}</td><td>${esc(x.product_name||'—')}</td><td>${money(x.currency,x.gross_sale)}</td><td>${Number(x.commission_rate||0).toFixed(2)}%</td><td>${money(x.currency,x.commission_amount)}</td><td>${pill(x.commission_status||'—')}</td><td>${x.payout_status?`${pill(x.payout_status)}<br><small>${esc(x.payout_reference||'')}${x.payment_date?` · ${esc(x.payment_date)}`:''}</small>`:'—'}</td><td><button class="reversal-pick-btn" data-commission-id="${Number(x.id||x.commission_id||0)}" data-sale="${Number(x.gross_sale||0)}">Refund / Reverse</button></td></tr>`).join(''):'<tr><td colspan="12" class="empty-cell">No affiliate commission transactions recorded yet.</td></tr>';
+    await loadAdjustments();
     msg('Affiliate accounting overview loaded.');
   }catch(e){msg(e.message,true)}
 }
@@ -55,10 +56,13 @@ async function loadEligible(){
   const s=d.summary||{};
   $('#sumCount').textContent=Number(s.eligible_sales_count||0);
   $('#sumSales').textContent=money(s.currency,s.total_sales);
+  $('#sumGross').textContent=money(s.currency,s.original_commission);
+  $('#sumAdjustments').textContent=money(s.currency,Number(s.pre_payout_adjustment||0)+Number(s.carry_forward_applied||0));
+  $('#sumCarry').textContent=money(s.currency,s.carry_forward_balance);
   $('#sumCommission').textContent=money(s.currency,s.total_commission);
   $('#sumBlocked').textContent=Number(s.blocked_count||0);
   const rows=d.items||[];
-  $('#eligible').innerHTML=rows.length?rows.map(x=>`<tr><td>${esc(x.created_at)}</td><td>${esc(x.order_reference)}</td><td>${esc(x.customer_name)}</td><td>${esc(x.product_name)}</td><td>${money(x.currency,x.gross_sale)}</td><td>${Number(x.commission_rate||0).toFixed(2)}%</td><td>${money(x.currency,x.commission_amount)}</td><td>${pill(x.status)}</td></tr>`).join(''):`<tr><td colspan="8" class="empty-cell">No eligible commissions for this period.</td></tr>`;
+  $('#eligible').innerHTML=rows.length?rows.map(x=>`<tr><td>${esc(x.created_at)}</td><td>${esc(x.order_reference)}</td><td>${esc(x.customer_name)}</td><td>${esc(x.product_name)}</td><td>${money(x.currency,x.gross_sale)}</td><td>${Number(x.commission_rate||0).toFixed(2)}%</td><td>${money(x.currency,x.net_commission_amount??x.commission_amount)}${Number(x.pre_payout_adjustment||0)<-0.005?`<span class="net-payout-note">Original ${money(x.currency,x.commission_amount)} · Adj ${money(x.currency,x.pre_payout_adjustment)}</span>`:''}</td><td>${pill(x.status)}</td></tr>`).join(''):`<tr><td colspan="8" class="empty-cell">No eligible commissions for this period.</td></tr>`;
   msg('Eligible commissions loaded.');
   await loadPayouts();
  }catch(e){msg(e.message,true)}
@@ -67,7 +71,7 @@ async function loadEligible(){
 async function loadPayouts(){
  try{
   const d=await api('/api/admin/affiliate-payout-list'),rows=d.payouts||[];
-  $('#payouts').innerHTML=rows.length?rows.map(x=>`<tr><td>${esc(x.payout_reference)}</td><td><strong>${esc(x.full_name)}</strong><br><small>${esc(x.affiliate_code||'')}</small></td><td>${esc(x.payout_period)}</td><td>${money(x.currency,x.total_sales)}</td><td>${money(x.currency,x.total_commission)}</td><td>${pill(x.status)}${Number(x.invalid_items||0)>0?'<br><small style="color:#b42318">Eligibility changed</small>':''}</td><td>${esc(x.payment_date||'—')}</td><td>${esc(x.payment_reference||'—')}</td><td>${x.status==='Draft'?`<button class="action-btn approve-btn" data-id="${x.id}">Approve</button>`:''}</td></tr>`).join(''):`<tr><td colspan="9" class="empty-cell">No payout batches yet.</td></tr>`;
+  $('#payouts').innerHTML=rows.length?rows.map(x=>`<tr><td>${esc(x.payout_reference)}</td><td><strong>${esc(x.full_name)}</strong><br><small>${esc(x.affiliate_code||'')}</small></td><td>${esc(x.payout_period)}</td><td>${money(x.currency,x.total_sales)}</td><td><strong>${money(x.currency,x.total_commission)}</strong>${Number(x.adjustment_total||0)<-0.005?`<span class="net-payout-note">Gross ${money(x.currency,x.gross_commission||x.total_commission)} · Adjustments ${money(x.currency,x.adjustment_total)}</span>`:''}</td><td>${pill(x.status)}${Number(x.invalid_items||0)>0?'<br><small style="color:#b42318">Eligibility changed</small>':''}</td><td>${esc(x.payment_date||'—')}</td><td>${esc(x.payment_reference||'—')}</td><td>${x.status==='Draft'?`<button class="action-btn approve-btn" data-id="${x.id}">Approve</button>`:''}${['Draft','Approved'].includes(x.status)?`<br><button class="cancel-rebuild-btn" data-id="${x.id}">Cancel / Rebuild</button>`:''}</td></tr>`).join(''):`<tr><td colspan="9" class="empty-cell">No payout batches yet.</td></tr>`;
  }catch(e){msg(e.message,true)}
 }
 
@@ -105,10 +109,49 @@ async function markPaid(){
  }catch(e){msg(e.message,true)}
 }
 
+
+async function loadAdjustments(){
+ try{
+  const aid=Number($('#affiliateId')?.value||0);
+  const qs=aid?`?affiliate_id=${aid}`:'';
+  const d=await api(`/api/admin/affiliate-commission-adjustments${qs}`);
+  $('#adjustmentBalance').textContent=money('MYR',d.carry_forward_balance||0);
+  const rows=d.adjustments||[];
+  $('#adjustmentRows').innerHTML=rows.length?rows.map(x=>`<tr><td>${esc(x.effective_date||x.created_at||'—')}</td><td><strong>${esc(x.full_name||'—')}</strong><br><small>${esc(x.affiliate_code||'')}</small></td><td>${Number(x.commission_id||0)}</td><td>${esc(x.order_reference||'—')}<br><small>${esc(x.customer_name||'—')}</small></td><td>${esc(x.adjustment_type)}</td><td>${money(x.currency,x.refund_amount)}</td><td class="adjustment-negative">${money(x.currency,x.adjustment_amount)}</td><td>${esc(x.recovery_mode==='CarryForward'?'Carry-forward':'Before payout')}</td><td>${pill(x.status)}</td><td>${esc(x.reference||'—')}<br><small>${esc(x.reason||'')}</small></td></tr>`).join(''):'<tr><td colspan="10" class="empty-cell">No refund / reversal adjustments recorded.</td></tr>';
+ }catch(e){if(token())msg(e.message,true)}
+}
+
+async function recordAdjustment(){
+ try{
+  const commissionId=Number($('#adjustCommissionId').value),refundAmount=Number($('#adjustRefundAmount').value),adjustmentType=$('#adjustType').value,effectiveDate=$('#adjustDate').value,reference=$('#adjustReference').value.trim(),reason=$('#adjustReason').value.trim();
+  if(!commissionId)throw new Error('Select or enter a Commission ID.');
+  if(!refundAmount||refundAmount<=0)throw new Error('Enter the refunded sale amount.');
+  if(!effectiveDate||!reference||!reason)throw new Error('Effective date, reference and reason are required.');
+  const d=await api('/api/admin/affiliate-commission-adjustments',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({commission_id:commissionId,refund_amount:refundAmount,adjustment_type:adjustmentType,effective_date:effectiveDate,reference,reason})});
+  msg(`${d.message} Adjustment: ${money(d.currency,d.adjustment_amount)}`);
+  if(d.rebuild_required) alert(`Refund/reversal recorded. Payout #${d.payout_id} is Draft/Approved and must be Cancelled/Rebuilt before approval or bank payment.`);
+  await Promise.all([loadAdjustments(),loadAccounting(),loadPayouts()]);
+ }catch(e){msg(e.message,true)}
+}
+
+async function cancelPayout(id){
+ try{
+  if(!confirm('Cancel this Draft/Approved payout and rebuild it using the latest refund/reversal adjustments?'))return;
+  await api('/api/admin/affiliate-payout-cancel',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({payout_id:id,reason:'Cancelled/Rebuilt after refund or commission reversal adjustment.'})});
+  msg('Payout cancelled for rebuild. Its commissions are available again using the latest adjustment balance.');
+  await Promise.all([loadPayouts(),loadAccounting()]);
+  if($('#affiliateId').value&&$('#period').value)await loadEligible();
+ }catch(e){msg(e.message,true)}
+}
+
 $('#load').addEventListener('click',loadEligible);
 $('#create').addEventListener('click',createPayout);
 $('#markPaid').addEventListener('click',markPaid);
-$('#refreshAccounting').addEventListener('click',async()=>{await Promise.all([loadAffiliates(),loadPayouts(),loadAccounting()])});
-$('#payouts').addEventListener('click',e=>{const b=e.target.closest('.approve-btn');if(b)approvePayout(Number(b.dataset.id))});
+$('#refreshAccounting').addEventListener('click',async()=>{await Promise.all([loadAffiliates(),loadPayouts(),loadAccounting(),loadAdjustments()])});
+$('#payouts').addEventListener('click',e=>{const a=e.target.closest('.approve-btn');if(a)approvePayout(Number(a.dataset.id));const c=e.target.closest('.cancel-rebuild-btn');if(c)cancelPayout(Number(c.dataset.id))});
+$('#accLedger').addEventListener('click',e=>{const b=e.target.closest('.reversal-pick-btn');if(!b)return;$('#adjustCommissionId').value=b.dataset.commissionId||'';$('#adjustRefundAmount').value=b.dataset.sale||'';$('#adjustDate').value=new Date().toISOString().slice(0,10);$('#adjustReference').focus();document.querySelector('.reversal-card')?.scrollIntoView({behavior:'smooth',block:'start'});});
+$('#recordAdjustment').addEventListener('click',recordAdjustment);
 $('#period').value=new Date().toISOString().slice(0,7);
-$('#token').addEventListener('change',async()=>{if(token()) await Promise.all([loadAffiliates(),loadPayouts(),loadAccounting()])});
+$('#token').addEventListener('change',async()=>{if(token()) await Promise.all([loadAffiliates(),loadPayouts(),loadAccounting(),loadAdjustments()])});
+$('#affiliateId').addEventListener('change',()=>{if(token())loadAdjustments()});
+$('#adjustDate').value=new Date().toISOString().slice(0,10);

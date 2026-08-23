@@ -46,12 +46,33 @@
     <div class="accounting-ledger-block">
       <h3>Affiliate Commission Ledger</h3>
       <p class="ledger-note">Complete read-only transaction history, including commissions already assigned to or paid through a payout batch.</p>
-      <div class="table-wrap"><table class="qy-table accounting-ledger-table"><thead><tr><th>Date</th><th>Affiliate</th><th>Invoice</th><th>Customer</th><th>Product</th><th>Sale</th><th>Rate</th><th>Commission</th><th>Commission Status</th><th>Payout</th></tr></thead><tbody id="accLedger"><tr><td colspan="10" class="empty-cell">Load accounting overview.</td></tr></tbody></table></div>
+      <div class="table-wrap"><table class="qy-table accounting-ledger-table"><thead><tr><th>ID</th><th>Date</th><th>Affiliate</th><th>Invoice</th><th>Customer</th><th>Product</th><th>Sale</th><th>Rate</th><th>Commission</th><th>Commission Status</th><th>Payout</th><th>Action</th></tr></thead><tbody id="accLedger"><tr><td colspan="12" class="empty-cell">Load accounting overview.</td></tr></tbody></table></div>
     </div>
 
     <div class="accounting-grid accounting-grid-history">
       <div><h3>Affiliate Country Report</h3><div class="table-wrap"><table class="qy-table"><thead><tr><th>Country</th><th>Payouts</th><th>Sales</th><th>Commission</th><th>Paid</th></tr></thead><tbody id="accCountries"><tr><td colspan="5" class="empty-cell">Load accounting overview.</td></tr></tbody></table></div></div>
       <div><h3>Paid Payout History</h3><div class="table-wrap"><table class="qy-table"><thead><tr><th>Paid Date</th><th>Affiliate</th><th>Period</th><th>Commission</th><th>Reference</th></tr></thead><tbody id="accPaidHistory"><tr><td colspan="5" class="empty-cell">Load accounting overview.</td></tr></tbody></table></div></div>
+    </div>
+  </section>
+
+  <section class="payout-card reversal-card">
+    <div class="section-heading">
+      <div><h2>Refund / Commission Reversal</h2><p>Record full or partial customer refunds, reversals or chargebacks. Paid commission recoveries are carried forward automatically to the affiliate’s next payout.</p></div>
+      <div class="reversal-balance"><span>Open Carry-forward</span><b id="adjustmentBalance">MYR 0.00</b></div>
+    </div>
+    <div class="reversal-grid">
+      <label class="field"><span>Commission ID</span><input id="adjustCommissionId" type="number" min="1" placeholder="Select from ledger"></label>
+      <label class="field"><span>Type</span><select id="adjustType"><option>Refund</option><option>Reversal</option><option>Chargeback</option><option>Manual</option></select></label>
+      <label class="field"><span>Refunded Sale Amount</span><input id="adjustRefundAmount" type="number" min="0.01" step="0.01" placeholder="0.00"></label>
+      <label class="field"><span>Effective Date</span><input id="adjustDate" type="date"></label>
+      <label class="field"><span>Refund / Bank Reference</span><input id="adjustReference" type="text" placeholder="e.g. REFUND-20260823-001"></label>
+      <label class="field reversal-reason"><span>Reason</span><input id="adjustReason" type="text" placeholder="Reason for refund / reversal"></label>
+      <div class="field action-field"><span>&nbsp;</span><button id="recordAdjustment" class="danger-btn" type="button">Record Reversal</button></div>
+    </div>
+    <div class="bank-note"><strong>Rule:</strong> Before payout, the commission is reduced proportionally. After payout, a negative recovery balance is created and automatically deducted from future eligible payouts. Historical paid payouts are never rewritten.</div>
+    <div class="adjustment-history">
+      <h3>Commission Adjustment Ledger</h3>
+      <div class="table-wrap"><table class="qy-table adjustment-table"><thead><tr><th>Date</th><th>Affiliate</th><th>Commission ID</th><th>Invoice / Customer</th><th>Type</th><th>Refunded Sale</th><th>Commission Adjustment</th><th>Mode</th><th>Status</th><th>Reference / Reason</th></tr></thead><tbody id="adjustmentRows"><tr><td colspan="10" class="empty-cell">Load accounting overview.</td></tr></tbody></table></div>
     </div>
   </section>
 
@@ -76,11 +97,15 @@
     <div class="summary-strip">
       <div class="summary-box"><span>Eligible Sales</span><b id="sumCount">0</b></div>
       <div class="summary-box"><span>Total Sales</span><b id="sumSales">MYR 0.00</b></div>
-      <div class="summary-box"><span>Total Commission</span><b id="sumCommission">MYR 0.00</b></div><div class="summary-box"><span>Blocked / Ineligible</span><b id="sumBlocked">0</b></div>
+      <div class="summary-box"><span>Gross Commission</span><b id="sumGross">MYR 0.00</b></div>
+      <div class="summary-box"><span>Refund / Reversal Adjustments</span><b id="sumAdjustments">MYR 0.00</b></div>
+      <div class="summary-box"><span>Carry-forward Balance</span><b id="sumCarry">MYR 0.00</b></div>
+      <div class="summary-box"><span>Net Payout</span><b id="sumCommission">MYR 0.00</b></div>
+      <div class="summary-box"><span>Blocked / Ineligible</span><b id="sumBlocked">0</b></div>
     </div>
     <div class="table-wrap">
       <table class="qy-table">
-        <thead><tr><th>Date</th><th>Invoice</th><th>Customer</th><th>Product</th><th>Sale</th><th>Rate</th><th>Commission</th><th>Status</th></tr></thead>
+        <thead><tr><th>Date</th><th>Invoice</th><th>Customer</th><th>Product</th><th>Sale</th><th>Rate</th><th>Net Commission</th><th>Status</th></tr></thead>
         <tbody id="eligible"><tr><td colspan="8" class="empty-cell">Load an affiliate and payout month to begin.</td></tr></tbody>
       </table>
     </div>
@@ -112,6 +137,6 @@
   </section>
 </main>
 
-<script src="/admin-affiliate-payouts.js?v=3.3.16q1" defer></script>
+<script src="/admin-affiliate-payouts.js?v=3.3.16r" defer></script>
 </body>
 </html>
