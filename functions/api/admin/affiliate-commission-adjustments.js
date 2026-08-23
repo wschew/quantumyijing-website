@@ -51,11 +51,11 @@ export async function onRequestPost({request,env}){
   if(!ok(request,env)) return Response.json({error:'Unauthorized'},{status:401});
   const db=dbOf(env); if(!db) return Response.json({error:'Database unavailable'},{status:503});
   const b=await request.json().catch(()=>({}));
-  const commissionId=Number(b.commission_id||0), refundAmount=round2(b.refund_amount);
+  const affiliateId=Number(b.affiliate_id||0), commissionId=Number(b.commission_id||0), refundAmount=round2(b.refund_amount);
   const type=clean(b.adjustment_type,30)||'Refund';
   const allowed=new Set(['Refund','Reversal','Chargeback','Manual']);
   const effectiveDate=clean(b.effective_date,32), reference=clean(b.reference,160), reason=clean(b.reason,1000);
-  if(!commissionId||!Number.isFinite(refundAmount)||refundAmount<=0) return Response.json({error:'Commission ID and a positive refund amount are required.'},{status:400});
+  if(!affiliateId||!commissionId||!Number.isFinite(refundAmount)||refundAmount<=0) return Response.json({error:'Affiliate, commission transaction and a positive refund amount are required.'},{status:400});
   if(!allowed.has(type)) return Response.json({error:'Invalid adjustment type.'},{status:400});
   if(!effectiveDate||!reference||!reason) return Response.json({error:'Effective date, reference and reason are required for the audit trail.'},{status:400});
 
@@ -68,6 +68,7 @@ export async function onRequestPost({request,env}){
     WHERE ac.id=? LIMIT 1
   `).bind(commissionId).first();
   if(!c) return Response.json({error:'Affiliate commission not found.'},{status:404});
+  if(Number(c.affiliate_id)!==affiliateId) return Response.json({error:'Selected commission does not belong to the selected affiliate.'},{status:409});
 
   const prior=await db.prepare(`SELECT COALESCE(SUM(refund_amount),0) AS refunded,COALESCE(SUM(adjustment_amount),0) AS adjusted FROM affiliate_commission_adjustments WHERE commission_id=? AND status!='Cancelled'`).bind(commissionId).first();
   const sale=round2(c.gross_sale), commission=round2(c.commission_amount), refunded=round2(prior?.refunded);

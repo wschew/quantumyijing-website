@@ -96,7 +96,9 @@ body{font-size:16px;line-height:1.45}
 /* v3.3.16r — refund / reversal controls only */
 .summary-strip{grid-template-columns:repeat(4,minmax(0,1fr))}
 .reversal-card{border-top:4px solid #b42318}
-.reversal-grid{display:grid;grid-template-columns:.65fr .8fr .9fr .85fr 1.15fr 1.4fr auto;gap:12px;align-items:end}
+.reversal-grid{display:grid;grid-template-columns:1.85fr .72fr .82fr .82fr 1.05fr 1.25fr auto;gap:12px;align-items:end}
+.reversal-commission select{min-width:0}
+.reversal-commission small{display:block;margin-top:5px;color:#687890;font-size:11px;line-height:1.35}
 .danger-btn{border:0;border-radius:11px;min-height:44px;padding:0 18px;font:inherit;font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap;background:#b42318;color:#fff}
 .danger-btn:hover{background:#8f1b13}
 .reversal-balance{min-width:180px;padding:11px 14px;border-radius:12px;background:#fff3f1;border:1px solid #f1c7c2}

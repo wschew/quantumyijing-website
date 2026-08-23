@@ -110,6 +110,30 @@ async function markPaid(){
 }
 
 
+async function loadCommissionOptions(){
+ try{
+  const aid=Number($('#affiliateId')?.value||0),sel=$('#adjustCommissionId'),hint=$('#adjustCommissionHint');
+  if(!sel)return;
+  if(!aid){sel.innerHTML='<option value="">Select affiliate first…</option>';if(hint)hint.textContent='Select an affiliate above, then choose the exact commission transaction.';return;}
+  const d=await api(`/api/admin/affiliate-commission-options?affiliate_id=${aid}`),rows=d.commissions||[];
+  sel.innerHTML='<option value="">Select commission transaction…</option>'+rows.map(x=>{
+    const paid=(x.payout_status||'').toLowerCase()==='paid';
+    const payout=x.payout_status?` | ${x.payout_status}${x.payment_date?` ${x.payment_date}`:''}`:'';
+    const remaining=Math.max(Number(x.gross_sale||0)-Number(x.refunded_sale||0),0);
+    return `<option value="${Number(x.commission_id)}" data-sale="${remaining}" data-affiliate-id="${Number(x.affiliate_id)}">#${Number(x.commission_id)} | ${esc(x.order_reference||'No invoice')} | ${esc(x.customer_name||'No customer')} | ${esc(x.product_name||'No product')} | ${money(x.currency,x.gross_sale)} | Comm ${money(x.currency,x.commission_amount)}${payout}${paid?' | PAID':''}</option>`;
+  }).join('');
+  if(hint)hint.textContent=rows.length?`${rows.length} commission transaction${rows.length===1?'':'s'} for ${d.affiliate?.full_name||'selected affiliate'}, including paid history.`:'No commission transactions found for this affiliate.';
+ }catch(e){msg(e.message,true)}
+}
+
+function syncSelectedCommission(){
+ const sel=$('#adjustCommissionId'),opt=sel?.selectedOptions?.[0];
+ if(!opt||!opt.value)return;
+ const remaining=Number(opt.dataset.sale||0);
+ if(remaining>0)$('#adjustRefundAmount').value=remaining.toFixed(2);
+ $('#adjustDate').value=new Date().toISOString().slice(0,10);
+}
+
 async function loadAdjustments(){
  try{
   const aid=Number($('#affiliateId')?.value||0);
@@ -123,11 +147,12 @@ async function loadAdjustments(){
 
 async function recordAdjustment(){
  try{
-  const commissionId=Number($('#adjustCommissionId').value),refundAmount=Number($('#adjustRefundAmount').value),adjustmentType=$('#adjustType').value,effectiveDate=$('#adjustDate').value,reference=$('#adjustReference').value.trim(),reason=$('#adjustReason').value.trim();
-  if(!commissionId)throw new Error('Select or enter a Commission ID.');
+  const commissionId=Number($('#adjustCommissionId').value),affiliateId=Number($('#affiliateId').value),refundAmount=Number($('#adjustRefundAmount').value),adjustmentType=$('#adjustType').value,effectiveDate=$('#adjustDate').value,reference=$('#adjustReference').value.trim(),reason=$('#adjustReason').value.trim();
+  if(!affiliateId)throw new Error('Select an affiliate first.');
+  if(!commissionId)throw new Error('Select a commission transaction.');
   if(!refundAmount||refundAmount<=0)throw new Error('Enter the refunded sale amount.');
   if(!effectiveDate||!reference||!reason)throw new Error('Effective date, reference and reason are required.');
-  const d=await api('/api/admin/affiliate-commission-adjustments',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({commission_id:commissionId,refund_amount:refundAmount,adjustment_type:adjustmentType,effective_date:effectiveDate,reference,reason})});
+  const d=await api('/api/admin/affiliate-commission-adjustments',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({affiliate_id:affiliateId,commission_id:commissionId,refund_amount:refundAmount,adjustment_type:adjustmentType,effective_date:effectiveDate,reference,reason})});
   msg(`${d.message} Adjustment: ${money(d.currency,d.adjustment_amount)}`);
   if(d.rebuild_required) alert(`Refund/reversal recorded. Payout #${d.payout_id} is Draft/Approved and must be Cancelled/Rebuilt before approval or bank payment.`);
   await Promise.all([loadAdjustments(),loadAccounting(),loadPayouts()]);
@@ -149,9 +174,10 @@ $('#create').addEventListener('click',createPayout);
 $('#markPaid').addEventListener('click',markPaid);
 $('#refreshAccounting').addEventListener('click',async()=>{await Promise.all([loadAffiliates(),loadPayouts(),loadAccounting(),loadAdjustments()])});
 $('#payouts').addEventListener('click',e=>{const a=e.target.closest('.approve-btn');if(a)approvePayout(Number(a.dataset.id));const c=e.target.closest('.cancel-rebuild-btn');if(c)cancelPayout(Number(c.dataset.id))});
-$('#accLedger').addEventListener('click',e=>{const b=e.target.closest('.reversal-pick-btn');if(!b)return;$('#adjustCommissionId').value=b.dataset.commissionId||'';$('#adjustRefundAmount').value=b.dataset.sale||'';$('#adjustDate').value=new Date().toISOString().slice(0,10);$('#adjustReference').focus();document.querySelector('.reversal-card')?.scrollIntoView({behavior:'smooth',block:'start'});});
+$('#accLedger').addEventListener('click',async e=>{const b=e.target.closest('.reversal-pick-btn');if(!b)return;const row=b.closest('tr');const commissionId=b.dataset.commissionId||'';const ledgerAffiliate=(row?.querySelector('small')?.textContent||'').trim();const opt=[...$('#affiliateId').options].find(o=>ledgerAffiliate&&o.textContent.includes(ledgerAffiliate));if(opt){$('#affiliateId').value=opt.value;await Promise.all([loadAdjustments(),loadCommissionOptions()]);}$('#adjustCommissionId').value=commissionId;syncSelectedCommission();$('#adjustReference').focus();document.querySelector('.reversal-card')?.scrollIntoView({behavior:'smooth',block:'start'});});
 $('#recordAdjustment').addEventListener('click',recordAdjustment);
 $('#period').value=new Date().toISOString().slice(0,7);
-$('#token').addEventListener('change',async()=>{if(token()) await Promise.all([loadAffiliates(),loadPayouts(),loadAccounting(),loadAdjustments()])});
-$('#affiliateId').addEventListener('change',()=>{if(token())loadAdjustments()});
+$('#token').addEventListener('change',async()=>{if(token()){await Promise.all([loadAffiliates(),loadPayouts(),loadAccounting(),loadAdjustments()]);await loadCommissionOptions();}});
+$('#affiliateId').addEventListener('change',async()=>{if(token())await Promise.all([loadAdjustments(),loadCommissionOptions()]);});
+$('#adjustCommissionId').addEventListener('change',syncSelectedCommission);
 $('#adjustDate').value=new Date().toISOString().slice(0,10);

@@ -61,7 +61,7 @@
       <div class="reversal-balance"><span>Open Carry-forward</span><b id="adjustmentBalance">MYR 0.00</b></div>
     </div>
     <div class="reversal-grid">
-      <label class="field"><span>Commission ID</span><input id="adjustCommissionId" type="number" min="1" placeholder="Select from ledger"></label>
+      <label class="field reversal-commission"><span>Commission Transaction</span><select id="adjustCommissionId"><option value="">Select affiliate first…</option></select><small id="adjustCommissionHint">Select an affiliate above, then choose the exact commission transaction.</small></label>
       <label class="field"><span>Type</span><select id="adjustType"><option>Refund</option><option>Reversal</option><option>Chargeback</option><option>Manual</option></select></label>
       <label class="field"><span>Refunded Sale Amount</span><input id="adjustRefundAmount" type="number" min="0.01" step="0.01" placeholder="0.00"></label>
       <label class="field"><span>Effective Date</span><input id="adjustDate" type="date"></label>
