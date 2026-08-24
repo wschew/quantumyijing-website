@@ -1,0 +1,21 @@
+import {dbOf,makePassword} from '../coach/_auth.js';
+function bearer(req){const h=req.headers.get('authorization')||'';return h.toLowerCase().startsWith('bearer ')?h.slice(7).trim():''}
+function ok(req,env){return !!env.ADMIN_TOKEN&&bearer(req)===env.ADMIN_TOKEN}
+function clean(v,n=300){return String(v??'').trim().slice(0,n)}
+async function nextCode(db){const r=await db.prepare(`SELECT MAX(CAST(SUBSTR(coach_code,5) AS INTEGER)) n FROM coaches WHERE coach_code LIKE 'QY-C%'`).first();return `QY-C${String(Number(r?.n||0)+1).padStart(4,'0')}`}
+export async function onRequestGet({request,env}){if(!ok(request,env))return Response.json({error:'Unauthorized'},{status:401});const db=dbOf(env);const coaches=await db.prepare(`SELECT id,coach_code,full_name,display_name,email,phone,country,bank_name,bank_account_name,bank_account_number,status,portal_enabled,notes,created_at FROM coaches ORDER BY id DESC`).all();let courses=[];try{const q=await db.prepare(`SELECT id,sku,name_en,name_zh,status,starts_on,ends_on FROM products WHERE lower(product_type)='course' ORDER BY id DESC`).all();courses=q.results||[]}catch{try{const q=await db.prepare(`SELECT id,sku,name_en,name_zh,status FROM products WHERE lower(product_type)='course' ORDER BY id DESC`).all();courses=q.results||[]}catch{}}return Response.json({coaches:coaches.results||[],courses},{headers:{'cache-control':'no-store'}})}
+export async function onRequestPost({request,env}){if(!ok(request,env))return Response.json({error:'Unauthorized'},{status:401});const db=dbOf(env);let b;try{b=await request.json()}catch{return Response.json({error:'Invalid request'},{status:400})}const action=clean(b.action,40);
+  if(action==='create'){
+    const full=clean(b.full_name,160),email=clean(b.email,160).toLowerCase(),password=String(b.password||'');if(!full||!email||password.length<8)return Response.json({error:'Name, email and password (minimum 8 characters) are required.'},{status:400});
+    const code=await nextCode(db),status=['Pending','Approved','Suspended','Archived'].includes(b.status)?b.status:'Pending',portal=status==='Approved'&&b.portal_enabled?1:0;
+    const ins=await db.prepare(`INSERT INTO coaches(coach_code,full_name,display_name,email,phone,country,bank_name,bank_account_name,bank_account_number,identification_type,identification_number,status,portal_enabled,notes) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING id`).bind(code,full,clean(b.display_name,160),email,clean(b.phone,80),clean(b.country,100),clean(b.bank_name,120),clean(b.bank_account_name,160),clean(b.bank_account_number,120),clean(b.identification_type,80),clean(b.identification_number,120),status,portal,clean(b.notes,1000)).first();
+    const pw=await makePassword(password);await db.prepare(`INSERT INTO coach_credentials(coach_id,password_salt,password_hash,password_iterations) VALUES(?,?,?,?)`).bind(ins.id,pw.salt,pw.hash,pw.iterations).run();return Response.json({ok:true,id:ins.id,coach_code:code});
+  }
+  if(action==='update'){
+    const id=Number(b.id||0),status=['Pending','Approved','Suspended','Archived'].includes(b.status)?b.status:'Pending',portal=status==='Approved'&&b.portal_enabled?1:0;if(!id)return Response.json({error:'Coach ID required'},{status:400});
+    await db.prepare(`UPDATE coaches SET full_name=?,display_name=?,email=?,phone=?,country=?,bank_name=?,bank_account_name=?,bank_account_number=?,status=?,portal_enabled=?,notes=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(clean(b.full_name,160),clean(b.display_name,160),clean(b.email,160).toLowerCase(),clean(b.phone,80),clean(b.country,100),clean(b.bank_name,120),clean(b.bank_account_name,160),clean(b.bank_account_number,120),status,portal,clean(b.notes,1000),id).run();
+    if(String(b.password||'').length>=8){const pw=await makePassword(String(b.password));await db.prepare(`INSERT INTO coach_credentials(coach_id,password_salt,password_hash,password_iterations,updated_at) VALUES(?,?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(coach_id) DO UPDATE SET password_salt=excluded.password_salt,password_hash=excluded.password_hash,password_iterations=excluded.password_iterations,updated_at=CURRENT_TIMESTAMP`).bind(id,pw.salt,pw.hash,pw.iterations).run();}
+    return Response.json({ok:true});
+  }
+  return Response.json({error:'Unknown action'},{status:400});
+}
