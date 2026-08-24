@@ -44,6 +44,8 @@ export async function onRequestGet({request,env}){
   `).all();
   const liabilityItems=liabilityRows.results||[];
   const liabilityCurrency=liabilityItems[0]?.currency||'MYR';
+  const grossLiability=liabilityItems.reduce((sum,x)=>sum+Math.max(Number(x.commission_amount||0),0),0);
+  const prePayoutAdjustments=liabilityItems.reduce((sum,x)=>sum+Number(x.pre_adjustment||0),0);
   const positiveLiability=liabilityItems.reduce((sum,x)=>sum+Math.max(Number(x.commission_amount||0)+Number(x.pre_adjustment||0),0),0);
   const carry=await db.prepare(`
     SELECT COALESCE(SUM(
@@ -59,7 +61,13 @@ export async function onRequestGet({request,env}){
   `).first();
   const carryForwardBalance=Number(carry?.amount||0);
   const netLiability=Math.max(positiveLiability+carryForwardBalance,0);
-  const liability={commission_count:liabilityItems.filter(x=>Number(x.commission_amount||0)+Number(x.pre_adjustment||0)>0.005).length,amount:netLiability,currency:liabilityCurrency};
+  const liability={
+    commission_count:liabilityItems.filter(x=>Number(x.commission_amount||0)+Number(x.pre_adjustment||0)>0.005).length,
+    gross_amount:grossLiability,
+    pre_payout_adjustments:prePayoutAdjustments,
+    amount:netLiability,
+    currency:liabilityCurrency
+  };
 
   const batches=await db.prepare(`
     SELECT
@@ -157,6 +165,8 @@ export async function onRequestGet({request,env}){
   return Response.json({
     liability:{
       commission_count:Number(liability?.commission_count||0),
+      gross_amount:Number(liability?.gross_amount||0),
+      pre_payout_adjustments:Number(liability?.pre_payout_adjustments||0),
       amount:Number(liability?.amount||0),
       currency:liability?.currency||'MYR'
     },

@@ -22,6 +22,7 @@ async function loadAccounting(){
     const d=await api('/api/admin/affiliate-accounting-summary');
     $('#accLiability').textContent=money(d.liability?.currency,d.liability?.amount);
     $('#accLiabilityCount').textContent=`${Number(d.liability?.commission_count||0)} commissions`;
+    $('#accLiabilityBreakdown').textContent=`Gross ${money(d.liability?.currency,d.liability?.gross_amount)} · Pre-payout adjustments ${money(d.liability?.currency,d.liability?.pre_payout_adjustments)}`;
     $('#accDraft').textContent=Number(d.batches?.draft||0);
     $('#accApproved').textContent=Number(d.batches?.approved||0);
     $('#accPaidTotal').textContent=money(d.batches?.currency,d.batches?.paid_total);
