@@ -26,9 +26,16 @@
 .compact-dashboard .product-link-input{width:100%;min-width:300px}
 .compact-dashboard .referral-note{margin-top:14px;padding:13px 15px;border:1px solid #cfe0f5;border-radius:12px;background:#f5f9ff;color:#4b5f78;font-size:14px}
 .compact-dashboard .link-row{align-items:stretch}
+.compact-dashboard .adjustment-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0 16px}
+.compact-dashboard .adjustment-summary>div{padding:14px 16px;border:1px solid #dbe6f2;border-radius:12px;background:#f8fbff}
+.compact-dashboard .adjustment-summary span{display:block;color:#667085;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.compact-dashboard .adjustment-summary b{display:block;margin-top:4px;color:#172033;font-size:20px}
+.compact-dashboard .adjustment-note{padding:12px 14px;border-radius:10px;background:#fff8ed;border:1px solid #f4d7a5;color:#6b4b16;font-size:13px;margin-bottom:14px}
+.compact-dashboard .negative{color:#b42318;font-weight:700}
 @media(max-width:1150px){
   .compact-dashboard .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
   .compact-dashboard .top-grid{grid-template-columns:1fr}
+  .compact-dashboard .adjustment-summary{grid-template-columns:1fr}
 }
 </style>
 </head><body>
@@ -90,6 +97,21 @@
     </table></div>
   </section>
 
+  <section class="panel" id="adjustmentPanel">
+    <h2>Refund & Commission Adjustments</h2>
+    <p class="muted">Refunds, reversals and chargebacks that affect your affiliate commission are shown here for reconciliation.</p>
+    <div class="adjustment-summary">
+      <div><span>Total Commission Adjustments</span><b id="adjustmentTotal">MYR 0.00</b></div>
+      <div><span>Open Recovery / Carry-forward</span><b id="carryForwardBalance">MYR 0.00</b></div>
+      <div><span>Adjustment Records</span><b id="adjustmentCount">0</b></div>
+    </div>
+    <div class="adjustment-note">A negative commission adjustment may reduce a future payout when the related commission had already been paid. Once fully recovered, the open carry-forward balance returns to MYR 0.00 while the adjustment remains visible as an audit record.</div>
+    <div class="table-wrap"><table style="min-width:1180px">
+      <thead><tr><th>Effective Date</th><th>Type</th><th>Invoice / Customer</th><th>Refunded Sale</th><th>Commission Adjustment</th><th>Treatment</th><th>Status</th><th>Applied to Payout</th><th>Reference / Reason</th></tr></thead>
+      <tbody id="adjustments"></tbody>
+    </table></div>
+  </section>
+
   <section class="panel">
     <h2>Monthly Payout History</h2>
     <div class="table-wrap"><table>
@@ -110,5 +132,5 @@
   </section>
 </section>
 </main>
-<script src="/affiliate-dashboard.js?v=3.3.16h" defer></script>
+<script src="/affiliate-dashboard.js?v=3.3.16u" defer></script>
 </body></html>

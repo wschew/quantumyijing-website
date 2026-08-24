@@ -161,6 +161,34 @@ function renderPayouts(rows){
   $('#payouts').innerHTML=Array.isArray(rows)&&rows.length?rows.map(x=>`<tr><td>${esc(x.payout_period)}</td><td>${esc(x.payout_reference)}</td><td>${esc(x.currency)} ${Number(x.total_sales||0).toFixed(2)}</td><td>${esc(x.currency)} ${Number(x.total_commission||0).toFixed(2)}</td><td>${esc(x.status)}</td><td>${esc(x.payment_date||'')}</td><td>${esc(x.payment_reference||'')}</td></tr>`).join(''):'<tr><td colspan="7">No payout history yet.</td></tr>';
 }
 
+function adjustmentTreatment(x){
+  return String(x.recovery_mode||'')==='CarryForward'?'Carry-forward recovery':'Before payout';
+}
+
+function renderAdjustments(rows,summary={}){
+  const currency=summary.currency||rows?.[0]?.currency||'MYR';
+  $('#adjustmentTotal').textContent=money(summary.total_adjustments||0,currency);
+  $('#carryForwardBalance').textContent=money(summary.carry_forward_balance||0,currency);
+  $('#adjustmentCount').textContent=String(summary.adjustment_count||0);
+
+  $('#adjustments').innerHTML=Array.isArray(rows)&&rows.length?rows.map(x=>{
+    const applied=Number(x.paid_applied_amount||0);
+    const appliedText=applied?`${money(applied,x.currency)}${x.applied_payout_references?` · ${esc(x.applied_payout_references)}`:''}`:'—';
+    const refReason=[x.reference,x.reason].filter(Boolean).map(esc).join('<br><span class="muted">')+(x.reference&&x.reason?'</span>':'');
+    return `<tr>
+      <td>${esc(x.effective_date||x.created_at||'')}</td>
+      <td>${esc(x.adjustment_type||'')}</td>
+      <td><b>${esc(x.order_reference||'')}</b><br><span class="muted">${esc(x.customer_name||'')} · ${esc(x.product_name||'')}</span></td>
+      <td>${money(x.refund_amount,x.currency)}</td>
+      <td class="negative">${money(x.adjustment_amount,x.currency)}</td>
+      <td>${esc(adjustmentTreatment(x))}</td>
+      <td>${esc(x.status||'')}</td>
+      <td>${appliedText}</td>
+      <td>${refReason||'—'}</td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="9">No refund or commission adjustment records.</td></tr>';
+}
+
 async function load(){
   try{
     const [me,a,t,l]=await Promise.all([api('/api/affiliate/portal/me'),api('/api/affiliate/portal/analytics'),api('/api/affiliate/portal/transactions'),api('/api/affiliate/portal/links')]);
@@ -182,6 +210,7 @@ async function load(){
     renderProducts(l,aff.affiliate_code||'');
     renderCommissions(t.commissions);
     renderPayouts(t.payouts);
+    renderAdjustments(t.adjustments,t.adjustment_summary||{});
   }catch(e){
     if(e.message!=='auth'){console.error(e);$('#metrics').innerHTML='<div class="metric"><span>Dashboard</span><b>Unable to load data</b></div>'}
   }
