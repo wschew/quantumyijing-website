@@ -18,7 +18,7 @@ main{max-width:1220px;margin:0 auto;padding:44px 26px 70px}
 .eyebrow{font-size:14px;letter-spacing:.16em;font-weight:800;color:var(--blue);text-transform:uppercase}
 h1{font-size:48px;line-height:1.05;margin:12px 0 10px}
 .lead{font-size:20px;line-height:1.55;color:var(--muted);max-width:850px;margin:0 0 34px}
-.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
 .card{display:flex;flex-direction:column;min-height:290px;padding:28px;border:1px solid var(--line);border-radius:20px;background:var(--card);box-shadow:0 10px 30px rgba(20,55,95,.05)}
 .card h2{font-size:27px;margin:0 0 12px;color:var(--navy)}
 .card p{font-size:17px;line-height:1.55;color:var(--muted);margin:0 0 22px}
@@ -35,7 +35,7 @@ h1{font-size:48px;line-height:1.05;margin:12px 0 10px}
     <img src="/images/quantum-yijing-logo.png" alt="Quantum YiJing®">
     <div>
       <div class="brand-title">Quantum YiJing</div>
-      <div class="brand-sub">ACADEMY OPERATING SYSTEM · v3.3.16p</div>
+      <div class="brand-sub">ACADEMY OPERATING SYSTEM · v3.3.16w</div>
     </div>
   </a>
   <div class="toplinks"><a href="/admin">← Main Admin</a></div>
@@ -74,6 +74,16 @@ h1{font-size:48px;line-height:1.05;margin:12px 0 10px}
         <li>Record completed bank transfers and references</li>
       </ul>
       <a class="go" href="/admin-affiliate-payouts">Open Affiliate Payouts</a>
+    </article>
+    <article class="card">
+      <h2>Bank Payment List</h2>
+      <p>Prepare the month-end affiliate bank transfer instruction for the accounts team.</p>
+      <ul>
+        <li>Shows Approved payouts only — never marks them Paid</li>
+        <li>Includes bank holder, account number, payout reference and net payable</li>
+        <li>Exports a real Excel .xlsx file for the selected month</li>
+      </ul>
+      <a class="go" href="/admin-affiliate-bank-payments">Open Bank Payment List</a>
     </article>
   </section>
   <div class="note">The public Affiliate Programme opens in a new tab. Affiliate Management and Affiliate Payouts remain inside the administration workflow.</div>
