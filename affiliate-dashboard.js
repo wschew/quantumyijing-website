@@ -197,13 +197,25 @@ async function load(){
     $('#affiliateCode').textContent=aff.affiliate_code||'—';
     $('#membership').textContent=`Membership expires: ${String(aff.membership_expires_at||'—').slice(0,10)}`;
     $('#accountStatus').textContent=`Account status: ${aff.status||'—'}${aff.renewal_status?` · Renewal: ${aff.renewal_status}`:''}`;
+    const adjustmentRows=Array.isArray(t.adjustments)?t.adjustments:[];
+    const prePayoutAdjustments=adjustmentRows
+      .filter(x=>String(x.status||'')!=='Cancelled' && String(x.recovery_mode||'')!=='CarryForward')
+      .reduce((sum,x)=>sum+Number(x.adjustment_amount||0),0);
+    const totalAdjustments=adjustmentRows
+      .filter(x=>String(x.status||'')!=='Cancelled')
+      .reduce((sum,x)=>sum+Number(x.adjustment_amount||0),0);
+    const netPending=Math.max(0,Number(s.commission_pending||0)+prePayoutAdjustments);
+    const netPaid=(Array.isArray(t.payouts)?t.payouts:[])
+      .filter(x=>String(x.status||'').toLowerCase()==='paid')
+      .reduce((sum,x)=>sum+Number(x.total_commission||0),0);
+
     $('#metrics').innerHTML=[
-      ['Total Sales',money(s.total_sales)],
-      ['Current Month Sales',money(currentMonth.sales)],
-      ['Commission Earned',money(s.commission_earned)],
-      ['Pending Commission',money(s.commission_pending)],
-      ['Commission Paid',money(s.commission_paid)]
-    ].map(x=>`<div class="metric"><span>${x[0]}</span><b>${x[1]}</b></div>`).join('');
+      {label:'Total Sales',value:money(s.total_sales)},
+      {label:'Current Month Sales',value:money(currentMonth.sales)},
+      {label:'Gross Commission Earned',value:money(s.commission_earned),note:`Total adjustments ${money(totalAdjustments)}`},
+      {label:'Net Pending Commission',value:money(netPending),note:`Before-payout adjustments ${money(prePayoutAdjustments)}`},
+      {label:'Commission Paid (Net)',value:money(netPaid),note:'Actual paid payout batches'}
+    ].map(x=>`<div class="metric"><span>${x.label}</span><b>${x.value}</b>${x.note?`<div class="muted" style="font-size:12px;margin-top:7px">${x.note}</div>`:''}</div>`).join('');
     lineChart($('#salesChart'),a.monthly_sales);
     stacked($('#categoryChart'),a.monthly_category_sales,a.category_labels||{});
     $('#generalLink').value=l.general_url||'';
