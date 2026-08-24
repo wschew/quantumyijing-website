@@ -25,7 +25,29 @@ function render(rows,totals){
   $('#sumSales').textContent=totals.length===1?money(currency,totals[0].total_sales):(totals.length?`${totals.length} currencies`:'MYR 0.00');
   $('#sumNet').textContent=totals.length===1?money(currency,totals[0].net_amount_payable):(totals.length?totals.map(x=>money(x.currency,x.net_amount_payable)).join(' · '):'MYR 0.00');
   $('#sumMissing').textContent=rows.filter(missingBank).length;
-  $('#rows').innerHTML=rows.length?rows.map((x,i)=>{const bad=missingBank(x);return `<tr><td>${i+1}</td><td><strong>${esc(x.affiliate_code||'—')}</strong>${Number(x.is_test_account||0)?'<br><span class="test">TEST</span>':''}</td><td>${esc(x.full_name||x.display_name||'—')}</td><td class="${!x.bank_name?'missing':'bank'}">${esc(x.bank_name||'MISSING')}</td><td class="${!x.bank_account_name?'missing':'bank'}">${esc(x.bank_account_name||'MISSING')}</td><td class="${!x.bank_account_number?'missing':'bank'}">${esc(x.bank_account_number||'MISSING')}</td><td>${esc(x.country||'—')}</td><td>${esc(x.currency||'MYR')}</td><td class="amount">${money(x.currency,x.net_amount_payable)}</td><td>${esc(x.payout_period)}</td><td>${esc(x.payout_reference)}</td><td>${esc(x.email||'—')}</td><td></td><td></td><td>${bad?'BANK DETAILS INCOMPLETE':''}</td></tr>`}).join(''):'<tr><td class="empty" colspan="15">No Approved affiliate payouts for this period.</td></tr>';
+
+  // v3.3.16w4:
+  // The webpage is a read-only bank instruction preview, so it ends at Email.
+  // Payment Reference, Payment Date and Remarks remain in the exported Excel file
+  // as blank working columns for the accounts team to complete after payment.
+  $('#rows').innerHTML=rows.length
+    ? rows.map((x,i)=>{
+        return `<tr>
+          <td>${i+1}</td>
+          <td><strong>${esc(x.affiliate_code||'—')}</strong>${Number(x.is_test_account||0)?'<br><span class="test">TEST</span>':''}</td>
+          <td>${esc(x.full_name||x.display_name||'—')}</td>
+          <td class="${!x.bank_name?'missing':'bank'}">${esc(x.bank_name||'MISSING')}</td>
+          <td class="${!x.bank_account_name?'missing':'bank'}">${esc(x.bank_account_name||'MISSING')}</td>
+          <td class="${!x.bank_account_number?'missing':'bank'}">${esc(x.bank_account_number||'MISSING')}</td>
+          <td>${esc(x.country||'—')}</td>
+          <td>${esc(x.currency||'MYR')}</td>
+          <td class="amount">${money(x.currency,x.net_amount_payable)}</td>
+          <td>${esc(x.payout_period)}</td>
+          <td>${esc(x.payout_reference)}</td>
+          <td>${esc(x.email||'—')}</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td class="empty" colspan="12">No Approved affiliate payouts for this period.</td></tr>';
 }
 
 // Small self-contained XLSX writer: ZIP store method + Office Open XML.
