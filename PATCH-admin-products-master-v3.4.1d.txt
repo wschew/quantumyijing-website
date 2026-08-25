@@ -1,0 +1,18 @@
+v3.4.1d — ONE-LINE CHANGE TO /admin-products-master.html
+
+Immediately before </body>, add:
+
+<script src="/admin-products-registration-v3.4.1d.js?v=3.4.1d" defer></script>
+
+That is the only required change to the existing Product Master page.
+Do NOT replace the current Product Master logic.
+
+After deployment, the new "Registration Requirements" section will be injected above Save Product.
+
+For CM2 select:
+[✓] Ask Gender (Male / Female) · required
+[✓] Ask Meal Preference (Normal / Vegan) · required
+[✓] Accommodation Included
+[✓] Ask Accommodation / Dietary Notes   (recommended)
+Registration / Check-in Time: 14:00
+Course End / Check-out Time: 12:00
