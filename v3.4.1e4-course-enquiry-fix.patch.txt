@@ -1,0 +1,89 @@
+*** Quantum YiJing v3.4.1e4 — course enquiry fix
+*** Target: functions/product/[slug].js
+*** Scope: course enquiry modal only
+*** Stable /api/enquiry is NOT modified.
+
+1) In the COURSE ENQUIRY form/modal, remove the honeypot field named "website"
+   OR rename it so it is not submitted as `website`.
+
+   REMOVE any field like:
+       <input ... name="website" ...>
+
+   The normal registration form may keep its existing stable honeypot logic.
+
+2) In the enquiry modal submit handler, build the request body exactly like this
+   and POST it to the existing /api/enquiry endpoint:
+
+const body = {
+  name: fd.get('name'),
+  email: fd.get('email'),
+  phone: fd.get('phone'),
+  country: fd.get('country'),
+
+  // Reuse the already-tested CRM enquiry category.
+  interest: 'Academy Course',
+
+  // The enquiry modal may use "question" or "message" as its textarea name.
+  message: String(fd.get('question') || fd.get('message') || '').trim(),
+
+  consent: fd.get('consent'),
+
+  // IMPORTANT v3.4.1e4:
+  // Do NOT send a second enquiry-modal honeypot as `website`.
+  // The stable /api/enquiry endpoint treats a non-empty website field as a bot
+  // and intentionally returns {ok:true} without CRM insert or email.
+  website: '',
+
+  startedAt: Number(fd.get('startedAt')),
+  language: root.dataset.lang,
+
+  marketingSource: source,
+  campaignCode: q.get('utm_campaign') || q.get('campaign') || '',
+  landingPage: location.pathname,
+  referrer: document.referrer,
+  utmSource: q.get('utm_source') || '',
+  utmMedium: q.get('utm_medium') || '',
+  utmCampaign: q.get('utm_campaign') || '',
+  utmContent: q.get('utm_content') || '',
+  utmTerm: q.get('utm_term') || '',
+  affiliateCode: q.get('aff') || q.get('affiliate') || '',
+
+  // Preserve product attribution so CRM knows which course was enquired about.
+  productId: P.id,
+  productSlug: P.slug,
+
+  // Enquiry only: DO NOT create an order.
+  createOrder: false
+};
+
+const r = await fetch('/api/enquiry', {
+  method: 'POST',
+  headers: {'content-type': 'application/json'},
+  body: JSON.stringify(body)
+});
+
+const d = await r.json();
+
+if (!r.ok) {
+  throw new Error(d.error || 'Unable to send enquiry.');
+}
+
+// Recommended success message:
+m.textContent =
+  root.dataset.lang === 'zh'
+    ? '课程咨询已收到。参考编号：' + d.reference + '。我们会尽快回复您。'
+    : 'Course enquiry received. Reference: ' + d.reference + '. We will reply as soon as possible.';
+
+m.className = 'product-message success';
+
+3) DO NOT change functions/api/enquiry.js.
+
+4) DO NOT set createOrder:true for "Enquire About This Course".
+   Registration remains a separate flow and may continue to use createOrder:true.
+
+5) After successful enquiry submission, the existing /api/enquiry routine should:
+   - insert into enquiries
+   - add crm_activities
+   - save product/campaign/affiliate attribution
+   - send internal QY notification to info@quantumyijing.com
+   - send customer acknowledgement email
