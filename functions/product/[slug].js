@@ -115,7 +115,7 @@ body.enquiry-modal-open{overflow:hidden}
     doku:Number(p.senangpay_enabled||0)===1&&p.payment_provider==='DOKU',
     senangpay:Number(p.senangpay_enabled||0)===1&&p.payment_provider==='SenangPay',
     hasRegistrationSettings:!!rs
-  })};const $=s=>document.querySelector(s);const root=document.documentElement;function setLang(lang){root.dataset.lang=lang;root.lang=lang==='zh'?'zh-CN':'en';document.querySelectorAll('[data-en]').forEach(el=>{el.textContent=el.dataset[lang]||el.dataset.en});const pm=$('#productMessage');if(pm&&pm.dataset.autofill==='1')pm.value=lang==='zh'?(pm.dataset.zhValue||pm.dataset.enValue):pm.dataset.enValue;const em=$('#course-enquiry-form textarea[name="message"]');if(em&&em.dataset.autofill!=='0')em.value=lang==='zh'?(em.dataset.zhValue||em.dataset.enValue):em.dataset.enValue;$('#productLang').textContent=lang==='zh'?'EN':'中文';localStorage.setItem('qyLang',lang)}$('#productLang').addEventListener('click',()=>setLang(root.dataset.lang==='zh'?'en':'zh'));setLang(localStorage.getItem('qyLang')==='zh'?'zh':'en');const pm=$('#productMessage');if(pm)pm.addEventListener('input',()=>{pm.dataset.autofill='0'});const em=$('#course-enquiry-form textarea[name="message"]');if(em)em.addEventListener('input',()=>{em.dataset.autofill='0'});
+  })};const $=s=>document.querySelector(s);const root=document.documentElement;function setLang(lang){lang=lang==='zh'?'zh':'en';root.dataset.lang=lang;root.lang=lang==='zh'?'zh-CN':'en';document.querySelectorAll('[data-en]').forEach(el=>{const text=lang==='zh'?(el.getAttribute('data-zh')||el.getAttribute('data-en')):el.getAttribute('data-en');if(text!==null)el.textContent=text});const pm=$('#productMessage');if(pm&&pm.dataset.autofill==='1')pm.value=lang==='zh'?(pm.dataset.zhValue||pm.dataset.enValue):pm.dataset.enValue;const em=$('#course-enquiry-form textarea[name="message"]');if(em&&em.dataset.autofill!=='0')em.value=lang==='zh'?(em.dataset.zhValue||em.dataset.enValue):em.dataset.enValue;const langBtn=$('#productLang');if(langBtn)langBtn.textContent=lang==='zh'?'EN':'中文';localStorage.setItem('qyLang',lang)}const langBtn=$('#productLang');if(langBtn)langBtn.addEventListener('click',()=>setLang(root.dataset.lang==='zh'?'en':'zh'));setLang(localStorage.getItem('qyLang')==='zh'?'zh':'en');const pm=$('#productMessage');if(pm)pm.addEventListener('input',()=>{pm.dataset.autofill='0'});const em=$('#course-enquiry-form textarea[name="message"]');if(em)em.addEventListener('input',()=>{em.dataset.autofill='0'});
 let currentFx={currency:'MYR',rate:1,amount:Number(P.amount||0)};
 function fxMoney(code,value){try{return new Intl.NumberFormat(undefined,{style:'currency',currency:code,maximumFractionDigits:code==='JPY'?0:2}).format(value)}catch{return code+' '+Number(value||0).toFixed(2)}}
 async function updateFx(code){const box=$('#fxResult');if(!box)return;currentFx={currency:code,rate:code==='MYR'?1:0,amount:code==='MYR'?Number(P.amount||0):0};if(code==='MYR'){box.textContent='Official price: '+fxMoney('MYR',P.amount);localStorage.setItem('qyDisplayCurrency','MYR');return;}box.textContent=root.dataset.lang==='zh'?'正在换算…':'Converting…';try{const r=await fetch('/api/fx?to='+encodeURIComponent(code)+'&amount='+encodeURIComponent(P.amount));const d=await r.json();if(!r.ok)throw new Error(d.error||'FX unavailable');currentFx={currency:code,rate:Number(d.rate||0),amount:Number(d.converted||0)};const name=code==='CNY'?'RMB / CNY':code;box.textContent='≈ '+name+' '+fxMoney(code,d.converted).replace(/^CN¥/,'¥');localStorage.setItem('qyDisplayCurrency',code);}catch(err){box.textContent=root.dataset.lang==='zh'?'暂时无法取得实时汇率。':'Live conversion temporarily unavailable.';}}
@@ -128,7 +128,6 @@ function setEnquiryModal(open){
   enquiryModal.hidden=!open;
   document.body.classList.toggle('enquiry-modal-open',!!open);
   if(open){
-    const started=$('#courseEnquiryStartedAt'); if(started)started.value=Date.now();
     setTimeout(()=>enquiryModal.querySelector('input[name="name"]')?.focus(),20);
   }
 }
@@ -136,6 +135,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!enquiryModal?.hidd
 
 const ef=$('#course-enquiry-form');
 if(ef){
+  const enquiryStarted=$('#courseEnquiryStartedAt'); if(enquiryStarted)enquiryStarted.value=Date.now();
   ef.addEventListener('submit',async e=>{
     e.preventDefault();
     const m=$('#courseEnquiryMessage');
@@ -153,7 +153,7 @@ if(ef){
     const source=q.get('utm_source')||q.get('source')||'Website';
     const body={
       name,email,phone:fd.get('phone'),country:fd.get('country'),
-      interest:'General Enquiry',
+      interest:'Academy Course',
       message:'Course Enquiry — '+P.sku+' — '+P.name+'\n\n'+String(fd.get('message')||''),consent:fd.get('consent'),
       website:fd.get('website'),startedAt:Number(fd.get('startedAt')),
       language:root.dataset.lang,marketingSource:source,
@@ -169,6 +169,7 @@ if(ef){
       const raw=await r.text();
       let d={}; try{d=raw?JSON.parse(raw):{}}catch{d={error:raw}}
       if(!r.ok)throw new Error(d.error||d.message||('Request failed (HTTP '+r.status+')'));
+      if(!d.reference)throw new Error(root.dataset.lang==='zh'?'咨询未成功记录，请重试。':'Enquiry was not recorded. Please try again.');
       m.textContent=root.dataset.lang==='zh'
         ?'课程咨询已收到。参考编号：'+(d.reference||'')
         :'Course enquiry received. Reference: '+(d.reference||'');
