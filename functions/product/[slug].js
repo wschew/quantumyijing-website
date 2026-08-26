@@ -163,8 +163,8 @@ if(ef){
       const d=await r.json();
       if(!r.ok)throw new Error(d.error||'Request failed');
       m.textContent=root.dataset.lang==='zh'
-        ?`课程咨询已收到。参考编号：${d.reference||''}`
-        :`Course enquiry received. Reference: ${d.reference||''}`;
+        ?'课程咨询已收到。参考编号：'+(d.reference||'')
+        :'Course enquiry received. Reference: '+(d.reference||'');
       m.className='product-message success';
       ef.querySelector('button[type="submit"]').disabled=true;
     }catch(err){
