@@ -95,7 +95,7 @@ body.enquiry-modal-open{overflow:hidden}
     <button id="courseEnquiryClose" class="course-enquiry-close" type="button" aria-label="Close">×</button>
     <p class="marketing-eyebrow" data-en="Course Enquiry" data-zh="课程咨询">Course Enquiry</p>
     <h2 id="courseEnquiryTitle" data-en="Ask about ${esc(p.name_en)}" data-zh="咨询 ${esc(p.name_zh||p.name_en)}">Ask about ${esc(p.name_en)}</h2>
-    <p data-en="Send us your question. This records an enquiry only — it does not create a registration, order or payment." data-zh="请告诉我们您想了解的内容。此表格只记录咨询，不会建立报名、订单或付款。">Send us your question. This records an enquiry only — it does not create a registration, order or payment.</p>
+    <p data-en="Send us your question. This records a general course enquiry only — it does not create a registration, order or payment." data-zh="请告诉我们您想了解的内容。此表格只记录咨询，不会建立报名、订单或付款。">Send us your question. This records a general course enquiry only — it does not create a registration, order or payment.</p>
     <form id="course-enquiry-form" class="product-form">
       <input class="form-honeypot" name="website" tabindex="-1" autocomplete="off">
       <input type="hidden" name="startedAt" id="courseEnquiryStartedAt">
@@ -144,11 +144,20 @@ if(ef){
     const m=$('#courseEnquiryMessage');
     m.textContent=root.dataset.lang==='zh'?'正在提交…':'Submitting…';
     const fd=new FormData(ef),q=new URLSearchParams(location.search);
+    const name=String(fd.get('name')||'').trim();
+    const email=String(fd.get('email')||'').trim();
+    const question=String(fd.get('message')||'').trim();
+    const consent=fd.get('consent');
+    if(!name||!email||!question||!consent){
+      m.textContent=root.dataset.lang==='zh'?'请填写姓名、电邮、问题，并同意隐私政策及使用条款。':'Please complete Full Name, Email, Your Question, and tick the consent box.';
+      m.className='product-message error';
+      return;
+    }
     const source=q.get('utm_source')||q.get('source')||'Website';
     const body={
-      name:fd.get('name'),email:fd.get('email'),phone:fd.get('phone'),country:fd.get('country'),
-      interest:'Academy Course Enquiry',
-      message:fd.get('message'),consent:fd.get('consent'),
+      name,email,phone:fd.get('phone'),country:fd.get('country'),
+      interest:'General Enquiry',
+      message:'Course Enquiry — '+P.sku+' — '+P.nameEn+'\n\n'+String(fd.get('message')||''),consent:fd.get('consent'),
       website:fd.get('website'),startedAt:Number(fd.get('startedAt')),
       language:root.dataset.lang,marketingSource:source,
       campaignCode:q.get('utm_campaign')||q.get('campaign')||'',
@@ -160,8 +169,9 @@ if(ef){
     };
     try{
       const r=await fetch('/api/enquiry',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-      const d=await r.json();
-      if(!r.ok)throw new Error(d.error||'Request failed');
+      const raw=await r.text();
+      let d={}; try{d=raw?JSON.parse(raw):{}}catch{d={error:raw}}
+      if(!r.ok)throw new Error(d.error||d.message||('Request failed (HTTP '+r.status+')'));
       m.textContent=root.dataset.lang==='zh'
         ?'课程咨询已收到。参考编号：'+(d.reference||'')
         :'Course enquiry received. Reference: '+(d.reference||'');
