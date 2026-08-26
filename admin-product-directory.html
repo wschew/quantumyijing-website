@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>Product, Course & Service Directory · Quantum YiJing®</title>
+<style>
+:root{--blue:#075fb8;--navy:#0a3569;--ink:#14253f;--muted:#60758e;--line:#d6e2ef;--bg:#f4f8fc;--card:#fff}
+*{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 28px;background:#fff;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:14px;text-decoration:none}.brand img{width:64px;height:64px;object-fit:contain}
+.brand strong{display:block;color:var(--blue);font-size:27px}.brand span{display:block;color:#56708e;letter-spacing:.12em;font-weight:700;margin-top:3px}
+.toplinks{display:flex;gap:12px;flex-wrap:wrap}.toplinks a{color:var(--blue);font-weight:800;text-decoration:none}
+main{max-width:1540px;margin:0 auto;padding:34px 26px 70px}
+.eyebrow{font-size:14px;letter-spacing:.15em;text-transform:uppercase;font-weight:800;color:var(--blue)}
+h1{font-size:46px;color:var(--navy);margin:10px 0}.lead{font-size:19px;line-height:1.55;color:var(--muted);max-width:1000px}
+.control{margin-top:25px;padding:22px;background:#fff;border:1px solid var(--line);border-radius:18px;display:grid;grid-template-columns:1.3fr auto;gap:14px;align-items:end}
+label span{display:block;color:var(--blue);font-weight:800;margin-bottom:8px} input,select{width:100%;height:50px;border:1px solid #cbd8e7;border-radius:12px;padding:0 14px;font:inherit}
+button{height:50px;border:0;border-radius:12px;padding:0 22px;background:var(--blue);color:#fff;font-weight:800;font-size:16px;cursor:pointer}
+.filters{display:grid;grid-template-columns:1.2fr .8fr .8fr;gap:14px;margin:18px 0}
+.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:18px 0}.metric{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px}
+.metric span{display:block;color:#55708e}.metric strong{display:block;margin-top:7px;font-size:28px;color:var(--blue)}
+.table-wrap{overflow:auto;background:#fff;border:1px solid var(--line);border-radius:18px}table{width:100%;border-collapse:collapse;min-width:1100px}
+th,td{padding:14px 15px;border-bottom:1px solid #e3eaf2;text-align:left;vertical-align:top}th{background:#eef4fa;color:var(--blue);font-weight:800}
+.sku{font-weight:800}.name{font-weight:800}.muted{color:var(--muted)}.badge{display:inline-block;padding:5px 9px;border-radius:999px;background:#edf6ff;color:#075fb8;font-weight:800;font-size:13px}
+.actions{display:flex;gap:9px;flex-wrap:wrap}.actions a{display:inline-flex;align-items:center;justify-content:center;padding:9px 12px;border-radius:10px;text-decoration:none;font-weight:800}
+.edit{background:#eaf3fc;color:#075fb8}.view{background:#075fb8;color:#fff}.empty{text-align:center;padding:32px;color:var(--muted)}
+#msg{margin:14px 0 0;font-weight:700}.error{color:#b42318}.ok{color:#176b39}
+@media(max-width:900px){.control,.filters{grid-template-columns:1fr}.summary{grid-template-columns:repeat(2,1fr)}h1{font-size:36px}}
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="/admin">
+    <img src="/images/quantum-yijing-3d-logo.png" alt="Quantum YiJing®">
+    <div><strong>Quantum YiJing®</strong><span>ACADEMY OPERATING SYSTEM · v3.4.1f</span></div>
+  </a>
+  <div class="toplinks"><a href="/admin">← Main Admin</a><a href="/admin-products-master">Product Master</a></div>
+</header>
+<main>
+  <div class="eyebrow">QY-AOS · PRODUCT DIRECTORY</div>
+  <h1>Products, Courses & Services</h1>
+  <p class="lead">One admin directory for all products created in Product Master. Use the filters to show Active items only, courses only, consultations/services only, or every product.</p>
+
+  <section class="control">
+    <label><span>Admin Token</span><input id="token" type="password" autocomplete="off"></label>
+    <button id="load" type="button">Load Product Directory</button>
+  </section>
+  <p id="msg"></p>
+
+  <section class="filters">
+    <label><span>Search</span><input id="q" type="search" placeholder="SKU, product name, slug…"></label>
+    <label><span>Category</span><select id="type">
+      <option value="">All categories</option>
+      <option value="course">Courses</option>
+      <option value="consultation">Services / Consultations</option>
+      <option value="membership">Memberships</option>
+      <option value="ebook">E-books</option>
+      <option value="digital">Digital</option>
+      <option value="physical">Physical</option>
+      <option value="event">Events</option>
+      <option value="other">Other</option>
+    </select></label>
+    <label><span>Status</span><select id="status"><option value="Active">Active / Approved</option><option value="">All statuses</option><option>Draft</option><option>Inactive</option><option>Archived</option></select></label>
+  </section>
+
+  <section class="summary">
+    <article class="metric"><span>Active / Approved</span><strong id="mActive">0</strong></article>
+    <article class="metric"><span>Courses</span><strong id="mCourse">0</strong></article>
+    <article class="metric"><span>Services</span><strong id="mService">0</strong></article>
+    <article class="metric"><span>Memberships</span><strong id="mMember">0</strong></article>
+    <article class="metric"><span>All Products</span><strong id="mAll">0</strong></article>
+  </section>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>SKU</th><th>Product / Service</th><th>Category</th><th>Status</th><th>Price</th><th>Dates</th><th>Slug</th><th>Action</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="8" class="empty">Load the directory to begin.</td></tr></tbody>
+    </table>
+  </div>
+</main>
+<script>
+const $=s=>document.querySelector(s);let products=[];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=(r)=>`${r.currency==='MYR'?'RM':(r.currency||'MYR')} ${Number(r.effective_price??r.price??0).toFixed(2)}`;
+function msg(t,bad=false){$('#msg').textContent=t;$('#msg').className=bad?'error':'ok'}
+function render(){
+  const q=$('#q').value.trim().toLowerCase(), type=$('#type').value, status=$('#status').value;
+  const rows=products.filter(r=>{
+    const hay=[r.sku,r.name_en,r.name_zh,r.slug].join(' ').toLowerCase();
+    return (!q||hay.includes(q))&&(!type||r.product_type===type)&&(!status||r.status===status);
+  });
+  $('#rows').innerHTML=rows.length?rows.map(r=>{
+    const publicUrl=r.slug?'/product/'+encodeURIComponent(r.slug):'';
+    const dates=[r.starts_on,r.ends_on].filter(Boolean).join(' → ')||'—';
+    return `<tr>
+      <td class="sku">${esc(r.sku||'—')}</td>
+      <td><div class="name">${esc(r.name_en||'—')}</div>${r.name_zh?`<div class="muted">${esc(r.name_zh)}</div>`:''}</td>
+      <td><span class="badge">${esc(r.product_type||'—')}</span></td>
+      <td>${esc(r.status||'—')}</td>
+      <td>${money(r)}</td>
+      <td>${esc(dates)}</td>
+      <td>${esc(r.slug||'—')}</td>
+      <td><div class="actions"><a class="edit" href="/admin-products-master">Edit in Product Master</a>${publicUrl?`<a class="view" href="${publicUrl}" target="_blank" rel="noopener">View Public Page</a>`:''}</div></td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="8" class="empty">No products match these filters.</td></tr>';
+}
+function metrics(){
+  $('#mAll').textContent=products.length;
+  $('#mActive').textContent=products.filter(x=>x.status==='Active').length;
+  $('#mCourse').textContent=products.filter(x=>x.status==='Active'&&x.product_type==='course').length;
+  $('#mService').textContent=products.filter(x=>x.status==='Active'&&x.product_type==='consultation').length;
+  $('#mMember').textContent=products.filter(x=>x.status==='Active'&&x.product_type==='membership').length;
+}
+async function load(){
+  const token=$('#token').value.trim(); if(!token){msg('Please enter the Admin Token.',true);return}
+  sessionStorage.setItem('qyAdminToken',token); msg('Loading product directory…');
+  try{
+    const r=await fetch('/api/admin?action=commerceproducts',{headers:{authorization:'Bearer '+token}});
+    const d=await r.json(); if(!r.ok)throw new Error(d.error||'Unable to load products.');
+    products=d.results||[]; metrics(); render(); msg(`${products.length} product record(s) loaded.`);
+  }catch(e){msg(e.message,true)}
+}
+$('#load').addEventListener('click',load);['q','type','status'].forEach(id=>$('#'+id).addEventListener(id==='q'?'input':'change',render));
+const saved=sessionStorage.getItem('qyAdminToken');if(saved)$('#token').value=saved;
+</script>
+</body>
+</html>
