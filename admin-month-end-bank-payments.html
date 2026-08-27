@@ -4,4 +4,180 @@
 <main><div class="heading"><div><div class="eyebrow">ACCOUNTING · MONTH-END</div><h1>Coach + Affiliate Bank Payment List</h1><p>One approved bank-transfer list and one Excel file for the Accounts team.</p></div><div class="badge">READ-ONLY EXPORT</div></div>
 <section class="card"><div class="controls"><label class="field"><span>Admin Token</span><input id="token" type="password" autocomplete="off"></label><label class="field"><span>Payout Month</span><input id="period" type="month"></label><label class="check"><input id="includeTests" type="checkbox"><span>Include test affiliates</span></label><button id="load" class="btn primary">Load Bank Payment List</button><button id="export" class="btn export" disabled>Export Combined Excel (.xlsx)</button></div><p id="status" class="status"></p></section>
 <section class="card"><div class="summary"><div class="metric"><span>Coach Payments</span><strong id="coachCount">0</strong><small>Approved</small></div><div class="metric"><span>Affiliate Payments</span><strong id="affiliateCount">0</strong><small>Approved</small></div><div class="metric"><span>Total Bank Payment</span><strong id="totalPay">MYR 0.00</strong><small>By currency</small></div><div class="metric"><span>Incomplete Bank Details</span><strong id="missingCount">0</strong><small>Review before export</small></div></div><div class="notice"><strong>Accounting safeguard:</strong> this page only reads Approved Coach and Affiliate payouts. It does not recalculate commission, approve payouts, or mark anything Paid.</div>
-<div class="table-wrap"><table><thead><tr><th>No.</th><th>Type</th><th>Code</th><th>Payee Name</th><th>Bank Name</th><th>Bank Account Name</th><th>Bank Account Number</th><th>Country</th><th>Currency</th><th>Net Payable</th><th>Payout Period</th><th>Payout Reference</th><th>Email</th><th>Payment Reference</th><th>Payment Date</th><th>Remarks</th></tr></thead><tbody id="rows"><tr><td class="empty" colspan="16">Load a payout month to begin.</td></tr></tbody></table></div></section></main><script src="/admin-month-end-bank-payments.js?v=3.4.1g" defer></script></body></html>
+<div class="table-wrap"><table><thead><tr><th>No.</th><th>Type</th><th>Code</th><th>Payee Name</th><th>Bank Name</th><th>Bank Account Name</th><th>Bank Account Number</th><th>Country</th><th>Currency</th><th>Net Payable</th><th>Payout Period</th><th>Payout Reference</th><th>Email</th><th>Payment Reference</th><th>Payment Date</th><th>Remarks</th></tr></thead><tbody id="rows"><tr><td class="empty" colspan="16">Load a payout month to begin.</td></tr></tbody></table></div></section>
+
+<section class="card" id="monthEndPaymentImport">
+
+  <div class="heading">
+    <div>
+      <div class="eyebrow">ACCOUNTING · PAYMENT POSTING</div>
+
+      <h1 style="font-size:30px">
+        Import Completed Bank Payment File
+      </h1>
+
+      <p>
+        After Accounts completes the bank transfers, fill in
+        <strong>Payment Reference</strong> and
+        <strong>Payment Date</strong>
+        in the exported Excel file, save it, then upload the same file here.
+      </p>
+    </div>
+
+    <div class="badge" style="background:#fff4d8;color:#8a5d00">
+      WRITE ACTION · CONFIRMATION REQUIRED
+    </div>
+  </div>
+
+
+  <div class="notice">
+    <strong>Posting safeguard:</strong>
+    validation does not change D1.
+    The system checks payout reference, type, currency, amount,
+    payout period, payment date/reference and current payout status
+    before allowing payment posting.
+    Already-Paid rows are skipped safely.
+  </div>
+
+
+  <div
+    style="
+      display:grid;
+      grid-template-columns:minmax(280px,1fr) auto auto;
+      gap:14px;
+      align-items:end;
+      margin-top:18px;
+    "
+  >
+
+    <label class="field">
+
+      <span>Completed Excel File (.xlsx)</span>
+
+      <input
+        id="completedBankFile"
+        type="file"
+        accept=".xlsx,.xls"
+      >
+
+    </label>
+
+
+    <button
+      id="validateCompletedBankFile"
+      class="btn primary"
+      type="button"
+    >
+      Validate File
+    </button>
+
+
+    <button
+      id="confirmCompletedBankFile"
+      class="btn export"
+      type="button"
+      disabled
+    >
+      Confirm &amp; Mark Paid
+    </button>
+
+  </div>
+
+
+  <p
+    id="completedBankImportStatus"
+    class="status"
+  ></p>
+
+
+  <div
+    class="summary"
+    style="margin-top:18px"
+  >
+
+    <div class="metric">
+      <span>Rows Loaded</span>
+      <strong id="importRowsCount">0</strong>
+      <small>From completed Excel</small>
+    </div>
+
+    <div class="metric">
+      <span>Ready to Post</span>
+      <strong id="importReadyCount">0</strong>
+      <small>Approved + validated</small>
+    </div>
+
+    <div class="metric">
+      <span>Already Paid</span>
+      <strong id="importSkippedCount">0</strong>
+      <small>Skipped safely</small>
+    </div>
+
+    <div class="metric">
+      <span>Validation Errors</span>
+      <strong id="importErrorCount">0</strong>
+      <small>Must be zero before posting</small>
+    </div>
+
+  </div>
+
+
+  <div class="table-wrap">
+
+    <table>
+
+      <thead>
+
+        <tr>
+          <th>No.</th>
+          <th>Type</th>
+          <th>Code / Payee</th>
+          <th>Payout Reference</th>
+          <th>Currency</th>
+          <th>Net Payable</th>
+          <th>Payment Date</th>
+          <th>Payment Reference</th>
+          <th>Validation</th>
+        </tr>
+
+      </thead>
+
+
+      <tbody id="completedBankImportRows">
+
+        <tr>
+          <td
+            class="empty"
+            colspan="9"
+          >
+            Choose a completed month-end Excel file to begin.
+          </td>
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</section>
+
+</main>
+
+
+<script
+  src="/admin-month-end-bank-payments.js?v=3.4.1g"
+  defer
+></script>
+
+<script
+  src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
+></script>
+
+<script
+  src="/admin-month-end-bank-payments-import.js?v=3.4.1g5"
+  defer
+></script>
+
+</body>
+</html>
