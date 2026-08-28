@@ -19,7 +19,11 @@ export async function onRequestGet({request,env}){
       SELECT id,affiliate_code,full_name,email,status,portal_enabled
       FROM affiliates
       WHERE status='Approved'
-        AND COALESCE(portal_enabled,0)=0
+  AND (
+    COALESCE(portal_enabled,0)=0
+    OR COALESCE(password_hash,'')=''
+    OR COALESCE(portal_activated_at,'')=''
+  )
       ORDER BY id DESC
     `).all();
 
@@ -43,15 +47,38 @@ export async function onRequestPost({request,env}){
     const id=Number(b.affiliate_id);
 
     const a=await db.prepare(`
-      SELECT id,affiliate_code,full_name,email,status,portal_enabled
-      FROM affiliates WHERE id=?
-    `).bind(id).first();
+  SELECT
+    id,
+    affiliate_code,
+    full_name,
+    email,
+    status,
+    portal_enabled,
+    portal_activated_at,
+    password_hash
+  FROM affiliates
+  WHERE id=?
+`).bind(id).first();
 
     if(!a || a.status!=='Approved')
       return Response.json({error:'Approved affiliate not found.'},{status:404});
 
-    if(Number(a.portal_enabled)===1)
-      return Response.json({error:'Affiliate portal is already active.'},{status:409});
+   const fullyActivated =
+  Number(a.portal_enabled)===1 &&
+  !!String(a.password_hash||'').trim() &&
+  !!String(a.portal_activated_at||'').trim();
+
+if(fullyActivated){
+  return Response.json({
+    error:'Affiliate portal is already activated. Use Forgot Password if access needs to be recovered.'
+  },{status:409});
+}
+    await db.prepare(`
+  UPDATE affiliate_activation_tokens
+  SET used_at=CURRENT_TIMESTAMP
+  WHERE affiliate_id=?
+    AND COALESCE(used_at,'')=''
+`).bind(a.id).run();
 
     const token=randomToken(32);
     const tokenHash=await sha256(token);
