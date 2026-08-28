@@ -12,15 +12,16 @@ export async function onRequestPost({request,env}){
       SELECT id,full_name,email,status,portal_enabled
       FROM affiliates
       WHERE lower(email)=lower(?)
+        AND status='Approved'
+        AND COALESCE(portal_enabled,0)=1
+      ORDER BY id DESC
       LIMIT 1
     `).bind(email).first();
 
     // Never reveal whether an account exists.
-    if(!a || a.status!=='Approved' || !a.portal_enabled){
-      console.log('affiliate forgot password: generic response', {
-        found: !!a,
-        status: a?.status || '',
-        portal_enabled: Number(a?.portal_enabled||0)
+    if(!a){
+      console.log('affiliate forgot password: generic response',{
+        found:false
       });
       return Response.json({ok:true});
     }
@@ -70,20 +71,21 @@ export async function onRequestPost({request,env}){
     }
 
     if(!emailResult?.ok){
-      console.error('affiliate forgot password: reset email failed', {
+      console.error('affiliate forgot password: reset email failed',{
         affiliate_id:a.id,
         email:a.email,
-        status:emailResult?.status || 0
+        status:emailResult?.status||0
       });
       return Response.json({ok:true});
     }
 
-    console.log('affiliate forgot password: reset email accepted', {
+    console.log('affiliate forgot password: reset email accepted',{
       affiliate_id:a.id,
       email:a.email
     });
 
     return Response.json({ok:true});
+
   }catch(e){
     console.error('affiliate forgot password',e);
     // Keep generic response to avoid leaking whether an account exists.
