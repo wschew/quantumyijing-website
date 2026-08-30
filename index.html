@@ -1,640 +1,109 @@
 <!doctype html>
-<html lang="en" data-lang="en">
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Quantum YiJing International Academy — Learn, Research and Transform through ancient wisdom, modern scientific thinking and human development.">
-  <meta name="theme-color" content="#073b8c">
-  <meta property="og:title" content="Quantum YiJing International Academy">
-  <meta property="og:description" content="Where Ancient Wisdom Meets Modern Scientific Thinking.">
-  <meta property="og:type" content="website">
-  <title>Quantum YiJing International Academy</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700;800&family=Noto+Serif+SC:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css?v=2.8.2">
-  <link rel="stylesheet" href="/academic-programmes.css?v=2.1.0">
-  <link rel="stylesheet" href="/research.css?v=2.1.0">
-  <link rel="stylesheet" href="/publications.css?v=2.1.0">
-  <link rel="stylesheet" href="/v2.css?v=2.1.0">
-  <link rel="stylesheet" href="/enquiry.css?v=2.1.0">
-  <link rel="stylesheet" href="/marketing.css?v=2.8.6">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="YJ12 Yijing: Science of Prediction — a live two-day Zoom programme with Master Chew Wai Soon.">
+  <meta property="og:title" content="YJ12 — Read change before it becomes consequence">
+  <meta property="og:description" content="Learn a structured approach to Yijing prediction in a live two-day programme.">
+  <meta property="og:image" content="assets/yj12-hero.png">
+  <title>YJ12 — Yijing: Science of Prediction</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="scroll-progress" class="scroll-progress" aria-hidden="true"></div>
-  <canvas id="quantum-canvas" aria-hidden="true"></canvas>
-
-  <div class="top-ribbon" aria-label="Academy themes">
-    <span data-en="Ancient Wisdom" data-zh="千年智慧">Ancient Wisdom</span><i>◆</i>
-    <span data-en="Modern Scientific Thinking" data-zh="现代科学思维">Modern Scientific Thinking</span><i>◆</i>
-    <span data-en="Quantum Research" data-zh="量子研究">Quantum Research</span>
-  </div>
-
-  <header class="site-header">
-    <a class="brand" href="#top" aria-label="Quantum YiJing home">
-      <span class="brand-logo-wrap"><img src="/images/quantum-yijing-3d-logo.png?v=2.0.0" alt="Quantum YiJing emblem"></span>
-      <span class="brand-copy"><strong>Quantum YiJing</strong><small data-en="International Academy" data-zh="国际学院">International Academy</small></span>
-    </a>
-    <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false">☰</button>
-    <nav id="main-nav" class="main-nav" aria-label="Primary navigation">
-      <a href="#top" data-en="Home" data-zh="首页">Home</a>
-      <a href="#mission" data-en="About" data-zh="关于">About</a>
-      <a href="/academy.html" data-en="Academy" data-zh="学院">Academy</a>
-      <a href="#professional-services" data-en="Professional Services" data-zh="专业服务">Professional Services</a>
-      <a href="#research" data-en="Research" data-zh="研究">Research</a>
-      <a href="#publications" data-en="Publications" data-zh="出版">Publications</a>
-      <a href="#digital-learning" data-en="Learning Centre" data-zh="学习中心">Learning Centre</a>
-      <a href="#community" data-en="Community" data-zh="社群">Community</a>
-      <a href="/events.html" data-en="Events" data-zh="活动">Events</a>
-      <a href="/products.html" data-en="Products" data-zh="产品">Products</a>
-      <a href="#contact" data-en="Contact" data-zh="联系">Contact</a>
-    </nav>
-    <button id="lang-toggle" class="lang-toggle" type="button" aria-label="Switch language">中文</button>
+  <div class="announcement">Early-bird MYR 1,400 until 31 August 2026 <a href="#enrol">View programme</a></div>
+  <header class="nav wrap">
+    <a class="brand" href="#top" aria-label="Quantum YiJing home"><img src="assets/quantum-yijing-3d-logo.png" alt="Quantum YiJing 3D logo"><strong>Quantum YiJing<small>International Academy</small></strong></a>
+    <nav><a href="#learn">What you’ll learn</a><a href="#programme">Programme</a><a href="#faq">FAQ</a></nav>
+    <div class="nav-actions"><a class="language" href="zh.html">中文</a><a class="button button-small" data-register href="https://quantumyijing.com/product/yj12-yijing-science-of-prediction">Reserve my place</a></div>
   </header>
 
   <main id="top">
-    <section class="hero section-shell">
-      <div class="hero-copy intro-sequence">
-        <p class="eyebrow hero-step" data-en="Integrating Ancient Wisdom with Modern Science" data-zh="融合千年智慧与现代科学">Integrating Ancient Wisdom with Modern Science</p>
-        <h1 class="hero-step"><span>Quantum YiJing</span><span data-en="International Academy" data-zh="国际学院">International Academy</span></h1>
-        <div class="hero-divider hero-step"><span></span><i></i><span></span></div>
-        <h2 class="hero-step" data-en="Where Ancient Wisdom Meets Modern Scientific Thinking" data-zh="让千年智慧与现代科学思维相遇">Where Ancient Wisdom Meets Modern Scientific Thinking</h2>
-        <p class="hero-lead hero-step" data-en="A bilingual international academy advancing Yijing education, interdisciplinary research, professional consultation and lifelong learning." data-zh="一个推动易经教育、跨学科研究、专业咨询与终身学习的双语国际学院。">A bilingual international academy advancing Yijing education, interdisciplinary research, professional consultation and lifelong learning.</p>
-        <div class="hero-actions hero-step">
-          <a class="btn btn-primary" href="#academy"><span data-en="Explore the Academy" data-zh="探索学院">Explore the Academy</span></a>
-          <a class="btn btn-secondary" href="#research"><span data-en="Quantum Research" data-zh="量子研究">Quantum Research</span></a>
-        </div>
-      </div>
-
-      <div class="hero-visual intro-sequence">
-        <div class="science-orbit orbit-one"></div><div class="science-orbit orbit-two"></div><div class="science-orbit orbit-three"></div>
-        <div class="portrait-glow"></div>
-        <img class="hero-portrait hero-step" src="/images/master-chew.png?v=2.0.0" alt="Master Chew Wai Soon">
-        <article class="profile-card hero-step">
-          <h3 data-en="Master Chew Wai Soon" data-zh="赵辉顺导师">Master Chew Wai Soon</h3>
-          <p class="founder" data-en="Founder & Chief Instructor" data-zh="创办人与首席导师">Founder & Chief Instructor</p>
-          <p class="researcher" data-en="Quantum Physics Researcher" data-zh="量子物理研究员">Quantum Physics Researcher</p>
-          <div class="role-list"><span data-en="Engineer" data-zh="工程师">Engineer</span><i>•</i><span data-en="Educator" data-zh="教育家">Educator</span><i>•</i><span data-en="Consultant" data-zh="顾问">Consultant</span><i>•</i><span data-en="Influencer" data-zh="知识传播者">Influencer</span></div>
-        </article>
+    <section class="hero">
+      <div class="hero-shade"></div>
+      <div class="wrap hero-content">
+        <div class="hero-copy"><div class="eyebrow">Live online · 26–27 September 2026</div>
+        <h1>Read change<br><em>before it becomes consequence.</em></h1>
+        <p class="hero-lead">YJ12 turns Yijing divination into a structured way to observe patterns, frame better questions and make decisions with greater clarity.</p>
+        <div class="hero-actions"><a class="button" data-register href="https://quantumyijing.com/product/yj12-yijing-science-of-prediction">Explore YJ12</a><a class="text-link" href="#learn">See what you’ll learn <span>↓</span></a></div></div>
+        <img class="bagua-art" src="assets/xiantian-bagua.svg" alt="Correct Earlier Heaven Bagua arrangement: Qian south, Kun north, Li east, Kan west">
+        <ul class="quick-facts" aria-label="Course details">
+          <li><strong>2 days</strong><span>Live via Zoom</span></li>
+          <li><strong>10am–5pm</strong><span>Both days</span></li>
+          <li><strong>Bilingual</strong><span>Chinese + English transcription</span></li>
+        </ul>
       </div>
     </section>
 
-    <section id="mission" class="mission-band reveal">
-      <div class="section-shell mission-inner">
-        <div class="mission-symbol"><span>☯</span></div>
-        <div class="mission-copy"><p class="eyebrow" data-en="Our Mission" data-zh="我们的使命">Our Mission</p><p data-en="To bridge the timeless wisdom of the Yijing with modern scientific thinking, inspiring wiser decisions, innovation and meaningful lifelong learning through education, research and practical application." data-zh="连接《易经》的恒久智慧与现代科学思维，通过教育、研究与实践应用，启发更明智的决策、创新与有意义的终身学习。">To bridge the timeless wisdom of the Yijing with modern scientific thinking, inspiring wiser decisions, innovation and meaningful lifelong learning through education, research and practical application.</p></div>
-        <div class="stats">
-          <div><strong>30+</strong><span data-en="Years of Yijing Study" data-zh="易经研习年资">Years of Yijing Study</span></div>
-          <div><strong>6+</strong><span data-en="Years of Teaching" data-zh="教学年资">Years of Teaching</span></div>
-          <div><strong>200+</strong><span data-en="Educational Videos" data-zh="教学视频">Educational Videos</span></div>
-          <div><strong data-en="Global" data-zh="国际化">Global</strong><span data-en="Education & Consultation" data-zh="教育与咨询">Education & Consultation</span></div>
+    <section class="friction section">
+      <div class="wrap narrow center">
+        <span class="section-number">01 · The real problem</span>
+        <h2>Most difficult decisions are not short of information.<br><em>They are short of perspective.</em></h2>
+        <p>When conditions keep changing, experience alone can become noise. Yijing offers a disciplined lens for seeing relationships, timing and direction—before you commit to a path.</p>
+        <div class="signal-grid">
+          <article><span>01</span><h3>The situation is changing</h3><p>You sense movement, but cannot yet name what is driving it.</p></article>
+          <article><span>02</span><h3>Every option has trade-offs</h3><p>Logic gives several valid answers but no clear next move.</p></article>
+          <article><span>03</span><h3>Timing changes the answer</h3><p>A sound decision made too early—or too late—can still fail.</p></article>
         </div>
       </div>
     </section>
 
-    <section id="academy-gateways" class="v2-gateways content-section reveal">
-      <div class="section-shell">
-        <div class="v2-section-heading">
-          <div><p class="eyebrow" data-en="Your Academy Journey" data-zh="您的学院旅程">Your Academy Journey</p><h2 data-en="Learn • Research • Transform" data-zh="学习 • 研究 • 成长">Learn • Research • Transform</h2></div>
-          <p data-en="Enter the Academy through the pathway that best matches your goals — structured education, original publications, responsible research, professional guidance or lifelong community learning." data-zh="根据您的目标进入最适合的学院路径——系统教育、原创出版、严谨研究、专业指导或终身社群学习。">Enter the Academy through the pathway that best matches your goals — structured education, original publications, responsible research, professional guidance or lifelong community learning.</p>
+    <section id="learn" class="learn section ink-section">
+      <div class="wrap split-heading">
+        <div><span class="section-number gold">02 · A structured method</span><h2>Learn to move from<br><em>symbols to insight.</em></h2></div>
+        <p>This programme is for learners who want more than memorising hexagrams. It explores Yijing prediction as a coherent process: question, pattern, change, interpretation and responsible action.</p>
+      </div>
+      <div class="wrap learning-list">
+        <article><span>01</span><div><h3>Frame the right question</h3><p>Separate a useful enquiry from a vague wish so the reading has direction.</p></div></article>
+        <article><span>02</span><div><h3>Recognise pattern and relationship</h3><p>Read the structure of a situation instead of interpreting symbols in isolation.</p></div></article>
+        <article><span>03</span><div><h3>Understand change and timing</h3><p>See how present conditions may develop and where intervention is possible.</p></div></article>
+        <article><span>04</span><div><h3>Translate insight into action</h3><p>Turn a reading into a practical, considered next step without surrendering judgment.</p></div></article>
+      </div>
+    </section>
+
+    <section class="guide section">
+      <div class="wrap guide-grid">
+        <div class="master-photo"><img src="assets/master-chew.png" alt="Master Chew Wai Soon"></div>
+        <div><span class="section-number">03 · Your guide</span><h2>Master Chew Wai Soon</h2><p class="lead">A live, guided learning experience—not a collection of pre-recorded lessons.</p><p>Master Chew leads the programme step by step, connecting traditional Yijing principles with a systematic approach to prediction and decision-making.</p><div class="note">Teaching language: Chinese, with English text transcription provided.</div></div>
+      </div>
+    </section>
+
+    <section id="programme" class="programme section paper-section">
+      <div class="wrap">
+        <span class="section-number">04 · Programme at a glance</span>
+        <div class="programme-head"><h2>Two focused days.<br><em>One clearer framework.</em></h2><p>Join from wherever you are. The programme is delivered live via Zoom over one weekend.</p></div>
+        <div class="timeline">
+          <article><div class="date"><strong>26</strong><span>SEP<br>2026</span></div><div><p class="tag">Day one</p><h3>Foundation, structure and the language of change</h3><p>Build the conceptual framework needed to approach Yijing prediction systematically.</p></div></article>
+          <article><div class="date"><strong>27</strong><span>SEP<br>2026</span></div><div><p class="tag">Day two</p><h3>Interpretation, timing and applied reasoning</h3><p>Develop the thinking process that connects a reading to real-world choices.</p></div></article>
         </div>
-        <div class="v2-gateway-grid">
-          <a href="#academic-programmes"><span>01</span><small data-en="LEARN" data-zh="学习">LEARN</small><h3 data-en="Academy" data-zh="学院课程">Academy</h3><p data-en="Explore five schools and structured academic programmes." data-zh="探索五大学院与系统化学术课程。">Explore five schools and structured academic programmes.</p><b data-en="Explore programmes →" data-zh="探索课程 →">Explore programmes →</b></a>
-          <a href="#research"><span>02</span><small data-en="DISCOVER" data-zh="探索">DISCOVER</small><h3 data-en="Research" data-zh="研究">Research</h3><p data-en="Discover interdisciplinary inquiry and educational innovation." data-zh="了解跨学科研究与教育创新。">Discover interdisciplinary inquiry and educational innovation.</p><b data-en="Visit research centre →" data-zh="进入研究中心 →">Visit research centre →</b></a>
-          <a href="#publications"><span>03</span><small data-en="READ" data-zh="阅读">READ</small><h3 data-en="Publications" data-zh="出版物">Publications</h3><p data-en="Read published books available worldwide on Google Play Books." data-zh="阅读已在 Google Play Books 全球发行的著作。">Read published books available worldwide on Google Play Books.</p><b data-en="Browse the library →" data-zh="浏览数字图书馆 →">Browse the library →</b></a>
-          <a href="#professional-services"><span>04</span><small data-en="EXPERIENCE" data-zh="实践">EXPERIENCE</small><h3 data-en="Professional Services" data-zh="专业服务">Professional Services</h3><p data-en="Seek structured consultation, training and personal development support." data-zh="获取系统咨询、培训与个人成长支持。">Seek structured consultation, training and personal development support.</p><b data-en="View services →" data-zh="查看服务 →">View services →</b></a>
-          <a href="#digital-learning"><span>05</span><small data-en="ADVANCE" data-zh="进阶">ADVANCE</small><h3 data-en="Digital Learning" data-zh="数字学习">Digital Learning</h3><p data-en="A future home for recorded programmes, learning paths and resources." data-zh="未来将提供录播课程、学习路径与教学资源。">A future home for recorded programmes, learning paths and resources.</p><b data-en="See the roadmap →" data-zh="查看发展路线 →">See the roadmap →</b></a>
-          <a href="#community"><span>06</span><small data-en="CONNECT" data-zh="连接">CONNECT</small><h3 data-en="Community" data-zh="学院社群">Community</h3><p data-en="Connect through events, educational media and Academy updates." data-zh="通过活动、教育媒体与学院动态保持联系。">Connect through events, educational media and Academy updates.</p><b data-en="Join the journey →" data-zh="加入旅程 →">Join the journey →</b></a>
+        <p class="accuracy-note">Detailed lesson sequence will be confirmed on the official registration page.</p>
+      </div>
+    </section>
+
+    <section id="enrol" class="enrol section">
+      <div class="wrap enrol-card">
+        <div><span class="section-number gold">05 · Join YJ12</span><h2>Make the next decision<br><em>with a wider view.</em></h2><p>Continue to the official YJ12 page for full registration and payment details.</p></div>
+        <div class="price-card">
+          <p>Early-bird tuition</p><div class="price"><small>MYR</small> 1,400</div><p class="was">Standard tuition <s>MYR 1,800</s></p><p class="deadline">Available through 31 August 2026</p>
+          <a class="button full" data-register href="https://quantumyijing.com/product/yj12-yijing-science-of-prediction">Continue to registration</a>
+          <small>Official registration and payment take place on the YJ12 course page.</small>
         </div>
       </div>
     </section>
 
-    <section id="academy" class="academy-section content-section reveal">
-      <div class="section-shell">
-        <p class="eyebrow centered" data-en="The Academy" data-zh="学院课程体系">The Academy</p>
-        <div class="academy-intro">
-          <div>
-            <h2 data-en="Discover the Wisdom of the Yijing Through Modern Thinking" data-zh="以现代思维探索《易经》智慧">Discover the Wisdom of the Yijing Through Modern Thinking</h2>
-          </div>
-          <p data-en="Our programmes combine classical knowledge, structured reasoning and practical application. Learners progress from essential principles to professional practice through a clear and disciplined pathway." data-zh="学院课程结合经典知识、系统思维与实践应用，引导学员从核心基础逐步迈向专业研习，建立清晰、严谨而可持续的学习路径。">Our programmes combine classical knowledge, structured reasoning and practical application. Learners progress from essential principles to professional practice through a clear and disciplined pathway.</p>
-        </div>
-
-        <div class="learning-path" aria-label="Learning pathway">
-          <article class="path-card">
-            <span class="path-number">01</span>
-            <div class="path-icon">基</div>
-            <p class="path-level" data-en="Foundation" data-zh="基础阶段">Foundation</p>
-            <h3 data-en="Build the Core Language" data-zh="建立核心语言">Build the Core Language</h3>
-            <ul>
-              <li data-en="Introduction to Yijing" data-zh="易经导论">Introduction to Yijing</li>
-              <li data-en="Yin–Yang Theory" data-zh="阴阳理论">Yin–Yang Theory</li>
-              <li data-en="Five Elements (Wu Xing)" data-zh="五行体系">Five Elements (Wu Xing)</li>
-              <li data-en="Eight Trigrams (Ba Gua)" data-zh="八卦结构">Eight Trigrams (Ba Gua)</li>
-              <li data-en="Sixty-Four Hexagrams" data-zh="六十四卦">Sixty-Four Hexagrams</li>
-            </ul>
-          </article>
-          <div class="path-arrow" aria-hidden="true">→</div>
-          <article class="path-card featured">
-            <span class="path-number">02</span>
-            <div class="path-icon">进</div>
-            <p class="path-level" data-en="Intermediate" data-zh="进阶阶段">Intermediate</p>
-            <h3 data-en="Apply Structured Methods" data-zh="掌握系统方法">Apply Structured Methods</h3>
-            <ul>
-              <li data-en="Bazi" data-zh="八字命理">Bazi</li>
-              <li data-en="Feng Shui" data-zh="风水学">Feng Shui</li>
-              <li data-en="Plum Blossom Numerology" data-zh="梅花易数">Plum Blossom Numerology</li>
-              <li data-en="Date Selection" data-zh="择日学">Date Selection</li>
-            </ul>
-          </article>
-          <div class="path-arrow" aria-hidden="true">→</div>
-          <article class="path-card">
-            <span class="path-number">03</span>
-            <div class="path-icon">专</div>
-            <p class="path-level" data-en="Advanced" data-zh="高阶阶段">Advanced</p>
-            <h3 data-en="Develop Professional Practice" data-zh="发展专业实践">Develop Professional Practice</h3>
-            <ul>
-              <li data-en="Six-Line Divination" data-zh="六爻占卜">Six-Line Divination</li>
-              <li data-en="Flying Stars" data-zh="玄空飞星">Flying Stars</li>
-              <li data-en="Professional Consultation" data-zh="专业咨询实务">Professional Consultation</li>
-              <li data-en="Research Methodology" data-zh="研究方法">Research Methodology</li>
-            </ul>
-          </article>
-        </div>
-
-        <div class="teaching-philosophy">
-          <div class="philosophy-mark">“</div>
-          <div>
-            <p class="eyebrow" data-en="Teaching Philosophy" data-zh="教学理念">Teaching Philosophy</p>
-            <blockquote data-en="We cultivate observation, critical thinking and practical judgement. Traditional knowledge is studied with respect, tested through experience and applied with responsibility." data-zh="我们重视观察、批判思维与实践判断。传统智慧应在尊重中研习，在经验中验证，并以负责任的方式应用。">We cultivate observation, critical thinking and practical judgement. Traditional knowledge is studied with respect, tested through experience and applied with responsibility.</blockquote>
-          </div>
-        </div>
-      </div>
-    </section>
-
-
-    <section id="academic-programmes" class="programmes-section content-section reveal">
-      <div class="section-shell">
-        <div class="programmes-heading">
-          <div>
-            <p class="eyebrow" data-en="Schools & Academic Programmes" data-zh="学院与学术课程">Schools & Academic Programmes</p>
-            <h2 data-en="A structured academy for wisdom, consciousness, research and professional practice" data-zh="融汇智慧、意识、研究与专业实践的系统学院">A structured academy for wisdom, consciousness, research and professional practice</h2>
-          </div>
-          <p data-en="Our academic architecture brings together five complementary schools. Learners may begin with foundational study, develop specialist knowledge and progress towards professional practice, advanced inquiry or lifelong personal development." data-zh="学院由五个相互补充的学术领域组成。学员可从基础学习起步，逐步建立专业知识，并迈向专业实践、进阶研究或终身个人成长。">Our academic architecture brings together five complementary schools. Learners may begin with foundational study, develop specialist knowledge and progress towards professional practice, advanced inquiry or lifelong personal development.</p>
-        </div>
-
-        <div class="schools-grid">
-          <article class="school-card school-primary">
-            <span class="school-number">01</span>
-            <p class="school-kicker" data-en="Classical Foundations" data-zh="经典基础">Classical Foundations</p>
-            <h3 data-en="School of YiJing Studies" data-zh="易经学学院">School of YiJing Studies</h3>
-            <p data-en="Systematic study of the YiJing's philosophical foundations, symbolic language and models of change." data-zh="系统研习《易经》的哲学基础、象数语言与变化模型。">Systematic study of the YiJing's philosophical foundations, symbolic language and models of change.</p>
-            <ul><li data-en="YiJing fundamentals" data-zh="易经基础">YiJing fundamentals</li><li data-en="Yin–Yang and Five Elements" data-zh="阴阳与五行">Yin–Yang and Five Elements</li><li data-en="Eight Trigrams" data-zh="八卦体系">Eight Trigrams</li><li data-en="Sixty-Four Hexagrams" data-zh="六十四卦">Sixty-Four Hexagrams</li></ul>
-            <a class="school-link google-form-link" href="#academy-enquiry" data-interest="School of YiJing Studies" data-en="Enquire about programmes →" data-zh="咨询课程 →">Enquire about programmes →</a>
-          </article>
-
-          <article class="school-card">
-            <span class="school-number">02</span>
-            <p class="school-kicker" data-en="Applied Classical Systems" data-zh="传统应用体系">Applied Classical Systems</p>
-            <h3 data-en="School of Chinese Metaphysics" data-zh="中华术数学院">School of Chinese Metaphysics</h3>
-            <p data-en="Professional pathways in interpretation, forecasting, environmental analysis and classical decision methods." data-zh="涵盖命理、预测、环境分析与传统决策方法的专业学习路径。">Professional pathways in interpretation, forecasting, environmental analysis and classical decision methods.</p>
-            <ul><li data-en="Bazi and destiny analysis" data-zh="八字与命理分析">Bazi and destiny analysis</li><li data-en="Feng Shui systems" data-zh="风水体系">Feng Shui systems</li><li data-en="Six-Line Divination" data-zh="六爻占卜">Six-Line Divination</li><li data-en="Plum Blossom, date selection and face reading" data-zh="梅花易数、择日与面相">Plum Blossom, date selection and face reading</li></ul>
-            <a class="school-link google-form-link" href="#academy-enquiry" data-interest="School of Chinese Metaphysics" data-en="Enquire about programmes →" data-zh="咨询课程 →">Enquire about programmes →</a>
-          </article>
-
-          <article class="school-card school-mind">
-            <span class="school-number">03</span>
-            <p class="school-kicker" data-en="Human Development" data-zh="人本成长">Human Development</p>
-            <h3 data-en="School of Mind, Consciousness & Spiritual Development" data-zh="心智、意识与心灵成长学院">School of Mind, Consciousness & Spiritual Development</h3>
-            <p data-en="Programmes supporting self-awareness, inner development and responsible exploration of the mind and subconscious." data-zh="通过严谨而负责任的方式，促进自我觉察、内在成长，并探索心智与潜意识。">Programmes supporting self-awareness, inner development and responsible exploration of the mind and subconscious.</p>
-            <ul><li data-en="Hypnosis and the subconscious mind" data-zh="催眠与潜意识">Hypnosis and the subconscious mind</li><li data-en="Personal growth" data-zh="个人成长">Personal growth</li><li data-en="Emotional healing" data-zh="情绪疗愈">Emotional healing</li><li data-en="Consciousness and Eastern wisdom" data-zh="意识与东方智慧">Consciousness and Eastern wisdom</li></ul>
-            <a class="school-link google-form-link" href="#academy-enquiry" data-interest="Mind Consciousness Spiritual Development" data-en="Enquire about programmes →" data-zh="咨询课程 →">Enquire about programmes →</a>
-          </article>
-
-          <article class="school-card">
-            <span class="school-number">04</span>
-            <p class="school-kicker" data-en="Interdisciplinary Inquiry" data-zh="跨学科探索">Interdisciplinary Inquiry</p>
-            <h3 data-en="School of Scientific Research" data-zh="科学研究学院">School of Scientific Research</h3>
-            <p data-en="A responsible forum for interdisciplinary inquiry connecting classical knowledge with contemporary scientific thinking." data-zh="以负责任的跨学科方式，连接传统知识与现代科学思维。">A responsible forum for interdisciplinary inquiry connecting classical knowledge with contemporary scientific thinking.</p>
-            <ul><li data-en="Systems thinking" data-zh="系统思维">Systems thinking</li><li data-en="Quantum physics perspectives" data-zh="量子物理视角">Quantum physics perspectives</li><li data-en="Research methodology" data-zh="研究方法">Research methodology</li><li data-en="Science and ancient wisdom" data-zh="科学与古老智慧">Science and ancient wisdom</li></ul>
-            <a class="school-link google-form-link" href="#academy-enquiry" data-interest="Scientific Research" data-en="Discuss collaboration →" data-zh="洽谈研究合作 →">Discuss collaboration →</a>
-          </article>
-
-          <article class="school-card school-wide">
-            <span class="school-number">05</span>
-            <div class="school-wide-copy">
-              <p class="school-kicker" data-en="Applied Expertise" data-zh="专业应用">Applied Expertise</p>
-              <h3 data-en="School of Professional Consultation" data-zh="专业咨询学院">School of Professional Consultation</h3>
-              <p data-en="A practice-oriented pathway for responsible consultation, mentoring and decision support for individuals, families and organizations." data-zh="面向个人、家庭与机构，培养负责任的咨询、指导与决策支持能力。">A practice-oriented pathway for responsible consultation, mentoring and decision support for individuals, families and organizations.</p>
-            </div>
-            <ul><li data-en="Personal and family consultation" data-zh="个人与家庭咨询">Personal and family consultation</li><li data-en="Corporate and executive advisory" data-zh="企业与管理咨询">Corporate and executive advisory</li><li data-en="Professional mentoring" data-zh="专业导师指导">Professional mentoring</li><li data-en="Ethical consultation practice" data-zh="专业伦理与咨询实务">Ethical consultation practice</li></ul>
-            <a class="school-link google-form-link" href="#academy-enquiry" data-interest="Professional Consultation" data-en="Explore professional pathways →" data-zh="探索专业路径 →">Explore professional pathways →</a>
-          </article>
-        </div>
-
-        <div class="academic-pathway">
-          <div class="pathway-copy">
-            <p class="eyebrow" data-en="Academic Progression" data-zh="学术进阶路径">Academic Progression</p>
-            <h3 data-en="Begin with foundations. Advance with purpose." data-zh="始于基础，进阶有方。">Begin with foundations. Advance with purpose.</h3>
-            <p data-en="The pathway is flexible: learners may follow a complete progression or enter a specialist programme according to prior experience and personal goals." data-zh="学习路径具有弹性：学员可循序完成完整进阶，也可依据既有经验与个人目标进入相应专业课程。">The pathway is flexible: learners may follow a complete progression or enter a specialist programme according to prior experience and personal goals.</p>
-          </div>
-          <ol class="progression-track">
-            <li><span>01</span><strong data-en="Foundation" data-zh="基础">Foundation</strong><small data-en="Core concepts and language" data-zh="核心概念与语言">Core concepts and language</small></li>
-            <li><span>02</span><strong data-en="Intermediate" data-zh="进阶">Intermediate</strong><small data-en="Structured methods" data-zh="系统方法">Structured methods</small></li>
-            <li><span>03</span><strong data-en="Professional" data-zh="专业">Professional</strong><small data-en="Applied practice" data-zh="实践应用">Applied practice</small></li>
-            <li><span>04</span><strong data-en="Advanced Practitioner" data-zh="高阶研习">Advanced Practitioner</strong><small data-en="Case-based mastery" data-zh="案例与精进">Case-based mastery</small></li>
-            <li><span>05</span><strong data-en="Research & Lifelong Learning" data-zh="研究与终身学习">Research & Lifelong Learning</strong><small data-en="Inquiry, contribution and renewal" data-zh="探索、贡献与持续成长">Inquiry, contribution and renewal</small></li>
-          </ol>
-        </div>
-
-        <div class="learning-philosophy-panel">
-          <div class="learning-philosophy-title"><span>QY</span><div><p class="eyebrow" data-en="Learning Philosophy" data-zh="学习理念">Learning Philosophy</p><h3 data-en="Education as the cultivation of wisdom and responsibility" data-zh="教育，是智慧与责任的养成">Education as the cultivation of wisdom and responsibility</h3></div></div>
-          <p data-en="At Quantum YiJing International Academy, education is more than the transfer of knowledge. We cultivate observation, critical thinking, ethical responsibility, practical judgement and lifelong curiosity. Classical Eastern wisdom is studied with respect, while contemporary perspectives encourage disciplined inquiry and meaningful application." data-zh="在量子易经国际学院，教育不仅是知识的传递，更是观察力、批判思维、伦理责任、实践判断与终身求知精神的培养。我们尊重东方经典智慧，同时以现代视角推动严谨探索与有意义的应用。">At Quantum YiJing International Academy, education is more than the transfer of knowledge. We cultivate observation, critical thinking, ethical responsibility, practical judgement and lifelong curiosity. Classical Eastern wisdom is studied with respect, while contemporary perspectives encourage disciplined inquiry and meaningful application.</p>
-        </div>
-      </div>
-    </section>
-
-    <section id="research" class="research-v182 reveal">
-      <div class="research-v182-hero">
-        <div class="section-shell research-v182-hero-grid">
-          <div class="research-v182-copy">
-            <p class="eyebrow light" data-en="Research & Innovation Centre" data-zh="研究与创新中心">Research & Innovation Centre</p>
-            <h2 data-en="Ancient wisdom. Modern inquiry. Responsible innovation." data-zh="古老智慧、现代探索与负责任的创新">Ancient wisdom. Modern inquiry. Responsible innovation.</h2>
-            <p data-en="We create a disciplined public platform for interdisciplinary research, educational innovation and respectful dialogue between classical knowledge and contemporary scientific thinking." data-zh="我们以严谨、公开与负责任的方式，推动跨学科研究、教育创新，以及经典知识与现代科学思维之间的对话。">We create a disciplined public platform for interdisciplinary research, educational innovation and respectful dialogue between classical knowledge and contemporary scientific thinking.</p>
-            <div class="research-v182-actions">
-              <a class="btn btn-light" href="#research-philosophy" data-en="Our Research Philosophy" data-zh="研究理念">Our Research Philosophy</a>
-              <a class="btn btn-outline-light" href="#research-publications" data-en="Published Works" data-zh="已出版著作">Published Works</a>
-              <a class="btn btn-outline-light google-form-link" href="#contact" target="_blank" rel="noopener noreferrer" data-interest="Research Collaboration" data-en="Collaborate With Us" data-zh="与我们合作">Collaborate With Us</a>
-            </div>
-          </div>
-          <div class="research-v182-visual" aria-hidden="true">
-            <div class="research-v182-core">QY</div>
-            <span class="research-v182-ring ring-one"></span>
-            <span class="research-v182-ring ring-two"></span>
-            <span class="research-v182-ring ring-three"></span>
-            <i class="research-v182-dot dot-one"></i><i class="research-v182-dot dot-two"></i><i class="research-v182-dot dot-three"></i><i class="research-v182-dot dot-four"></i>
-          </div>
-        </div>
-      </div>
-
-      <div class="section-shell research-v182-body">
-        <div class="research-v182-pillars">
-          <article><span>01</span><h3 data-en="Research" data-zh="研究">Research</h3><p data-en="Developing insight through disciplined inquiry, comparison, documentation and reflection." data-zh="通过严谨探索、比较、记录与反思，发展新的理解。">Developing insight through disciplined inquiry, comparison, documentation and reflection.</p></article>
-          <article><span>02</span><h3 data-en="Education" data-zh="教育">Education</h3><p data-en="Translating knowledge into structured, accessible and meaningful learning experiences." data-zh="将知识转化为系统、易懂且有意义的学习体验。">Translating knowledge into structured, accessible and meaningful learning experiences.</p></article>
-          <article><span>03</span><h3 data-en="Innovation" data-zh="创新">Innovation</h3><p data-en="Using digital tools, bilingual communication and modern methods to extend lifelong learning." data-zh="运用数字工具、双语传播与现代方法，拓展终身学习。">Using digital tools, bilingual communication and modern methods to extend lifelong learning.</p></article>
-        </div>
-
-        <section class="research-v182-fields" aria-labelledby="research-v182-title">
-          <p class="eyebrow centered" data-en="Research Ecosystem" data-zh="研究生态">Research Ecosystem</p>
-          <h2 id="research-v182-title" class="section-title" data-en="Six complementary fields of inquiry" data-zh="六个相互关联的探索领域">Six complementary fields of inquiry</h2>
-          <p class="section-intro" data-en="Each field has its own methods and traditions, while contributing to a wider dialogue on wisdom, human development, education and scientific thinking." data-zh="每个领域拥有自身的方法与传统，同时共同参与有关智慧、人类发展、教育与科学思维的更广泛对话。">Each field has its own methods and traditions, while contributing to a wider dialogue on wisdom, human development, education and scientific thinking.</p>
-          <div class="research-v182-grid">
-            <article><span>01</span><h3 data-en="YiJing Studies" data-zh="易经研究">YiJing Studies</h3><p data-en="Classical philosophy, textual traditions, symbolism and models of change." data-zh="经典哲学、文本传统、象数体系与变化模式。">Classical philosophy, textual traditions, symbolism and models of change.</p><small data-en="Philosophy · Symbolism · Cultural heritage" data-zh="哲学 · 象数 · 文化传承">Philosophy · Symbolism · Cultural heritage</small></article>
-            <article><span>02</span><h3 data-en="Chinese Metaphysics" data-zh="中华术数研究">Chinese Metaphysics</h3><p data-en="Bazi, Feng Shui, divination and traditional decision methodologies." data-zh="八字、风水、占卜与传统决策方法。">Bazi, Feng Shui, divination and traditional decision methodologies.</p><small data-en="Bazi · Feng Shui · Divination" data-zh="八字 · 风水 · 占卜">Bazi · Feng Shui · Divination</small></article>
-            <article><span>03</span><h3 data-en="Mind, Consciousness & Spiritual Development" data-zh="心智、意识与心灵成长">Mind, Consciousness & Spiritual Development</h3><p data-en="Hypnosis, subconscious processes, personal growth, emotional healing and Eastern wisdom." data-zh="催眠、潜意识、个人成长、情绪疗愈与东方智慧。">Hypnosis, subconscious processes, personal growth, emotional healing and Eastern wisdom.</p><small data-en="Hypnosis · Consciousness · Personal growth" data-zh="催眠 · 意识 · 个人成长">Hypnosis · Consciousness · Personal growth</small></article>
-            <article><span>04</span><h3 data-en="Systems Thinking" data-zh="系统思维">Systems Thinking</h3><p data-en="Engineering perspectives, complexity, structured reasoning and decision science." data-zh="工程视角、复杂性、结构化推理与决策科学。">Engineering perspectives, complexity, structured reasoning and decision science.</p><small data-en="Engineering · Complexity · Decisions" data-zh="工程 · 复杂系统 · 决策">Engineering · Complexity · Decisions</small></article>
-            <article><span>05</span><h3 data-en="Educational Innovation" data-zh="教育创新">Educational Innovation</h3><p data-en="AI-assisted learning, bilingual education, curriculum design and digital delivery." data-zh="AI辅助学习、双语教育、课程设计与数字化传播。">AI-assisted learning, bilingual education, curriculum design and digital delivery.</p><small data-en="AI · Bilingual learning · Digital education" data-zh="人工智能 · 双语学习 · 数字教育">AI · Bilingual learning · Digital education</small></article>
-            <article><span>06</span><h3 data-en="Interdisciplinary Research" data-zh="跨学科研究">Interdisciplinary Research</h3><p data-en="Responsible dialogue across traditional knowledge, science, culture and education." data-zh="推动传统知识、科学、文化与教育之间负责任的对话。">Responsible dialogue across traditional knowledge, science, culture and education.</p><small data-en="Science · Culture · Education" data-zh="科学 · 文化 · 教育">Science · Culture · Education</small></article>
-          </div>
-
-          <aside class="research-v183-focus" aria-labelledby="research-focus-title">
-            <div class="research-v183-focus-label">
-              <span data-en="Featured Research Focus" data-zh="重点研究方向">Featured Research Focus</span>
-            </div>
-            <div class="research-v183-focus-copy">
-              <h3 id="research-focus-title" data-en="Mind, Consciousness & Spiritual Development" data-zh="心智、意识与心灵成长">Mind, Consciousness & Spiritual Development</h3>
-              <p data-en="An interdisciplinary area exploring hypnosis, subconscious processes, consciousness, emotional healing, personal growth and Eastern wisdom through responsible education and inquiry." data-zh="一个跨学科领域，通过负责任的教育与探索，研究催眠、潜意识过程、意识、情绪疗愈、个人成长与东方智慧。">An interdisciplinary area exploring hypnosis, subconscious processes, consciousness, emotional healing, personal growth and Eastern wisdom through responsible education and inquiry.</p>
-              <a class="google-form-link" href="#contact" target="_blank" rel="noopener noreferrer" data-interest="Mind, Consciousness & Spiritual Development" data-en="Enquire about this focus →" data-zh="咨询此研究方向 →">Enquire about this focus →</a>
-            </div>
-          </aside>
-        </section>
-
-        <section id="research-philosophy" class="research-v182-quote">
-          <div class="research-v182-quote-mark">“</div>
-          <div><p class="eyebrow light" data-en="Research Philosophy" data-zh="研究理念">Research Philosophy</p><blockquote data-en="Meaningful progress begins when classical wisdom and contemporary scientific thinking meet in respectful, critical and responsible dialogue." data-zh="当经典智慧与现代科学思维在尊重、批判与负责的对话中相遇，真正有意义的进步便由此开始。">Meaningful progress begins when classical wisdom and contemporary scientific thinking meet in respectful, critical and responsible dialogue.</blockquote><p>Master Chew Wai Soon · <span data-en="Founder & Chief Instructor" data-zh="创办人与首席导师">Founder & Chief Instructor</span></p></div>
-        </section>
-
-        <section class="research-v182-roadmap">
-          <p class="eyebrow centered" data-en="Research Roadmap" data-zh="研究发展路线">Research Roadmap</p>
-          <h2 class="section-title" data-en="A long-term path from foundation to international contribution" data-zh="从奠基到国际贡献的长期发展路径">A long-term path from foundation to international contribution</h2>
-          <ol>
-            <li><span>2026</span><strong data-en="Research Foundation" data-zh="研究奠基">Research Foundation</strong><small data-en="Framework, documentation and responsible public communication" data-zh="框架、记录与负责任的公共传播">Framework, documentation and responsible public communication</small></li>
-            <li><span data-en="Next" data-zh="下一阶段">Next</span><strong data-en="Educational Research" data-zh="教育研究">Educational Research</strong><small data-en="Bilingual learning, curriculum and digital resources" data-zh="双语学习、课程与数字资源">Bilingual learning, curriculum and digital resources</small></li>
-            <li><span data-en="Next" data-zh="下一阶段">Next</span><strong data-en="Peer-reviewed Publications" data-zh="同行评审出版">Peer-reviewed Publications</strong><small data-en="Published only after formal academic release" data-zh="仅在正式学术发表后公开">Published only after formal academic release</small></li>
-            <li><span data-en="Future" data-zh="未来">Future</span><strong data-en="International Collaboration" data-zh="国际合作">International Collaboration</strong><small data-en="Dialogue with researchers and institutions" data-zh="与研究者及机构开展交流">Dialogue with researchers and institutions</small></li>
-            <li><span data-en="Vision" data-zh="愿景">Vision</span><strong data-en="Global Research Network" data-zh="全球研究网络">Global Research Network</strong><small data-en="A responsible platform for education and inquiry" data-zh="面向教育与探索的负责任平台">A responsible platform for education and inquiry</small></li>
-          </ol>
-        </section>
-
-        <section id="research-publications" class="research-v182-publications">
-          <div class="split-heading"><div><p class="eyebrow" data-en="Published Works" data-zh="已出版著作">Published Works</p><h2 data-en="Books for an international readership" data-zh="面向国际读者的出版著作">Books for an international readership</h2></div><p data-en="The Academy's publication programme connects practical wisdom, interdisciplinary reflection and accessible learning." data-zh="学院的出版计划连接实用智慧、跨学科思考与大众化学习。">The Academy's publication programme connects practical wisdom, interdisciplinary reflection and accessible learning.</p></div>
-          <div class="research-v182-books">
-            <article><img src="/images/book-quantum-iching.png?v=2.0.0" alt="Quantum I-Ching book cover"><div><span data-en="Published · English" data-zh="已出版 · 英文">Published · English</span><h3>Quantum I-Ching: Bridging Ancient Wisdom and Modern Physics</h3><p data-en="An accessible exploration of YiJing thought, the Eight Trigrams and selected ideas from modern physics." data-zh="以易懂方式探索易经思想、八卦与现代物理若干概念之间的联系。">An accessible exploration of YiJing thought, the Eight Trigrams and selected ideas from modern physics.</p><a href="#publications" data-en="View in Digital Library →" data-zh="前往数字图书馆 →">View in Digital Library →</a></div></article>
-            <article><img src="/images/book-2026-forecast.png?v=2.0.0" alt="2026 Global Feng Shui Quantum Forecast book cover"><div><span data-en="Published · Forecast Edition" data-zh="已出版 · 流年预测版">Published · Forecast Edition</span><h3>2026 Global Feng Shui Quantum Forecast</h3><p data-en="A practical annual guide integrating YiJing wisdom, Feng Shui perspectives and structured analysis for the Bing Wu year." data-zh="结合易经智慧、风水视角与系统分析的丙午年实用年度指南。">A practical annual guide integrating YiJing wisdom, Feng Shui perspectives and structured analysis for the Bing Wu year.</p><a href="#publications" data-en="View in Digital Library →" data-zh="前往数字图书馆 →">View in Digital Library →</a></div></article>
-          </div>
-        </section>
-
-        <section class="research-v182-collaboration">
-          <div><p class="eyebrow light" data-en="Research Collaboration" data-zh="研究合作">Research Collaboration</p><h2 data-en="Connect across disciplines, cultures and institutions" data-zh="跨越学科、文化与机构建立连接">Connect across disciplines, cultures and institutions</h2><p data-en="We welcome responsible dialogue with researchers, universities, educational organisations, cultural institutions and industry partners." data-zh="我们欢迎研究者、大学、教育组织、文化机构与产业伙伴开展负责任的交流与合作。">We welcome responsible dialogue with researchers, universities, educational organisations, cultural institutions and industry partners.</p></div>
-          <a class="btn btn-light google-form-link" href="#contact" target="_blank" rel="noopener noreferrer" data-interest="Research Collaboration" data-en="Discuss Collaboration" data-zh="洽谈合作">Discuss Collaboration</a>
-        </section>
-      </div>
-    </section>
-
-    <section id="learning" class="learning-centre content-section section-shell reveal">
-      <p class="eyebrow centered" data-en="Learning Centre" data-zh="学习中心">Learning Centre</p>
-      <h2 class="section-title" data-en="Choose a pathway that matches your stage of learning" data-zh="选择适合您当前阶段的学习路径">Choose a pathway that matches your stage of learning</h2>
-      <p class="section-intro" data-en="Courses are designed as connected areas of knowledge rather than isolated subjects. Begin with the fundamentals, strengthen your analytical methods and progress towards confident application." data-zh="课程并非彼此孤立，而是相互连接的知识体系。学员可从基础入门，逐步强化分析方法，并迈向成熟而自信的实践应用。">Courses are designed as connected areas of knowledge rather than isolated subjects. Begin with the fundamentals, strengthen your analytical methods and progress towards confident application.</p>
-
-      <div class="course-tabs" role="tablist" aria-label="Course levels">
-        <button class="course-tab active" type="button" data-course-filter="all" data-en="All Pathways" data-zh="全部课程">All Pathways</button>
-        <button class="course-tab" type="button" data-course-filter="foundation" data-en="Foundation" data-zh="基础">Foundation</button>
-        <button class="course-tab" type="button" data-course-filter="intermediate" data-en="Intermediate" data-zh="进阶">Intermediate</button>
-        <button class="course-tab" type="button" data-course-filter="advanced" data-en="Advanced" data-zh="高阶">Advanced</button>
-      </div>
-
-      <div class="course-grid">
-        <article class="course-card" data-course-level="foundation"><span class="course-label" data-en="Foundation" data-zh="基础">Foundation</span><div class="course-symbol">☯</div><h3 data-en="Yijing Foundations" data-zh="易经基础">Yijing Foundations</h3><p data-en="Understand change, balance, trigrams and the language of classical Yijing thought." data-zh="理解变化、平衡、八卦及经典易经思想的基本语言。">Understand change, balance, trigrams and the language of classical Yijing thought.</p><div class="course-meta"><span data-en="Beginner friendly" data-zh="适合初学者">Beginner friendly</span><span data-en="Structured modules" data-zh="系统模块">Structured modules</span></div></article>
-        <article class="course-card" data-course-level="foundation"><span class="course-label" data-en="Foundation" data-zh="基础">Foundation</span><div class="course-symbol">五</div><h3 data-en="Yin–Yang & Five Elements" data-zh="阴阳五行">Yin–Yang & Five Elements</h3><p data-en="Learn the relationship patterns that support later study in Bazi, Feng Shui and divination." data-zh="掌握支撑八字、风水与占卜学习的核心关系模式。">Learn the relationship patterns that support later study in Bazi, Feng Shui and divination.</p><div class="course-meta"><span data-en="Core theory" data-zh="核心理论">Core theory</span><span data-en="Practical examples" data-zh="实例讲解">Practical examples</span></div></article>
-        <article class="course-card" data-course-level="intermediate"><span class="course-label" data-en="Intermediate" data-zh="进阶">Intermediate</span><div class="course-symbol">命</div><h3 data-en="Bazi Studies" data-zh="八字命理">Bazi Studies</h3><p data-en="Develop a systematic approach to chart structure, timing and life-pattern interpretation." data-zh="系统学习命盘结构、时运分析与人生模式解读。">Develop a systematic approach to chart structure, timing and life-pattern interpretation.</p><div class="course-meta"><span data-en="Case analysis" data-zh="案例分析">Case analysis</span><span data-en="Applied method" data-zh="应用方法">Applied method</span></div></article>
-        <article class="course-card" data-course-level="intermediate"><span class="course-label" data-en="Intermediate" data-zh="进阶">Intermediate</span><div class="course-symbol">宅</div><h3 data-en="Feng Shui Studies" data-zh="风水学">Feng Shui Studies</h3><p data-en="Study environmental form, spatial relationships and practical assessment methods." data-zh="学习环境形势、空间关系与实用评估方法。">Study environmental form, spatial relationships and practical assessment methods.</p><div class="course-meta"><span data-en="Residential" data-zh="住宅应用">Residential</span><span data-en="Business" data-zh="商业应用">Business</span></div></article>
-        <article class="course-card" data-course-level="advanced"><span class="course-label" data-en="Advanced" data-zh="高阶">Advanced</span><div class="course-symbol">卦</div><h3 data-en="Six-Line Divination" data-zh="六爻占卜">Six-Line Divination</h3><p data-en="Advance from symbolic interpretation to structured judgement and responsible consultation." data-zh="从象意解读进阶至系统判断与负责任的咨询实践。">Advance from symbolic interpretation to structured judgement and responsible consultation.</p><div class="course-meta"><span data-en="Advanced analysis" data-zh="高阶分析">Advanced analysis</span><span data-en="Consultation skills" data-zh="咨询技巧">Consultation skills</span></div></article>
-        <article class="course-card" data-course-level="advanced"><span class="course-label" data-en="Advanced" data-zh="高阶">Advanced</span><div class="course-symbol">研</div><h3 data-en="Interdisciplinary Inquiry" data-zh="跨学科探索">Interdisciplinary Inquiry</h3><p data-en="Explore research thinking, symbolic systems and dialogue between classical wisdom and modern disciplines." data-zh="探索研究思维、符号系统，以及经典智慧与现代学科之间的对话。">Explore research thinking, symbolic systems and dialogue between classical wisdom and modern disciplines.</p><div class="course-meta"><span data-en="Research mindset" data-zh="研究思维">Research mindset</span><span data-en="Conceptual exploration" data-zh="概念探索">Conceptual exploration</span></div></article>
-      </div>
-
-      <div class="language-panel"><div><span class="language-icon">文</span><div><h3 data-en="Bilingual Learning Environment" data-zh="双语学习环境">Bilingual Learning Environment</h3><p data-en="Programmes and learning resources are developed in English and Chinese for a wider international community." data-zh="课程与学习资源以中英文发展，服务更广泛的国际学习社群。">Programmes and learning resources are developed in English and Chinese for a wider international community.</p></div></div><a class="btn btn-primary" href="#contact" target="_blank" rel="noopener noreferrer" data-en="Enquire About Courses" data-zh="咨询课程">Enquire About Courses</a></div>
-    </section>
-
-    <section id="professional-services" class="v2-services content-section reveal">
-      <div class="section-shell">
-        <div class="v2-services-intro">
-          <div><p class="eyebrow" data-en="Professional Services" data-zh="专业服务">Professional Services</p><h2 data-en="Structured guidance for individuals, families and organisations" data-zh="为个人、家庭与机构提供系统化专业指导">Structured guidance for individuals, families and organisations</h2></div>
-          <p data-en="Professional services are delivered through careful enquiry, responsible analysis and practical recommendations. Visitors may use the Academy Enquiry Form to describe their needs before the appropriate pathway is recommended." data-zh="专业服务以审慎咨询、严谨分析与可执行建议为基础。访客可先通过学院咨询表格说明需求，再由学院建议合适的服务路径。">Professional services are delivered through careful enquiry, responsible analysis and practical recommendations. Visitors may use the Academy Enquiry Form to describe their needs before the appropriate pathway is recommended.</p>
-        </div>
-        <div class="v2-service-grid">
-          <article><span>01</span><h3 data-en="Bazi Consultation" data-zh="八字咨询">Bazi Consultation</h3><p data-en="Structured analysis for life direction, career, relationships, timing and important decisions." data-zh="针对人生方向、事业、关系、时机与重要决策进行系统分析。">Structured analysis for life direction, career, relationships, timing and important decisions.</p><a class="google-form-link" href="#academy-enquiry" data-interest="Bazi Consultation" data-en="Enquire →" data-zh="咨询 →">Enquire →</a></article>
-          <article><span>02</span><h3 data-en="Feng Shui Consultation" data-zh="风水咨询">Feng Shui Consultation</h3><p data-en="Residential, commercial and workplace assessment supported by practical environmental recommendations." data-zh="为住宅、商业空间与工作场所提供评估及实用环境建议。">Residential, commercial and workplace assessment supported by practical environmental recommendations.</p><a class="google-form-link" href="#academy-enquiry" data-interest="Feng Shui Consultation" data-en="Enquire →" data-zh="咨询 →">Enquire →</a></article>
-          <article><span>03</span><h3 data-en="Baby Naming" data-zh="宝宝命名">Baby Naming</h3><p data-en="Chinese name selection informed by Bazi, Five Elements, character meaning and sound." data-zh="结合八字、五行、字义与音韵进行中文名字选择。">Chinese name selection informed by Bazi, Five Elements, character meaning and sound.</p><a class="google-form-link" href="#academy-enquiry" data-interest="Baby Naming" data-en="Enquire →" data-zh="咨询 →">Enquire →</a></article>
-          <article><span>04</span><h3 data-en="Hypnotherapy" data-zh="催眠治疗">Hypnotherapy</h3><p data-en="Professional support relating to the subconscious mind, personal growth, emotional well-being and positive change." data-zh="围绕潜意识、个人成长、情绪健康与正向改变提供专业支持。">Professional support relating to the subconscious mind, personal growth, emotional well-being and positive change.</p><a class="google-form-link" href="#academy-enquiry" data-interest="Hypnotherapy" data-en="Enquire →" data-zh="咨询 →">Enquire →</a></article>
-          <article><span>05</span><h3 data-en="Corporate Training" data-zh="企业培训">Corporate Training</h3><p data-en="Custom programmes in systems thinking, leadership, decision-making and Eastern wisdom." data-zh="提供系统思维、领导力、决策与东方智慧的定制企业课程。">Custom programmes in systems thinking, leadership, decision-making and Eastern wisdom.</p><a class="google-form-link" href="#academy-enquiry" data-interest="Corporate Training" data-en="Discuss a programme →" data-zh="洽谈课程 →">Discuss a programme →</a></article>
-          <article><span>06</span><h3 data-en="Speaking Engagements" data-zh="讲座与演讲">Speaking Engagements</h3><p data-en="Lectures, seminars and interdisciplinary talks for institutions, associations and organisations." data-zh="为机构、社团与组织提供讲座、研讨会及跨学科演讲。">Lectures, seminars and interdisciplinary talks for institutions, associations and organisations.</p><a class="google-form-link" href="#academy-enquiry" data-interest="Speaking Engagement" data-en="Invite Master Chew →" data-zh="邀请赵导师 →">Invite Master Chew →</a></article>
-        </div>
-      </div>
-    </section>
-
-    <section id="engagement" class="engagement-centre content-section reveal">
-      <div class="engagement-hero section-shell">
-        <div class="engagement-hero-copy">
-          <p class="eyebrow light" data-en="Engagement Centre" data-zh="参与合作中心">Engagement Centre</p>
-          <h2 data-en="Engage with Quantum YiJing" data-zh="与量子易经同行">Engage with Quantum YiJing</h2>
-          <p data-en="Discover meaningful pathways to learning, professional guidance, environmental assessment and interdisciplinary collaboration." data-zh="探索系统学习、专业指导、环境评估与跨学科合作的多元路径。">Discover meaningful pathways to learning, professional guidance, environmental assessment and interdisciplinary collaboration.</p>
-          <div class="engagement-actions">
-            <a class="btn btn-light" href="#engagement-pathways" data-en="Explore Opportunities" data-zh="探索参与方式">Explore Opportunities</a>
-            <a class="btn btn-outline-light google-form-link" href="#academy-enquiry" data-interest="General Enquiry" data-en="Contact the Academy" data-zh="联系学院">Contact the Academy</a>
-          </div>
-        </div>
-        <div class="engagement-network" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><i></i></div>
-      </div>
-
-      <div id="engagement-pathways" class="section-shell engagement-body">
-        <p class="eyebrow centered" data-en="Choose Your Path" data-zh="选择您的参与路径">Choose Your Path</p>
-        <h2 class="section-title" data-en="Four ways to begin a meaningful journey" data-zh="四种方式，开启一段有意义的旅程">Four ways to begin a meaningful journey</h2>
-        <div class="engagement-grid">
-          <article class="engagement-card"><span class="engagement-index">01</span><h3 data-en="Learn" data-zh="学习">Learn</h3><p data-en="Structured educational pathways from foundational principles to advanced professional practice." data-zh="从基础原理到高阶专业实践的系统学习路径。">Structured educational pathways from foundational principles to advanced professional practice.</p><ul><li data-en="Foundation courses" data-zh="基础课程">Foundation courses</li><li data-en="Advanced studies" data-zh="高阶研习">Advanced studies</li><li data-en="Professional development" data-zh="专业发展">Professional development</li></ul><a href="#learning" data-en="Explore Learning →" data-zh="探索课程 →">Explore Learning →</a></article>
-          <article class="engagement-card"><span class="engagement-index">02</span><h3 data-en="Seek Guidance" data-zh="寻求指导">Seek Guidance</h3><p data-en="Structured consultation for personal direction, family matters, career planning and major decisions." data-zh="为人生方向、家庭事务、事业规划与重要决策提供系统咨询。">Structured consultation for personal direction, family matters, career planning and major decisions.</p><ul><li data-en="Personal consultation" data-zh="个人咨询">Personal consultation</li><li data-en="Career direction" data-zh="事业方向">Career direction</li><li data-en="Decision support" data-zh="决策支持">Decision support</li></ul><a href="#academy-enquiry" class="google-form-link" data-interest="Professional Consultation" data-en="Request Consultation →" data-zh="预约咨询 →">Request Consultation →</a></article>
-          <article class="engagement-card"><span class="engagement-index">03</span><h3 data-en="Environmental Harmony" data-zh="环境和谐">Environmental Harmony</h3><p data-en="Classical environmental principles applied through systematic observation and practical assessment." data-zh="以系统观察与实务评估，应用经典环境智慧。">Classical environmental principles applied through systematic observation and practical assessment.</p><ul><li data-en="Residential spaces" data-zh="住宅空间">Residential spaces</li><li data-en="Commercial premises" data-zh="商业场所">Commercial premises</li><li data-en="Property assessment" data-zh="物业评估">Property assessment</li></ul><a href="#academy-enquiry" class="google-form-link" data-interest="Feng Shui / Environmental Assessment" data-en="Discover More →" data-zh="了解更多 →">Discover More →</a></article>
-          <article class="engagement-card"><span class="engagement-index">04</span><h3 data-en="Research & Collaboration" data-zh="研究与合作">Research & Collaboration</h3><p data-en="Connecting researchers, institutions and organizations through responsible interdisciplinary exchange." data-zh="通过严谨的跨学科交流，连接研究者、机构与组织。">Connecting researchers, institutions and organizations through responsible interdisciplinary exchange.</p><ul><li data-en="Academic exchange" data-zh="学术交流">Academic exchange</li><li data-en="Educational collaboration" data-zh="教育合作">Educational collaboration</li><li data-en="Speaking invitations" data-zh="演讲邀请">Speaking invitations</li></ul><a href="#academy-enquiry" class="google-form-link" data-interest="Research & Collaboration" data-en="Connect With Us →" data-zh="与我们合作 →">Connect With Us →</a></article>
-        </div>
-
-        <div class="engagement-process">
-          <p class="eyebrow centered" data-en="How We Work" data-zh="合作流程">How We Work</p>
-          <h2 class="section-title" data-en="A clear and professional engagement process" data-zh="清晰而专业的合作流程">A clear and professional engagement process</h2>
-          <div class="process-track">
-            <div class="process-step"><span>1</span><strong data-en="Discover" data-zh="了解">Discover</strong></div>
-            <div class="process-step"><span>2</span><strong data-en="Enquiry" data-zh="咨询">Enquiry</strong></div>
-            <div class="process-step"><span>3</span><strong data-en="Discussion" data-zh="沟通">Discussion</strong></div>
-            <div class="process-step"><span>4</span><strong data-en="Analysis" data-zh="分析">Analysis</strong></div>
-            <div class="process-step"><span>5</span><strong data-en="Recommendation" data-zh="建议">Recommendation</strong></div>
-            <div class="process-step"><span>6</span><strong data-en="Continued Support" data-zh="持续支持">Continued Support</strong></div>
-          </div>
-        </div>
-
-        <div class="why-engage why-showcase">
-          <div class="why-showcase-heading">
-            <div>
-              <p class="eyebrow" data-en="Why Quantum YiJing" data-zh="为何选择量子易经">Why Quantum YiJing</p>
-              <h2 data-en="Classical depth. Modern discipline. Practical relevance." data-zh="经典深度、现代思维、实践价值。">Classical depth. Modern discipline. Practical relevance.</h2>
-            </div>
-            <p data-en="A distinctive learning and advisory environment shaped by sustained Yijing study, engineering discipline, bilingual education and responsible interdisciplinary inquiry." data-zh="融合长期易经研习、工程思维、双语教育与负责任的跨学科探索，形成独具特色的学习与咨询环境。">A distinctive learning and advisory environment shaped by sustained Yijing study, engineering discipline, bilingual education and responsible interdisciplinary inquiry.</p>
-          </div>
-          <div class="why-signature">
-            <span class="why-signature-label" data-en="Our Distinction" data-zh="我们的特色">Our Distinction</span>
-            <blockquote data-en="Three decades of classical study, strengthened by engineering discipline and modern research thinking." data-zh="三十余年经典研习，以工程纪律与现代研究思维不断深化。">Three decades of classical study, strengthened by engineering discipline and modern research thinking.</blockquote>
-          </div>
-          <div class="why-grid why-numbered-grid">
-            <article><span class="why-number">01</span><div><h3 data-en="Structured Thinking" data-zh="系统思维">Structured Thinking</h3><p data-en="Analytical approaches informed by engineering and disciplined reasoning." data-zh="以工程背景与严谨推理形成系统分析方法。">Analytical approaches informed by engineering and disciplined reasoning.</p></div></article>
-            <article><span class="why-number">02</span><div><h3 data-en="Three Decades of Study" data-zh="三十余年研习">Three Decades of Study</h3><p data-en="Built upon sustained study, teaching and practical experience." data-zh="建立于长期研习、教学与实践经验之上。">Built upon sustained study, teaching and practical experience.</p></div></article>
-            <article><span class="why-number">03</span><div><h3 data-en="Research-Oriented" data-zh="研究导向">Research-Oriented</h3><p data-en="Encouraging responsible dialogue between classical knowledge and modern inquiry." data-zh="推动经典知识与现代探索之间负责任的对话。">Encouraging responsible dialogue between classical knowledge and modern inquiry.</p></div></article>
-            <article><span class="why-number">04</span><div><h3 data-en="International Perspective" data-zh="国际视野">International Perspective</h3><p data-en="Supporting learners and collaborators across cultures and borders." data-zh="服务跨文化、跨地域的学习者与合作伙伴。">Supporting learners and collaborators across cultures and borders.</p></div></article>
-            <article><span class="why-number">05</span><div><h3 data-en="Bilingual Education" data-zh="双语教育">Bilingual Education</h3><p data-en="Learning and communication pathways in both English and Chinese." data-zh="提供中英文学习与沟通路径。">Learning and communication pathways in both English and Chinese.</p></div></article>
-            <article><span class="why-number">06</span><div><h3 data-en="Practical Application" data-zh="实践应用">Practical Application</h3><p data-en="Transforming knowledge into clear and actionable guidance." data-zh="把知识转化为清晰、可实践的建议。">Transforming knowledge into clear and actionable guidance.</p></div></article>
-          </div>
-        </div>
-
-        <div class="faq-section">
-          <p class="eyebrow centered" data-en="Frequently Asked Questions" data-zh="常见问题">Frequently Asked Questions</p>
-          <div class="faq-list">
-            <article class="faq-item"><button type="button" aria-expanded="false"><span data-en="Can I learn online?" data-zh="可以线上学习吗？">Can I learn online?</span><i>+</i></button><div class="faq-answer"><p data-en="Yes. Selected programmes and learning sessions can be conducted online for local and international learners." data-zh="可以。部分课程与学习活动可通过线上方式进行，服务本地与国际学员。">Yes. Selected programmes and learning sessions can be conducted online for local and international learners.</p></div></article>
-            <article class="faq-item"><button type="button" aria-expanded="false"><span data-en="Do I need previous knowledge of the Yijing?" data-zh="需要具备易经基础吗？">Do I need previous knowledge of the Yijing?</span><i>+</i></button><div class="faq-answer"><p data-en="No. Foundation pathways are designed for beginners and progress systematically toward advanced study." data-zh="不需要。基础课程专为初学者设计，并循序渐进衔接高阶研习。">No. Foundation pathways are designed for beginners and progress systematically toward advanced study.</p></div></article>
-            <article class="faq-item"><button type="button" aria-expanded="false"><span data-en="Are consultations available internationally?" data-zh="是否接受国际咨询？">Are consultations available internationally?</span><i>+</i></button><div class="faq-answer"><p data-en="Yes. Online consultations can be arranged subject to the nature and requirements of the enquiry." data-zh="可以。线上咨询可根据咨询性质与具体需求另行安排。">Yes. Online consultations can be arranged subject to the nature and requirements of the enquiry.</p></div></article>
-            <article class="faq-item"><button type="button" aria-expanded="false"><span data-en="Can organizations arrange private programmes?" data-zh="机构可以安排专属课程吗？">Can organizations arrange private programmes?</span><i>+</i></button><div class="faq-answer"><p data-en="Yes. Private workshops, talks and tailored educational programmes may be discussed with the Academy." data-zh="可以。学院可洽谈专属工作坊、讲座及定制教育项目。">Yes. Private workshops, talks and tailored educational programmes may be discussed with the Academy.</p></div></article>
-            <article class="faq-item"><button type="button" aria-expanded="false"><span data-en="How do I begin?" data-zh="我该如何开始？">How do I begin?</span><i>+</i></button><div class="faq-answer"><div class="faq-answer-inner"><p data-en="Complete our short enquiry form and select your preferred communication and course language. The Academy will review your interests and recommend the most suitable next step." data-zh="请填写简短的咨询表格，并选择您的沟通语言与课程语言。学院将了解您的兴趣，并建议最合适的下一步。">Complete our short enquiry form and select your preferred communication and course language. The Academy will review your interests and recommend the most suitable next step.</p><a class="faq-form-link google-form-link" data-interest="General Enquiry" href="#academy-enquiry" data-en="Complete Enquiry Form →" data-zh="填写咨询表格 →">Complete Enquiry Form →</a></div></div></article>
-          </div>
-        </div>
-      </div>
-
-      <div class="engagement-cta"><div class="section-shell"><p data-en="Every meaningful journey begins with a conversation." data-zh="每一段有意义的旅程，都始于一次真诚的交流。">Every meaningful journey begins with a conversation.</p><div><a class="btn btn-light google-form-link" href="mailto:info@quantumyijing.com?subject=Start%20My%20Journey" data-interest="General Enquiry" data-en="Start Your Journey" data-zh="开启您的旅程">Start Your Journey</a><a class="btn btn-outline-light" href="#academy" data-en="Explore the Academy" data-zh="探索学院">Explore the Academy</a></div></div></div>
-    </section>
-
-    <section id="publications" class="library-v19 reveal">
-      <div class="library-v192-hero section-shell">
-        <div class="library-v192-hero-copy">
-          <p class="eyebrow light" data-en="Publications & Digital Library" data-zh="出版与数字图书馆">Publications & Digital Library</p>
-          <h2 data-en="Published knowledge for learning, reflection and practical application" data-zh="为学习、思考与实践而出版的知识成果">Published knowledge for learning, reflection and practical application</h2>
-          <span class="library-v192-accent" aria-hidden="true"></span>
-          <p data-en="Explore the Academy's published books and the growing framework for future research papers, educational articles and public learning resources." data-zh="探索学院已出版的著作，以及未来研究论文、教育文章与公共学习资源的持续发展框架。">Explore the Academy's published books and the growing framework for future research papers, educational articles and public learning resources.</p>
-          <div class="library-v19-hero-actions">
-            <a class="btn btn-light" href="#published-books" data-en="Explore Published Books" data-zh="浏览已出版著作">Explore Published Books</a>
-            <a class="btn btn-outline-light" href="#library-framework" data-en="View Library Framework" data-zh="查看图书馆架构">View Library Framework</a>
-          </div>
-        </div>
-        <div class="library-v192-hero-art" aria-hidden="true">
-          <img src="/images/publications-book-stack-clean.png?v=2.0.0" alt="">
-        </div>
-        <div class="library-v192-hero-stat" aria-label="Publication summary">
-          <span class="library-v192-stat-icon" aria-hidden="true">▤</span>
-          <strong>03</strong>
-          <span data-en="Published digital books" data-zh="已出版数字著作">Published digital books</span>
-          <i></i>
-          <small data-en="Available worldwide through Google Play Books" data-zh="可通过 Google Play 图书面向全球读者购买">Available worldwide through Google Play Books</small>
-        </div>
-      </div>
-
-      <div class="section-shell library-v19-body">
-        <section id="published-books" class="library-v19-published">
-          <div class="split-heading library-v19-heading">
-            <div><p class="eyebrow" data-en="Published Books" data-zh="已出版著作">Published Books</p><h2 data-en="Books for Global Readers" data-zh="面向全球读者的出版著作">Books for Global Readers</h2></div>
-            <p data-en="Each publication extends the Academy's mission by making YiJing wisdom, structured analysis and interdisciplinary thinking accessible to a wider readership." data-zh="每一部著作都延伸学院的使命，让易经智慧、系统分析与跨学科思维触及更广泛的读者。">Each publication extends the Academy's mission by making YiJing wisdom, structured analysis and interdisciplinary thinking accessible to a wider readership.</p>
-          </div>
-          <p class="library-v192-identity" data-en="Knowledge that connects Ancient Wisdom, Modern Science and Human Consciousness." data-zh="连接古老智慧、现代科学与人类意识的知识成果。">Knowledge that connects Ancient Wisdom, Modern Science and Human Consciousness.</p>
-
-          <div class="library-v19-books">
-            <article class="library-v19-book library-v19-book-featured"><span class="library-v192-card-no">01</span>
-              <div class="library-v19-cover"><img src="/images/book-quantum-iching.png?v=2.0.0" alt="Quantum I-Ching book cover"><span data-en="English Edition" data-zh="英文版">English Edition</span></div>
-              <div class="library-v19-book-copy">
-                <p class="library-v19-kicker" data-en="Interdisciplinary Publication" data-zh="跨学科著作">Interdisciplinary Publication</p>
-                <h3>Quantum I-Ching: Bridging Ancient Wisdom and Modern Physics</h3>
-                <p data-en="An accessible exploration of YiJing thought, the Eight Trigrams and selected concepts from modern physics, written for readers interested in the dialogue between classical wisdom and contemporary inquiry." data-zh="以易懂方式探索易经思想、八卦与现代物理若干概念，面向关注经典智慧与当代探索对话的读者。">An accessible exploration of YiJing thought, the Eight Trigrams and selected concepts from modern physics, written for readers interested in the dialogue between classical wisdom and contemporary inquiry.</p>
-                <dl><div><dt data-en="Author" data-zh="作者">Author</dt><dd>Wai Soon Chew</dd></div><div><dt data-en="Pages" data-zh="页数">Pages</dt><dd>124</dd></div><div><dt data-en="Language" data-zh="语言">Language</dt><dd data-en="English" data-zh="英文">English</dd></div></dl>
-                <div class="library-v19-actions">
-                  <a class="btn btn-primary library-v191-google" href="https://play.google.com/store/books/details/Chew_Wai_Soon_Quantum_I_Ching_Bridging_Ancient_Wis?id=dWO6EQAAQBAJ&hl=en" target="_blank" rel="noopener noreferrer" data-en="View on Google Play Books" data-zh="前往 Google Play 图书">View on Google Play Books</a>
-                  <span class="library-v191-worldwide" data-en="Available worldwide" data-zh="全球发行">Available worldwide</span>
-                </div>
-              </div>
-            </article>
-
-            <article class="library-v19-book"><span class="library-v192-card-no">02</span>
-              <div class="library-v19-cover"><img src="/images/book-2026-forecast.png?v=2.0.0" alt="2026 Global Feng Shui Quantum Forecast book cover"><span data-en="English Edition" data-zh="英文版">English Edition</span></div>
-              <div class="library-v19-book-copy">
-                <p class="library-v19-kicker" data-en="Annual Forecast Publication" data-zh="年度预测著作">Annual Forecast Publication</p>
-                <h3>2026 Global Feng Shui Quantum Forecast</h3>
-                <p data-en="A practical annual guide integrating YiJing wisdom, Feng Shui perspectives and structured analysis for the Bing Wu year, with global outlooks and practical mitigation guidance." data-zh="一部结合易经智慧、风水视角与系统分析的丙午年实用年度指南，涵盖全球趋势与实用化解建议。">A practical annual guide integrating YiJing wisdom, Feng Shui perspectives and structured analysis for the Bing Wu year, with global outlooks and practical mitigation guidance.</p>
-                <dl><div><dt data-en="Author" data-zh="作者">Author</dt><dd>Chew Wai Soon</dd></div><div><dt data-en="Pages" data-zh="页数">Pages</dt><dd>115</dd></div><div><dt data-en="Language" data-zh="语言">Language</dt><dd data-en="English" data-zh="英文">English</dd></div></dl>
-                <div class="library-v19-actions">
-                  <a class="btn btn-primary library-v191-google" href="https://play.google.com/store/books/details/Chew_Wai_Soon_2026_Global_Feng_Shui_Quantum_Foreca?id=CSy_EQAAQBAJ&hl=en" target="_blank" rel="noopener noreferrer" data-en="View on Google Play Books" data-zh="前往 Google Play 图书">View on Google Play Books</a>
-                  <span class="library-v191-worldwide" data-en="Available worldwide" data-zh="全球发行">Available worldwide</span>
-                </div>
-              </div>
-            </article>
-
-            <article class="library-v19-book"><span class="library-v192-card-no">03</span>
-              <div class="library-v19-cover"><img src="/images/book-2026-chi-forecast.png?v=2.0.0" alt="2026丙午流年世界风水运势预测 book cover"><span data-en="Chinese Edition" data-zh="中文版">Chinese Edition</span></div>
-              <div class="library-v19-book-copy">
-                <p class="library-v19-kicker" data-en="Chinese Annual Forecast" data-zh="中文年度预测著作">Chinese Annual Forecast</p>
-                <h3 data-en="2026 Bing Wu Annual Global Feng Shui Forecast" data-zh="2026丙午流年世界风水运势预测">2026 Bing Wu Annual Global Feng Shui Forecast</h3>
-                <p data-en="A Chinese-language guide examining the Feng Shui trends of the 2026 Bing Wu year, combining annual influences, Tai Sui analysis, global outlooks and practical approaches for navigating opportunities and challenges." data-zh="本书深入解析2026丙午年的风水运势，结合流年影响、太岁分析、全球趋势预测与实用化解方法，帮助读者趋吉避凶。">A Chinese-language guide examining the Feng Shui trends of the 2026 Bing Wu year, combining annual influences, Tai Sui analysis, global outlooks and practical approaches for navigating opportunities and challenges.</p>
-                <dl><div><dt data-en="Author" data-zh="作者">Author</dt><dd>Chew Wai Soon</dd></div><div><dt data-en="Pages" data-zh="页数">Pages</dt><dd>96</dd></div><div><dt data-en="Language" data-zh="语言">Language</dt><dd data-en="Chinese" data-zh="中文">Chinese</dd></div></dl>
-                <div class="library-v19-actions">
-                  <a class="btn btn-primary library-v191-google" href="https://play.google.com/store/books/details/Chew_Wai_Soon_2026%E4%B8%99%E5%8D%88%E6%B5%81%E5%B9%B4%E4%B8%96%E7%95%8C%E9%A3%8E%E6%B0%B4%E8%BF%90%E5%8A%BF%E9%A2%84%E6%B5%8B?id=HB28EQAAQBAJ&hl=en" target="_blank" rel="noopener noreferrer" data-en="View on Google Play Books" data-zh="前往 Google Play 图书">View on Google Play Books</a>
-                  <span class="library-v191-worldwide" data-en="Available worldwide" data-zh="全球发行">Available worldwide</span>
-                </div>
-              </div>
-            </article>
-          </div>
-          <p class="library-v19-store-note" data-en="Purchases, secure payment, free samples and digital delivery are managed directly by Google Play Books." data-zh="购买、安全付款、免费试读与数字交付均由 Google Play 图书直接处理。">Purchases, secure payment, free samples and digital delivery are managed directly by Google Play Books.</p>
-        </section>
-
-        <section id="library-framework" class="library-v19-framework">
-          <div class="library-v19-framework-intro"><p class="eyebrow" data-en="Growing Digital Library" data-zh="持续成长的数字图书馆">Growing Digital Library</p><h2 data-en="A publication framework designed for the Academy's future" data-zh="为学院未来发展而设计的出版架构">A publication framework designed for the Academy's future</h2><p data-en="The library is prepared to expand as new material becomes publicly available. Unpublished research remains protected until formal release." data-zh="数字图书馆已预留扩充架构，随着新资料正式公开而持续增加。未发表研究将在正式发布前受到保护。">The library is prepared to expand as new material becomes publicly available. Unpublished research remains protected until formal release.</p></div>
-          <div class="library-v19-framework-grid">
-            <article><span>01</span><h3 data-en="Research Papers" data-zh="研究论文">Research Papers</h3><p data-en="Peer-reviewed papers will be listed only after formal publication, with DOI and citation details where available." data-zh="同行评审论文仅在正式发表后列出，并在适用时提供 DOI 与引用资料。">Peer-reviewed papers will be listed only after formal publication, with DOI and citation details where available.</p><small data-en="Awaiting formal publication" data-zh="等待正式发表">Awaiting formal publication</small></article>
-            <article><span>02</span><h3 data-en="Educational Articles" data-zh="教育文章">Educational Articles</h3><p data-en="Accessible essays and structured explanations on YiJing, Chinese metaphysics, mind development and scientific thinking." data-zh="关于易经、中华术数、心智成长与科学思维的易读文章与系统说明。">Accessible essays and structured explanations on YiJing, Chinese metaphysics, mind development and scientific thinking.</p><small data-en="In development" data-zh="筹备中">In development</small></article>
-            <article><span>03</span><h3 data-en="Free Learning Resources" data-zh="免费学习资源">Free Learning Resources</h3><p data-en="Introductory charts, reference materials, Academy profiles and selected public handouts for responsible learning." data-zh="提供入门图表、参考资料、学院简介与精选公共讲义，支持负责任的学习。">Introductory charts, reference materials, Academy profiles and selected public handouts for responsible learning.</p><small data-en="Planned collection" data-zh="规划中的资料库">Planned collection</small></article>
-            <article><span>04</span><h3 data-en="Conference & Public Talks" data-zh="会议与公开讲座">Conference & Public Talks</h3><p data-en="Future records of public lectures, conference participation and cultural or educational engagements." data-zh="未来收录公开讲座、会议参与及文化与教育交流活动的记录。">Future records of public lectures, conference participation and cultural or educational engagements.</p><small data-en="Future archive" data-zh="未来档案">Future archive</small></article>
-          </div>
-        </section>
-
-        <section class="library-v19-author">
-          <div><p class="eyebrow light" data-en="Author & Educator" data-zh="作者与教育者">Author & Educator</p><h2 data-en="Knowledge grows when research, teaching and publication support one another" data-zh="当研究、教学与出版彼此支持，知识便持续成长">Knowledge grows when research, teaching and publication support one another</h2><p data-en="The Academy's publication programme reflects Master Chew Wai Soon's multidisciplinary background in engineering, YiJing studies, education, consultation, hypnotherapy and quantum physics research." data-zh="学院的出版计划体现 Chew Wai Soon 导师在工程、易经研习、教育、咨询、催眠治疗与量子物理研究方面的跨学科背景。">The Academy's publication programme reflects Master Chew Wai Soon's multidisciplinary background in engineering, YiJing studies, education, consultation, hypnotherapy and quantum physics research.</p><a class="btn btn-light google-form-link" href="#academy-enquiry" data-interest="Publication Enquiry" data-en="Enquire About Publications" data-zh="咨询出版物">Enquire About Publications</a></div>
-          <img src="/images/master-chew.png?v=2.0.0" alt="Master Chew Wai Soon">
-        </section>
-      </div>
-    </section>
-
-    <section id="digital-learning" class="v2-future content-section reveal">
-      <div class="section-shell v2-future-grid">
-        <div><p class="eyebrow" data-en="Digital Academy Roadmap" data-zh="数字学院路线图">Digital Academy Roadmap</p><h2 data-en="Preparing the next generation of bilingual learning" data-zh="为下一阶段双语数字学习做好准备">Preparing the next generation of bilingual learning</h2><p data-en="The next development phase will organise recorded programmes, digital learning paths, English-localised content, student resources and future member access. The public website remains fully operational while these capabilities are developed in stages." data-zh="下一阶段将逐步整理录播课程、数字学习路径、英文内容、本院教学资源及未来会员访问功能。在这些能力分阶段开发期间，现有公开网站将继续稳定运行。">The next development phase will organise recorded programmes, digital learning paths, English-localised content, student resources and future member access. The public website remains fully operational while these capabilities are developed in stages.</p><a class="btn btn-primary google-form-link" href="#academy-enquiry" data-interest="Digital Courses" data-en="Register Interest in Digital Courses" data-zh="登记数字课程兴趣">Register Interest in Digital Courses</a></div>
-        <ol><li><span>01</span><div><strong data-en="Course Catalogue" data-zh="课程目录">Course Catalogue</strong><small data-en="Structured programme descriptions and learning outcomes" data-zh="系统课程说明与学习成果">Structured programme descriptions and learning outcomes</small></div></li><li><span>02</span><div><strong data-en="Bilingual Content" data-zh="双语内容">Bilingual Content</strong><small data-en="Reviewed Chinese and English subtitles, notes and terminology" data-zh="经审核的中英文字幕、讲义与术语">Reviewed Chinese and English subtitles, notes and terminology</small></div></li><li><span>03</span><div><strong data-en="Student Access" data-zh="学员访问">Student Access</strong><small data-en="Future course library, progress and member resources" data-zh="未来课程库、学习进度与会员资源">Future course library, progress and member resources</small></div></li></ol>
-      </div>
-    </section>
-
-    <section id="community" class="v2-community content-section reveal">
-      <div class="section-shell v2-community-inner">
-        <div><p class="eyebrow light" data-en="Community & Media" data-zh="社群与媒体">Community & Media</p><h2 data-en="Continue learning beyond the website" data-zh="在网站之外继续学习与交流">Continue learning beyond the website</h2><p data-en="Follow free educational content, public talks and Academy updates through our official channels." data-zh="通过学院官方平台，持续关注免费教学内容、公开讲座与学院动态。">Follow free educational content, public talks and Academy updates through our official channels.</p></div>
-        <div class="v2-social-links"><a href="https://www.youtube.com/@量子易经谈易论经" target="_blank" rel="noopener"><strong>YouTube</strong><span data-en="Long-form lessons and lectures" data-zh="完整教学与讲座">Long-form lessons and lectures</span></a><a href="https://www.tiktok.com/@quantumyijing" target="_blank" rel="noopener"><strong>TikTok</strong><span data-en="Short educational insights" data-zh="短篇教学内容">Short educational insights</span></a><a href="https://www.facebook.com/quantumyijing" target="_blank" rel="noopener"><strong>Facebook</strong><span data-en="Community news and updates" data-zh="社群资讯与动态">Community news and updates</span></a></div>
-      </div>
-    </section>
-
-    <section id="marketing-hub" class="content-section reveal" style="background:#f5f9ff">
-      <div class="section-shell">
-        <div class="v2-section-heading"><div><p class="eyebrow" data-en="What's Happening" data-zh="学院动态">What's Happening</p><h2 data-en="Events, Promotions & Academy News" data-zh="活动、优惠与学院资讯">Events, Promotions & Academy News</h2></div><p data-en="Follow official Academy announcements and use our campaign pages when you arrive from TikTok, Facebook, YouTube or advertisements." data-zh="关注学院官方活动与资讯；若您来自 TikTok、Facebook、YouTube 或广告，可通过专属活动页面了解详情。">Follow official Academy announcements and use our campaign pages when you arrive from TikTok, Facebook, YouTube or advertisements.</p></div>
-        <div class="v2-gateway-grid">
-          <a href="/events.html"><span>01</span><small>EVENTS</small><h3 data-en="Events Centre" data-zh="活动中心">Events Centre</h3><p data-en="Webinars, workshops, courses, live sessions and public events." data-zh="线上讲座、工作坊、课程、直播与公开活动。">Webinars, workshops, courses, live sessions and public events.</p><b data-en="View events →" data-zh="查看活动 →">View events →</b></a>
-          <a href="/promotions.html"><span>02</span><small>PROMOTIONS</small><h3 data-en="Promotions" data-zh="优惠活动">Promotions</h3><p data-en="Early-bird offers, membership campaigns and special Academy promotions." data-zh="早鸟优惠、会员活动与学院特别推广。">Early-bird offers, membership campaigns and special Academy promotions.</p><b data-en="View promotions →" data-zh="查看优惠 →">View promotions →</b></a>
-          <a href="/news.html"><span>03</span><small>NEWS</small><h3 data-en="News & Announcements" data-zh="资讯与公告">News & Announcements</h3><p data-en="Official Academy updates, research news and new programme announcements." data-zh="学院公告、研究动态与新课程资讯。">Official Academy updates, research news and new programme announcements.</p><b data-en="Read updates →" data-zh="阅读资讯 →">Read updates →</b></a>
-          <a href="/products.html"><span>04</span><small>PRODUCTS</small><h3 data-en="Products & Offers" data-zh="产品与服务">Products & Offers</h3><p data-en="Courses, membership, consultations, publications and future products." data-zh="课程、会员、咨询、出版物及未来产品。">Courses, membership, consultations, publications and future products.</p><b data-en="Explore products →" data-zh="探索产品 →">Explore products →</b></a>
-        </div>
-      </div>
-    </section>
-
-    <section id="contact" class="contact-section contact-v21 reveal" aria-labelledby="contact-title">
-      <div class="section-shell contact-v21-grid">
-        <div class="contact-v21-copy">
-          <p class="eyebrow light" data-en="Begin Your Journey" data-zh="开启您的旅程">Begin Your Journey</p>
-          <h2 id="contact-title" data-en="Contact Quantum YiJing International Academy" data-zh="联系量子易经国际学院">Contact Quantum YiJing International Academy</h2>
-          <p data-en="Tell us what you would like to learn, explore or discuss. We will normally reply within 1–2 working days." data-zh="欢迎告诉我们您希望学习、咨询或探讨的内容。我们一般会在 1–2 个工作日内回复。">Tell us what you would like to learn, explore or discuss. We will normally reply within 1–2 working days.</p>
-          <div class="contact-channel-list">
-            <a href="mailto:info@quantumyijing.com"><span>01</span><div><strong data-en="General Enquiries" data-zh="一般咨询">General Enquiries</strong><small>info@quantumyijing.com</small></div></a>
-            <a href="mailto:academy@quantumyijing.com"><span>02</span><div><strong data-en="Academic Programmes" data-zh="学院课程">Academic Programmes</strong><small>academy@quantumyijing.com</small></div></a>
-            <a href="mailto:research@quantumyijing.com"><span>03</span><div><strong data-en="Research Collaboration" data-zh="研究合作">Research Collaboration</strong><small>research@quantumyijing.com</small></div></a>
-          </div>
-          <div class="contact-note">
-            <strong data-en="Privacy note" data-zh="隐私说明">Privacy note</strong>
-            <span data-en="Your details are used only to respond to your enquiry and will not be published." data-zh="您所提交的资料仅用于回复咨询，不会对外公开。">Your details are used only to respond to your enquiry and will not be published.</span>
-          </div>
-        </div>
-
-        <form id="academy-enquiry-form" class="smart-enquiry-form" novalidate>
-          <input class="form-honeypot" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-          <input type="hidden" name="startedAt" id="enquiry-started-at">
-          <div class="form-heading">
-            <span data-en="Secure Enquiry Form" data-zh="安全咨询表格">Secure Enquiry Form</span>
-            <h3 data-en="How may we assist you?" data-zh="我们可以如何协助您？">How may we assist you?</h3>
-          </div>
-          <label><span data-en="Full Name *" data-zh="姓名 *">Full Name *</span><input type="text" name="name" maxlength="100" required autocomplete="name"></label>
-          <label><span data-en="Email *" data-zh="电邮 *">Email *</span><input type="email" name="email" maxlength="160" required autocomplete="email"></label>
-          <label><span data-en="WhatsApp / Phone" data-zh="WhatsApp／电话">WhatsApp / Phone</span><input type="text" name="phone" maxlength="60" autocomplete="tel"></label>
-          <label><span data-en="Country" data-zh="国家／地区">Country</span><input type="text" name="country" maxlength="80" autocomplete="country-name"></label>
-          <label class="form-wide"><span data-en="Area of Interest *" data-zh="咨询类别 *">Area of Interest *</span>
-            <select name="interest" id="enquiry-interest" required>
-              <option value="" data-en="Please select" data-zh="请选择">Please select</option>
-              <option value="General Enquiry" data-en="General Enquiry" data-zh="一般咨询">General Enquiry</option>
-              <option value="Academy Course" data-en="Academy Course" data-zh="学院课程">Academy Course</option>
-              <option value="Bazi Consultation" data-en="Bazi Consultation" data-zh="八字咨询">Bazi Consultation</option>
-              <option value="Feng Shui Consultation" data-en="Feng Shui Consultation" data-zh="风水咨询">Feng Shui Consultation</option>
-              <option value="Baby Naming" data-en="Baby Naming" data-zh="宝宝命名">Baby Naming</option>
-              <option value="Research Collaboration" data-en="Research Collaboration" data-zh="研究合作">Research Collaboration</option>
-              <option value="Media / Speaking" data-en="Media Interview / Speaking" data-zh="媒体采访／讲座邀请">Media Interview / Speaking</option>
-              <option value="Other" data-en="Other" data-zh="其他">Other</option>
-            </select>
-            <small id="interest-help" data-en="Select the closest option so we can direct your enquiry appropriately." data-zh="请选择最接近的类别，以便我们作出适当跟进。">Select the closest option so we can direct your enquiry appropriately.</small>
-          </label>
-          <label class="form-wide"><span data-en="Message *" data-zh="咨询内容 *">Message *</span><textarea name="message" rows="6" minlength="10" maxlength="3000" required></textarea></label>
-          <label class="consent-row form-wide"><input type="checkbox" name="consent" required><span><span data-en="I agree that the Academy may use these details to respond to my enquiry and I accept the" data-zh="我同意学院使用这些资料回复我的咨询，并接受">I agree that the Academy may use these details to respond to my enquiry and I accept the</span> <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a> <span data-en="and" data-zh="及">and</span> <a href="/terms.html" target="_blank" rel="noopener">Terms of Use</a>. *</span></label>
-          <div class="form-submit-row form-wide">
-            <button class="btn btn-primary" type="submit"><span data-en="Send Enquiry" data-zh="提交咨询">Send Enquiry</span></button>
-            <p id="enquiry-status" class="form-status" role="status" aria-live="polite"></p>
-          </div>
-        </form>
-      </div>
+    <section id="faq" class="faq section">
+      <div class="wrap faq-grid"><div><span class="section-number">06 · Questions</span><h2>Before you enrol.</h2><p>If your question is not covered here, use the official registration page to contact Quantum YiJing.</p></div>
+      <div class="accordions">
+        <details><summary>Is YJ12 taught online?</summary><p>Yes. It is a live two-day programme delivered via Zoom.</p></details>
+        <details><summary>What language is used?</summary><p>The programme is taught in Chinese, with English text transcription provided.</p></details>
+        <details><summary>When does the programme run?</summary><p>26–27 September 2026, from 10:00 AM to 5:00 PM on both days.</p></details>
+        <details><summary>Where do I register and pay?</summary><p>All buttons on this page take you to the official YJ12 registration page.</p></details>
+      </div></div>
     </section>
   </main>
 
-  <footer class="site-footer">
-    <div class="footer-brand"><span class="brand-logo-wrap"><img src="/images/quantum-yijing-3d-logo.png?v=2.8.6" alt="Quantum YiJing registered emblem"></span><div><strong>Quantum YiJing®</strong><span data-en="International Academy" data-zh="国际学院">International Academy</span><small data-en="Where Ancient Wisdom Meets Modern Scientific Thinking" data-zh="让千年智慧与现代科学思维相遇">Where Ancient Wisdom Meets Modern Scientific Thinking</small></div></div>
-    <div class="footer-columns"><div><strong data-en="Academy" data-zh="学院">Academy</strong><a href="/academy.html" data-en="Academic Programmes" data-zh="学院课程">Academic Programmes</a><a href="/#research" data-en="Research" data-zh="研究">Research</a><a href="/#publications" data-en="Publications" data-zh="出版物">Publications</a></div><div><strong data-en="Marketing Hub" data-zh="市场资讯">Marketing Hub</strong><a href="/events.html" data-en="Events" data-zh="活动">Events</a><a href="/promotions.html" data-en="Promotions" data-zh="优惠">Promotions</a><a href="/news.html" data-en="News" data-zh="资讯">News</a><a href="/products.html" data-en="Products" data-zh="产品">Products</a></div><div><strong data-en="Connect" data-zh="联系">Connect</strong><a href="/#contact" data-en="Enquiry Form" data-zh="咨询表格">Enquiry Form</a><a href="mailto:info@quantumyijing.com">info@quantumyijing.com</a><a href="https://www.facebook.com/quantumyijing" target="_blank" rel="noopener">Facebook</a><a href="https://www.tiktok.com/@quantumyijing" target="_blank" rel="noopener">TikTok</a><a href="https://www.youtube.com/@量子易经谈易论经" target="_blank" rel="noopener">YouTube</a></div><div><strong data-en="Legal" data-zh="法律">Legal</strong><a href="/privacy.html">Privacy Policy</a><a href="/terms.html">Terms of Use</a><a href="/disclaimer.html">Disclaimer</a><a href="/refund-policy.html">Refund Policy</a><a href="/cookie-policy.html">Cookie Policy</a></div></div>
-    <div class="copyright">© <span id="year"></span> Quantum YiJing® • Registered Trademark • All Rights Reserved.</div>
-  </footer>
-  <script src="/script.js?v=2.1.0"></script>
-  <script src="/enquiry.js?v=2.7.0"></script>
+  <footer><div class="wrap"><div class="brand inverse"><img src="assets/quantum-yijing-3d-logo.png" alt=""><strong>Quantum YiJing<small>International Academy</small></strong></div><p>YJ12 · Yijing: Science of Prediction</p><small>Course information shown here reflects the confirmed YJ12 programme record.</small></div></footer>
+  <div class="mobile-cta"><span><strong>YJ12</strong> · 26–27 Sep</span><a class="button button-small" data-register href="https://quantumyijing.com/product/yj12-yijing-science-of-prediction">Reserve</a></div>
+  <script src="app.js"></script>
 </body>
 </html>
