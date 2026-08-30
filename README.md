@@ -1,28 +1,21 @@
-# YJ12 funnel package
+## Current platform release: v2.9
+Sales & Commerce CRM with multi-channel product and order management.
 
-This package establishes a reusable two-stage course funnel:
+# Quantum YiJing v2.8 — Marketing CRM
 
-1. `discover.html` — a short reflection page for cold traffic.
-2. `index.html` — the full English narrative sales page.
-3. `zh.html` — the full Simplified Chinese sales page.
-4. All enrolment buttons continue to the official YJ12 product page.
+Current development release adds marketing attribution analytics to the Academy Operating System.
 
-The English and Chinese pages use the official QY 3D logo and Master Chew portrait. The 先天八卦 diagram follows the confirmed arrangement: 乾南、坤北、离东、坎西、兑东南、震东北、巽西南、艮西北.
+# Quantum YiJing Website V1
 
-## Confirmed YJ12 facts used
+Bilingual static starter for Cloudflare Pages.
 
-- YJ12 Yijing: Science of Prediction / YJ12 易经预测科学
-- Live via Zoom, 26–27 September 2026
-- 10:00 AM–5:00 PM on both days
-- Master Chew Wai Soon
-- Chinese teaching with English text transcription
-- MYR 1,800 standard tuition
-- MYR 1,400 early-bird tuition through 31 August 2026
+## Upload to GitHub
+Upload `index.html`, `styles.css`, and `script.js` to the root of `wschew/quantumyijing-website`.
 
-## Reuse for future courses
+## Cloudflare Pages
+Framework preset: None
+Build command: leave blank
+Build output directory: `/`
 
-Duplicate the folder, replace course facts and the registration URL, then preserve the same funnel stages. The JavaScript automatically carries `aff`, `utm_source`, `utm_medium`, `utm_campaign`, and `utm_content` into the product page.
-
-## Preview locally
-
-Open `index.html` directly, or serve the folder through any static web server. No build step is required.
+## Next edits
+Replace the QY placeholder with the official logo and replace the Master Chew photo placeholder with the selected portrait.
