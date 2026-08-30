@@ -1,0 +1,39 @@
+QUANTUM YIJING — YJ12 FUNNEL INSTALLATION PACKAGE
+
+1. First make sure the previous mistaken funnel commit has been reverted and
+   the normal QY homepage is restored.
+
+2. Open this package. Copy the folder named "funnel" into the top level of
+   the quantumyijing-website directory.
+
+3. The result must be:
+
+   quantumyijing-website/
+   ├── index.html                 (existing homepage — do not replace)
+   └── funnel/
+       └── yj12/
+           ├── index.html
+           ├── zh.html
+           ├── discover.html
+           ├── styles.css
+           ├── app.js
+           └── assets/
+
+4. Commit message:
+
+   Install YJ12 funnel under public funnel path
+
+5. Push to the development branch and test:
+
+   English:
+   https://v2.quantumyijing.com/funnel/yj12/
+
+   Chinese:
+   https://v2.quantumyijing.com/funnel/yj12/zh.html
+
+   Affiliate test:
+   https://v2.quantumyijing.com/funnel/yj12/?aff=QY-A0002
+
+IMPORTANT:
+Copy the "funnel" folder, not the files inside funnel/yj12. This package has
+been arranged so that no file should replace the website's main index.html.
