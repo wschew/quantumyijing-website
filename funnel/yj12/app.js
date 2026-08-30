@@ -16,6 +16,37 @@
 
   document.querySelectorAll('[data-register],[data-offer]').forEach(link=>{link.href=trackedUrl(link.getAttribute('href'))});
 
+  async function syncProductPricing(){
+    const price=document.querySelector('[data-effective-price]');
+    if(!price)return;
+    const isZh=document.documentElement.lang.toLowerCase().startsWith('zh');
+    try{
+      const response=await fetch('/api/product-pricing/yj12-yijing-science-of-prediction',{headers:{accept:'application/json'},cache:'no-store'});
+      if(!response.ok)throw new Error('Pricing unavailable');
+      const product=await response.json();
+      const currency=product.currency||'MYR';
+      const prefix=currency==='MYR'?'RM':currency;
+      const amount=value=>Number(value||0).toLocaleString('en-MY',{maximumFractionDigits:2});
+      const date=value=>new Intl.DateTimeFormat(isZh?'zh-MY':'en-MY',{timeZone:'Asia/Kuala_Lumpur',day:'numeric',month:'long',year:'numeric'}).format(new Date(`${value}T00:00:00+08:00`));
+      const label=document.querySelector('[data-price-label]');
+      const standard=document.querySelector('[data-standard-price]');
+      const deadline=document.querySelector('[data-price-deadline]');
+      const announcement=document.querySelector('[data-price-announcement]');
+      price.innerHTML=`<small>${currency}</small> ${amount(product.effectivePrice)}`;
+      if(product.earlyBirdActive){
+        label.textContent=isZh?'早鸟课程费':'Early-bird tuition';
+        standard.hidden=false;standard.innerHTML=isZh?`原价 <s>${prefix} ${amount(product.standardPrice)}</s>`:`Standard tuition <s>${prefix} ${amount(product.standardPrice)}</s>`;
+        deadline.hidden=false;deadline.textContent=isZh?`优惠截止：${date(product.earlyBirdEnd)}`:`Available through ${date(product.earlyBirdEnd)}`;
+        announcement.textContent=isZh?`早鸟优惠 ${prefix}${amount(product.earlyBirdPrice)} · 截止于 ${date(product.earlyBirdEnd)}`:`Early-bird ${currency} ${amount(product.earlyBirdPrice)} until ${date(product.earlyBirdEnd)}`;
+      }else{
+        label.textContent=isZh?'课程费':'Course tuition';
+        standard.hidden=true;deadline.hidden=true;
+        announcement.textContent=isZh?`YJ12 课程费 ${prefix}${amount(product.effectivePrice)}`:`YJ12 tuition ${currency} ${amount(product.effectivePrice)}`;
+      }
+    }catch(error){console.warn('Using funnel fallback pricing.',error)}
+  }
+  syncProductPricing();
+
   const root=document.getElementById('quizQuestion');
   if(root){
     const isZh=document.documentElement.lang.toLowerCase().startsWith('zh');
