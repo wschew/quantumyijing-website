@@ -104,8 +104,8 @@ function stacked(el,data,labels){
 function normalizeAffiliateProductUrl(raw){
   try{
     const u=new URL(raw,location.origin);
-    if(u.pathname==='/lp/yj12-yijing-science-of-prediction.html'){
-      u.pathname='/product/yj12-yijing-science-of-prediction';
+    if(u.pathname==='/lp/yj12-yijing-science-of-prediction.html'||u.pathname==='/product/yj12-yijing-science-of-prediction'){
+      u.pathname='/funnel/yj12/';
     }
     return u.toString();
   }catch{
