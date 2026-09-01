@@ -624,3 +624,63 @@
     else loadAll().catch(handleError);
   } else showLogin();
 })();
+/* =========================================================
+   TEMPORARY TEST — YJ12 MARKETING AUTOMATION
+   Enquiry #82 only
+========================================================= */
+
+const testYj12Button =
+  document.getElementById('testYj12Automation82');
+
+if (testYj12Button) {
+  testYj12Button.addEventListener('click', async () => {
+
+    const message =
+      document.getElementById('testYj12Automation82Message');
+
+    testYj12Button.disabled = true;
+    message.textContent = 'Enrolling enquiry #82...';
+    message.style.color = '#1768c4';
+
+    try {
+
+      const response = await api(
+        '/api/admin/marketing-automation?action=enrol',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            enquiryId: 82,
+            sequenceCode: 'YJ12-NURTURE'
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.alreadyExists) {
+        message.textContent =
+          '✓ Enquiry #82 is already enrolled in YJ12-NURTURE.';
+      } else {
+        message.textContent =
+          `✓ Enquiry #82 enrolled successfully. Automation ID: ${data.automationId}`;
+      }
+
+      message.style.color = '#14833b';
+
+    } catch (error) {
+
+      console.error(
+        'YJ12 automation enrolment test failed:',
+        error
+      );
+
+      message.textContent =
+        `Error: ${error.message}`;
+
+      message.style.color = '#b42318';
+
+    } finally {
+      testYj12Button.disabled = false;
+    }
+  });
+}
