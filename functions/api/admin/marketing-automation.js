@@ -1334,7 +1334,14 @@ async function runDue(context) {
 
 async function runOne(context) {
   const db = context.env.ENQUIRIES_DB;
-  const body = await readBody(context.request);
+  let body;
+
+  try {
+    body = await context.request.json();
+  } catch {
+    return json({ error: 'Invalid request.' }, 400);
+  }
+
   const automationId = Number(body.automationId);
 
   if (!Number.isInteger(automationId) || automationId < 1) {
