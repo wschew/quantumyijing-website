@@ -683,4 +683,51 @@ if (testYj12Button) {
     }
   });
 }
+
+const testYj12RunButton =
+  document.getElementById('testYj12RunAutomation1');
+
+if (testYj12RunButton) {
+  testYj12RunButton.addEventListener('click', async () => {
+    const message =
+      document.getElementById('testYj12Automation82Message');
+
+    testYj12RunButton.disabled = true;
+    message.textContent = 'Running Automation ID 1 only...';
+    message.style.color = '#1768c4';
+
+    try {
+      const response = await api(
+        '/api/admin/marketing-automation?action=run-one',
+        {
+          method: 'POST',
+          body: JSON.stringify({ automationId: 1 })
+        }
+      );
+
+      const data = await response.json();
+      const result = data.result || {};
+
+      if (result.stopped) {
+        message.textContent =
+          `Automation ID 1 stopped safely: ${result.reason || 'stop rule matched'}.`;
+        message.style.color = '#9a6700';
+      } else if (data.sent === 1) {
+        message.textContent =
+          `✓ Automation ID 1 sent step ${result.stepNo} (${result.templateCode}).`;
+        message.style.color = '#14833b';
+      } else {
+        message.textContent =
+          'Automation ID 1 was checked, but no email was sent.';
+        message.style.color = '#9a6700';
+      }
+    } catch (error) {
+      console.error('YJ12 run-one test failed:', error);
+      message.textContent = `Error: ${error.message}`;
+      message.style.color = '#b42318';
+    } finally {
+      testYj12RunButton.disabled = false;
+    }
+  });
+}
 })();

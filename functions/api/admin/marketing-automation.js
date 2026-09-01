@@ -1326,6 +1326,65 @@ async function runDue(context) {
 }
 
 /* =========================================================
+   RUN ONE DUE AUTOMATION
+
+   Safe manual test action. Processes only the requested
+   active automation and refuses to run it before it is due.
+   ========================================================= */
+
+async function runOne(context) {
+  const db = context.env.ENQUIRIES_DB;
+  const body = await readBody(context.request);
+  const automationId = Number(body.automationId);
+
+  if (!Number.isInteger(automationId) || automationId < 1) {
+    return json({
+      error: 'Valid automationId is required.'
+    }, 400);
+  }
+
+  const automation = await db.prepare(`
+    SELECT *
+    FROM marketing_automations
+    WHERE id=?
+    LIMIT 1
+  `).bind(automationId).first();
+
+  if (!automation) {
+    return json({
+      error: 'Automation not found.'
+    }, 404);
+  }
+
+  if (automation.status !== 'Active') {
+    return json({
+      error: `Automation is ${automation.status}, not Active.`
+    }, 409);
+  }
+
+  if (
+    !automation.next_send_at ||
+    automation.next_send_at > sqlDate()
+  ) {
+    return json({
+      error: 'Automation is not due yet.',
+      nextSendAt: automation.next_send_at || ''
+    }, 409);
+  }
+
+  const result = await sendStep(context, automation);
+
+  return json({
+    ok: Boolean(result.ok),
+    checked: 1,
+    sent: result.ok && result.stepNo ? 1 : 0,
+    stopped: result.stopped ? 1 : 0,
+    failed: !result.ok && !result.stopped ? 1 : 0,
+    result
+  });
+}
+
+/* =========================================================
    MANUAL STOP
    ========================================================= */
 
@@ -1749,6 +1808,13 @@ export async function onRequest(context) {
       action === 'run'
     ) {
       return await runDue(context);
+    }
+
+    if (
+      context.request.method === 'POST' &&
+      action === 'run-one'
+    ) {
+      return await runOne(context);
     }
 
     if (
