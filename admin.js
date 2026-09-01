@@ -623,7 +623,6 @@
     if(launchUrl.searchParams.get('module')==='commerce') openCommercePaymentFromUrl().catch(handleCommerceError);
     else loadAll().catch(handleError);
   } else showLogin();
-})();
 /* =========================================================
    TEMPORARY TEST — YJ12 MARKETING AUTOMATION
    Enquiry #82 only
@@ -684,3 +683,4 @@ if (testYj12Button) {
     }
   });
 }
+})();
