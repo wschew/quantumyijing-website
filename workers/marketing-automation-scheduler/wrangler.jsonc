@@ -1,0 +1,13 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "qy-marketing-automation-scheduler-preview",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-02",
+  "workers_dev": false,
+  "vars": {
+    "AUTOMATION_RUN_URL": "https://v2-development.quantumyijing-website.pages.dev/api/admin/marketing-automation?action=run"
+  },
+  "triggers": {
+    "crons": ["0 * * * *"]
+  }
+}
