@@ -14,10 +14,31 @@
     <a href="/admin-affiliates.html" class="portal-outline-link">← Affiliate Admin</a>
   </div>
 </header>
-<main class="auth-wrap"><section class="auth-card">
+
+<main class="auth-wrap">
+<section class="auth-card">
 <h1>Send Affiliate Portal Activation</h1>
-<label>Admin Token<input id="token" type="password"></label>
-<label>Affiliate ID<input id="affiliateId" type="number" min="1"></label>
-<button id="send" class="primary">Send Activation Email</button>
+
+<label>
+  Admin Token
+  <input id="token" type="password" autocomplete="current-password">
+</label>
+
+<label>
+  Affiliate Waiting for Activation
+  <select id="affiliateId" disabled>
+    <option value="">Enter Admin Token to load affiliates</option>
+  </select>
+</label>
+
+<div style="display:flex;gap:12px;flex-wrap:wrap">
+  <button id="load" class="portal-outline-link" type="button">Load Waiting Affiliates</button>
+  <button id="send" class="primary" type="button" disabled>Send Activation Email</button>
+</div>
+
 <p id="status" class="status"></p>
-</section></main><script src="/admin-affiliate-portal.js" defer></script></body></html>
+</section>
+</main>
+
+<script src="/admin-affiliate-portal.js" defer></script>
+</body></html>

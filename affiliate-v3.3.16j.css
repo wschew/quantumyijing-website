@@ -1,0 +1,12 @@
+
+.qy-aff-compliance{margin-top:24px;padding:22px;border:1px solid #d7e4f3;border-radius:16px;background:#f8fbff}
+.qy-aff-compliance h3{margin:0 0 16px;color:#0b56a5}
+.qy-aff-compliance label{display:block;margin:14px 0;font-weight:700;color:#234768}
+.qy-aff-compliance input,.qy-aff-compliance select{width:100%;box-sizing:border-box;margin-top:7px;padding:11px 12px;border:1px solid #bfd0e3;border-radius:10px;font:inherit;background:#fff}
+.qy-aff-compliance small{display:block;margin-top:6px;color:#6a7f95;font-weight:400;line-height:1.5}
+.qy-aff-terms{margin:18px 0;border:1px solid #d7e4f3;border-radius:12px;background:#fff}
+.qy-aff-terms summary{padding:14px 16px;font-weight:800;color:#0b56a5;cursor:pointer}
+.terms-body{padding:0 18px 18px;max-height:420px;overflow:auto;line-height:1.65;color:#344f69}
+.qy-aff-agree{display:flex!important;gap:10px;align-items:flex-start!important;font-weight:600!important}
+.qy-aff-agree input{width:auto!important;margin-top:4px!important;flex:0 0 auto}
+[data-qy-lang][hidden]{display:none!important}

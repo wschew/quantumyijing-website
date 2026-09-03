@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Affiliate Management Hub · Quantum YiJing</title>
+<style>
+:root{--blue:#0758aa;--navy:#082f63;--ink:#11233f;--muted:#60758e;--line:#d8e4f1;--bg:#f4f8fc;--card:#fff}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+header{display:flex;align-items:center;justify-content:space-between;gap:22px;padding:18px 28px;background:#fff;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--navy)}
+.brand img{width:58px;height:58px;object-fit:contain}
+.brand-title{font-size:24px;font-weight:800;color:var(--blue)}
+.brand-sub{font-size:13px;letter-spacing:.14em;font-weight:700;color:#506d8e;margin-top:4px}
+.toplinks a{color:var(--blue);font-weight:800;text-decoration:none;padding:12px 16px;border:1px solid var(--line);border-radius:12px;background:#fff}
+main{max-width:1220px;margin:0 auto;padding:44px 26px 70px}
+.eyebrow{font-size:14px;letter-spacing:.16em;font-weight:800;color:var(--blue);text-transform:uppercase}
+h1{font-size:48px;line-height:1.05;margin:12px 0 10px}
+.lead{font-size:20px;line-height:1.55;color:var(--muted);max-width:850px;margin:0 0 34px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+.card{display:flex;flex-direction:column;min-height:290px;padding:28px;border:1px solid var(--line);border-radius:20px;background:var(--card);box-shadow:0 10px 30px rgba(20,55,95,.05)}
+.card h2{font-size:27px;margin:0 0 12px;color:var(--navy)}
+.card p{font-size:17px;line-height:1.55;color:var(--muted);margin:0 0 22px}
+.card ul{margin:0 0 28px;padding-left:20px;color:#334f6d;line-height:1.7}
+.card .go{margin-top:auto;display:inline-flex;align-items:center;justify-content:center;padding:14px 18px;border-radius:12px;background:#0b67c6;color:#fff;text-decoration:none;font-weight:800;font-size:17px}
+.card.public .go{background:#fff;color:#0b67c6;border:2px solid #0b67c6}
+.note{margin-top:28px;padding:18px 20px;border:1px solid var(--line);background:#eef5fc;border-radius:14px;color:#526a83;line-height:1.55}
+@media(max-width:900px){.grid{grid-template-columns:1fr}h1{font-size:38px}.card{min-height:0}}
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="/admin">
+    <img src="/images/quantum-yijing-logo.png" alt="Quantum YiJing®">
+    <div>
+      <div class="brand-title">Quantum YiJing</div>
+      <div class="brand-sub">ACADEMY OPERATING SYSTEM · v3.3.16w</div>
+    </div>
+  </a>
+  <div class="toplinks"><a href="/admin">← Main Admin</a></div>
+</header>
+<main>
+  <div class="eyebrow">QY-AOS · Affiliate Operations</div>
+  <h1>Affiliate Management Hub</h1>
+  <p class="lead">One place to manage affiliate members, review the public programme, and complete monthly commission payouts.</p>
+  <section class="grid">
+    <article class="card">
+      <h2>Affiliate Management</h2>
+      <p>Manage affiliate applications, members and individual affiliate accounts.</p>
+      <ul>
+        <li>Review applications and approval status</li>
+        <li>Search affiliates by name, code or email</li>
+        <li>Open individual affiliate detail and commission records</li>
+      </ul>
+      <a class="go" href="/admin-affiliates">Open Affiliate Management</a>
+    </article>
+    <article class="card public">
+      <h2>Affiliate Programme</h2>
+      <p>Open the public Affiliate Programme page exactly as prospective affiliates see it.</p>
+      <ul>
+        <li>Review programme presentation</li>
+        <li>Check EN / 中文 content</li>
+        <li>Test application form and Terms &amp; Conditions</li>
+      </ul>
+      <a class="go" href="/affiliate" target="_blank" rel="noopener">Open Affiliate Programme</a>
+    </article>
+    <article class="card">
+      <h2>Affiliate Payouts</h2>
+      <p>Review eligible commissions and prepare monthly affiliate payout and reconciliation records.</p>
+      <ul>
+        <li>Load eligible commissions by affiliate and month</li>
+        <li>Create monthly payout drafts</li>
+        <li>Record completed bank transfers and references</li>
+      </ul>
+      <a class="go" href="/admin-affiliate-payouts">Open Affiliate Payouts</a>
+    </article>
+    <article class="card">
+      <h2>Bank Payment List</h2>
+      <p>Prepare the month-end affiliate bank transfer instruction for the accounts team.</p>
+      <ul>
+        <li>Shows Approved payouts only — never marks them Paid</li>
+        <li>Includes bank holder, account number, payout reference and net payable</li>
+        <li>Exports a real Excel .xlsx file for the selected month</li>
+      </ul>
+      <a class="go" href="/admin-affiliate-bank-payments">Open Bank Payment List</a>
+    </article>
+  </section>
+  <div class="note">The public Affiliate Programme opens in a new tab. Affiliate Management and Affiliate Payouts remain inside the administration workflow.</div>
+</main>
+</body>
+</html>

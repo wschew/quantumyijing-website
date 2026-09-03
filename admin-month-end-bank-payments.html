@@ -1,0 +1,183 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Month-End Bank Payments | Quantum YiJing®</title>
+<style>body{margin:0;background:#f5f8fc;font-family:Arial,sans-serif;color:#112640}header{background:#fff;border-bottom:1px solid #dce6f2;padding:16px 28px;display:flex;align-items:center;gap:14px}header img{width:58px;height:58px}header strong{font-size:23px;color:#0758a7}.top{margin-left:auto;display:flex;gap:14px}.top a{color:#0758a7;text-decoration:none;font-weight:700}main{max-width:1400px;margin:auto;padding:34px 22px}.eyebrow{font-size:12px;letter-spacing:.14em;color:#6d8198;font-weight:800}.heading{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.heading h1{margin:7px 0}.badge{background:#e9f4ff;color:#0758a7;padding:8px 12px;border-radius:999px;font-weight:800}.card{background:#fff;border:1px solid #d8e4f1;border-radius:16px;padding:20px;margin-top:18px;box-shadow:0 8px 25px rgba(22,66,110,.04)}.controls{display:flex;gap:14px;align-items:end;flex-wrap:wrap}.field{display:grid;gap:6px;font-weight:700}.field input{padding:10px 12px;border:1px solid #cbd9e8;border-radius:9px}.check{display:flex;gap:7px;align-items:center}.btn{border:0;border-radius:9px;padding:11px 15px;font-weight:800;cursor:pointer}.primary{background:#0758a7;color:#fff}.export{background:#16724a;color:#fff}.btn:disabled{opacity:.45;cursor:not-allowed}.status{min-height:20px;color:#4f657b}.status.error{color:#b42318}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.metric{background:#f7faff;border:1px solid #e0e9f3;border-radius:12px;padding:15px}.metric span,.metric small{display:block;color:#687c91}.metric strong{display:block;font-size:24px;margin:5px 0}.notice{margin-top:15px;padding:13px 15px;background:#fff8e6;border-left:4px solid #d3a62c;border-radius:8px}.table-wrap{overflow:auto;margin-top:18px}table{border-collapse:collapse;width:100%;min-width:1500px}th,td{border-bottom:1px solid #e3ebf3;padding:10px 9px;text-align:left;white-space:nowrap}th{background:#eef5fc;color:#24415f}.amount{text-align:right;font-weight:800}.missing{color:#b42318;font-weight:800}.type{font-weight:800}.empty{text-align:center;color:#71849a;padding:28px}@media(max-width:800px){.summary{grid-template-columns:1fr 1fr}.heading{display:block}.top{margin-left:0}}</style></head>
+<body><header><img src="/images/quantum-yijing-3d-logo.png" alt="Quantum YiJing"><strong>Quantum YiJing® Admin Tools</strong><div class="top"><a href="/admin/">← Easy Links</a><a href="/admin-coach-payouts">Coach Payouts</a><a href="/admin-affiliate-payouts">Affiliate Payouts</a></div></header>
+<main><div class="heading"><div><div class="eyebrow">ACCOUNTING · MONTH-END</div><h1>Coach + Affiliate Bank Payment List</h1><p>One approved bank-transfer list and one Excel file for the Accounts team.</p></div><div class="badge">READ-ONLY EXPORT</div></div>
+<section class="card"><div class="controls"><label class="field"><span>Admin Token</span><input id="token" type="password" autocomplete="off"></label><label class="field"><span>Payout Month</span><input id="period" type="month"></label><label class="check"><input id="includeTests" type="checkbox"><span>Include test affiliates</span></label><button id="load" class="btn primary">Load Bank Payment List</button><button id="export" class="btn export" disabled>Export Combined Excel (.xlsx)</button></div><p id="status" class="status"></p></section>
+<section class="card"><div class="summary"><div class="metric"><span>Coach Payments</span><strong id="coachCount">0</strong><small>Approved</small></div><div class="metric"><span>Affiliate Payments</span><strong id="affiliateCount">0</strong><small>Approved</small></div><div class="metric"><span>Total Bank Payment</span><strong id="totalPay">MYR 0.00</strong><small>By currency</small></div><div class="metric"><span>Incomplete Bank Details</span><strong id="missingCount">0</strong><small>Review before export</small></div></div><div class="notice"><strong>Accounting safeguard:</strong> this page only reads Approved Coach and Affiliate payouts. It does not recalculate commission, approve payouts, or mark anything Paid.</div>
+<div class="table-wrap"><table><thead><tr><th>No.</th><th>Type</th><th>Code</th><th>Payee Name</th><th>Bank Name</th><th>Bank Account Name</th><th>Bank Account Number</th><th>Country</th><th>Currency</th><th>Net Payable</th><th>Payout Period</th><th>Payout Reference</th><th>Email</th><th>Payment Reference</th><th>Payment Date</th><th>Remarks</th></tr></thead><tbody id="rows"><tr><td class="empty" colspan="16">Load a payout month to begin.</td></tr></tbody></table></div></section>
+
+<section class="card" id="monthEndPaymentImport">
+
+  <div class="heading">
+    <div>
+      <div class="eyebrow">ACCOUNTING · PAYMENT POSTING</div>
+
+      <h1 style="font-size:30px">
+        Import Completed Bank Payment File
+      </h1>
+
+      <p>
+        After Accounts completes the bank transfers, fill in
+        <strong>Payment Reference</strong> and
+        <strong>Payment Date</strong>
+        in the exported Excel file, save it, then upload the same file here.
+      </p>
+    </div>
+
+    <div class="badge" style="background:#fff4d8;color:#8a5d00">
+      WRITE ACTION · CONFIRMATION REQUIRED
+    </div>
+  </div>
+
+
+  <div class="notice">
+    <strong>Posting safeguard:</strong>
+    validation does not change D1.
+    The system checks payout reference, type, currency, amount,
+    payout period, payment date/reference and current payout status
+    before allowing payment posting.
+    Already-Paid rows are skipped safely.
+  </div>
+
+
+  <div
+    style="
+      display:grid;
+      grid-template-columns:minmax(280px,1fr) auto auto;
+      gap:14px;
+      align-items:end;
+      margin-top:18px;
+    "
+  >
+
+    <label class="field">
+
+      <span>Completed Excel File (.xlsx)</span>
+
+      <input
+        id="completedBankFile"
+        type="file"
+        accept=".xlsx,.xls"
+      >
+
+    </label>
+
+
+    <button
+      id="validateCompletedBankFile"
+      class="btn primary"
+      type="button"
+    >
+      Validate File
+    </button>
+
+
+    <button
+      id="confirmCompletedBankFile"
+      class="btn export"
+      type="button"
+      disabled
+    >
+      Confirm &amp; Mark Paid
+    </button>
+
+  </div>
+
+
+  <p
+    id="completedBankImportStatus"
+    class="status"
+  ></p>
+
+
+  <div
+    class="summary"
+    style="margin-top:18px"
+  >
+
+    <div class="metric">
+      <span>Rows Loaded</span>
+      <strong id="importRowsCount">0</strong>
+      <small>From completed Excel</small>
+    </div>
+
+    <div class="metric">
+      <span>Ready to Post</span>
+      <strong id="importReadyCount">0</strong>
+      <small>Approved + validated</small>
+    </div>
+
+    <div class="metric">
+      <span>Already Paid</span>
+      <strong id="importSkippedCount">0</strong>
+      <small>Skipped safely</small>
+    </div>
+
+    <div class="metric">
+      <span>Validation Errors</span>
+      <strong id="importErrorCount">0</strong>
+      <small>Must be zero before posting</small>
+    </div>
+
+  </div>
+
+
+  <div class="table-wrap">
+
+    <table>
+
+      <thead>
+
+        <tr>
+          <th>No.</th>
+          <th>Type</th>
+          <th>Code / Payee</th>
+          <th>Payout Reference</th>
+          <th>Currency</th>
+          <th>Net Payable</th>
+          <th>Payment Date</th>
+          <th>Payment Reference</th>
+          <th>Validation</th>
+        </tr>
+
+      </thead>
+
+
+      <tbody id="completedBankImportRows">
+
+        <tr>
+          <td
+            class="empty"
+            colspan="9"
+          >
+            Choose a completed month-end Excel file to begin.
+          </td>
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</section>
+
+</main>
+
+
+<script
+  src="/admin-month-end-bank-payments.js?v=3.4.1g"
+  defer
+></script>
+
+<script
+  src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
+></script>
+
+<script
+  src="/admin-month-end-bank-payments-import.js?v=3.4.1g5"
+  defer
+></script>
+
+</body>
+</html>

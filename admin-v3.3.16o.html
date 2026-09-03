@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>Academy Operating System | Quantum YiJing International Academy</title>
+  <link rel="icon" href="images/quantum-yijing-logo.png">
+  <link rel="stylesheet" href="admin.css?v=3.1.1">
+</head>
+<body>
+  <main class="crm-shell">
+    <section id="loginPanel" class="login-panel">
+      <img src="images/quantum-yijing-3d-logo.png" alt="Quantum YiJing" class="login-logo">
+      <p class="eyebrow">PRIVATE ADMINISTRATION</p>
+      <h1>Academy Operating System</h1>
+      <p class="login-copy">Secure CRM, marketing attribution, follow-up and student lifecycle management.</p>
+      <form id="loginForm" class="login-form">
+        <label for="adminToken">Administrator token</label>
+        <input id="adminToken" type="password" autocomplete="current-password" required>
+        <button type="submit">Open Dashboard</button>
+        <p id="loginMessage" class="form-message" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section id="dashboard" class="dashboard" hidden>
+      <header class="topbar">
+        <div class="brand-lockup">
+          <img src="images/quantum-yijing-logo.png" alt="" class="topbar-logo">
+          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v3.3.16o</span></div>
+        </div>
+        <div class="topbar-actions">
+          <a href="index.html" class="text-link">View website</a>
+          <button id="logoutButton" class="secondary-button" type="button">Log out</button>
+        </div>
+      </header>
+
+      <nav class="module-tabs" aria-label="Academy modules">
+  <button id="crmTab" class="module-tab active" type="button">CRM & Follow-up</button>
+  <button id="studentsTab" class="module-tab" type="button">Students</button>
+  <button id="marketingTab" class="module-tab" type="button">Marketing</button>
+  <button id="commerceTab" class="module-tab" type="button">Sales & Commerce</button>
+
+  <a
+    href="/admin-affiliates"
+    class="module-tab"
+    style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;"
+  >
+    Affiliates
+  </a>
+
+  <a
+    href="/affiliate"
+    class="module-tab"
+    style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;"
+    target="_blank"
+    rel="noopener"
+  >
+    Affiliate Programme
+  </a>
+
+  <a
+    href="/admin-affiliate-payouts"
+    class="module-tab"
+    style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;"
+  >
+    Affiliate Payouts
+  </a>
+</nav>
+
+      <div id="crmModule">
+      <section class="page-heading">
+        <div>
+          <p class="eyebrow">QY-AOS · CRM INTELLIGENCE</p>
+          <h1>CRM Intelligence & Follow-up Dashboard</h1>
+          <p>Prioritize leads, manage next actions, prevent missed follow-ups and maintain the complete student lifecycle.</p>
+        </div>
+        <button id="exportButton" class="primary-button" type="button">Export CRM to Excel (CSV)</button>
+      </section>
+
+      <section class="stats-grid stats-grid-v24" aria-label="CRM summary">
+        <article><span>Total enquiries</span><strong id="statTotal">0</strong></article>
+        <article class="danger-card"><span>Overdue</span><strong id="statOverdue">0</strong></article>
+        <article class="attention"><span>Due today</span><strong id="statDueToday">0</strong></article>
+        <article><span>Next 7 days</span><strong id="statUpcoming">0</strong></article>
+        <article><span>Hot / Warm leads</span><strong id="statPriority">0</strong></article>
+        <article><span>Students</span><strong id="statStudents">0</strong></article>
+      </section>
+
+      <section class="today-grid">
+        <article class="panel task-panel">
+          <div class="panel-heading"><div><h2>Follow-up intelligence</h2><p>Overdue, due-today and upcoming actions sorted by urgency.</p></div></div>
+          <div id="taskList" class="task-list"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-heading"><h2>Lifecycle distribution</h2></div>
+          <div id="lifecycleChart" class="bar-list"></div>
+        </article>
+      </section>
+
+      <section class="insights-grid">
+        <article class="panel"><div class="panel-heading"><h2>Top enquiry areas</h2></div><div id="interestChart" class="bar-list"></div></article>
+        <article class="panel"><div class="panel-heading"><h2>Top countries</h2></div><div id="countryChart" class="bar-list"></div></article>
+        <article class="panel"><div class="panel-heading"><h2>Monthly enquiries</h2></div><div id="monthlyChart" class="bar-list"></div></article>
+      </section>
+
+      <section class="panel records-panel">
+        <div class="panel-heading records-heading">
+          <div><h2>People & enquiries</h2><p id="recordCount">0 records</p></div>
+          <button id="refreshButton" class="secondary-button" type="button">Refresh</button>
+        </div>
+
+        <form id="filterForm" class="filters filters-v24">
+          <label>Search<input id="filterQ" type="search" placeholder="Name, email, phone, student ID…"></label>
+          <label>CRM status<select id="filterStatus"><option value="">All statuses</option><option>New</option><option>Contacted</option><option>Follow-up</option><option>Converted</option><option>Closed</option></select></label>
+          <label>Lifecycle<select id="filterLifecycle"><option value="">All stages</option><option>Lead</option><option>Prospect</option><option>Registered</option><option>Active Student</option><option>Graduate</option><option>Alumni</option><option>Closed</option></select></label>
+          <label>Priority<select id="filterPriority"><option value="">All priorities</option><option>Hot</option><option>Warm</option><option>Normal</option><option>Low</option></select></label>
+          <label>Area<select id="filterInterest"><option value="">All enquiry areas</option><option>General Enquiry</option><option>Academy Course</option><option>Bazi Consultation</option><option>Feng Shui Consultation</option><option>Baby Naming</option><option>Research Collaboration</option><option>Media / Speaking</option><option>Other</option></select></label>
+          <label>Marketing source<input id="filterSource" type="search" placeholder="TikTok, Facebook…"></label>
+          <label>Campaign<input id="filterCampaign" type="search" placeholder="Campaign code / UTM"></label>
+          <label>Affiliate<input id="filterAffiliate" type="search" placeholder="Affiliate code"></label>
+          <label>From<input id="filterFrom" type="date"></label>
+          <label>To<input id="filterTo" type="date"></label>
+          <button class="primary-button" type="submit">Apply filters</button>
+          <button id="clearFilters" class="secondary-button" type="button">Clear</button>
+        </form>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Reference / Student ID</th><th>Contact</th><th>Area</th><th>Source</th><th>Campaign / Affiliate</th><th>Priority</th><th>Lifecycle</th><th>Status</th><th>Next action / Follow-up</th><th></th></tr></thead>
+            <tbody id="recordsBody"></tbody>
+          </table>
+        </div>
+        <div class="pagination"><button id="prevPage" type="button">Previous</button><span id="pageInfo">Page 1</span><button id="nextPage" type="button">Next</button></div>
+        <p id="dashboardMessage" class="form-message" aria-live="polite"></p>
+      </section>
+      </div>
+
+      <div id="studentsModule" hidden>
+        <section class="page-heading">
+          <div>
+            <p class="eyebrow">QY-AOS · STUDENT MANAGEMENT</p>
+            <h1>Student Management Dashboard</h1>
+            <p>Manage registered students, programmes, lifecycle stages, enrolment dates and private academic notes.</p>
+          </div>
+          <button id="studentExportButton" class="primary-button" type="button">Export Students to Excel (CSV)</button>
+        </section>
+
+        <section class="stats-grid student-stats-grid" aria-label="Student summary">
+          <article><span>Total students</span><strong id="studentStatTotal">0</strong></article>
+          <article><span>Registered</span><strong id="studentStatRegistered">0</strong></article>
+          <article><span>Active students</span><strong id="studentStatActive">0</strong></article>
+          <article><span>Graduates</span><strong id="studentStatGraduates">0</strong></article>
+          <article><span>Alumni</span><strong id="studentStatAlumni">0</strong></article>
+        </section>
+
+        <section class="insights-grid student-insights">
+          <article class="panel"><div class="panel-heading"><h2>Students by programme</h2></div><div id="studentProgrammeChart" class="bar-list"></div></article>
+          <article class="panel"><div class="panel-heading"><h2>Students by country</h2></div><div id="studentCountryChart" class="bar-list"></div></article>
+        </section>
+
+        <section class="panel records-panel">
+          <div class="panel-heading records-heading">
+            <div><h2>Student records</h2><p id="studentRecordCount">0 students</p></div>
+            <button id="studentRefreshButton" class="secondary-button" type="button">Refresh</button>
+          </div>
+          <form id="studentFilterForm" class="filters student-filters">
+            <label>Search<input id="studentFilterQ" type="search" placeholder="Student ID, name, email, phone…"></label>
+            <label>Lifecycle<select id="studentFilterLifecycle"><option value="">All stages</option><option>Registered</option><option>Active Student</option><option>Graduate</option><option>Alumni</option></select></label>
+            <label>Programme<input id="studentFilterProgramme" type="search" placeholder="Programme / course"></label>
+            <button class="primary-button" type="submit">Apply filters</button>
+            <button id="studentClearFilters" class="secondary-button" type="button">Clear</button>
+          </form>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Student ID</th><th>Student</th><th>Country</th><th>Programme</th><th>Lifecycle</th><th>Enrolled</th><th>Graduated</th><th></th></tr></thead>
+              <tbody id="studentsBody"></tbody>
+            </table>
+          </div>
+          <div class="pagination"><button id="studentPrevPage" type="button">Previous</button><span id="studentPageInfo">Page 1</span><button id="studentNextPage" type="button">Next</button></div>
+          <p id="studentDashboardMessage" class="form-message" aria-live="polite"></p>
+        </section>
+      </div>
+
+      <div id="marketingModule" hidden>
+        <section class="page-heading">
+          <div>
+            <p class="eyebrow">QY-AOS · MARKETING CRM</p>
+            <h1>Campaign & Attribution Dashboard</h1>
+            <p>See which channels, campaigns, landing pages and affiliate codes generate enquiries and students.</p>
+          </div>
+          <a class="primary-button button-link" href="products.html" target="_blank">View Marketing Hub</a>
+        </section>
+
+        <section class="stats-grid marketing-stats-grid" aria-label="Marketing summary">
+          <article><span>Tracked enquiries</span><strong id="marketingStatAttributed">0</strong></article>
+          <article><span>Campaign enquiries</span><strong id="marketingStatCampaigns">0</strong></article>
+          <article><span>Affiliate enquiries</span><strong id="marketingStatAffiliates">0</strong></article>
+          <article><span>Converted students</span><strong id="marketingStatStudents">0</strong></article>
+        </section>
+
+        <section class="insights-grid marketing-insights">
+          <article class="panel"><div class="panel-heading"><h2>Enquiries by source</h2></div><div id="marketingSourceChart" class="bar-list"></div></article>
+          <article class="panel"><div class="panel-heading"><h2>Campaign performance</h2></div><div id="marketingCampaignChart" class="bar-list"></div></article>
+          <article class="panel"><div class="panel-heading"><h2>Affiliate referrals</h2></div><div id="marketingAffiliateChart" class="bar-list"></div></article>
+          <article class="panel"><div class="panel-heading"><h2>Landing pages</h2></div><div id="marketingLandingChart" class="bar-list"></div></article>
+        </section>
+
+        <section class="panel records-panel">
+          <div class="panel-heading records-heading">
+            <div><h2>Recent attributed enquiries</h2><p>UTM and affiliate details captured by the DBP.</p></div>
+            <button id="marketingRefreshButton" class="secondary-button" type="button">Refresh</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Prospect</th><th>Source / Medium</th><th>Campaign</th><th>Affiliate</th><th>Landing page</th><th>Converted</th><th></th></tr></thead>
+              <tbody id="marketingRecentBody"></tbody>
+            </table>
+          </div>
+          <p id="marketingDashboardMessage" class="form-message" aria-live="polite"></p>
+        </section>
+      </div>
+
+      <div id="commerceModule" hidden>
+        <section class="page-heading">
+          <div>
+            <p class="eyebrow">QY-AOS · SALES & COMMERCE</p>
+            <h1>Sales & Commerce Dashboard</h1>
+            <p>Manage products and multi-channel orders while keeping SenangPay and external marketplaces separate.</p>
+          </div>
+          <div class="topbar-actions"><button id="newProductButton" class="secondary-button" type="button">+ Product</button><button id="newOrderButton" class="primary-button" type="button">+ Order</button></div>
+        </section>
+
+        <section class="stats-grid commerce-stats-grid" aria-label="Commerce summary">
+          <article><span>Active products</span><strong id="commerceStatProducts">0</strong></article>
+          <article><span>Total orders</span><strong id="commerceStatOrders">0</strong></article>
+          <article><span>Paid / External</span><strong id="commerceStatPaid">0</strong></article>
+          <article><span>Pending</span><strong id="commerceStatPending">0</strong></article>
+          <article><span>Gross sales</span><strong id="commerceStatGross">RM 0.00</strong></article>
+          
+          
+          
+        </section>
+
+        <section class="insights-grid commerce-insights">
+          <article class="panel"><div class="panel-heading"><h2>Orders by sales channel</h2></div><div id="commerceChannelChart" class="bar-list"></div></article>
+          <article class="panel"><div class="panel-heading"><h2>Orders by payment provider</h2></div><div id="commerceProviderChart" class="bar-list"></div></article>
+          <article class="panel"><div class="panel-heading"><h2>Payment status</h2></div><div id="commerceStatusChart" class="bar-list"></div></article>
+          <article class="panel"><div class="panel-heading"><h2>Recorded payment methods</h2></div><div id="commerceMethodChart" class="bar-list"></div></article>
+        </section>
+        <section class="panel records-panel" aria-label="Monthly gross sales">
+          <div class="panel-heading records-heading">
+            <div><h2>Monthly Gross Sales</h2><p>Verified / paid customer payment amount by month.</p></div>
+          </div>
+          <div id="commerceMonthlyGrossChart" class="bar-list" style="padding:8px 4px 4px"></div>
+        </section>
+
+
+        <section class="panel records-panel">
+          <div class="panel-heading records-heading"><div><h2>Orders</h2><p id="commerceOrderCount">0 orders</p></div><button id="commerceRefreshButton" class="secondary-button" type="button">Refresh</button></div>
+          <div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Product</th><th>Channel</th><th>Payment</th><th>Total</th><th>Campaign / Affiliate</th><th>Accounting</th></tr></thead><tbody id="commerceOrdersBody"></tbody></table></div>
+          <p id="commerceDashboardMessage" class="form-message" aria-live="polite"></p>
+        </section>
+
+        <section class="panel records-panel commerce-products-panel">
+          <div class="panel-heading records-heading"><div><h2>Product catalogue</h2><p>Courses, memberships, consultations, e-books, digital and physical products.</p></div></div>
+          <div class="table-wrap"><table><thead><tr><th>SKU</th><th>Product</th><th>Type</th><th>Price</th><th>Sales channel</th><th>Payment provider</th><th>Status</th><th></th></tr></thead><tbody id="commerceProductsBody"></tbody></table></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="recordDialog" class="record-dialog record-dialog-v24">
+    <form id="recordForm" method="dialog">
+      <div class="dialog-header"><div><p class="eyebrow">PERSON RECORD</p><h2 id="dialogReference">Reference</h2><p id="dialogStudentId" class="student-id-line"></p></div><button id="dialogClose" class="icon-button" type="button" aria-label="Close">×</button></div>
+      <div id="recordDetails" class="record-details"></div>
+
+      <div class="section-title"><h3>Lifecycle & follow-up</h3></div>
+      <div class="edit-grid edit-grid-v25">
+        <label>CRM status<select id="editStatus"><option>New</option><option>Contacted</option><option>Follow-up</option><option>Converted</option><option>Closed</option></select></label>
+        <label>Lifecycle stage<select id="editLifecycle"><option>Lead</option><option>Prospect</option><option>Registered</option><option>Active Student</option><option>Graduate</option><option>Alumni</option><option>Closed</option></select></label>
+        <label>Priority<select id="editPriority"><option>Hot</option><option>Warm</option><option>Normal</option><option>Low</option></select></label>
+        <label>Preferred contact<select id="editContactPreference"><option>Any</option><option>Email</option><option>WhatsApp</option><option>Phone</option></select></label>
+        <label>Follow-up date<input id="editFollowUp" type="date"></label>
+        <label>Next action<input id="editNextAction" type="text" maxlength="300" placeholder="e.g. Send course brochure"></label>
+      </div>
+      <label>Tags<input id="editTags" type="text" maxlength="300" placeholder="e.g. online-course, Penang, high-interest"></label>
+      <label>Private notes<textarea id="editNotes" rows="4" maxlength="4000" placeholder="Calls, WhatsApp discussions, preferences, context…"></textarea></label>
+      <div class="quick-followup">
+        <span>Quick follow-up:</span>
+        <button type="button" data-follow-days="1">Tomorrow</button>
+        <button type="button" data-follow-days="3">+3 days</button>
+        <button type="button" data-follow-days="7">+7 days</button>
+        <button type="button" data-follow-days="0">Mark contacted</button>
+      </div>
+      <div class="dialog-actions split-actions">
+        <button id="saveRecord" class="primary-button" type="button">Save record</button>
+        <button id="convertStudent" class="gold-button" type="button">Convert to Student</button>
+        <button id="cancelRecord" class="secondary-button" type="button">Close</button>
+      </div>
+      <p id="dialogMessage" class="form-message" aria-live="polite"></p>
+
+      <div class="section-title timeline-heading"><h3>Activity timeline</h3><button id="addActivityButton" class="secondary-button small-button" type="button">+ Add activity</button></div>
+      <div id="activityComposer" class="activity-composer" hidden>
+        <label>Activity type<select id="activityType"><option>Call</option><option>WhatsApp</option><option>Email</option><option>Meeting</option><option>Brochure Sent</option><option>Payment</option><option>Course</option><option>Note</option></select></label>
+        <label>Description<textarea id="activityDescription" rows="2" maxlength="1000" placeholder="What happened?"></textarea></label>
+        <div class="dialog-actions"><button id="saveActivity" class="primary-button" type="button">Add to timeline</button><button id="cancelActivity" class="secondary-button" type="button">Cancel</button></div>
+      </div>
+      <div id="timeline" class="timeline"></div>
+    </form>
+  </dialog>
+
+  <dialog id="studentDialog" class="record-dialog record-dialog-v24">
+    <form method="dialog">
+      <div class="dialog-header">
+        <div><p class="eyebrow">STUDENT RECORD</p><h2 id="studentDialogName">Student</h2><p id="studentDialogId" class="student-id-line"></p></div>
+        <button id="studentDialogClose" class="icon-button" type="button" aria-label="Close">×</button>
+      </div>
+      <div id="studentDetails" class="record-details"></div>
+      <div class="section-title"><h3>Academic record</h3></div>
+      <div class="edit-grid edit-grid-v25">
+        <label>Programme<input id="studentEditProgramme" type="text" maxlength="160" placeholder="Course / programme"></label>
+        <label>Lifecycle stage<select id="studentEditLifecycle"><option>Registered</option><option>Active Student</option><option>Graduate</option><option>Alumni</option></select></label>
+        <label>Enrolled date<input id="studentEditEnrolled" type="date"></label>
+        <label>Graduated date<input id="studentEditGraduated" type="date"></label>
+      </div>
+      <label>Private student notes<textarea id="studentEditNotes" rows="5" maxlength="4000" placeholder="Learning preferences, progress notes, administrative context…"></textarea></label>
+      <div class="dialog-actions">
+        <button id="studentSave" class="primary-button" type="button">Save student</button>
+        <button id="studentClose" class="secondary-button" type="button">Close</button>
+      </div>
+      <p id="studentDialogMessage" class="form-message" aria-live="polite"></p>
+      <div class="section-title"><h3>Student activity timeline</h3></div>
+      <div id="studentTimeline" class="timeline"></div>
+    </form>
+  </dialog>
+
+
+  <dialog id="productDialog" class="record-dialog record-dialog-v24">
+    <form method="dialog">
+      <div class="dialog-header"><div><p class="eyebrow">PRODUCT</p><h2 id="productDialogTitle">New Product</h2></div><button id="productDialogClose" class="icon-button" type="button" aria-label="Close">×</button></div>
+      <input id="productId" type="hidden">
+      <div class="edit-grid edit-grid-v25">
+        <label>SKU<input id="productSku" maxlength="80" required></label><label>Slug (auto-generated)<input id="productSlug" maxlength="120" placeholder="Generated from English name"></label>
+        <label>Product type<select id="productType"><option>course</option><option>membership</option><option>consultation</option><option>ebook</option><option>digital</option><option>physical</option><option>event</option><option>other</option></select></label>
+        <label>Status<select id="productStatus"><option>Draft</option><option>Active</option><option>Inactive</option><option>Archived</option></select></label>
+        <label>Price<input id="productPrice" type="number" min="0" step="0.01"></label><label>Currency<input id="productCurrency" value="MYR" maxlength="10"></label>
+        <label>Sales channel<select id="productChannel"><option>Website</option><option>Google Play Books</option><option>Manual</option><option>Marketplace</option></select></label>
+        <label>Payment provider<select id="productProvider"><option>DOKU</option><option>Google</option><option>Manual</option><option>Marketplace</option></select></label>
+      </div>
+      <label>English name<input id="productNameEn" maxlength="200"></label><label>Chinese name<input id="productNameZh" maxlength="200"></label>
+      <label>English description<textarea id="productDescriptionEn" rows="3" maxlength="1200"></textarea></label>
+      <label>Chinese description<textarea id="productDescriptionZh" rows="3" maxlength="1200"></textarea></label>
+      <div class="edit-grid edit-grid-v25">
+        <label>Start date<input id="productStartsOn" type="date"></label><label>End date<input id="productEndsOn" type="date"></label>
+        <label>Time (EN)<input id="productTimeEn" maxlength="100" placeholder="10:00 AM – 5:00 PM"></label><label>Time (中文)<input id="productTimeZh" maxlength="100"></label>
+        <label>Delivery (EN)<input id="productDeliveryEn" maxlength="100" placeholder="Live via Zoom"></label><label>Delivery (中文)<input id="productDeliveryZh" maxlength="100"></label>
+        <label>Instructor<input id="productInstructor" maxlength="160"></label><label>Hero image URL<input id="productHeroImage" maxlength="500" placeholder="/images/course-banner.png"></label>
+        <label>Early-bird price<input id="productEarlyBirdPrice" type="number" min="0" step="0.01"></label><label>Early-bird deadline<input id="productEarlyBirdEnd" type="date"></label>
+      </div>
+      <label>External purchase URL<input id="productExternalUrl" type="url" placeholder="For Google Play Books or another marketplace"></label>
+      <div class="dialog-actions"><button id="productSave" class="primary-button" type="button">Save product</button><button id="productClose" class="secondary-button" type="button">Close</button></div>
+      <p id="productDialogMessage" class="form-message" aria-live="polite"></p>
+    </form>
+  </dialog>
+
+  <dialog id="orderDialog" class="record-dialog record-dialog-v24">
+    <form method="dialog">
+      <div class="dialog-header"><div><p class="eyebrow">ORDER</p><h2 id="orderDialogTitle">Create Order</h2></div><button id="orderDialogClose" class="icon-button" type="button" aria-label="Close">×</button></div>
+      <div class="edit-grid edit-grid-v25">
+        <label>Customer name<input id="orderCustomerName" maxlength="160"></label><label>Email<input id="orderCustomerEmail" type="email" maxlength="240"></label>
+        <label>Phone<input id="orderCustomerPhone" maxlength="80"></label><label>Product<select id="orderProduct"></select></label>
+        <label>Quantity<input id="orderQuantity" type="number" min="1" value="1"></label><label>Sales channel<select id="orderChannel"><option>Website</option><option>Google Play Books</option><option>Manual</option><option>Marketplace</option></select></label>
+        <label>Payment provider<select id="orderProvider"><option>DOKU</option><option>Google</option><option>Manual</option><option>Marketplace</option></select></label>
+        <label>Payment status<select id="orderPaymentStatus"><option>Pending</option><option>Paid</option><option>External</option><option>Failed</option><option>Cancelled</option><option>Refunded</option></select></label>
+        <label>Campaign<input id="orderCampaign" maxlength="120"></label><label>Affiliate code<input id="orderAffiliate" maxlength="100"></label>
+      </div>
+      <div class="dialog-actions"><button id="orderSave" class="primary-button" type="button">Create order</button><button id="orderClose" class="secondary-button" type="button">Close</button></div>
+      <p id="orderDialogMessage" class="form-message" aria-live="polite"></p>
+    </form>
+  </dialog>
+
+
+  <dialog id="paymentDialog" class="record-dialog record-dialog-v24">
+    <form method="dialog">
+      <div class="dialog-header"><div><p class="eyebrow">PAYMENT & ACCOUNTING</p><h2>Record Payment / Settlement</h2></div><button id="paymentDialogClose" class="icon-button" type="button" aria-label="Close">×</button></div>
+      <div class="edit-grid edit-grid-v25">
+        <label>Order<select id="paymentOrder"></select></label>
+        <label>Payment method<select id="paymentMethod"><option>DOKU</option><option>Bank Transfer</option><option>Google Play Books</option><option>Cash</option><option>Manual</option><option>Marketplace</option><option>Other</option></select></label>
+        <label>Provider / platform<input id="paymentProviderName" maxlength="80" placeholder="SenangPay / Google / Bank"></label>
+        <label class="payment-reference-field"><span>Transaction / Settlement Reference</span><input id="paymentTransactionRef" maxlength="200" placeholder="e.g. BANK-20260809-001 / Google settlement ID"></label>
+        <label>Payment status<select id="paymentRecordStatus"><option>Paid</option><option>External</option><option>Pending</option><option>Failed</option><option>Cancelled</option><option>Refunded</option></select></label>
+        <label>Verification<select id="paymentVerification"><option>Unverified</option><option>Verified</option><option>Reconciled</option></select></label>
+        <label>Gross sale<input id="paymentGross" type="number" min="0" step="0.01"></label>
+        <input id="paymentFee" type="hidden" value="">
+        <input id="paymentNet" type="hidden" value="">
+        <input id="paymentBank" type="hidden" value="">
+        <label>Settlement / payment date<input id="paymentSettlementDate" type="date"></label>
+        <label>Customer receipt issuer<select id="paymentReceiptIssuer"><option>Quantum YiJing</option><option>External Platform</option><option>Not Applicable</option></select></label>
+      </div>
+      <label>Accounting notes<textarea id="paymentNotes" rows="3" maxlength="1000" placeholder="e.g. Google payout after platform fee; bank transfer verified against statement."></textarea></label>
+      <div id="manualVerificationOverrideBox" style="display:none;margin-top:16px;padding:16px;border:1px solid #e0b44f;background:#fff9e8;border-radius:12px">
+        <div style="font-weight:800;color:#8a5b00;margin-bottom:8px">Gateway verification unavailable</div>
+        <div style="font-size:14px;line-height:1.55;color:#5f4b1e;margin-bottom:12px">The DOKU notification was not hash verified. Only continue after independently checking the transaction in DOKU, bank records, or other reliable payment evidence.</div>
+        <label style="display:flex;gap:10px;align-items:flex-start;font-weight:700;color:#3c3320">
+          <input id="manualVerificationOverride" type="checkbox" style="width:auto;margin-top:3px">
+          <span>I have independently verified this payment against DOKU / bank / payment evidence.</span>
+        </label>
+      </div>
+      <div class="dialog-actions"><button id="paymentSave" class="primary-button" type="button">Save Payment Record</button><button id="paymentClose" class="secondary-button" type="button">Close</button></div>
+      <p id="paymentDialogMessage" class="form-message" aria-live="polite"></p>
+    </form>
+  </dialog>
+
+  <script src="admin.js?v=3.3.16e" defer></script>
+</body>
+</html>

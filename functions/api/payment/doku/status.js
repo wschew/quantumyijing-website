@@ -28,9 +28,14 @@ export async function onRequestGet(context){
   const requestId=crypto.randomUUID();
   const timestamp=new Date().toISOString();
   const target=requestTarget(endpoint);
+
   const sig=await signature(
-    cfg.secret,cfg.clientId,requestId,timestamp,target,'','GET'
-  );
+  cfg.secret,
+  timestamp,
+  target,
+  '',
+  'GET'
+);
 
   const r=await fetch(endpoint,{
     method:'GET',

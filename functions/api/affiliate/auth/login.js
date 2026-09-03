@@ -16,10 +16,13 @@ export async function onRequestPost({request,env}){
              password_iterations,membership_expires_at
       FROM affiliates
       WHERE lower(email)=lower(?)
+        AND status='Approved'
+        AND COALESCE(portal_enabled,0)=1
+      ORDER BY id DESC
       LIMIT 1
     `).bind(email).first();
 
-    if(!a || a.status!=='Approved' || !a.portal_enabled || !a.password_hash)
+    if(!a || !a.password_hash)
       return Response.json({error:'Invalid email or password.'},{status:401});
 
     const memberValid=await db.prepare(`
@@ -36,7 +39,9 @@ export async function onRequestPost({request,env}){
     const valid=await verifyPassword(
       password,a.password_salt,a.password_iterations,a.password_hash
     );
-    if(!valid) return Response.json({error:'Invalid email or password.'},{status:401});
+
+    if(!valid)
+      return Response.json({error:'Invalid email or password.'},{status:401});
 
     const token=randomToken(32);
     const hash=await sha256(token);
@@ -53,7 +58,9 @@ export async function onRequestPost({request,env}){
     ).run();
 
     await db.prepare(`
-      UPDATE affiliates SET last_login_at=?,updated_at=CURRENT_TIMESTAMP WHERE id=?
+      UPDATE affiliates
+      SET last_login_at=?,updated_at=CURRENT_TIMESTAMP
+      WHERE id=?
     `).bind(now.toISOString(),a.id).run();
 
     return new Response(JSON.stringify({ok:true}),{
@@ -64,6 +71,7 @@ export async function onRequestPost({request,env}){
         'cache-control':'no-store'
       }
     });
+
   }catch(e){
     console.error('affiliate login',e);
     return Response.json({error:'Unable to sign in.'},{status:500});

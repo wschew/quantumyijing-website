@@ -12,13 +12,27 @@ export async function onRequestPost({request,env}){
       SELECT id,full_name,email,status,portal_enabled
       FROM affiliates
       WHERE lower(email)=lower(?)
+        AND status='Approved'
+        AND COALESCE(portal_enabled,0)=1
+      ORDER BY id DESC
       LIMIT 1
     `).bind(email).first();
 
     // Never reveal whether an account exists.
-    if(!a || a.status!=='Approved' || !a.portal_enabled){
+    if(!a){
+      console.log('affiliate forgot password: generic response',{
+        found:false
+      });
       return Response.json({ok:true});
     }
+
+    // Invalidate older unused reset links so only the newest one can be used.
+    await db.prepare(`
+      UPDATE affiliate_password_reset_tokens
+      SET used_at=CURRENT_TIMESTAMP
+      WHERE affiliate_id=?
+        AND COALESCE(used_at,'')=''
+    `).bind(a.id).run();
 
     const token=randomToken(32);
     const tokenHash=await sha256(token);
@@ -33,7 +47,7 @@ export async function onRequestPost({request,env}){
     const origin=new URL(request.url).origin;
     const link=`${origin}/affiliate-reset.html?token=${encodeURIComponent(token)}`;
 
-    await sendEmail(env.RESEND_API_KEY,{
+    const emailResult=await sendEmail(env.RESEND_API_KEY,{
       from:'Quantum YiJing International Academy <info@quantumyijing.com>',
       to:[a.email],
       subject:'Quantum YiJing® Affiliate Password Reset / 联盟密码重设',
@@ -42,6 +56,7 @@ export async function onRequestPost({request,env}){
         <p>Dear ${esc(a.full_name)},</p>
         <p>Use the secure link below to reset your password. The link expires in 60 minutes.</p>
         <p><a href="${link}">Reset Affiliate Portal Password</a></p>
+        <p style="font-size:12px;color:#6b7c90;word-break:break-all">${esc(link)}</p>
         <hr style="border:0;border-top:1px solid #d8e2ee;margin:24px 0">
         <h2 style="color:#0b56a5">重设联盟平台密码</h2>
         <p>${esc(a.full_name)} 您好：</p>
@@ -50,9 +65,30 @@ export async function onRequestPost({request,env}){
       </div>`
     });
 
+    if(emailResult?.skipped){
+      console.error('affiliate forgot password: email skipped because RESEND_API_KEY is missing');
+      return Response.json({ok:true});
+    }
+
+    if(!emailResult?.ok){
+      console.error('affiliate forgot password: reset email failed',{
+        affiliate_id:a.id,
+        email:a.email,
+        status:emailResult?.status||0
+      });
+      return Response.json({ok:true});
+    }
+
+    console.log('affiliate forgot password: reset email accepted',{
+      affiliate_id:a.id,
+      email:a.email
+    });
+
     return Response.json({ok:true});
+
   }catch(e){
     console.error('affiliate forgot password',e);
+    // Keep generic response to avoid leaking whether an account exists.
     return Response.json({ok:true});
   }
 }

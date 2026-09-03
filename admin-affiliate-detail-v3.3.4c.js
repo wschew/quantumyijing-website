@@ -60,4 +60,49 @@
     reason:$('#accountReason').value.trim()
   }));
   $('#revokeSessions')?.addEventListener('click',()=>post('revoke_sessions'));
+
+  async function loadComplianceAndAttributions(){
+    const id=selectedId();
+    if(!id)return;
+    try{
+      const r=await fetch(`/api/admin/affiliate-attribution-compliance?affiliate_id=${id}`,{
+        headers:{authorization:`Bearer ${token()}`},cache:'no-store'
+      });
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok)return;
+
+      const tbody=$('#attrs');
+      if(tbody){
+        const rows=d.attributions||[];
+        tbody.innerHTML=rows.length?rows.map(x=>`<tr>
+          <td>${String(x.customer_name||'—')}</td>
+          <td>${String(x.customer_email||'—')}</td>
+          <td>${String(x.first_order_reference||'—')}</td>
+          <td>${String(x.started_at||'—').slice(0,10)}</td>
+          <td>${String(x.expires_at||'—').slice(0,10)}</td>
+          <td>${String(x.status||'—')}</td>
+        </tr>`).join(''):'<tr><td colspan="6">No customer attribution recorded yet.</td></tr>';
+        $('#attrPanel')?.classList.remove('hidden');
+      }
+
+      if(d.compliance){
+        let box=$('#affiliateComplianceSummary');
+        if(!box){
+          box=document.createElement('section');
+          box.id='affiliateComplianceSummary';
+          box.className='panel';
+          const profile=$('#profile');
+          if(profile?.parentNode) profile.parentNode.insertBefore(box,profile.nextSibling);
+        }
+        box.innerHTML=`<h2>Affiliate Compliance</h2>
+          <p><strong>Nationality:</strong> ${d.compliance.nationality||'—'}<br>
+          <strong>Identification:</strong> ${d.compliance.identification_masked||'—'}<br>
+          <strong>Terms:</strong> ${d.compliance.terms_version||'—'}<br>
+          <strong>Accepted:</strong> ${String(d.compliance.terms_accepted_at||'—').replace('T',' ').slice(0,19)}</p>`;
+      }
+    }catch(e){console.error('affiliate attribution/compliance load',e)}
+  }
+
+  $('#load')?.addEventListener('click',()=>setTimeout(loadComplianceAndAttributions,350));
+
 })();

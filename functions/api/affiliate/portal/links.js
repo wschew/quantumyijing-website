@@ -1,6 +1,7 @@
 import {requireAffiliate} from '../auth/_auth.js';
 
 function baseUrl(origin,p){
+ if(String(p.sku||'').trim().toUpperCase()==='YJ12')return `${origin}/funnel/yj12/`;
  const x=String(p.affiliate_public_path||'').trim();
  if(x)return /^https?:\/\//i.test(x)?x:origin+(x.startsWith('/')?x:'/'+x);
  return `${origin}/lp/${encodeURIComponent(p.slug)}.html`;

@@ -1,0 +1,63 @@
+function tok(req){const h=req.headers.get('authorization')||'';return h.toLowerCase().startsWith('bearer ')?h.slice(7).trim():''}
+function ok(req,env){return !!env.ADMIN_TOKEN&&tok(req)===env.ADMIN_TOKEN}
+function dbOf(env){return env.ENQUIRIES_DB||env.DB||env.D1||null}
+const clean=(v,n=300)=>String(v??'').trim().slice(0,n),r2=v=>Math.round((Number(v||0)+Number.EPSILON)*100)/100;
+const JOIN=` JOIN payments py ON py.id=(SELECT p2.id FROM payments p2 WHERE p2.order_id=ac.order_id ORDER BY p2.id DESC LIMIT 1) JOIN orders o ON o.id=ac.order_id `;
+const WHERE=` py.status='Paid' AND py.verification_status='Verified' AND COALESCE(py.accounting_eligible,0)=1 AND o.payment_status='Paid' `;
+const EDATE=` COALESCE(NULLIF(py.accounting_eligible_at,''),NULLIF(py.verified_at,''),NULLIF(py.paid_at,''),ac.created_at) `;
+
+async function carryRows(db,affiliateId){
+ const r=await db.prepare(`SELECT aa.id,aa.adjustment_amount,COALESCE((SELECT SUM(pa.applied_amount) FROM affiliate_payout_adjustments pa JOIN affiliate_payouts ap ON ap.id=pa.payout_id WHERE pa.adjustment_id=aa.id AND ap.status IN ('Draft','Approved','Paid')),0) reserved FROM affiliate_commission_adjustments aa WHERE aa.affiliate_id=? AND aa.recovery_mode='CarryForward' AND aa.status='Open' ORDER BY aa.effective_date,aa.id`).bind(affiliateId).all();
+ return (r.results||[]).map(x=>({...x,remaining:r2(Number(x.adjustment_amount||0)-Number(x.reserved||0))})).filter(x=>x.remaining<-.005);
+}
+
+export async function onRequestPost({request,env}){
+ if(!ok(request,env)) return Response.json({error:'Unauthorized'},{status:401}); const db=dbOf(env);if(!db)return Response.json({error:'Database unavailable'},{status:503});
+ const b=await request.json().catch(()=>({})),affiliateId=Number(b.affiliate_id||0),period=clean(b.payout_period,7);if(!affiliateId||!/^\d{4}-\d{2}$/.test(period))return Response.json({error:'affiliate_id and payout_period are required.'},{status:400});
+ const a=await db.prepare(`SELECT id,affiliate_code,full_name,bank_name,bank_account_name,bank_account_number FROM affiliates WHERE id=? LIMIT 1`).bind(affiliateId).first();if(!a)return Response.json({error:'Affiliate not found.'},{status:404});
+ const rows=await db.prepare(`SELECT ac.id,ac.gross_sale,ac.commission_amount,ac.currency,${EDATE} eligibility_date,COALESCE((SELECT SUM(aa.adjustment_amount) FROM affiliate_commission_adjustments aa WHERE aa.commission_id=ac.id AND aa.recovery_mode='PrePayout' AND aa.status!='Cancelled'),0) pre_adj FROM affiliate_commissions ac ${JOIN} LEFT JOIN affiliate_payout_items api ON api.commission_id=ac.id WHERE ac.affiliate_id=? AND substr(${EDATE},1,7)=? AND ac.status IN ('Approved','Payable') AND api.id IS NULL AND ${WHERE} ORDER BY eligibility_date,ac.id`).bind(affiliateId,period).all();
+ const items=(rows.results||[]).map(x=>({...x,net:r2(Math.max(Number(x.commission_amount||0)+Number(x.pre_adj||0),0))})).filter(x=>x.net>.005);if(!items.length)return Response.json({error:'No net accounting-eligible commissions for this period.'},{status:409});
+ const currency=items[0]?.currency||'MYR',totalSales=r2(items.reduce((s,x)=>s+Number(x.gross_sale||0),0)),grossCommission=r2(items.reduce((s,x)=>s+Number(x.commission_amount||0),0)),preAdj=r2(items.reduce((s,x)=>s+Number(x.pre_adj||0),0)),itemNet=r2(items.reduce((s,x)=>s+Number(x.net||0),0));
+ const carry=await carryRows(db,affiliateId);let room=itemNet;const allocations=[];for(const x of carry){if(room<=.005)break;const mag=Math.min(Math.abs(x.remaining),room),amt=-r2(mag);if(Math.abs(amt)>.005){allocations.push({id:x.id,amount:amt});room=r2(room-mag);}}
+ const carryApplied=r2(allocations.reduce((s,x)=>s+x.amount,0)),netCommission=r2(itemNet+carryApplied);if(netCommission<=.005)return Response.json({error:'No bank payout is due because carry-forward reversals fully offset this period’s commission. The negative balance will continue to the next eligible payout.'},{status:409});
+ const ref=`AFFPAY-${period.replace('-','')}-${crypto.randomUUID().slice(0,8).toUpperCase()}`,bankLast4=String(a.bank_account_number||'').slice(-4);
+
+ // Cloudflare D1 does not support SQL BEGIN/COMMIT/ROLLBACK from Pages Functions.
+ // Use db.batch(), which executes the prepared statements atomically.
+ try{
+  const statements=[];
+  statements.push(
+   db.prepare(`INSERT INTO affiliate_payouts(payout_reference,affiliate_id,payout_period,currency,eligible_sales_count,total_sales,total_commission,status,bank_name,bank_account_name,bank_account_last4,notes,gross_commission,adjustment_total) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+    .bind(ref,affiliateId,period,currency,items.length,totalSales,netCommission,'Draft',clean(a.bank_name,120),clean(a.bank_account_name||a.full_name,160),bankLast4,clean(b.notes,1000),grossCommission,r2(preAdj+carryApplied))
+  );
+
+  for(const item of items){
+   statements.push(
+    db.prepare(`INSERT INTO affiliate_payout_items(payout_id,commission_id,original_commission_amount,pre_payout_adjustment,net_commission_amount) SELECT id,?,?,?,? FROM affiliate_payouts WHERE payout_reference=? LIMIT 1`)
+     .bind(item.id,Number(item.commission_amount||0),Number(item.pre_adj||0),Number(item.net||0),ref)
+   );
+   statements.push(
+    db.prepare(`UPDATE affiliate_commissions SET status='Payable',payable_at=CASE WHEN COALESCE(payable_at,'')='' THEN CURRENT_TIMESTAMP ELSE payable_at END,updated_at=CURRENT_TIMESTAMP WHERE id=?`)
+     .bind(item.id)
+   );
+  }
+
+  for(const al of allocations){
+   statements.push(
+    db.prepare(`INSERT INTO affiliate_payout_adjustments(payout_id,adjustment_id,applied_amount) SELECT id,?,? FROM affiliate_payouts WHERE payout_reference=? LIMIT 1`)
+     .bind(al.id,al.amount,ref)
+   );
+  }
+
+  await db.batch(statements);
+
+  const created=await db.prepare(`SELECT id FROM affiliate_payouts WHERE payout_reference=? LIMIT 1`).bind(ref).first();
+  const pid=Number(created?.id||0);
+  if(!pid) throw new Error('Payout batch created but id could not be resolved.');
+
+  return Response.json({ok:true,payout_id:pid,payout_reference:ref,eligible_sales_count:items.length,total_sales:totalSales,gross_commission:grossCommission,pre_payout_adjustment:preAdj,carry_forward_applied:carryApplied,total_commission:netCommission,currency,status:'Draft'});
+ }catch(e){
+  console.error('affiliate payout create',e);
+  return Response.json({error:'Unable to create payout batch.'},{status:500});
+ }
+}

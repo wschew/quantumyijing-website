@@ -27,7 +27,7 @@
       <header class="topbar">
         <div class="brand-lockup">
           <img src="images/quantum-yijing-logo.png" alt="" class="topbar-logo">
-          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v3.1.1</span></div>
+          <div><strong>Quantum YiJing</strong><span>Academy Operating System · v3.5.0</span></div>
         </div>
         <div class="topbar-actions">
           <a href="index.html" class="text-link">View website</a>
@@ -36,11 +36,43 @@
       </header>
 
       <nav class="module-tabs" aria-label="Academy modules">
-        <button id="crmTab" class="module-tab active" type="button">CRM & Follow-up</button>
-        <button id="studentsTab" class="module-tab" type="button">Students</button>
-        <button id="marketingTab" class="module-tab" type="button">Marketing</button>
-        <button id="commerceTab" class="module-tab" type="button">Sales & Commerce</button>
-      </nav>
+  <button id="crmTab" class="module-tab active" type="button">CRM & Follow-up</button>
+  <button id="studentsTab" class="module-tab" type="button">Students</button>
+  <button id="marketingTab" class="module-tab" type="button">Marketing</button>
+  <button id="commerceTab" class="module-tab" type="button">Sales & Commerce</button>
+
+  <a
+    href="/admin-affiliate-hub.html"
+    class="module-tab"
+    style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;"
+  >
+    Affiliates
+  </a>
+
+  <a
+    href="/admin-coach-hub"
+    class="module-tab"
+    style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;"
+  >
+    Coaches
+  </a>
+
+  <a
+    href="/admin/"
+    class="module-tab"
+    style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;"
+  >
+    Easy Links
+  </a>
+
+  <a
+    href="/admin-funnels.html"
+    class="module-tab"
+    style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;"
+  >
+    Funnels
+  </a>
+</nav>
 
       <div id="crmModule">
       <section class="page-heading">
@@ -49,10 +81,10 @@
           <h1>CRM Intelligence & Follow-up Dashboard</h1>
           <p>Prioritize leads, manage next actions, prevent missed follow-ups and maintain the complete student lifecycle.</p>
         </div>
-        <button id="exportButton" class="primary-button" type="button">Export CRM to Excel (CSV)</button>
-      </section>
+      <button id="exportButton" class="primary-button" type="button">Export CRM to Excel (CSV)</button>
+    </section>
 
-      <section class="stats-grid stats-grid-v24" aria-label="CRM summary">
+    <section class="stats-grid stats-grid-v24" aria-label="CRM summary">
         <article><span>Total enquiries</span><strong id="statTotal">0</strong></article>
         <article class="danger-card"><span>Overdue</span><strong id="statOverdue">0</strong></article>
         <article class="attention"><span>Due today</span><strong id="statDueToday">0</strong></article>
@@ -165,7 +197,6 @@
           </div>
           <a class="primary-button button-link" href="products.html" target="_blank">View Marketing Hub</a>
         </section>
-
         <section class="stats-grid marketing-stats-grid" aria-label="Marketing summary">
           <article><span>Tracked enquiries</span><strong id="marketingStatAttributed">0</strong></article>
           <article><span>Campaign enquiries</span><strong id="marketingStatCampaigns">0</strong></article>
@@ -211,9 +242,9 @@
           <article><span>Paid / External</span><strong id="commerceStatPaid">0</strong></article>
           <article><span>Pending</span><strong id="commerceStatPending">0</strong></article>
           <article><span>Gross sales</span><strong id="commerceStatGross">RM 0.00</strong></article>
-          <article><span>Platform / provider fees</span><strong id="commerceStatFees">RM 0.00</strong></article>
-          <article><span>Net amount</span><strong id="commerceStatNet">RM 0.00</strong></article>
-          <article><span>Bank received</span><strong id="commerceStatBank">RM 0.00</strong></article>
+          
+          
+          
         </section>
 
         <section class="insights-grid commerce-insights">
@@ -222,20 +253,18 @@
           <article class="panel"><div class="panel-heading"><h2>Payment status</h2></div><div id="commerceStatusChart" class="bar-list"></div></article>
           <article class="panel"><div class="panel-heading"><h2>Recorded payment methods</h2></div><div id="commerceMethodChart" class="bar-list"></div></article>
         </section>
+        <section class="panel records-panel" aria-label="Monthly gross sales">
+          <div class="panel-heading records-heading">
+            <div><h2>Monthly Gross Sales</h2><p>Verified / paid customer payment amount by month.</p></div>
+          </div>
+          <div id="commerceMonthlyGrossChart" class="bar-list" style="padding:8px 4px 4px"></div>
+        </section>
+
 
         <section class="panel records-panel">
           <div class="panel-heading records-heading"><div><h2>Orders</h2><p id="commerceOrderCount">0 orders</p></div><button id="commerceRefreshButton" class="secondary-button" type="button">Refresh</button></div>
           <div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Product</th><th>Channel</th><th>Payment</th><th>Total</th><th>Campaign / Affiliate</th><th>Accounting</th></tr></thead><tbody id="commerceOrdersBody"></tbody></table></div>
           <p id="commerceDashboardMessage" class="form-message" aria-live="polite"></p>
-        </section>
-
-        <section class="panel records-panel">
-          <div class="panel-heading records-heading">
-            <div><h2>Payment & Accounting Records</h2><p>Gross sale, provider fee, net settlement and bank receipt are stored separately.</p></div>
-            <button id="newPaymentButton" class="primary-button" type="button">+ Record Payment</button>
-          </div>
-          <div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer / Product</th><th>Method / Provider</th><th>Gross</th><th>Fees</th><th>Net</th><th>Bank received</th><th>Verification / Receipt</th></tr></thead><tbody id="commercePaymentsBody"></tbody></table></div>
-          <p id="commercePaymentMessage" class="form-message" aria-live="polite"></p>
         </section>
 
         <section class="panel records-panel commerce-products-panel">
@@ -322,7 +351,7 @@
         <label>Status<select id="productStatus"><option>Draft</option><option>Active</option><option>Inactive</option><option>Archived</option></select></label>
         <label>Price<input id="productPrice" type="number" min="0" step="0.01"></label><label>Currency<input id="productCurrency" value="MYR" maxlength="10"></label>
         <label>Sales channel<select id="productChannel"><option>Website</option><option>Google Play Books</option><option>Manual</option><option>Marketplace</option></select></label>
-        <label>Payment provider<select id="productProvider"><option>SenangPay</option><option>Google</option><option>Manual</option><option>Marketplace</option></select></label>
+        <label>Payment provider<select id="productProvider"><option>DOKU</option><option>Google</option><option>Manual</option><option>Marketplace</option></select></label>
       </div>
       <label>English name<input id="productNameEn" maxlength="200"></label><label>Chinese name<input id="productNameZh" maxlength="200"></label>
       <label>English description<textarea id="productDescriptionEn" rows="3" maxlength="1200"></textarea></label>
@@ -347,7 +376,7 @@
         <label>Customer name<input id="orderCustomerName" maxlength="160"></label><label>Email<input id="orderCustomerEmail" type="email" maxlength="240"></label>
         <label>Phone<input id="orderCustomerPhone" maxlength="80"></label><label>Product<select id="orderProduct"></select></label>
         <label>Quantity<input id="orderQuantity" type="number" min="1" value="1"></label><label>Sales channel<select id="orderChannel"><option>Website</option><option>Google Play Books</option><option>Manual</option><option>Marketplace</option></select></label>
-        <label>Payment provider<select id="orderProvider"><option>SenangPay</option><option>Google</option><option>Manual</option><option>Marketplace</option></select></label>
+        <label>Payment provider<select id="orderProvider"><option>DOKU</option><option>Google</option><option>Manual</option><option>Marketplace</option></select></label>
         <label>Payment status<select id="orderPaymentStatus"><option>Pending</option><option>Paid</option><option>External</option><option>Failed</option><option>Cancelled</option><option>Refunded</option></select></label>
         <label>Campaign<input id="orderCampaign" maxlength="120"></label><label>Affiliate code<input id="orderAffiliate" maxlength="100"></label>
       </div>
@@ -362,25 +391,32 @@
       <div class="dialog-header"><div><p class="eyebrow">PAYMENT & ACCOUNTING</p><h2>Record Payment / Settlement</h2></div><button id="paymentDialogClose" class="icon-button" type="button" aria-label="Close">×</button></div>
       <div class="edit-grid edit-grid-v25">
         <label>Order<select id="paymentOrder"></select></label>
-        <label>Payment method<select id="paymentMethod"><option>SenangPay</option><option>Bank Transfer</option><option>Google Play Books</option><option>Cash</option><option>Manual</option><option>Marketplace</option><option>Other</option></select></label>
+        <label>Payment method<select id="paymentMethod"><option>DOKU</option><option>Bank Transfer</option><option>Google Play Books</option><option>Cash</option><option>Manual</option><option>Marketplace</option><option>Other</option></select></label>
         <label>Provider / platform<input id="paymentProviderName" maxlength="80" placeholder="SenangPay / Google / Bank"></label>
         <label class="payment-reference-field"><span>Transaction / Settlement Reference</span><input id="paymentTransactionRef" maxlength="200" placeholder="e.g. BANK-20260809-001 / Google settlement ID"></label>
         <label>Payment status<select id="paymentRecordStatus"><option>Paid</option><option>External</option><option>Pending</option><option>Failed</option><option>Cancelled</option><option>Refunded</option></select></label>
         <label>Verification<select id="paymentVerification"><option>Unverified</option><option>Verified</option><option>Reconciled</option></select></label>
         <label>Gross sale<input id="paymentGross" type="number" min="0" step="0.01"></label>
-        <label>Provider / platform fee<input id="paymentFee" type="number" min="0" step="0.01" value="0"></label>
-        <label>Net amount<input id="paymentNet" type="number" min="0" step="0.01"></label>
-        <label>Amount received in bank<input id="paymentBank" type="number" min="0" step="0.01"></label>
+        <input id="paymentFee" type="hidden" value="">
+        <input id="paymentNet" type="hidden" value="">
+        <input id="paymentBank" type="hidden" value="">
         <label>Settlement / payment date<input id="paymentSettlementDate" type="date"></label>
         <label>Customer receipt issuer<select id="paymentReceiptIssuer"><option>Quantum YiJing</option><option>External Platform</option><option>Not Applicable</option></select></label>
       </div>
       <label>Accounting notes<textarea id="paymentNotes" rows="3" maxlength="1000" placeholder="e.g. Google payout after platform fee; bank transfer verified against statement."></textarea></label>
-      <p class="helper-text">External-platform sales should normally preserve Gross Sale, Platform Fee and Net Settlement separately. Customer receipt can be marked “External Platform”.</p>
+      <div id="manualVerificationOverrideBox" style="display:none;margin-top:16px;padding:16px;border:1px solid #e0b44f;background:#fff9e8;border-radius:12px">
+        <div style="font-weight:800;color:#8a5b00;margin-bottom:8px">Gateway verification unavailable</div>
+        <div style="font-size:14px;line-height:1.55;color:#5f4b1e;margin-bottom:12px">The DOKU notification was not hash verified. Only continue after independently checking the transaction in DOKU, bank records, or other reliable payment evidence.</div>
+        <label style="display:flex;gap:10px;align-items:flex-start;font-weight:700;color:#3c3320">
+          <input id="manualVerificationOverride" type="checkbox" style="width:auto;margin-top:3px">
+          <span>I have independently verified this payment against DOKU / bank / payment evidence.</span>
+        </label>
+      </div>
       <div class="dialog-actions"><button id="paymentSave" class="primary-button" type="button">Save Payment Record</button><button id="paymentClose" class="secondary-button" type="button">Close</button></div>
       <p id="paymentDialogMessage" class="form-message" aria-live="polite"></p>
     </form>
   </dialog>
 
-  <script src="admin.js?v=3.1.1" defer></script>
+  <script src="admin.js?v=3.3.16e" defer></script>
 </body>
 </html>

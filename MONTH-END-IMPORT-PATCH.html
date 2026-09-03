@@ -1,0 +1,45 @@
+<!-- v3.4.1g5 — add this block INSIDE <main>, immediately after the current combined bank payment table. -->
+<section class="card" id="monthEndPaymentImport" style="margin-top:24px">
+  <div style="display:flex;justify-content:space-between;gap:20px;align-items:flex-start;flex-wrap:wrap">
+    <div>
+      <div class="eyebrow">ACCOUNTING · PAYMENT POSTING</div>
+      <h2 style="margin:8px 0;color:#0b5daf;font-size:34px">Import Completed Bank Payment File</h2>
+      <p style="margin:0;color:#5c728a;line-height:1.6">After the Accounts team completes the bank transfers, fill in <strong>Payment Reference</strong> and <strong>Payment Date</strong> in the exported Excel file, then upload the same file here.</p>
+    </div>
+    <div style="padding:10px 16px;border-radius:999px;background:#fff4d8;color:#8a5d00;font-weight:800">WRITE ACTION · CONFIRMATION REQUIRED</div>
+  </div>
+
+  <div style="margin-top:22px;padding:18px;border:1px solid #d8e4f1;border-radius:16px;background:#f8fbff">
+    <strong>Accounting safeguards:</strong>
+    <span style="color:#51677f"> payout type, reference, currency, amount, payout period and current status are validated against D1 before posting. Already-Paid rows are skipped and never emailed twice. Validation itself makes no accounting changes.</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:minmax(260px,1fr) auto auto;gap:14px;align-items:end;margin-top:22px">
+    <label class="field" style="display:block">
+      <span style="display:block;font-weight:800;margin-bottom:8px">Completed Excel File (.xlsx)</span>
+      <input id="completedBankFile" type="file" accept=".xlsx,.xls" style="width:100%;box-sizing:border-box;padding:13px;border:1px solid #c8d8ea;border-radius:12px;background:#fff">
+    </label>
+    <button id="validateCompletedBankFile" class="btn primary" type="button">Validate File</button>
+    <button id="confirmCompletedBankFile" class="btn export" type="button" disabled>Confirm &amp; Mark Paid</button>
+  </div>
+
+  <p id="completedBankImportStatus" class="status" aria-live="polite"></p>
+
+  <div class="summary" style="margin-top:20px">
+    <div class="metric"><span>Rows Loaded</span><strong id="importRowsCount">0</strong><small>From completed Excel</small></div>
+    <div class="metric"><span>Ready to Post</span><strong id="importReadyCount">0</strong><small>Approved + validated</small></div>
+    <div class="metric"><span>Already Paid</span><strong id="importSkippedCount">0</strong><small>Skipped safely</small></div>
+    <div class="metric"><span>Validation Errors</span><strong id="importErrorCount">0</strong><small>Must be zero before posting</small></div>
+  </div>
+
+  <div class="table-wrap" style="margin-top:20px">
+    <table>
+      <thead><tr><th>No.</th><th>Type</th><th>Code / Payee</th><th>Payout Ref</th><th>Currency</th><th>Net Payable</th><th>Payment Date</th><th>Payment Ref</th><th>Validation</th></tr></thead>
+      <tbody id="completedBankImportRows"><tr><td class="empty" colspan="9">Choose a completed month-end Excel file to begin.</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Add these two tags near the end of the CURRENT page, before </body>, once only. -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="/admin-month-end-bank-payments-import.js?v=3.4.1g5" defer></script>

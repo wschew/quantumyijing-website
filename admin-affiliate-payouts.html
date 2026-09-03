@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Affiliate Monthly Payouts</title>
+<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/affiliate-portal.css">
+<link rel="stylesheet" href="/admin-affiliate-payouts.css">
+</head>
+<body>
+<header class="qy-portal-header">
+  <a href="/" class="qy-brand-lockup" aria-label="Quantum YiJing Home">
+    <img src="/images/quantum-yijing-3d-logo.png" alt="Quantum YiJing® Logo" class="qy-brand-logo">
+    <span class="qy-brand-name">Quantum YiJing®</span>
+  </a>
+  <div class="qy-portal-header-right">
+    <div class="qy-portal-section">Affiliate Accounting Admin</div>
+    <a href="/admin-affiliate-hub.html" class="portal-outline-link">← Affiliate Hub</a>
+  </div>
+</header>
+
+<main class="payout-page">
+  <section class="page-heading">
+    <p class="eyebrow">AFFILIATE ACCOUNTING</p>
+    <h1>Affiliate Monthly Payout & Reconciliation</h1>
+    <p class="subtext">Prepare monthly affiliate payouts from verified, accounting-eligible customer payments only.</p>
+  </section>
+
+
+  <section class="payout-card accounting-overview">
+    <div class="section-heading">
+      <div><h2>Accounting Overview</h2><p>Read-only affiliate liability, payout history and reporting. No commission or payout rules are changed here.</p></div>
+      <button id="refreshAccounting" class="primary-btn" type="button">Refresh Accounting</button>
+    </div>
+    <div class="summary-strip accounting-summary">
+      <div class="summary-box"><span>Net Unpaid Liability</span><b id="accLiability">MYR 0.00</b><small id="accLiabilityCount">0 commissions</small><small id="accLiabilityBreakdown">Gross MYR 0.00 · Pre-payout adjustments MYR 0.00</small></div>
+      <div class="summary-box"><span>Draft Batches</span><b id="accDraft">0</b></div>
+      <div class="summary-box"><span>Approved Batches</span><b id="accApproved">0</b></div>
+      <div class="summary-box"><span>Total Paid</span><b id="accPaidTotal">MYR 0.00</b><small id="accPaidBatches">0 batches</small></div>
+    </div>
+    <div class="accounting-grid accounting-grid-summary">
+      <div><h3>Monthly Payout Summary</h3><div class="table-wrap"><table class="qy-table"><thead><tr><th>Month</th><th>Batches</th><th>Sales</th><th>Commission</th><th>Open</th><th>Paid</th></tr></thead><tbody id="accMonthly"><tr><td colspan="6" class="empty-cell">Load accounting overview.</td></tr></tbody></table></div></div>
+      <div><h3>Commission by Sales Channel</h3><div class="table-wrap"><table class="qy-table"><thead><tr><th>Channel</th><th>Sales</th><th>Commission</th><th>Count</th></tr></thead><tbody id="accChannels"><tr><td colspan="4" class="empty-cell">Load accounting overview.</td></tr></tbody></table></div></div>
+    </div>
+    <div class="accounting-ledger-block">
+      <h3>Affiliate Commission Ledger</h3>
+      <p class="ledger-note">Complete read-only transaction history, including commissions already assigned to or paid through a payout batch.</p>
+      <div class="table-wrap"><table class="qy-table accounting-ledger-table"><thead><tr><th>ID</th><th>Date</th><th>Affiliate</th><th>Invoice</th><th>Customer</th><th>Product</th><th>Sale</th><th>Rate</th><th>Commission</th><th>Commission Status</th><th>Payout</th><th>Action</th></tr></thead><tbody id="accLedger"><tr><td colspan="12" class="empty-cell">Load accounting overview.</td></tr></tbody></table></div>
+    </div>
+
+    <div class="accounting-grid accounting-grid-history">
+      <div><h3>Affiliate Country Report</h3><div class="table-wrap"><table class="qy-table"><thead><tr><th>Country</th><th>Payouts</th><th>Sales</th><th>Commission</th><th>Paid</th></tr></thead><tbody id="accCountries"><tr><td colspan="5" class="empty-cell">Load accounting overview.</td></tr></tbody></table></div></div>
+      <div><h3>Paid Payout History</h3><div class="table-wrap"><table class="qy-table"><thead><tr><th>Paid Date</th><th>Affiliate</th><th>Period</th><th>Commission</th><th>Reference</th></tr></thead><tbody id="accPaidHistory"><tr><td colspan="5" class="empty-cell">Load accounting overview.</td></tr></tbody></table></div></div>
+    </div>
+  </section>
+
+  <section class="payout-card reversal-card">
+    <div class="section-heading">
+      <div><h2>Refund / Commission Reversal</h2><p>Record full or partial customer refunds, reversals or chargebacks. Paid commission recoveries are carried forward automatically to the affiliate’s next payout.</p></div>
+      <div class="reversal-balance"><span>Open Carry-forward</span><b id="adjustmentBalance">MYR 0.00</b></div>
+    </div>
+    <div class="reversal-grid">
+      <label class="field reversal-commission"><span>Commission Transaction</span><select id="adjustCommissionId"><option value="">Select affiliate first…</option></select><small id="adjustCommissionHint">Select an affiliate above, then choose the exact commission transaction.</small></label>
+      <label class="field"><span>Type</span><select id="adjustType"><option>Refund</option><option>Reversal</option><option>Chargeback</option><option>Manual</option></select></label>
+      <label class="field"><span>Refunded Sale Amount</span><input id="adjustRefundAmount" type="number" min="0.01" step="0.01" placeholder="0.00"></label>
+      <label class="field"><span>Effective Date</span><input id="adjustDate" type="date"></label>
+      <label class="field"><span>Refund / Bank Reference</span><input id="adjustReference" type="text" placeholder="e.g. REFUND-20260823-001"></label>
+      <label class="field reversal-reason"><span>Reason</span><input id="adjustReason" type="text" placeholder="Reason for refund / reversal"></label>
+      <div class="field action-field"><span>&nbsp;</span><button id="recordAdjustment" class="danger-btn" type="button">Record Reversal</button></div>
+    </div>
+    <div class="bank-note"><strong>Rule:</strong> Before payout, the commission is reduced proportionally. After payout, a negative recovery balance is created and automatically deducted from future eligible payouts. Historical paid payouts are never rewritten.</div>
+    <div class="adjustment-history">
+      <h3>Commission Adjustment Ledger</h3>
+      <div class="table-wrap"><table class="qy-table adjustment-table"><thead><tr><th>Date</th><th>Affiliate</th><th>Commission ID</th><th>Invoice / Customer</th><th>Type</th><th>Refunded Sale</th><th>Commission Adjustment</th><th>Mode</th><th>Status</th><th>Reference / Reason</th></tr></thead><tbody id="adjustmentRows"><tr><td colspan="10" class="empty-cell">Load accounting overview.</td></tr></tbody></table></div>
+    </div>
+  </section>
+
+  <section class="payout-card">
+    <div class="section-heading">
+      <div><h2>1. Select Payout Period</h2><p>Choose the affiliate and month to review eligible commissions.</p></div>
+    </div>
+    <div class="control-grid">
+      <label class="field"><span>Admin Token</span><input id="token" type="password" autocomplete="off"></label>
+      <label class="field"><span>Affiliate</span><select id="affiliateId"><option value="">Select affiliate by name…</option></select><small id="affiliateHint">Name · code · email</small></label>
+      <label class="field"><span>Payout Month</span><input id="period" type="month"></label>
+      <div class="field action-field"><span>&nbsp;</span><button id="load" class="primary-btn">Load Eligible Commissions</button></div>
+    </div>
+    <p id="status" class="status-message"></p>
+  </section>
+
+  <section class="payout-card">
+    <div class="section-heading">
+      <div><h2>2. Eligible Commissions</h2><p>Approved or payable commissions not already assigned to a payout.</p></div>
+      <button id="create" class="primary-btn">Create Draft Payout</button>
+    </div>
+    <div class="summary-strip">
+      <div class="summary-box"><span>Eligible Sales</span><b id="sumCount">0</b></div>
+      <div class="summary-box"><span>Total Sales</span><b id="sumSales">MYR 0.00</b></div>
+      <div class="summary-box"><span>Gross Commission</span><b id="sumGross">MYR 0.00</b></div>
+      <div class="summary-box"><span>Refund / Reversal Adjustments</span><b id="sumAdjustments">MYR 0.00</b></div>
+      <div class="summary-box"><span>Carry-forward Balance</span><b id="sumCarry">MYR 0.00</b></div>
+      <div class="summary-box"><span>Net Payout</span><b id="sumCommission">MYR 0.00</b></div>
+      <div class="summary-box"><span>Blocked / Ineligible</span><b id="sumBlocked">0</b></div>
+    </div>
+    <div class="table-wrap">
+      <table class="qy-table">
+        <thead><tr><th>Date</th><th>Invoice</th><th>Customer</th><th>Product</th><th>Sale</th><th>Rate</th><th>Net Commission</th><th>Status</th></tr></thead>
+        <tbody id="eligible"><tr><td colspan="8" class="empty-cell">Load an affiliate and payout month to begin.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="payout-card">
+    <div class="section-heading">
+      <div><h2>3. Payout Batches</h2><p>Draft, approved and paid payout batches.</p></div>
+    </div>
+    <div class="table-wrap">
+      <table class="qy-table">
+        <thead><tr><th>Reference</th><th>Affiliate</th><th>Period</th><th>Sales</th><th>Commission</th><th>Status</th><th>Payment Date</th><th>Payment Ref</th><th>Action</th></tr></thead>
+        <tbody id="payouts"><tr><td colspan="9" class="empty-cell">No payout batches loaded yet.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="payout-card bank-card">
+    <div class="section-heading">
+      <div><h2>4. Record Bank Transfer</h2><p>Use this only after the payout is approved and the bank transfer is completed.</p></div>
+    </div>
+    <div class="bank-grid">
+      <label class="field"><span>Selected Approved Payout</span><input id="payPayoutRef" type="text" readonly placeholder="Click Record Payment on an Approved payout"><input id="payPayout" type="hidden"></label>
+      <label class="field"><span>Payment Date</span><input id="paymentDate" type="date"></label>
+      <label class="field"><span>Payment Reference</span><input id="paymentRef" type="text" placeholder="e.g. BANK-20260818-001"></label>
+      <div class="field action-field"><span>&nbsp;</span><button id="markPaid" class="success-btn">Mark Paid</button></div>
+    </div>
+    <div class="bank-note"><strong>Accounting rule:</strong> Only customer payments that are Paid + Verified + Accounting Eligible = YES can enter an affiliate payout. Eligibility is rechecked again before approval and before bank payment.</div>
+  </section>
+</main>
+
+<script src="/admin-affiliate-payouts.js?v=3.3.16s2" defer></script>
+<script src="/admin-affiliate-payouts-standardize.js?v=3.4.1g6" defer></script>
+</body>
+</html>

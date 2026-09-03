@@ -46,18 +46,28 @@ export async function hmac(secret,text){
   );
   return b64Bytes(await crypto.subtle.sign('HMAC',k,enc.encode(text)));
 }
-export async function signature(secret,clientId,requestId,timestamp,target,body='',method='POST'){
+export async function signature(
+  secret,
+  timestamp,
+  target,
+  body='',
+  method='POST'
+){
   const parts=[
-    `Client-Id:${clientId}`,
-    `Request-Id:${requestId}`,
     `Request-Timestamp:${timestamp}`,
     `Request-Target:${target}`
   ];
+
   if(['POST','PATCH'].includes(String(method).toUpperCase())){
     parts.push(`Digest:${await digest(body)}`);
   }
-  return `HMACSHA256=${await hmac(secret,parts.join('\n'))}`;
+
+  return `HMACSHA256=${await hmac(
+    secret,
+    parts.join('\n')
+  )}`;
 }
+
 export function requestTarget(endpoint){
   const u=new URL(endpoint);
   return u.pathname+u.search;
