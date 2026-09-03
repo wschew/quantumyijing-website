@@ -420,67 +420,6 @@ Where Ancient Wisdom Meets Modern Scientific Thinking
 }
 
 
-function esc(v){
-  return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-async function sendStatusEmail(env,a,oldStatus,newStatus,reason){
-  if(!env.RESEND_API_KEY || !a?.email) return {sent:false,skipped:true};
-
-  let subject='Quantum YiJing® Affiliate Account Update';
-  let headline='Affiliate Account Update';
-  let en=`Your Quantum YiJing® Affiliate account status has been updated to ${newStatus}.`;
-  let zh=`您的 Quantum YiJing® 联盟账户状态已更新为 ${newStatus}。`;
-
-  if(newStatus==='Approved' && oldStatus!=='Approved'){
-    if(oldStatus==='Suspended' || oldStatus==='Archived'){
-      subject='Your Quantum YiJing® Affiliate Account Has Been Restored';
-      headline='Affiliate Account Restored';
-      en='Your Quantum YiJing® Affiliate account has been restored and portal access is available again.';
-      zh='您的 Quantum YiJing® 联盟账户已恢复，现在可以重新使用联盟平台。';
-    }else{
-      subject='Your Quantum YiJing® Affiliate Account Is Approved';
-      headline='Affiliate Account Approved';
-      en='Your Quantum YiJing® Affiliate account has been approved.';
-      zh='您的 Quantum YiJing® 联盟账户已获批准。';
-    }
-  }else if(newStatus==='Suspended'){
-    subject='Quantum YiJing® Affiliate Account Suspended';
-    headline='Affiliate Account Suspended';
-    en='Your Quantum YiJing® Affiliate account has been temporarily suspended and portal access has been disabled.';
-    zh='您的 Quantum YiJing® 联盟账户已暂时停用，联盟平台访问权限也已关闭。';
-  }else if(newStatus==='Rejected'){
-    subject='Quantum YiJing® Affiliate Application Status';
-    headline='Affiliate Application Update';
-    en='Your Quantum YiJing® Affiliate application/account has been marked as Rejected.';
-    zh='您的 Quantum YiJing® 联盟申请/账户状态已更新为未获批准。';
-  }else if(newStatus==='Archived'){
-    subject='Quantum YiJing® Affiliate Account Archived';
-    headline='Affiliate Account Archived';
-    en='Your Quantum YiJing® Affiliate account has been archived and portal access has been disabled.';
-    zh='您的 Quantum YiJing® 联盟账户已归档，联盟平台访问权限已关闭。';
-  }
-
-  const html=`<div style="font-family:Arial,sans-serif;line-height:1.6;color:#172033;max-width:680px;margin:auto">
-  <h2 style="color:#0b56a5">${esc(headline)}</h2>
-  <p>Dear ${esc(a.display_name||a.full_name||'Affiliate')},</p>
-  <p>${esc(en)}</p><p>${esc(zh)}</p>
-  ${reason?`<p><strong>Reason / 原因:</strong><br>${esc(reason)}</p>`:''}
-  <p><strong>Affiliate Code:</strong> ${esc(a.affiliate_code||'')}</p>
-  <p>Quantum YiJing® Affiliate Programme</p></div>`;
-
-  const r=await fetch('https://api.resend.com/emails',{
-    method:'POST',
-    headers:{Authorization:`Bearer ${env.RESEND_API_KEY}`,'Content-Type':'application/json'},
-    body:JSON.stringify({
-      from:env.AFFILIATE_FROM_EMAIL||'Quantum YiJing <info@quantumyijing.com>',
-      to:[a.email],subject,html
-    })
-  });
-  if(!r.ok){ console.error('affiliate status email failed',r.status,await r.text()); return {sent:false,status:r.status}; }
-  return {sent:true};
-}
-
 export async function onRequestGet({request,env}){
 
   if(!authorised(request,env)){
