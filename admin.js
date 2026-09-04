@@ -205,7 +205,7 @@
     $('marketingTab').classList.toggle('active', marketingMode);
     $('commerceTab').classList.toggle('active', commerceMode);
     if (studentMode) loadStudentAll().catch(handleStudentError);
-    if (marketingMode) loadMarketingStats().catch(handleMarketingError);
+    if (marketingMode) loadMarketingAll().catch(handleMarketingError);
     if (commerceMode) loadCommerceAll().catch(handleCommerceError);
   }
 
@@ -227,6 +227,36 @@
     });
     if (!(data.recent || []).length) body.innerHTML='<tr><td colspan="8">No attributed enquiries yet. Submit a test landing-page enquiry with UTM parameters.</td></tr>';
     setMessage('marketingDashboardMessage','',true);
+  }
+
+  async function loadEmailEngagement() {
+    setMessage('emailEngagementMessage','Loading…',true);
+    const response = await api('/api/admin/marketing-email-engagement');
+    const data = await response.json();
+    const summary = data.summary || {};
+    $('emailStatSent').textContent = Number(summary.sent || 0);
+    $('emailStatDelivered').textContent = Number(summary.delivered || 0);
+    $('emailStatOpened').textContent = Number(summary.opened || 0);
+    $('emailStatClicked').textContent = Number(summary.clicked || 0);
+    $('emailStatProblems').textContent = Number(summary.problems || 0);
+
+    const body = $('emailEngagementBody');
+    body.innerHTML = '';
+    (data.results || []).forEach(row => {
+      const prospect = `<strong>${esc(row.name || 'Unknown')}</strong><br><a href="mailto:${esc(row.email || '')}">${esc(row.email || '—')}</a>`;
+      const followUp = `${esc(row.template_code || '—')}<br><small>Step ${Number(row.step_no || 0)}</small>`;
+      const status = value => value ? `<span class="status Converted">Yes</span><br><small>${esc(value)}</small>` : '—';
+      const problem = row.problem_type ? `<span class="status Lost">${esc(row.problem_type.replace('email.',''))}</span><br><small>${esc(row.problem_at || '')}</small>` : '—';
+      body.insertAdjacentHTML('beforeend', `<tr><td>${esc(row.sent_at || '—')}</td><td>${prospect}</td><td>${followUp}</td><td>${status(row.delivered_at)}</td><td>${status(row.opened_at)}</td><td>${status(row.clicked_at)}</td><td>${problem}</td></tr>`);
+    });
+    if (!(data.results || []).length) {
+      body.innerHTML = '<tr><td colspan="7">No YJ12 email delivery records yet.</td></tr>';
+    }
+    setMessage('emailEngagementMessage','',true);
+  }
+
+  async function loadMarketingAll() {
+    await Promise.all([loadMarketingStats(), loadEmailEngagement()]);
   }
 
   function handleMarketingError(error){
@@ -543,7 +573,7 @@
   $('productDialogClose').addEventListener('click',()=>$('productDialog').close()); $('productClose').addEventListener('click',()=>$('productDialog').close()); $('productSave').addEventListener('click',saveProduct);
   $('productNameEn').addEventListener('input',()=>{if(!$('productId').value && !$('productSlug').dataset.manual){$('productSlug').value=slugify($('productNameEn').value);}}); $('productSlug').addEventListener('input',()=>{$('productSlug').dataset.manual='1';});
   $('orderDialogClose').addEventListener('click',()=>$('orderDialog').close()); $('orderClose').addEventListener('click',()=>$('orderDialog').close()); $('orderSave').addEventListener('click',saveOrder);
-  $('marketingRefreshButton').addEventListener('click', () => loadMarketingStats().catch(handleMarketingError));
+  $('marketingRefreshButton').addEventListener('click', () => loadMarketingAll().catch(handleMarketingError));
   $('studentFilterForm').addEventListener('submit', async e => { e.preventDefault(); state.studentPage=1; await loadStudents().catch(handleStudentError); });
   $('studentClearFilters').addEventListener('click', async () => { $('studentFilterForm').reset(); state.studentPage=1; await loadStudents().catch(handleStudentError); });
   $('studentRefreshButton').addEventListener('click', () => loadStudentAll().catch(handleStudentError));

@@ -213,6 +213,26 @@
 
         <section class="panel records-panel">
           <div class="panel-heading records-heading">
+            <div><h2>YJ12 Email Engagement</h2><p>Delivery and engagement events reported by Resend. Opens are approximate; clicks are stronger engagement signals.</p></div>
+          </div>
+          <section class="stats-grid commerce-stats-grid" aria-label="YJ12 email engagement summary">
+            <article><span>Sent</span><strong id="emailStatSent">0</strong></article>
+            <article><span>Delivered</span><strong id="emailStatDelivered">0</strong></article>
+            <article><span>Opened</span><strong id="emailStatOpened">0</strong></article>
+            <article><span>Clicked</span><strong id="emailStatClicked">0</strong></article>
+            <article><span>Bounced / Failed</span><strong id="emailStatProblems">0</strong></article>
+          </section>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Sent</th><th>Prospect</th><th>Follow-up</th><th>Delivered</th><th>Opened</th><th>Clicked</th><th>Problem</th></tr></thead>
+              <tbody id="emailEngagementBody"></tbody>
+            </table>
+          </div>
+          <p id="emailEngagementMessage" class="form-message" aria-live="polite"></p>
+        </section>
+
+        <section class="panel records-panel">
+          <div class="panel-heading records-heading">
             <div><h2>Recent attributed enquiries</h2><p>UTM and affiliate details captured by the DBP.</p></div>
             <button id="marketingRefreshButton" class="secondary-button" type="button">Refresh</button>
           </div>
@@ -417,6 +437,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=3.3.16e" defer></script>
+  <script src="admin.js?v=3.6.0" defer></script>
 </body>
 </html>
