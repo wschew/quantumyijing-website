@@ -2,7 +2,7 @@ const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 
 const ACADEMY_NAME = 'Quantum YiJing International Academy';
 const FROM_ADDRESS = `${ACADEMY_NAME} <info@quantumyijing.com>`;
-const REPLY_ADDRESS = 'info@quantumyijing.com';
+const DEFAULT_REPLY_ADDRESS = 'info@quantumyijing.com';
 
 const DEFAULT_SEQUENCE = 'YJ12-NURTURE';
 const YJ12_PRODUCT_SLUG = 'yj12-yijing-science-of-prediction';
@@ -53,6 +53,16 @@ function esc(v) {
 
 function validEmail(v) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || ''));
+}
+
+function replyAddress(env, automationId) {
+  const domain = clean(env.RESEND_RECEIVING_DOMAIN || '', 253)
+    .toLowerCase()
+    .replace(/^@+/, '');
+
+  return domain && Number.isInteger(Number(automationId))
+    ? `yj12-a${Number(automationId)}@${domain}`
+    : DEFAULT_REPLY_ADDRESS;
 }
 
 function sqlDate(date = new Date()) {
@@ -1140,7 +1150,7 @@ async function sendStep(context, automation) {
       {
         from: FROM_ADDRESS,
         to: [lead.email],
-        reply_to: REPLY_ADDRESS,
+        reply_to: replyAddress(context.env, automation.id),
         subject: content.subject,
         html: emailHtml(content)
       }

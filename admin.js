@@ -252,7 +252,31 @@
     if (!(data.results || []).length) {
       body.innerHTML = '<tr><td colspan="7">No YJ12 email delivery records yet.</td></tr>';
     }
+
+    const replySummary = data.replySummary || {};
+    $('emailReplyUnread').textContent = `${Number(replySummary.unread || 0)} unread`;
+
+    const repliesBody = $('emailRepliesBody');
+    repliesBody.innerHTML = '';
+    (data.replies || []).forEach(row => {
+      const prospect = `<strong>${esc(row.name || 'Unknown')}</strong><br><small>${esc(row.reference || '—')}</small>`;
+      const replyStatus = row.status === 'Unread'
+        ? '<span class="status Follow-up">Unread</span>'
+        : '<span class="status Converted">Read</span>';
+      const readButton = row.status === 'Unread'
+        ? `<button class="view-button" data-read-reply="${Number(row.id)}" type="button">Mark read</button>`
+        : '';
+      const openButton = row.enquiry_id
+        ? `<button class="view-button" data-open-id="${Number(row.enquiry_id)}" type="button">Open CRM</button>`
+        : '';
+
+      repliesBody.insertAdjacentHTML('beforeend', `<tr><td>${esc(row.received_at || '—')}</td><td>${prospect}</td><td>${esc(row.subject || '—')}</td><td class="reply-preview">${esc(row.preview || '—')}</td><td>${replyStatus}</td><td><div class="reply-actions">${readButton}${openButton}</div></td></tr>`);
+    });
+    if (!(data.replies || []).length) {
+      repliesBody.innerHTML = '<tr><td colspan="6">No matched customer email replies yet.</td></tr>';
+    }
     setMessage('emailEngagementMessage','',true);
+    setMessage('emailRepliesMessage','',true);
   }
 
   async function loadMarketingAll() {
@@ -598,6 +622,16 @@
     const openButton=e.target.closest('[data-open-id]'); if(openButton) openRecordById(Number(openButton.dataset.openId));
     const followButton=e.target.closest('[data-follow-days]'); if(followButton) quickFollowUp(Number(followButton.dataset.followDays));
     const studentButton=e.target.closest('[data-open-student]'); if(studentButton) openStudentById(Number(studentButton.dataset.openStudent));
+    const replyReadButton=e.target.closest('[data-read-reply]');
+    if(replyReadButton){
+      try{
+        await api('/api/admin/marketing-email-engagement?action=read', {
+          method:'POST',
+          body:JSON.stringify({replyId:Number(replyReadButton.dataset.readReply)})
+        });
+        await loadEmailEngagement();
+      }catch(error){handleMarketingError(error);}
+    }
     const productButton=e.target.closest('[data-edit-product]'); if(productButton){const row=state.products.find(p=>Number(p.id)===Number(productButton.dataset.editProduct)); if(row) openProduct(row);}
     const paymentButton=e.target.closest('[data-record-payment]');
     if(paymentButton){

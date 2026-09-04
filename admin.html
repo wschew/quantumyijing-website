@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Academy Operating System | Quantum YiJing International Academy</title>
   <link rel="icon" href="images/quantum-yijing-logo.png">
-  <link rel="stylesheet" href="admin.css?v=3.6.0">
+  <link rel="stylesheet" href="admin.css?v=3.6.1">
 </head>
 <body>
   <main class="crm-shell">
@@ -233,6 +233,22 @@
 
         <section class="panel records-panel">
           <div class="panel-heading records-heading">
+            <div>
+              <h2>YJ12 Email Replies <span id="emailReplyUnread" class="reply-count">0 unread</span></h2>
+              <p>Customer replies matched to their CRM enquiry. A matched reply stops the active nurture sequence for human follow-up.</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Received</th><th>Prospect</th><th>Subject</th><th>Message preview</th><th>Status</th><th></th></tr></thead>
+              <tbody id="emailRepliesBody"></tbody>
+            </table>
+          </div>
+          <p id="emailRepliesMessage" class="form-message" aria-live="polite"></p>
+        </section>
+
+        <section class="panel records-panel">
+          <div class="panel-heading records-heading">
             <div><h2>Recent attributed enquiries</h2><p>UTM and affiliate details captured by the DBP.</p></div>
             <button id="marketingRefreshButton" class="secondary-button" type="button">Refresh</button>
           </div>
@@ -437,6 +453,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=3.6.0" defer></script>
+  <script src="admin.js?v=3.6.1" defer></script>
 </body>
 </html>
