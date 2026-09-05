@@ -24,6 +24,34 @@ function clean(value, max = 300) {
   return String(value ?? '').trim().slice(0, max);
 }
 
+function latestReplyPreview(value) {
+  let text = String(value ?? '')
+    .replace(/\r\n?/g, '\n')
+    .trim();
+
+  const separators = [
+    /\n\s*On[\s\S]{0,500}?wrote:\s*(?:\n|$)/i,
+    /\n\s*-{2,}\s*Original Message\s*-{2,}\s*(?:\n|$)/i,
+    /\n\s*From:\s.+(?:\n|$)/i,
+    /\n\s*_{5,}\s*(?:\n|$)/
+  ];
+
+  let cutAt = text.length;
+  for (const separator of separators) {
+    const match = separator.exec(text);
+    if (match && match.index < cutAt) cutAt = match.index;
+  }
+
+  text = text.slice(0, cutAt)
+    .split('\n')
+    .filter(line => !/^\s*>/.test(line))
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return clean(text || '[HTML email reply]', 500);
+}
+
 export async function onRequestGet({ request, env }) {
   if (!authorized(request, env)) {
     return json({ error: 'Unauthorized' }, 401);
@@ -102,14 +130,7 @@ export async function onRequestGet({ request, env }) {
       r.from_email,
       r.to_email,
       r.subject,
-      SUBSTR(
-        CASE
-          WHEN r.text_body != '' THEN r.text_body
-          ELSE '[HTML email reply]'
-        END,
-        1,
-        500
-      ) AS preview,
+      SUBSTR(r.text_body, 1, 5000) AS preview_source,
       r.received_at,
       r.status,
       e.name,
@@ -135,7 +156,10 @@ export async function onRequestGet({ request, env }) {
       total: Number(replySummary?.total || 0),
       unread: Number(replySummary?.unread || 0)
     },
-    replies: replies.results || []
+    replies: (replies.results || []).map(({ preview_source, ...reply }) => ({
+      ...reply,
+      preview: latestReplyPreview(preview_source)
+    }))
   });
 }
 

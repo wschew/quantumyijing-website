@@ -169,7 +169,7 @@ function malaysiaDate(value) {
 }
 
 function textPreview(text, html) {
-  const source = clean(text, 4000) || String(html || '')
+  let source = clean(text, 5000) || String(html || '')
     .replace(/<style[\s\S]*?<\/style>/gi, ' ')
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
     .replace(/<[^>]+>/g, ' ')
@@ -178,7 +178,31 @@ function textPreview(text, html) {
     .replace(/&lt;/gi, '<')
     .replace(/&gt;/gi, '>');
 
-  return clean(source.replace(/\s+/g, ' '), 500);
+  source = source
+    .replace(/\r\n?/g, '\n')
+    .trim();
+
+  const separators = [
+    /\n\s*On[\s\S]{0,500}?wrote:\s*(?:\n|$)/i,
+    /\n\s*-{2,}\s*Original Message\s*-{2,}\s*(?:\n|$)/i,
+    /\n\s*From:\s.+(?:\n|$)/i,
+    /\n\s*_{5,}\s*(?:\n|$)/
+  ];
+
+  let cutAt = source.length;
+  for (const separator of separators) {
+    const match = separator.exec(source);
+    if (match && match.index < cutAt) cutAt = match.index;
+  }
+
+  return clean(
+    source.slice(0, cutAt)
+      .split('\n')
+      .filter(line => !/^\s*>/.test(line))
+      .join(' ')
+      .replace(/\s+/g, ' '),
+    500
+  );
 }
 
 async function receivedEmail(apiKey, emailId) {
