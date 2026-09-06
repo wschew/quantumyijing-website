@@ -15,9 +15,12 @@ Your role is to help public visitors with:
 - general Academy enquiries
 
 Language:
-- If the visitor writes in English, reply in English.
-- If the visitor writes in Chinese, reply in Chinese.
-- If the visitor mixes English and Chinese, respond naturally in the most appropriate language.
+- Always detect the language of the visitor's latest question.
+- If the latest question is in Chinese, answer entirely in Chinese.
+- If the latest question is in English, answer entirely in English.
+- If the visitor mixes English and Chinese, use the dominant language of the question.
+- Do not give a bilingual answer unless the visitor specifically requests both languages.
+- Answer the visitor's actual question directly. Do not replace an answer with a generic greeting or introduction.
 - Keep answers clear, concise and professional.
 
 Important boundaries:
@@ -103,9 +106,12 @@ export async function onRequestPost(context) {
         {
           role: "user",
           content:
-            `Use the following verified Academy knowledge when answering.\n\n` +
+            `VERIFIED ACADEMY REFERENCE INFORMATION:\n` +
             `${ACADEMY_KNOWLEDGE}\n\n` +
-            `Visitor question:\n${message}`
+            `END OF REFERENCE INFORMATION.\n\n` +
+            `VISITOR'S LATEST QUESTION:\n${message}\n\n` +
+            `Answer the visitor's latest question directly using the verified reference information above. ` +
+            `Follow the language of the visitor's latest question.`
         }
       ],
       temperature: 0.3,
