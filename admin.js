@@ -44,6 +44,17 @@
     date.setDate(date.getDate() + Number(days || 0));
     return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
   };
+  const malaysiaDateTime = value => {
+    const source = String(value || '').trim();
+    if (!source) return '';
+    const date = new Date(`${source.replace(' ', 'T')}Z`);
+    if (Number.isNaN(date.getTime())) return source;
+    return new Intl.DateTimeFormat('en-MY', {
+      timeZone:'Asia/Kuala_Lumpur',
+      day:'numeric', month:'short', year:'numeric',
+      hour:'numeric', minute:'2-digit', hour12:true
+    }).format(date);
+  };
 
   function renderBars(id, rows, labelKey, valueKey = 'count') {
     const host = $(id); host.innerHTML = '';
@@ -266,7 +277,8 @@
       const level = signalLevels.has(row.level) ? row.level : 'waiting';
       const prospect = `<strong>${esc(row.name || 'Unknown')}</strong><br><small>${esc(row.reference || '—')}</small>`;
       const signal = `<span class="engagement-signal signal-${level}">${esc(row.signal || '—')}</span>${row.last_event_at ? `<br><small>${esc(row.last_event_at)}</small>` : ''}`;
-      const automation = `<span class="status ${row.automation_status === 'Active' ? 'Follow-up' : row.automation_status === 'Completed' ? 'Converted' : 'Lost'}">${esc(row.automation_status || '—')}</span><br><small>Step ${Number(row.current_step || 0)}</small>`;
+      const nextSend = row.next_send_at ? `<br><small>Next: ${esc(malaysiaDateTime(row.next_send_at))} MYT</small>` : '';
+      const automation = `<span class="status ${row.automation_status === 'Active' ? 'Follow-up' : row.automation_status === 'Completed' ? 'Converted' : 'Lost'}">${esc(row.automation_status || '—')}</span><br><small>Step ${Number(row.current_step || 0)}</small>${nextSend}`;
       const isScheduled = Boolean(row.follow_up_date);
       const canPrepare = row.enquiry_id && !isScheduled && Number.isInteger(Number(row.follow_up_days));
       const prepareButton = canPrepare
