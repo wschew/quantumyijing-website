@@ -267,14 +267,18 @@
       const prospect = `<strong>${esc(row.name || 'Unknown')}</strong><br><small>${esc(row.reference || '—')}</small>`;
       const signal = `<span class="engagement-signal signal-${level}">${esc(row.signal || '—')}</span>${row.last_event_at ? `<br><small>${esc(row.last_event_at)}</small>` : ''}`;
       const automation = `<span class="status ${row.automation_status === 'Active' ? 'Follow-up' : row.automation_status === 'Completed' ? 'Converted' : 'Lost'}">${esc(row.automation_status || '—')}</span><br><small>Step ${Number(row.current_step || 0)}</small>`;
-      const canPrepare = row.enquiry_id && Number.isInteger(Number(row.follow_up_days));
+      const isScheduled = Boolean(row.follow_up_date);
+      const canPrepare = row.enquiry_id && !isScheduled && Number.isInteger(Number(row.follow_up_days));
       const prepareButton = canPrepare
         ? `<button class="view-button" data-prepare-followup="${Number(row.enquiry_id)}" data-followup-days="${Number(row.follow_up_days)}" data-followup-action="${esc(row.action || '')}" data-followup-level="${level}" type="button">Prepare follow-up</button>`
+        : '';
+      const scheduled = isScheduled
+        ? `<span class="engagement-scheduled">Scheduled<br><small>${esc(row.follow_up_date)}</small></span>`
         : '';
       const openButton = row.enquiry_id
         ? `<button class="view-button" data-open-id="${Number(row.enquiry_id)}" type="button">Open CRM</button>`
         : '';
-      const crmActions = `<div class="engagement-actions">${prepareButton}${openButton}</div>`;
+      const crmActions = `<div class="engagement-actions">${scheduled}${prepareButton}${openButton}</div>`;
 
       recommendationsBody.insertAdjacentHTML('beforeend', `<tr><td>${prospect}</td><td>${signal}</td><td class="engagement-recommendation">${esc(row.action || '—')}</td><td><strong class="engagement-timing timing-${level}">${esc(row.timing || '—')}</strong></td><td>${automation}</td><td>${crmActions}</td></tr>`);
     });

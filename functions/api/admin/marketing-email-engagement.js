@@ -59,6 +59,10 @@ function engagementRecommendation(row) {
     name: clean(row.name, 200),
     email: clean(row.email, 320),
     reference: clean(row.reference, 100),
+    crm_status: clean(row.crm_status, 30),
+    crm_priority: clean(row.crm_priority, 30),
+    follow_up_date: clean(row.follow_up_date, 20),
+    next_action: clean(row.next_action, 300),
     automation_status: clean(row.automation_status, 30),
     current_step: Number(row.current_step || 0),
     next_send_at: clean(row.next_send_at, 30),
@@ -274,7 +278,11 @@ export async function onRequestGet({ request, env }) {
       COALESCE(r.unread_replies, 0) AS unread_replies,
       e.name,
       e.email,
-      e.reference
+      e.reference,
+      e.status AS crm_status,
+      e.priority AS crm_priority,
+      e.follow_up_date,
+      e.next_action
     FROM engagement g
     JOIN enquiries e ON e.id=g.enquiry_id
     LEFT JOIN problems p ON p.automation_id=g.automation_id
