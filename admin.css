@@ -92,5 +92,17 @@
 .reply-count{display:inline-flex;margin-left:8px;padding:4px 8px;border-radius:999px;background:#fff5dd;color:#8d6300;font-size:11px;vertical-align:middle}
 .reply-preview{max-width:420px;white-space:pre-wrap;line-height:1.45;color:#315274}
 .reply-actions{display:flex;gap:8px;align-items:center;white-space:nowrap}
+.engagement-signal{display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;font-size:.78rem;font-weight:800;white-space:nowrap;text-transform:capitalize}
+.signal-problem{background:#fee4e2;color:#b42318}
+.signal-reply{background:#fff0c7;color:#8d6300}
+.signal-clicked{background:#dff7e8;color:#18733b}
+.signal-opened{background:#e8f1ff;color:#175eaa}
+.signal-delivered{background:#eef2f6;color:#465b73}
+.signal-waiting{background:#f3f4f6;color:#5f6672}
+.engagement-recommendation{min-width:300px;max-width:480px;line-height:1.45;color:#315274}
+.engagement-timing{display:inline-block;min-width:92px;color:#123b70}
+.timing-problem{color:#b42318}
+.timing-reply{color:#8d6300}
+.timing-clicked{color:#18733b}
 @media(max-width:1100px){.email-engagement-stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:700px){.email-engagement-stats{grid-template-columns:1fr}}

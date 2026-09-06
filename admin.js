@@ -253,6 +253,24 @@
       body.innerHTML = '<tr><td colspan="7">No YJ12 email delivery records yet.</td></tr>';
     }
 
+    const recommendationsBody = $('emailRecommendationsBody');
+    recommendationsBody.innerHTML = '';
+    const signalLevels = new Set(['problem','reply','clicked','opened','delivered','waiting']);
+    (data.recommendations || []).forEach(row => {
+      const level = signalLevels.has(row.level) ? row.level : 'waiting';
+      const prospect = `<strong>${esc(row.name || 'Unknown')}</strong><br><small>${esc(row.reference || '—')}</small>`;
+      const signal = `<span class="engagement-signal signal-${level}">${esc(row.signal || '—')}</span>${row.last_event_at ? `<br><small>${esc(row.last_event_at)}</small>` : ''}`;
+      const automation = `<span class="status ${row.automation_status === 'Active' ? 'Follow-up' : row.automation_status === 'Completed' ? 'Converted' : 'Lost'}">${esc(row.automation_status || '—')}</span><br><small>Step ${Number(row.current_step || 0)}</small>`;
+      const openButton = row.enquiry_id
+        ? `<button class="view-button" data-open-id="${Number(row.enquiry_id)}" type="button">Open CRM</button>`
+        : '';
+
+      recommendationsBody.insertAdjacentHTML('beforeend', `<tr><td>${prospect}</td><td>${signal}</td><td class="engagement-recommendation">${esc(row.action || '—')}</td><td><strong class="engagement-timing timing-${level}">${esc(row.timing || '—')}</strong></td><td>${automation}</td><td>${openButton}</td></tr>`);
+    });
+    if (!(data.recommendations || []).length) {
+      recommendationsBody.innerHTML = '<tr><td colspan="6">No YJ12 engagement recommendations yet.</td></tr>';
+    }
+
     const replySummary = data.replySummary || {};
     $('emailReplyUnread').textContent = `${Number(replySummary.unread || 0)} unread`;
 
@@ -276,6 +294,7 @@
       repliesBody.innerHTML = '<tr><td colspan="6">No matched customer email replies yet.</td></tr>';
     }
     setMessage('emailEngagementMessage','',true);
+    setMessage('emailRecommendationsMessage','',true);
     setMessage('emailRepliesMessage','',true);
   }
 
