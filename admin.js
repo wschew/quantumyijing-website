@@ -38,6 +38,12 @@
   const showLogin = () => { $('dashboard').hidden = true; $('loginPanel').hidden = false; };
   const detail = (label, value, full = false) => `<div class="detail${full?' full':''}"><span>${esc(label)}</span><p>${esc(value || '—')}</p></div>`;
   const priorityClass = value => `priority-${String(value || 'Normal').toLowerCase()}`;
+  const localDateAfter = days => {
+    const date = new Date();
+    date.setHours(12, 0, 0, 0);
+    date.setDate(date.getDate() + Number(days || 0));
+    return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+  };
 
   function renderBars(id, rows, labelKey, valueKey = 'count') {
     const host = $(id); host.innerHTML = '';
@@ -261,11 +267,16 @@
       const prospect = `<strong>${esc(row.name || 'Unknown')}</strong><br><small>${esc(row.reference || '—')}</small>`;
       const signal = `<span class="engagement-signal signal-${level}">${esc(row.signal || '—')}</span>${row.last_event_at ? `<br><small>${esc(row.last_event_at)}</small>` : ''}`;
       const automation = `<span class="status ${row.automation_status === 'Active' ? 'Follow-up' : row.automation_status === 'Completed' ? 'Converted' : 'Lost'}">${esc(row.automation_status || '—')}</span><br><small>Step ${Number(row.current_step || 0)}</small>`;
+      const canPrepare = row.enquiry_id && Number.isInteger(Number(row.follow_up_days));
+      const prepareButton = canPrepare
+        ? `<button class="view-button" data-prepare-followup="${Number(row.enquiry_id)}" data-followup-days="${Number(row.follow_up_days)}" data-followup-action="${esc(row.action || '')}" data-followup-level="${level}" type="button">Prepare follow-up</button>`
+        : '';
       const openButton = row.enquiry_id
         ? `<button class="view-button" data-open-id="${Number(row.enquiry_id)}" type="button">Open CRM</button>`
         : '';
+      const crmActions = `<div class="engagement-actions">${prepareButton}${openButton}</div>`;
 
-      recommendationsBody.insertAdjacentHTML('beforeend', `<tr><td>${prospect}</td><td>${signal}</td><td class="engagement-recommendation">${esc(row.action || '—')}</td><td><strong class="engagement-timing timing-${level}">${esc(row.timing || '—')}</strong></td><td>${automation}</td><td>${openButton}</td></tr>`);
+      recommendationsBody.insertAdjacentHTML('beforeend', `<tr><td>${prospect}</td><td>${signal}</td><td class="engagement-recommendation">${esc(row.action || '—')}</td><td><strong class="engagement-timing timing-${level}">${esc(row.timing || '—')}</strong></td><td>${automation}</td><td>${crmActions}</td></tr>`);
     });
     if (!(data.recommendations || []).length) {
       recommendationsBody.innerHTML = '<tr><td colspan="6">No YJ12 engagement recommendations yet.</td></tr>';
@@ -638,6 +649,21 @@
   $('prevPage').addEventListener('click', async () => { if(state.page>1){state.page--;await loadRecords().catch(handleError);} });
   $('nextPage').addEventListener('click', async () => { if(state.page*state.pageSize<state.total){state.page++;await loadRecords().catch(handleError);} });
   document.addEventListener('click', async e => {
+    const prepareButton=e.target.closest('[data-prepare-followup]');
+    if(prepareButton){
+      e.preventDefault();
+      const enquiryId=Number(prepareButton.dataset.prepareFollowup||0);
+      if(!enquiryId) return;
+      await openRecordById(enquiryId);
+      if(!state.selected || Number(state.selected.id)!==enquiryId) return;
+      const level=prepareButton.dataset.followupLevel||'waiting';
+      $('editFollowUp').value=localDateAfter(Number(prepareButton.dataset.followupDays||0));
+      $('editNextAction').value=prepareButton.dataset.followupAction||'';
+      if(level==='reply' || level==='clicked') $('editPriority').value='Hot';
+      else if(level==='opened') $('editPriority').value='Warm';
+      if(level!=='problem') $('editStatus').value='Follow-up';
+      setMessage('dialogMessage','Recommendation prepared. Review the fields, then select Save record to confirm.',true);
+    }
     const openButton=e.target.closest('[data-open-id]'); if(openButton) openRecordById(Number(openButton.dataset.openId));
     const followButton=e.target.closest('[data-follow-days]'); if(followButton) quickFollowUp(Number(followButton.dataset.followDays));
     const studentButton=e.target.closest('[data-open-student]'); if(studentButton) openStudentById(Number(studentButton.dataset.openStudent));

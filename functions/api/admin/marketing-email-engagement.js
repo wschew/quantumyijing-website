@@ -75,7 +75,8 @@ function engagementRecommendation(row) {
       level: 'problem',
       signal: clean(row.problem_type, 60).replace('email.', ''),
       action: 'Do not contact by email. Check or replace the address before any follow-up.',
-      timing: 'Stopped'
+      timing: 'Stopped',
+      follow_up_days: 0
     };
   }
 
@@ -85,7 +86,8 @@ function engagementRecommendation(row) {
       level: 'reply',
       signal: Number(row.unread_replies || 0) > 0 ? 'Unread reply' : 'Reply received',
       action: 'Review the customer message and follow up personally.',
-      timing: Number(row.unread_replies || 0) > 0 ? 'Now' : 'Today'
+      timing: Number(row.unread_replies || 0) > 0 ? 'Now' : 'Today',
+      follow_up_days: 0
     };
   }
 
@@ -95,7 +97,8 @@ function engagementRecommendation(row) {
       level: 'clicked',
       signal: 'Clicked',
       action: 'High engagement. Contact the prospect with course details or an enrolment offer.',
-      timing: 'Within 1 day'
+      timing: 'Within 1 day',
+      follow_up_days: 1
     };
   }
 
@@ -105,7 +108,8 @@ function engagementRecommendation(row) {
       level: 'opened',
       signal: 'Opened',
       action: 'Interest detected. Prepare a helpful personal follow-up if there is no further action.',
-      timing: 'Within 3 days'
+      timing: 'Within 3 days',
+      follow_up_days: 3
     };
   }
 
