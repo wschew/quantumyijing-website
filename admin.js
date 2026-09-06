@@ -317,6 +317,19 @@
     await Promise.all([loadMarketingStats(), loadEmailEngagement()]);
   }
 
+  async function refreshEmailEngagement() {
+    const button = $('emailEngagementRefreshButton');
+    button.disabled = true;
+    button.textContent = 'Refreshing…';
+    try {
+      await loadEmailEngagement();
+      setMessage('emailRecommendationsMessage', `Updated ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`, true);
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Refresh engagement';
+    }
+  }
+
   function handleMarketingError(error){
     if(error.status===401){sessionStorage.removeItem('qyAdminToken');showLogin();setMessage('loginMessage','Your session is not authorized. Please log in again.');}
     else setMessage('marketingDashboardMessage',error.message);
@@ -632,6 +645,7 @@
   $('productNameEn').addEventListener('input',()=>{if(!$('productId').value && !$('productSlug').dataset.manual){$('productSlug').value=slugify($('productNameEn').value);}}); $('productSlug').addEventListener('input',()=>{$('productSlug').dataset.manual='1';});
   $('orderDialogClose').addEventListener('click',()=>$('orderDialog').close()); $('orderClose').addEventListener('click',()=>$('orderDialog').close()); $('orderSave').addEventListener('click',saveOrder);
   $('marketingRefreshButton').addEventListener('click', () => loadMarketingAll().catch(handleMarketingError));
+  $('emailEngagementRefreshButton').addEventListener('click', () => refreshEmailEngagement().catch(handleMarketingError));
   $('studentFilterForm').addEventListener('submit', async e => { e.preventDefault(); state.studentPage=1; await loadStudents().catch(handleStudentError); });
   $('studentClearFilters').addEventListener('click', async () => { $('studentFilterForm').reset(); state.studentPage=1; await loadStudents().catch(handleStudentError); });
   $('studentRefreshButton').addEventListener('click', () => loadStudentAll().catch(handleStudentError));
