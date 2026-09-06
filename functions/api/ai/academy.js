@@ -1,4 +1,5 @@
 import { generateGeminiResponse } from "./gemini.js";
+import { ACADEMY_KNOWLEDGE } from "./knowledge/academy.js";
 
 const MAX_MESSAGE_LENGTH = 1200;
 
@@ -101,7 +102,10 @@ export async function onRequestPost(context) {
       messages: [
         {
           role: "user",
-          content: message
+          content:
+            `Use the following verified Academy knowledge when answering.\n\n` +
+            `${ACADEMY_KNOWLEDGE}\n\n` +
+            `Visitor question:\n${message}`
         }
       ],
       temperature: 0.3,
