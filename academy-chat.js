@@ -111,7 +111,7 @@
     addMessage(
       messages,
       "assistant",
-      "Hello! I am the Quantum YiJing Academy Assistant.\n\nYou may ask me about the Academy, Master Chew Wai Soon, courses, professional services, registration and general enquiries.\n\n您好！我是量子易经国际学院 AI 助手。您可以询问学院、赵辉顺导师、课程、专业服务、报名及一般咨询。"
+      "Hello! I’m the Quantum YiJing Academy Assistant.\nAsk me about courses, services, registration, Master Chew, or general Academy enquiries.\n\n您好！我是量子易经国际学院 AI 助手。\n您可以询问课程、服务、报名、赵辉顺导师或学院一般资讯。"
     );
 
     const status = createElement(
