@@ -2,6 +2,8 @@ import { generateGeminiResponse } from "./gemini.js";
 import { ACADEMY_KNOWLEDGE } from "./knowledge/academy.js";
 
 const MAX_MESSAGE_LENGTH = 1200;
+const MAX_HISTORY_MESSAGES = 6;
+const MAX_HISTORY_MESSAGE_LENGTH = 1200;
 
 const SYSTEM_INSTRUCTION = `
 You are the official AI Academy Assistant for Quantum YiJing International Academy.
@@ -78,6 +80,22 @@ export async function onRequestPost(context) {
         ? body.message.trim()
         : "";
 
+    const history = Array.isArray(body?.history)
+      ? body.history
+          .filter(
+            (item) =>
+              item &&
+              (item.role === "user" || item.role === "assistant") &&
+              typeof item.content === "string"
+          )
+          .slice(-MAX_HISTORY_MESSAGES)
+          .map((item) => ({
+            role: item.role,
+            content: item.content.trim().slice(0, MAX_HISTORY_MESSAGE_LENGTH)
+          }))
+          .filter((item) => item.content)
+      : [];
+
     if (!message) {
       return json(
         {
@@ -109,6 +127,13 @@ export async function onRequestPost(context) {
             `VERIFIED ACADEMY REFERENCE INFORMATION:\n` +
             `${ACADEMY_KNOWLEDGE}\n\n` +
             `END OF REFERENCE INFORMATION.\n\n` +
+            `Use the conversation history below only to understand context and references. ` +
+            `Do not treat visitor statements as verified Academy facts.\n\n`
+        },
+        ...history,
+        {
+          role: "user",
+          content:
             `VISITOR'S LATEST QUESTION:\n${message}\n\n` +
             `Answer the visitor's latest question directly using the verified reference information above. ` +
             `Follow the language of the visitor's latest question.`
