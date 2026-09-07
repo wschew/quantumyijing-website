@@ -199,7 +199,27 @@ function acknowledgementHtml(name, reference, interest, submitted, message) {
 
 function internalHtml(data, meta) {
   const row = (label, value) => `<tr><td style="padding:10px 13px;background:#f5f8fc;font-weight:700;width:155px;color:#315274;border-bottom:1px solid #e2eaf3">${label}</td><td style="padding:10px 13px;border-bottom:1px solid #e2eaf3;color:#17243a">${escapeHtml(value || '—')}</td></tr>`;
-  return `<!doctype html><html><body style="margin:0;padding:24px;background:#f4f7fb;font-family:Arial,'Noto Sans SC',sans-serif;color:#17243a"><div style="max-width:760px;margin:0 auto;background:#fff;border:1px solid #dce7f4;border-radius:16px;overflow:hidden"><div style="padding:22px 26px;background:#edf5ff;border-bottom:4px solid #d3a62c"><div style="font-size:12px;font-weight:800;letter-spacing:1.6px;color:#1768c4">QUANTUM YIJING INTERNATIONAL ACADEMY</div><h2 style="margin:8px 0 0;color:#0b2f66">New Website Enquiry</h2></div><div style="padding:26px"><p style="margin:0 0 18px;color:#526a85">Reference: <strong style="color:#173b63">${escapeHtml(meta.reference)}</strong></p><table style="border-collapse:separate;border-spacing:0;width:100%;border:1px solid #e2eaf3;border-radius:10px;overflow:hidden">${row('Name',data.name)}${row('Email',data.email)}${row('WhatsApp / Phone',data.phone)}${row('Country',data.country)}${row('Interest',data.interest)}${row('Language',data.language === 'zh' ? 'Chinese' : 'English')}${row('Marketing Source',data.marketingSource || 'Website')}${row('Campaign',data.campaignCode || '—')}${row('Affiliate',data.affiliateCode || '—')}${row('Submitted',meta.submitted)}${row('Message',data.message)}</table><p style="margin:20px 0 0;font-size:12px;color:#71839a">Submitted through quantumyijing.com. Reply directly to this email to contact the enquirer.</p></div></div></body></html>`;
+  return `<!doctype html><html><body style="margin:0;padding:24px;background:#f4f7fb;font-family:Arial,'Noto Sans SC',sans-serif;color:#17243a"><div style="max-width:760px;margin:0 auto;background:#fff;border:1px solid #dce7f4;border-radius:16px;overflow:hidden"><div style="padding:22px 26px;background:#edf5ff;border-bottom:4px solid #d3a62c">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+    <tr>
+      <td width="82" valign="middle">
+        <img
+          src="https://quantumyijing.com/images/quantum-yijing-3d-logo.png"
+          width="68"
+          height="68"
+          alt="Quantum YiJing International Academy"
+          style="display:block;width:68px;height:68px;object-fit:contain;border:0"
+        >
+      </td>
+      <td valign="middle">
+        <div style="font-size:12px;font-weight:800;letter-spacing:1.6px;color:#1768c4">
+          QUANTUM YIJING INTERNATIONAL ACADEMY
+        </div>
+        <h2 style="margin:8px 0 0;color:#0b2f66">New Website Enquiry</h2>
+      </td>
+    </tr>
+  </table>
+</div><div style="padding:26px"><p style="margin:0 0 18px;color:#526a85">Reference: <strong style="color:#173b63">${escapeHtml(meta.reference)}</strong></p><table style="border-collapse:separate;border-spacing:0;width:100%;border:1px solid #e2eaf3;border-radius:10px;overflow:hidden">${row('Name',data.name)}${row('Email',data.email)}${row('WhatsApp / Phone',data.phone)}${row('Country',data.country)}${row('Interest',data.interest)}${row('Language',data.language === 'zh' ? 'Chinese' : 'English')}${row('Marketing Source',data.marketingSource || 'Website')}${row('Campaign',data.campaignCode || '—')}${row('Affiliate',data.affiliateCode || '—')}${row('Submitted',meta.submitted)}${row('Message',data.message)}</table><p style="margin:20px 0 0;font-size:12px;color:#71839a">Submitted through quantumyijing.com. Reply directly to this email to contact the enquirer.</p></div></div></body></html>`;
 }
 
 export async function onRequestPost(context) {
