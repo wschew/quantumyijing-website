@@ -108,6 +108,8 @@
       "qy-chat-messages"
     );
 
+    const conversationHistory = [];
+
     addMessage(
       messages,
       "assistant",
@@ -211,6 +213,11 @@
 
       addMessage(messages, "user", message);
 
+      conversationHistory.push({
+        role: "user",
+        content: message
+      });
+
       input.value = "";
       input.style.height = "auto";
 
@@ -225,7 +232,10 @@
             "Content-Type": "application/json; charset=utf-8"
           },
           body: JSON.stringify({
-            message
+            message,
+            history: conversationHistory
+              .slice(0, -1)
+              .slice(-6)
           })
         });
 
@@ -243,6 +253,18 @@
           "assistant",
           data.reply
         );
+
+        conversationHistory.push({
+          role: "assistant",
+          content: data.reply
+        });
+
+        if (conversationHistory.length > 8) {
+          conversationHistory.splice(
+            0,
+            conversationHistory.length - 8
+          );
+        }
 
         status.textContent = "";
       } catch (error) {
