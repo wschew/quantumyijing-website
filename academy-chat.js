@@ -23,7 +23,8 @@
     );
 
     messagesEl.appendChild(message);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+    const scrollArea = messagesEl.closest(".qy-chat-content") || messagesEl;
+    scrollArea.scrollTop = scrollArea.scrollHeight;
     return message;
   }
 
@@ -112,12 +113,15 @@
       "AI responses are for general Academy information. Current prices, schedules, registration and payment status should be confirmed through the Academy."
     );
 
+    const content = createElement("div", "qy-chat-content");
+    content.appendChild(messages);
+    content.appendChild(status);
+    content.appendChild(enquiryWrap);
+
     panel.appendChild(header);
-    panel.appendChild(messages);
-    panel.appendChild(status);
+    panel.appendChild(content);
     panel.appendChild(form);
     panel.appendChild(actionBar);
-    panel.appendChild(enquiryWrap);
     panel.appendChild(note);
 
     document.body.appendChild(panel);
@@ -140,7 +144,7 @@
       form.hidden = false;
       actionBar.hidden = false;
       note.hidden = false;
-      messages.scrollTop = messages.scrollHeight;
+      content.scrollTop = content.scrollHeight;
     }
 
     function openEnquiryForm() {
@@ -283,6 +287,10 @@
       enquiryForm.appendChild(enquiryStatus);
       enquiryForm.appendChild(buttons);
       enquiryWrap.appendChild(enquiryForm);
+
+      requestAnimationFrame(() => {
+        content.scrollTop = content.scrollHeight;
+      });
 
       cancel.addEventListener("click", closeEnquiryForm);
 
