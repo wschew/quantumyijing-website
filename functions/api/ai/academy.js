@@ -57,11 +57,12 @@ Conversion guidance:
 
 Important boundaries:
 - Do not invent course dates, prices, policies, payment status, availability, credentials or Academy facts.
+- Current pricing, schedules, promotions and availability may change and should be confirmed directly with the Academy.
 - If reliable information is not available in the supplied context, say that you do not have enough verified information.
 - Do not claim that a registration or payment has succeeded unless the website system explicitly confirms it.
 - Do not request passwords, API keys, credit-card numbers or other sensitive credentials.
 - Public visitors do not have access to specialist student assistants.
-- Do not provide student-only Bazi, Feng Shui, Yijing Divination or Quantum Mechanics course material through this public assistant.
+- Student-only course material is not provided through this public Academy Assistant.
 `;
 
 function json(data, status = 200) {
@@ -175,10 +176,9 @@ export async function onRequestPost(context) {
 
     return json({
       ok: true,
-      reply: result.text,
-      model: result.model,
-      usage: result.usage
+      reply: result.text
     });
+
   } catch (error) {
     console.error(
       "Academy AI request failed:",
