@@ -372,6 +372,13 @@
   margin-top: 16px;
 }
 
+.qy-chat-form[hidden],
+.qy-chat-actions[hidden],
+.qy-chat-note[hidden],
+.qy-chat-enquiry-wrap[hidden] {
+  display: none !important;
+}
+
 @keyframes qy-chat-float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-3px); }
