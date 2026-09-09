@@ -65,6 +65,94 @@ Important boundaries:
 - Student-only course material is not provided through this public Academy Assistant.
 `;
 
+function cleanHistory(history) {
+  return Array.isArray(history)
+    ? history
+        .filter(
+          (item) =>
+            item &&
+            (item.role === "user" || item.role === "assistant") &&
+            typeof item.content === "string"
+        )
+        .slice(-MAX_HISTORY_MESSAGES)
+        .map((item) => ({
+          role: item.role,
+          content: item.content
+            .trim()
+            .slice(0, MAX_HISTORY_MESSAGE_LENGTH)
+        }))
+        .filter((item) => item.content)
+    : [];
+}
+
+/*
+ * Shared Academy AI function.
+ *
+ * Used by:
+ * - Website Academy Assistant
+ * - WhatsApp Academy Assistant
+ *
+ * Keeping the AI logic here ensures both channels use
+ * the same verified knowledge base and system rules.
+ */
+export async function generateAcademyAssistantReply({
+  env,
+  message,
+  history = []
+}) {
+  const apiKey = env.GEMINI_API_KEY;
+  const model = env.GEMINI_MODEL;
+
+  if (!apiKey || !model) {
+    throw new Error("Academy AI configuration is incomplete.");
+  }
+
+  const cleanMessage =
+    typeof message === "string"
+      ? message.trim()
+      : "";
+
+  if (!cleanMessage) {
+    throw new Error("EMPTY_MESSAGE");
+  }
+
+  if (cleanMessage.length > MAX_MESSAGE_LENGTH) {
+    throw new Error("MESSAGE_TOO_LONG");
+  }
+
+  const cleanConversationHistory =
+    cleanHistory(history);
+
+  const result = await generateGeminiResponse({
+    apiKey,
+    model,
+    systemInstruction: SYSTEM_INSTRUCTION,
+    messages: [
+      {
+        role: "user",
+        content:
+          `VERIFIED ACADEMY REFERENCE INFORMATION:\n` +
+          `${ACADEMY_KNOWLEDGE}\n\n` +
+          `END OF REFERENCE INFORMATION.\n\n` +
+          `Use the conversation history below only to understand context and references. ` +
+          `Do not treat visitor statements as verified Academy facts.\n\n`
+      },
+      ...cleanConversationHistory,
+      {
+        role: "user",
+        content:
+          `VISITOR'S LATEST QUESTION:\n${cleanMessage}\n\n` +
+          `Answer the visitor's latest question directly using the verified reference information above. ` +
+          `Follow the language of the visitor's latest question.`
+      }
+    ],
+    temperature: 0.3,
+    maxOutputTokens: 800
+  });
+
+  return result.text;
+}
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -77,21 +165,6 @@ function json(data, status = 200) {
 
 export async function onRequestPost(context) {
   try {
-    const apiKey = context.env.GEMINI_API_KEY;
-    const model = context.env.GEMINI_MODEL;
-
-    if (!apiKey || !model) {
-      console.error("Academy AI configuration is incomplete.");
-
-      return json(
-        {
-          ok: false,
-          error: "AI service is temporarily unavailable."
-        },
-        503
-      );
-    }
-
     let body;
 
     try {
@@ -110,22 +183,6 @@ export async function onRequestPost(context) {
       typeof body?.message === "string"
         ? body.message.trim()
         : "";
-
-    const history = Array.isArray(body?.history)
-      ? body.history
-          .filter(
-            (item) =>
-              item &&
-              (item.role === "user" || item.role === "assistant") &&
-              typeof item.content === "string"
-          )
-          .slice(-MAX_HISTORY_MESSAGES)
-          .map((item) => ({
-            role: item.role,
-            content: item.content.trim().slice(0, MAX_HISTORY_MESSAGE_LENGTH)
-          }))
-          .filter((item) => item.content)
-      : [];
 
     if (!message) {
       return json(
@@ -147,48 +204,31 @@ export async function onRequestPost(context) {
       );
     }
 
-    const result = await generateGeminiResponse({
-      apiKey,
-      model,
-      systemInstruction: SYSTEM_INSTRUCTION,
-      messages: [
-        {
-          role: "user",
-          content:
-            `VERIFIED ACADEMY REFERENCE INFORMATION:\n` +
-            `${ACADEMY_KNOWLEDGE}\n\n` +
-            `END OF REFERENCE INFORMATION.\n\n` +
-            `Use the conversation history below only to understand context and references. ` +
-            `Do not treat visitor statements as verified Academy facts.\n\n`
-        },
-        ...history,
-        {
-          role: "user",
-          content:
-            `VISITOR'S LATEST QUESTION:\n${message}\n\n` +
-            `Answer the visitor's latest question directly using the verified reference information above. ` +
-            `Follow the language of the visitor's latest question.`
-        }
-      ],
-      temperature: 0.3,
-      maxOutputTokens: 800
-    });
+    const reply =
+      await generateAcademyAssistantReply({
+        env: context.env,
+        message,
+        history: body?.history
+      });
 
     return json({
       ok: true,
-      reply: result.text
+      reply
     });
 
   } catch (error) {
     console.error(
       "Academy AI request failed:",
-      error instanceof Error ? error.message : "Unknown error"
+      error instanceof Error
+        ? error.message
+        : "Unknown error"
     );
 
     return json(
       {
         ok: false,
-        error: "The Academy Assistant could not respond. Please try again."
+        error:
+          "The Academy Assistant could not respond. Please try again."
       },
       500
     );
