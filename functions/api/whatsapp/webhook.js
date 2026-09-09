@@ -1,3 +1,7 @@
+import {
+  generateAcademyAssistantReply
+} from "../ai/academy.js";
+
 function toHex(buffer) {
   return [...new Uint8Array(buffer)]
     .map((b) => b.toString(16).padStart(2, "0"))
@@ -16,12 +20,20 @@ function safeEqual(a, b) {
   return result === 0;
 }
 
-async function verifyMetaSignature(rawBody, signatureHeader, appSecret) {
-  if (!signatureHeader || !signatureHeader.startsWith("sha256=")) {
+async function verifyMetaSignature(
+  rawBody,
+  signatureHeader,
+  appSecret
+) {
+  if (
+    !signatureHeader ||
+    !signatureHeader.startsWith("sha256=")
+  ) {
     return false;
   }
 
-  const receivedSignature = signatureHeader.slice(7);
+  const receivedSignature =
+    signatureHeader.slice(7);
 
   const key = await crypto.subtle.importKey(
     "raw",
@@ -42,7 +54,10 @@ async function verifyMetaSignature(rawBody, signatureHeader, appSecret) {
 
   const expectedSignature = toHex(signature);
 
-  return safeEqual(receivedSignature, expectedSignature);
+  return safeEqual(
+    receivedSignature,
+    expectedSignature
+  );
 }
 
 function extractText(message) {
@@ -98,7 +113,7 @@ async function sendWhatsAppReply({
 
   if (!response.ok) {
     console.error(
-      "WhatsApp auto-reply failed:",
+      "WhatsApp AI reply failed:",
       JSON.stringify(result)
     );
 
@@ -106,7 +121,7 @@ async function sendWhatsAppReply({
   }
 
   console.log(
-    "WhatsApp auto-reply sent:",
+    "WhatsApp AI reply sent:",
     JSON.stringify(result)
   );
 
@@ -116,72 +131,113 @@ async function sendWhatsAppReply({
 export async function onRequestGet(context) {
   const url = new URL(context.request.url);
 
-  const mode = url.searchParams.get("hub.mode");
-  const token = url.searchParams.get("hub.verify_token");
-  const challenge = url.searchParams.get("hub.challenge");
+  const mode =
+    url.searchParams.get("hub.mode");
 
-  const verifyToken = context.env.WHATSAPP_VERIFY_TOKEN;
+  const token =
+    url.searchParams.get("hub.verify_token");
+
+  const challenge =
+    url.searchParams.get("hub.challenge");
+
+  const verifyToken =
+    context.env.WHATSAPP_VERIFY_TOKEN;
 
   if (!verifyToken) {
-    console.error("WHATSAPP_VERIFY_TOKEN is not configured.");
+    console.error(
+      "WHATSAPP_VERIFY_TOKEN is not configured."
+    );
 
-    return new Response("Server configuration error", {
-      status: 500
-    });
-  }
-
-  if (mode === "subscribe" && token === verifyToken) {
-    console.log("WhatsApp webhook verified.");
-
-    return new Response(challenge || "", {
-      status: 200,
-      headers: {
-        "Content-Type": "text/plain"
+    return new Response(
+      "Server configuration error",
+      {
+        status: 500
       }
-    });
+    );
   }
 
-  return new Response("Forbidden", {
-    status: 403
-  });
+  if (
+    mode === "subscribe" &&
+    token === verifyToken
+  ) {
+    console.log(
+      "WhatsApp webhook verified."
+    );
+
+    return new Response(
+      challenge || "",
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "text/plain"
+        }
+      }
+    );
+  }
+
+  return new Response(
+    "Forbidden",
+    {
+      status: 403
+    }
+  );
 }
 
 export async function onRequestPost(context) {
-  const appSecret = context.env.WHATSAPP_APP_SECRET;
-  const accessToken = context.env.WHATSAPP_ACCESS_TOKEN;
+  const appSecret =
+    context.env.WHATSAPP_APP_SECRET;
 
-  // Real QY WhatsApp Phone Number ID configured in Cloudflare.
-  // This is used for OUTBOUND replies.
+  const accessToken =
+    context.env.WHATSAPP_ACCESS_TOKEN;
+
+  /*
+   * Real QY WhatsApp Phone Number ID
+   * configured in Cloudflare.
+   * Used for OUTBOUND replies.
+   */
   const outboundPhoneNumberId =
-    context.env.WHATSAPP_PHONE_NUMBER_ID || null;
+    context.env.WHATSAPP_PHONE_NUMBER_ID ||
+    null;
 
   if (!appSecret) {
-    console.error("WHATSAPP_APP_SECRET is not configured.");
+    console.error(
+      "WHATSAPP_APP_SECRET is not configured."
+    );
 
-    return new Response("Server configuration error", {
-      status: 500
-    });
+    return new Response(
+      "Server configuration error",
+      {
+        status: 500
+      }
+    );
   }
 
-  const rawBody = await context.request.text();
+  const rawBody =
+    await context.request.text();
 
   const signatureHeader =
-    context.request.headers.get("x-hub-signature-256") || "";
+    context.request.headers.get(
+      "x-hub-signature-256"
+    ) || "";
 
-  const validSignature = await verifyMetaSignature(
-    rawBody,
-    signatureHeader,
-    appSecret
-  );
+  const validSignature =
+    await verifyMetaSignature(
+      rawBody,
+      signatureHeader,
+      appSecret
+    );
 
   if (!validSignature) {
     console.warn(
       "Rejected WhatsApp webhook with invalid signature."
     );
 
-    return new Response("Forbidden", {
-      status: 403
-    });
+    return new Response(
+      "Forbidden",
+      {
+        status: 403
+      }
+    );
   }
 
   let payload;
@@ -194,113 +250,171 @@ export async function onRequestPost(context) {
       error
     );
 
-    return new Response("Bad Request", {
-      status: 400
-    });
+    return new Response(
+      "Bad Request",
+      {
+        status: 400
+      }
+    );
   }
 
-  const db = context.env.ENQUIRIES_DB;
+  const db =
+    context.env.ENQUIRIES_DB;
 
   if (!db) {
-    console.error("ENQUIRIES_DB is not configured.");
+    console.error(
+      "ENQUIRIES_DB is not configured."
+    );
 
-    return new Response("Server configuration error", {
-      status: 500
-    });
+    return new Response(
+      "Server configuration error",
+      {
+        status: 500
+      }
+    );
   }
 
   let stored = 0;
 
   for (const entry of payload.entry || []) {
-    const businessAccountId = entry.id || null;
+    const businessAccountId =
+      entry.id || null;
 
-    for (const change of entry.changes || []) {
-      if (change.field !== "messages") continue;
+    for (
+      const change of entry.changes || []
+    ) {
+      if (change.field !== "messages") {
+        continue;
+      }
 
-      const value = change.value || {};
+      const value =
+        change.value || {};
 
-      // Incoming Phone Number ID supplied by Meta.
-      // Keep this value for audit/storage purposes.
+      /*
+       * Incoming Phone Number ID supplied by Meta.
+       * Stored for audit purposes.
+       */
       const incomingPhoneNumberId =
-        value.metadata?.phone_number_id || null;
+        value.metadata?.phone_number_id ||
+        null;
 
       const contactMap = new Map(
-        (value.contacts || []).map((contact) => [
-          contact.wa_id,
-          contact.profile?.name || null
-        ])
+        (value.contacts || []).map(
+          (contact) => [
+            contact.wa_id,
+            contact.profile?.name || null
+          ]
+        )
       );
 
-      for (const message of value.messages || []) {
-        const messageId = message.id;
+      for (
+        const message of value.messages || []
+      ) {
+        const messageId =
+          message.id;
 
-        if (!messageId) continue;
+        if (!messageId) {
+          continue;
+        }
 
-        const senderWaId = message.from || null;
+        const senderWaId =
+          message.from || null;
+
         const senderName =
-          contactMap.get(senderWaId) || null;
+          contactMap.get(senderWaId) ||
+          null;
 
-        const messageType = message.type || null;
-        const messageText = extractText(message);
+        const messageType =
+          message.type || null;
 
-        const messageTimestamp = message.timestamp
-          ? Number(message.timestamp)
-          : null;
+        const messageText =
+          extractText(message);
 
-        const insertResult = await db.prepare(`
-          INSERT OR IGNORE INTO whatsapp_messages (
-            wa_message_id,
-            wa_phone_number_id,
-            wa_business_account_id,
-            sender_wa_id,
-            sender_name,
-            message_type,
-            message_text,
-            message_timestamp,
-            raw_payload
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).bind(
-          messageId,
-          incomingPhoneNumberId,
-          businessAccountId,
-          senderWaId,
-          senderName,
-          messageType,
-          messageText,
-          messageTimestamp,
-          rawBody
-        ).run();
+        const messageTimestamp =
+          message.timestamp
+            ? Number(message.timestamp)
+            : null;
+
+        const insertResult =
+          await db.prepare(`
+            INSERT OR IGNORE INTO whatsapp_messages (
+              wa_message_id,
+              wa_phone_number_id,
+              wa_business_account_id,
+              sender_wa_id,
+              sender_name,
+              message_type,
+              message_text,
+              message_timestamp,
+              raw_payload
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).bind(
+            messageId,
+            incomingPhoneNumberId,
+            businessAccountId,
+            senderWaId,
+            senderName,
+            messageType,
+            messageText,
+            messageTimestamp,
+            rawBody
+          ).run();
 
         const inserted =
-          Number(insertResult?.meta?.changes || 0) > 0;
+          Number(
+            insertResult?.meta?.changes || 0
+          ) > 0;
 
         if (inserted) {
           stored += 1;
         }
 
         /*
-         * Only reply when:
+         * Generate an Academy AI reply only when:
+         *
          * 1. This is a new inbound message.
-         * 2. Access token exists.
-         * 3. Our real QY Phone Number ID exists.
+         * 2. It is a text message.
+         * 3. Message text exists.
          * 4. Sender exists.
-         * 5. Message is text.
+         * 5. WhatsApp outbound config exists.
          */
         if (
           inserted &&
-          accessToken &&
-          outboundPhoneNumberId &&
+          messageType === "text" &&
+          messageText &&
           senderWaId &&
-          messageType === "text"
+          accessToken &&
+          outboundPhoneNumberId
         ) {
-          await sendWhatsAppReply({
-            accessToken,
-            phoneNumberId: outboundPhoneNumberId,
-            to: senderWaId,
-            message:
-              "Thank you for contacting Quantum YiJing Academy. This is an automated WhatsApp test reply."
-          });
+          try {
+            const aiReply =
+              await generateAcademyAssistantReply({
+                env: context.env,
+                message: messageText,
+                history: []
+              });
+
+            console.log(
+              "Academy AI reply generated."
+            );
+
+            await sendWhatsAppReply({
+              accessToken,
+              phoneNumberId:
+                outboundPhoneNumberId,
+              to: senderWaId,
+              message: aiReply
+            });
+
+          } catch (error) {
+            console.error(
+              "WhatsApp Academy AI generation failed:",
+              error instanceof Error
+                ? error.message
+                : "Unknown error"
+            );
+          }
         }
       }
     }
@@ -313,10 +427,13 @@ export async function onRequestPost(context) {
     }
   );
 
-  return new Response("EVENT_RECEIVED", {
-    status: 200,
-    headers: {
-      "Content-Type": "text/plain"
+  return new Response(
+    "EVENT_RECEIVED",
+    {
+      status: 200,
+      headers: {
+        "Content-Type": "text/plain"
+      }
     }
-  });
+  );
 }
