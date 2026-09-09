@@ -67,6 +67,52 @@ function extractText(message) {
   return null;
 }
 
+async function sendWhatsAppReply({
+  accessToken,
+  phoneNumberId,
+  to,
+  message
+}) {
+  const response = await fetch(
+    `https://graph.facebook.com/v25.0/${phoneNumberId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to,
+        type: "text",
+        text: {
+          preview_url: false,
+          body: message
+        }
+      })
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    console.error(
+      "WhatsApp auto-reply failed:",
+      JSON.stringify(result)
+    );
+
+    return false;
+  }
+
+  console.log(
+    "WhatsApp auto-reply sent:",
+    JSON.stringify(result)
+  );
+
+  return true;
+}
+
 export async function onRequestGet(context) {
   const url = new URL(context.request.url);
 
@@ -102,6 +148,7 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const appSecret = context.env.WHATSAPP_APP_SECRET;
+  const accessToken = context.env.WHATSAPP_ACCESS_TOKEN;
 
   if (!appSecret) {
     console.error("WHATSAPP_APP_SECRET is not configured.");
@@ -183,7 +230,7 @@ export async function onRequestPost(context) {
           ? Number(message.timestamp)
           : null;
 
-        await db.prepare(`
+        const insertResult = await db.prepare(`
           INSERT OR IGNORE INTO whatsapp_messages (
             wa_message_id,
             wa_phone_number_id,
@@ -208,7 +255,28 @@ export async function onRequestPost(context) {
           rawBody
         ).run();
 
-        stored += 1;
+        const inserted =
+          Number(insertResult?.meta?.changes || 0) > 0;
+
+        if (inserted) {
+          stored += 1;
+        }
+
+        if (
+          inserted &&
+          accessToken &&
+          phoneNumberId &&
+          senderWaId &&
+          messageType === "text"
+        ) {
+          await sendWhatsAppReply({
+            accessToken,
+            phoneNumberId,
+            to: senderWaId,
+            message:
+              "Thank you for contacting Quantum YiJing Academy. This is an automated WhatsApp test reply."
+          });
+        }
       }
     }
   }
