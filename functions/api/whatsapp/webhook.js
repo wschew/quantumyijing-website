@@ -25,3 +25,29 @@ export async function onRequestGet(context) {
 
   return new Response("Forbidden", { status: 403 });
 }
+
+export async function onRequestPost(context) {
+  let payload;
+
+  try {
+    payload = await context.request.json();
+  } catch (error) {
+    console.error("Invalid WhatsApp webhook JSON.", error);
+
+    return new Response("Bad Request", {
+      status: 400
+    });
+  }
+
+  console.log(
+    "WhatsApp webhook received:",
+    JSON.stringify(payload)
+  );
+
+  return new Response("EVENT_RECEIVED", {
+    status: 200,
+    headers: {
+      "Content-Type": "text/plain"
+    }
+  });
+}
