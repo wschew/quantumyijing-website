@@ -150,6 +150,11 @@ export async function onRequestPost(context) {
   const appSecret = context.env.WHATSAPP_APP_SECRET;
   const accessToken = context.env.WHATSAPP_ACCESS_TOKEN;
 
+  // Real QY WhatsApp Phone Number ID configured in Cloudflare.
+  // This is used for OUTBOUND replies.
+  const outboundPhoneNumberId =
+    context.env.WHATSAPP_PHONE_NUMBER_ID || null;
+
   if (!appSecret) {
     console.error("WHATSAPP_APP_SECRET is not configured.");
 
@@ -170,7 +175,9 @@ export async function onRequestPost(context) {
   );
 
   if (!validSignature) {
-    console.warn("Rejected WhatsApp webhook with invalid signature.");
+    console.warn(
+      "Rejected WhatsApp webhook with invalid signature."
+    );
 
     return new Response("Forbidden", {
       status: 403
@@ -182,7 +189,10 @@ export async function onRequestPost(context) {
   try {
     payload = JSON.parse(rawBody);
   } catch (error) {
-    console.error("Invalid WhatsApp webhook JSON.", error);
+    console.error(
+      "Invalid WhatsApp webhook JSON.",
+      error
+    );
 
     return new Response("Bad Request", {
       status: 400
@@ -208,7 +218,11 @@ export async function onRequestPost(context) {
       if (change.field !== "messages") continue;
 
       const value = change.value || {};
-      const phoneNumberId = value.metadata?.phone_number_id || null;
+
+      // Incoming Phone Number ID supplied by Meta.
+      // Keep this value for audit/storage purposes.
+      const incomingPhoneNumberId =
+        value.metadata?.phone_number_id || null;
 
       const contactMap = new Map(
         (value.contacts || []).map((contact) => [
@@ -223,9 +237,12 @@ export async function onRequestPost(context) {
         if (!messageId) continue;
 
         const senderWaId = message.from || null;
-        const senderName = contactMap.get(senderWaId) || null;
+        const senderName =
+          contactMap.get(senderWaId) || null;
+
         const messageType = message.type || null;
         const messageText = extractText(message);
+
         const messageTimestamp = message.timestamp
           ? Number(message.timestamp)
           : null;
@@ -245,7 +262,7 @@ export async function onRequestPost(context) {
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           messageId,
-          phoneNumberId,
+          incomingPhoneNumberId,
           businessAccountId,
           senderWaId,
           senderName,
@@ -262,16 +279,24 @@ export async function onRequestPost(context) {
           stored += 1;
         }
 
+        /*
+         * Only reply when:
+         * 1. This is a new inbound message.
+         * 2. Access token exists.
+         * 3. Our real QY Phone Number ID exists.
+         * 4. Sender exists.
+         * 5. Message is text.
+         */
         if (
           inserted &&
           accessToken &&
-          phoneNumberId &&
+          outboundPhoneNumberId &&
           senderWaId &&
           messageType === "text"
         ) {
           await sendWhatsAppReply({
             accessToken,
-            phoneNumberId,
+            phoneNumberId: outboundPhoneNumberId,
             to: senderWaId,
             message:
               "Thank you for contacting Quantum YiJing Academy. This is an automated WhatsApp test reply."
@@ -281,9 +306,12 @@ export async function onRequestPost(context) {
     }
   }
 
-  console.log("Verified WhatsApp webhook processed.", {
-    stored
-  });
+  console.log(
+    "Verified WhatsApp webhook processed.",
+    {
+      stored
+    }
+  );
 
   return new Response("EVENT_RECEIVED", {
     status: 200,
