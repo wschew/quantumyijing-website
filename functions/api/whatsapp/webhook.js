@@ -54,7 +54,8 @@ async function verifyMetaSignature(
     new TextEncoder().encode(rawBody)
   );
 
-  const expectedSignature = toHex(signature);
+  const expectedSignature =
+    toHex(signature);
 
   return safeEqual(
     receivedSignature,
@@ -85,10 +86,156 @@ function extractText(message) {
 }
 
 /*
- * Load the recent conversation for one WhatsApp user.
+ * Convert a phone number to digits only.
  *
- * The current inbound message is excluded because it will
- * be supplied separately as the latest question to Gemini.
+ * Examples:
+ * +60164199839 -> 60164199839
+ * 60164199839  -> 60164199839
+ * 0164199839   -> 0164199839
+ */
+function normalizePhone(value) {
+  return String(value || "")
+    .replace(/\D/g, "");
+}
+
+/*
+ * Generate common CRM representations of a WhatsApp number.
+ *
+ * WhatsApp supplies:
+ * 60164199839
+ *
+ * Existing CRM data may contain:
+ * +60164199839
+ * 60164199839
+ * 0164199839
+ */
+function phoneCandidates(senderWaId) {
+  const digits =
+    normalizePhone(senderWaId);
+
+  if (!digits) {
+    return [];
+  }
+
+  const values = new Set([
+    digits,
+    `+${digits}`
+  ]);
+
+  if (digits.startsWith("60")) {
+    values.add(
+      `0${digits.slice(2)}`
+    );
+  }
+
+  return [...values];
+}
+
+/*
+ * Resolve a WhatsApp sender against existing enquiries.
+ *
+ * Exactly one matching enquiry:
+ *   automatically link.
+ *
+ * Zero or multiple matches:
+ *   do not guess.
+ */
+async function resolveEnquiryByPhone(
+  db,
+  senderWaId
+) {
+  const candidates =
+    phoneCandidates(senderWaId);
+
+  if (!candidates.length) {
+    return {
+      enquiryId: null,
+      status: "no-phone"
+    };
+  }
+
+  const placeholders =
+    candidates.map(() => "?").join(", ");
+
+  const result = await db.prepare(`
+    SELECT
+      id,
+      name,
+      phone
+    FROM enquiries
+    WHERE phone IN (${placeholders})
+    ORDER BY id DESC
+  `).bind(
+    ...candidates
+  ).all();
+
+  const rows =
+    Array.isArray(result?.results)
+      ? result.results
+      : [];
+
+  const uniqueIds =
+    [...new Set(
+      rows
+        .map((row) => Number(row.id))
+        .filter(Number.isFinite)
+    )];
+
+  if (uniqueIds.length === 1) {
+    return {
+      enquiryId: uniqueIds[0],
+      status: "matched"
+    };
+  }
+
+  if (uniqueIds.length > 1) {
+    return {
+      enquiryId: null,
+      status: "ambiguous",
+      matches: uniqueIds.length
+    };
+  }
+
+  return {
+    enquiryId: null,
+    status: "not-found"
+  };
+}
+
+async function logCrmActivity({
+  db,
+  enquiryId,
+  activityType,
+  description
+}) {
+  if (!enquiryId) {
+    return;
+  }
+
+  const activityDate =
+    new Date().toISOString();
+
+  await db.prepare(`
+    INSERT INTO crm_activities (
+      enquiry_id,
+      activity_type,
+      description,
+      activity_date
+    )
+    VALUES (?, ?, ?, ?)
+  `).bind(
+    enquiryId,
+    activityType,
+    description,
+    activityDate
+  ).run();
+}
+
+/*
+ * Load recent WhatsApp conversation history.
+ *
+ * Current inbound message is excluded because
+ * it is passed separately as Gemini's latest question.
  */
 async function loadConversationHistory(
   db,
@@ -113,14 +260,11 @@ async function loadConversationHistory(
     MAX_WHATSAPP_HISTORY
   ).all();
 
-  const rows = Array.isArray(result?.results)
-    ? result.results
-    : [];
+  const rows =
+    Array.isArray(result?.results)
+      ? result.results
+      : [];
 
-  /*
-   * SQL returns newest first.
-   * Gemini history should be chronological.
-   */
   return rows
     .reverse()
     .map((row) => ({
@@ -143,12 +287,16 @@ async function sendWhatsAppReply({
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json"
+        Authorization:
+          `Bearer ${accessToken}`,
+        "Content-Type":
+          "application/json"
       },
       body: JSON.stringify({
-        messaging_product: "whatsapp",
-        recipient_type: "individual",
+        messaging_product:
+          "whatsapp",
+        recipient_type:
+          "individual",
         to,
         type: "text",
         text: {
@@ -159,7 +307,8 @@ async function sendWhatsAppReply({
     }
   );
 
-  const result = await response.json();
+  const result =
+    await response.json();
 
   if (!response.ok) {
     console.error(
@@ -185,10 +334,8 @@ async function sendWhatsAppReply({
 }
 
 /*
- * Store a successfully accepted outbound AI reply.
- *
- * sender_wa_id remains the customer's WhatsApp ID so
- * inbound and outbound rows belong to the same conversation.
+ * Store outbound AI response only after Meta
+ * successfully accepts the message.
  */
 async function storeOutboundReply({
   db,
@@ -196,10 +343,12 @@ async function storeOutboundReply({
   phoneNumberId,
   businessAccountId,
   senderWaId,
+  enquiryId,
   message
 }) {
   const outboundMessageId =
-    metaResult?.messages?.[0]?.id || null;
+    metaResult?.messages?.[0]?.id ||
+    null;
 
   if (!outboundMessageId) {
     console.warn(
@@ -224,9 +373,10 @@ async function storeOutboundReply({
         message_text,
         message_timestamp,
         raw_payload,
-        direction
+        direction,
+        enquiry_id
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       outboundMessageId,
       phoneNumberId,
@@ -237,7 +387,8 @@ async function storeOutboundReply({
       message,
       now,
       JSON.stringify(metaResult),
-      "outbound"
+      "outbound",
+      enquiryId
     ).run();
 
   const inserted =
@@ -249,22 +400,53 @@ async function storeOutboundReply({
     console.log(
       "WhatsApp outbound AI reply stored."
     );
+
+    if (enquiryId) {
+      try {
+        await logCrmActivity({
+          db,
+          enquiryId,
+          activityType:
+            "WhatsApp AI Reply",
+          description:
+            "Academy AI WhatsApp reply sent."
+        });
+
+        console.log(
+          "WhatsApp outbound CRM activity logged."
+        );
+      } catch (error) {
+        console.error(
+          "WhatsApp outbound CRM activity failed:",
+          error instanceof Error
+            ? error.message
+            : "Unknown error"
+        );
+      }
+    }
   }
 
   return inserted;
 }
 
 export async function onRequestGet(context) {
-  const url = new URL(context.request.url);
+  const url =
+    new URL(context.request.url);
 
   const mode =
-    url.searchParams.get("hub.mode");
+    url.searchParams.get(
+      "hub.mode"
+    );
 
   const token =
-    url.searchParams.get("hub.verify_token");
+    url.searchParams.get(
+      "hub.verify_token"
+    );
 
   const challenge =
-    url.searchParams.get("hub.challenge");
+    url.searchParams.get(
+      "hub.challenge"
+    );
 
   const verifyToken =
     context.env.WHATSAPP_VERIFY_TOKEN;
@@ -295,7 +477,8 @@ export async function onRequestGet(context) {
       {
         status: 200,
         headers: {
-          "Content-Type": "text/plain"
+          "Content-Type":
+            "text/plain"
         }
       }
     );
@@ -364,7 +547,8 @@ export async function onRequestPost(context) {
   let payload;
 
   try {
-    payload = JSON.parse(rawBody);
+    payload =
+      JSON.parse(rawBody);
   } catch (error) {
     console.error(
       "Invalid WhatsApp webhook JSON.",
@@ -397,14 +581,18 @@ export async function onRequestPost(context) {
 
   let stored = 0;
 
-  for (const entry of payload.entry || []) {
+  for (
+    const entry of payload.entry || []
+  ) {
     const businessAccountId =
       entry.id || null;
 
     for (
       const change of entry.changes || []
     ) {
-      if (change.field !== "messages") {
+      if (
+        change.field !== "messages"
+      ) {
         continue;
       }
 
@@ -415,17 +603,20 @@ export async function onRequestPost(context) {
         value.metadata?.phone_number_id ||
         null;
 
-      const contactMap = new Map(
-        (value.contacts || []).map(
-          (contact) => [
-            contact.wa_id,
-            contact.profile?.name || null
-          ]
-        )
-      );
+      const contactMap =
+        new Map(
+          (value.contacts || []).map(
+            (contact) => [
+              contact.wa_id,
+              contact.profile?.name ||
+                null
+            ]
+          )
+        );
 
       for (
-        const message of value.messages || []
+        const message of value.messages ||
+        []
       ) {
         const messageId =
           message.id;
@@ -453,6 +644,55 @@ export async function onRequestPost(context) {
             : null;
 
         /*
+         * Resolve CRM enquiry before storing
+         * the inbound WhatsApp message.
+         */
+        let enquiryId = null;
+
+        if (senderWaId) {
+          try {
+            const crmMatch =
+              await resolveEnquiryByPhone(
+                db,
+                senderWaId
+              );
+
+            enquiryId =
+              crmMatch.enquiryId ||
+              null;
+
+            if (
+              crmMatch.status ===
+              "matched"
+            ) {
+              console.log(
+                "WhatsApp CRM enquiry matched:",
+                enquiryId
+              );
+            } else if (
+              crmMatch.status ===
+              "ambiguous"
+            ) {
+              console.warn(
+                "WhatsApp CRM match ambiguous:",
+                crmMatch.matches
+              );
+            } else {
+              console.log(
+                "WhatsApp CRM enquiry not matched."
+              );
+            }
+          } catch (error) {
+            console.error(
+              "WhatsApp CRM matching failed:",
+              error instanceof Error
+                ? error.message
+                : "Unknown error"
+            );
+          }
+        }
+
+        /*
          * Store inbound customer message.
          */
         const insertResult =
@@ -467,9 +707,10 @@ export async function onRequestPost(context) {
               message_text,
               message_timestamp,
               raw_payload,
-              direction
+              direction,
+              enquiry_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `).bind(
             messageId,
             incomingPhoneNumberId,
@@ -480,16 +721,47 @@ export async function onRequestPost(context) {
             messageText,
             messageTimestamp,
             rawBody,
-            "inbound"
+            "inbound",
+            enquiryId
           ).run();
 
         const inserted =
           Number(
-            insertResult?.meta?.changes || 0
+            insertResult?.meta?.changes ||
+              0
           ) > 0;
 
         if (inserted) {
           stored += 1;
+
+          /*
+           * Log inbound WhatsApp CRM activity
+           * only when we have an unambiguous
+           * enquiry link.
+           */
+          if (enquiryId) {
+            try {
+              await logCrmActivity({
+                db,
+                enquiryId,
+                activityType:
+                  "WhatsApp",
+                description:
+                  "Inbound WhatsApp message received."
+              });
+
+              console.log(
+                "WhatsApp inbound CRM activity logged."
+              );
+            } catch (error) {
+              console.error(
+                "WhatsApp inbound CRM activity failed:",
+                error instanceof Error
+                  ? error.message
+                  : "Unknown error"
+              );
+            }
+          }
         }
 
         if (
@@ -501,10 +773,6 @@ export async function onRequestPost(context) {
           outboundPhoneNumberId
         ) {
           try {
-            /*
-             * Load up to six previous inbound/outbound
-             * messages for this WhatsApp conversation.
-             */
             const history =
               await loadConversationHistory(
                 db,
@@ -537,10 +805,6 @@ export async function onRequestPost(context) {
                 message: aiReply
               });
 
-            /*
-             * Only store the AI reply when Meta accepts
-             * the outbound WhatsApp message.
-             */
             if (sendResult.ok) {
               await storeOutboundReply({
                 db,
@@ -550,6 +814,7 @@ export async function onRequestPost(context) {
                   outboundPhoneNumberId,
                 businessAccountId,
                 senderWaId,
+                enquiryId,
                 message: aiReply
               });
             }
@@ -579,7 +844,8 @@ export async function onRequestPost(context) {
     {
       status: 200,
       headers: {
-        "Content-Type": "text/plain"
+        "Content-Type":
+          "text/plain"
       }
     }
   );
