@@ -2,6 +2,8 @@ import {
   generateAcademyAssistantReply
 } from "../ai/academy.js";
 
+const MAX_WHATSAPP_HISTORY = 6;
+
 function toHex(buffer) {
   return [...new Uint8Array(buffer)]
     .map((b) => b.toString(16).padStart(2, "0"))
@@ -82,6 +84,54 @@ function extractText(message) {
   return null;
 }
 
+/*
+ * Load the recent conversation for one WhatsApp user.
+ *
+ * The current inbound message is excluded because it will
+ * be supplied separately as the latest question to Gemini.
+ */
+async function loadConversationHistory(
+  db,
+  senderWaId,
+  currentMessageId
+) {
+  const result = await db.prepare(`
+    SELECT
+      direction,
+      message_text
+    FROM whatsapp_messages
+    WHERE sender_wa_id = ?
+      AND wa_message_id <> ?
+      AND message_text IS NOT NULL
+      AND TRIM(message_text) <> ''
+      AND direction IN ('inbound', 'outbound')
+    ORDER BY id DESC
+    LIMIT ?
+  `).bind(
+    senderWaId,
+    currentMessageId,
+    MAX_WHATSAPP_HISTORY
+  ).all();
+
+  const rows = Array.isArray(result?.results)
+    ? result.results
+    : [];
+
+  /*
+   * SQL returns newest first.
+   * Gemini history should be chronological.
+   */
+  return rows
+    .reverse()
+    .map((row) => ({
+      role:
+        row.direction === "outbound"
+          ? "assistant"
+          : "user",
+      content: row.message_text
+    }));
+}
+
 async function sendWhatsAppReply({
   accessToken,
   phoneNumberId,
@@ -117,7 +167,10 @@ async function sendWhatsAppReply({
       JSON.stringify(result)
     );
 
-    return false;
+    return {
+      ok: false,
+      result
+    };
   }
 
   console.log(
@@ -125,7 +178,80 @@ async function sendWhatsAppReply({
     JSON.stringify(result)
   );
 
-  return true;
+  return {
+    ok: true,
+    result
+  };
+}
+
+/*
+ * Store a successfully accepted outbound AI reply.
+ *
+ * sender_wa_id remains the customer's WhatsApp ID so
+ * inbound and outbound rows belong to the same conversation.
+ */
+async function storeOutboundReply({
+  db,
+  metaResult,
+  phoneNumberId,
+  businessAccountId,
+  senderWaId,
+  message
+}) {
+  const outboundMessageId =
+    metaResult?.messages?.[0]?.id || null;
+
+  if (!outboundMessageId) {
+    console.warn(
+      "WhatsApp outbound message ID missing; reply not stored."
+    );
+
+    return false;
+  }
+
+  const now =
+    Math.floor(Date.now() / 1000);
+
+  const insertResult =
+    await db.prepare(`
+      INSERT OR IGNORE INTO whatsapp_messages (
+        wa_message_id,
+        wa_phone_number_id,
+        wa_business_account_id,
+        sender_wa_id,
+        sender_name,
+        message_type,
+        message_text,
+        message_timestamp,
+        raw_payload,
+        direction
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      outboundMessageId,
+      phoneNumberId,
+      businessAccountId,
+      senderWaId,
+      "Quantum YiJing Academy",
+      "text",
+      message,
+      now,
+      JSON.stringify(metaResult),
+      "outbound"
+    ).run();
+
+  const inserted =
+    Number(
+      insertResult?.meta?.changes || 0
+    ) > 0;
+
+  if (inserted) {
+    console.log(
+      "WhatsApp outbound AI reply stored."
+    );
+  }
+
+  return inserted;
 }
 
 export async function onRequestGet(context) {
@@ -190,11 +316,6 @@ export async function onRequestPost(context) {
   const accessToken =
     context.env.WHATSAPP_ACCESS_TOKEN;
 
-  /*
-   * Real QY WhatsApp Phone Number ID
-   * configured in Cloudflare.
-   * Used for OUTBOUND replies.
-   */
   const outboundPhoneNumberId =
     context.env.WHATSAPP_PHONE_NUMBER_ID ||
     null;
@@ -290,10 +411,6 @@ export async function onRequestPost(context) {
       const value =
         change.value || {};
 
-      /*
-       * Incoming Phone Number ID supplied by Meta.
-       * Stored for audit purposes.
-       */
       const incomingPhoneNumberId =
         value.metadata?.phone_number_id ||
         null;
@@ -335,6 +452,9 @@ export async function onRequestPost(context) {
             ? Number(message.timestamp)
             : null;
 
+        /*
+         * Store inbound customer message.
+         */
         const insertResult =
           await db.prepare(`
             INSERT OR IGNORE INTO whatsapp_messages (
@@ -346,9 +466,10 @@ export async function onRequestPost(context) {
               message_type,
               message_text,
               message_timestamp,
-              raw_payload
+              raw_payload,
+              direction
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `).bind(
             messageId,
             incomingPhoneNumberId,
@@ -358,7 +479,8 @@ export async function onRequestPost(context) {
             messageType,
             messageText,
             messageTimestamp,
-            rawBody
+            rawBody,
+            "inbound"
           ).run();
 
         const inserted =
@@ -370,15 +492,6 @@ export async function onRequestPost(context) {
           stored += 1;
         }
 
-        /*
-         * Generate an Academy AI reply only when:
-         *
-         * 1. This is a new inbound message.
-         * 2. It is a text message.
-         * 3. Message text exists.
-         * 4. Sender exists.
-         * 5. WhatsApp outbound config exists.
-         */
         if (
           inserted &&
           messageType === "text" &&
@@ -388,28 +501,62 @@ export async function onRequestPost(context) {
           outboundPhoneNumberId
         ) {
           try {
+            /*
+             * Load up to six previous inbound/outbound
+             * messages for this WhatsApp conversation.
+             */
+            const history =
+              await loadConversationHistory(
+                db,
+                senderWaId,
+                messageId
+              );
+
+            console.log(
+              "WhatsApp conversation history loaded:",
+              history.length
+            );
+
             const aiReply =
               await generateAcademyAssistantReply({
                 env: context.env,
                 message: messageText,
-                history: []
+                history
               });
 
             console.log(
               "Academy AI reply generated."
             );
 
-            await sendWhatsAppReply({
-              accessToken,
-              phoneNumberId:
-                outboundPhoneNumberId,
-              to: senderWaId,
-              message: aiReply
-            });
+            const sendResult =
+              await sendWhatsAppReply({
+                accessToken,
+                phoneNumberId:
+                  outboundPhoneNumberId,
+                to: senderWaId,
+                message: aiReply
+              });
+
+            /*
+             * Only store the AI reply when Meta accepts
+             * the outbound WhatsApp message.
+             */
+            if (sendResult.ok) {
+              await storeOutboundReply({
+                db,
+                metaResult:
+                  sendResult.result,
+                phoneNumberId:
+                  outboundPhoneNumberId,
+                businessAccountId,
+                senderWaId,
+                message: aiReply
+              });
+            }
 
           } catch (error) {
             console.error(
-              "WhatsApp Academy AI generation failed:",
+              "WhatsApp Academy AI processing failed:",
               error instanceof Error
                 ? error.message
                 : "Unknown error"
