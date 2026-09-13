@@ -202,6 +202,97 @@ async function resolveEnquiryByPhone(
   };
 }
 
+async function createWhatsAppEnquiry(
+  db,
+  {
+    senderWaId,
+    senderName,
+    messageText
+  }
+) {
+  if (!db || !senderWaId) {
+    return null;
+  }
+
+  const now = new Date();
+
+  const submittedAtUtc =
+    now.toISOString();
+
+  const submitted =
+    now.toLocaleString("en-MY", {
+      timeZone: "Asia/Kuala_Lumpur"
+    });
+
+  const submittedDate =
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kuala_Lumpur",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).format(now);
+
+  const reference =
+    `QY-${submittedDate.replaceAll("-", "")}-${crypto.randomUUID()
+      .slice(0, 6)
+      .toUpperCase()}`;
+
+  const language =
+    /[\u3400-\u9FFF]/.test(
+      String(messageText || "")
+    )
+      ? "zh"
+      : "en";
+
+  const inserted = await db.prepare(`
+    INSERT INTO enquiries (
+      reference,
+      submitted_at_utc,
+      submitted_at_malaysia,
+      submitted_date,
+      name,
+      email,
+      phone,
+      country,
+      interest,
+      message,
+      language,
+      status,
+      source,
+      lifecycle_stage
+    )
+    VALUES (
+      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+      'New',
+      'WhatsApp',
+      'Lead'
+    )
+    RETURNING id
+  `).bind(
+    reference,
+    submittedAtUtc,
+    submitted,
+    submittedDate,
+    String(senderName || "WhatsApp Customer").trim(),
+    "",
+    String(senderWaId).trim(),
+    "",
+    "General Enquiry",
+    String(messageText || "").trim(),
+    language
+  ).first();
+
+  if (!inserted?.id) {
+    return null;
+  }
+
+  return {
+    enquiryId: Number(inserted.id),
+    reference,
+    status: "created"
+  };
+}
+
 async function logCrmActivity({
   db,
   enquiryId,
@@ -657,17 +748,56 @@ export async function onRequestPost(context) {
                 senderWaId
               );
 
+            let resolvedCrm =
+              crmMatch;
+
+            /*
+             * Only create a CRM enquiry when there is
+             * no existing phone match.
+             *
+             * Ambiguous matches are deliberately left
+             * unresolved so we never guess which CRM
+             * record belongs to the WhatsApp sender.
+             */
+            if (
+              crmMatch.status === "not-found"
+            ) {
+              const created =
+                await createWhatsAppEnquiry(
+                  db,
+                  {
+                    senderWaId,
+                    senderName,
+                    messageText
+                  }
+                );
+
+              if (created?.enquiryId) {
+                resolvedCrm =
+                  created;
+              }
+            }
+
             enquiryId =
-              crmMatch.enquiryId ||
+              resolvedCrm.enquiryId ||
               null;
 
             if (
-              crmMatch.status ===
+              resolvedCrm.status ===
               "matched"
             ) {
               console.log(
                 "WhatsApp CRM enquiry matched:",
                 enquiryId
+              );
+            } else if (
+              resolvedCrm.status ===
+              "created"
+            ) {
+              console.log(
+                "WhatsApp CRM enquiry created:",
+                enquiryId,
+                resolvedCrm.reference
               );
             } else if (
               crmMatch.status ===
@@ -684,7 +814,7 @@ export async function onRequestPost(context) {
             }
           } catch (error) {
             console.error(
-              "WhatsApp CRM matching failed:",
+              "WhatsApp CRM matching/creation failed:",
               error instanceof Error
                 ? error.message
                 : "Unknown error"
