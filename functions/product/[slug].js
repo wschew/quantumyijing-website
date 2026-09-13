@@ -104,7 +104,7 @@ body.enquiry-modal-open{overflow:hidden}
       <label><span data-en="WhatsApp / Phone" data-zh="WhatsApp / 电话">WhatsApp / Phone</span><input name="phone" maxlength="60"></label>
       <label><span data-en="Country" data-zh="国家">Country</span><input name="country" maxlength="80"></label>
       <label><span data-en="Your Question *" data-zh="您的问题 *">Your Question *</span><textarea name="message" rows="5" minlength="5" maxlength="3000" required data-en-value="${esc(`I would like to know more about ${p.name_en}.`)}" data-zh-value="${esc(`我想进一步了解 ${p.name_zh||p.name_en} 的课程详情。`)}">${esc(`I would like to know more about ${p.name_en}.`)}</textarea></label>
-      <label class="consent-row"><input name="consent" type="checkbox" required><span data-en="I agree to the Privacy Policy and Terms of Use." data-zh="我同意隐私政策及使用条款。">I agree to the Privacy Policy and Terms of Use.</span></label>
+     <label class="consent-row"><input name="consent" type="checkbox" required><span data-en="I agree that the Academy may use these details to respond to and follow up on my course enquiry, including contacting me by WhatsApp, email or phone, and I accept the Privacy Policy and Terms of Use." data-zh="我同意学院使用这些资料回复及跟进我的课程咨询，包括通过 WhatsApp、电子邮件或电话与我联系，并接受隐私政策及使用条款。">I agree that the Academy may use these details to respond to and follow up on my course enquiry, including contacting me by WhatsApp, email or phone, and I accept the Privacy Policy and Terms of Use.</span></label>
       <button class="product-primary" type="submit" data-en="Send Course Enquiry" data-zh="提交课程咨询">Send Course Enquiry</button>
       <p id="courseEnquiryMessage" class="product-message" aria-live="polite"></p>
     </form>

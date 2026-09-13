@@ -119,6 +119,165 @@ async function sendEmail(apiKey, payload) {
   if (!response.ok) throw new Error(`Resend ${response.status}: ${JSON.stringify(body)}`);
   return body;
 }
+async function sendWhatsAppEnquiryTemplate(env, db, data, enquiryId, activityDate) {
+  const token = env.WHATSAPP_ACCESS_TOKEN;
+  const phoneNumberId = env.WHATSAPP_PHONE_NUMBER_ID;
+
+  if (!token || !phoneNumberId || !data.phone) {
+    console.warn('WhatsApp enquiry follow-up skipped: configuration or phone missing.');
+    return { ok: false, skipped: true };
+  }
+
+  let to = String(data.phone || '')
+    .trim()
+    .replace(/[^\d+]/g, '');
+
+  if (to.startsWith('+')) {
+    to = to.slice(1);
+  }
+
+  if (to.startsWith('00')) {
+    to = to.slice(2);
+  }
+
+  // Malaysian local mobile format, e.g. 0164403198 -> 60164403198
+  if (to.startsWith('0') && String(data.country || '').toLowerCase().includes('malaysia')) {
+    to = `60${to.slice(1)}`;
+  }
+
+  if (!to) {
+    console.warn('WhatsApp enquiry follow-up skipped: invalid phone.');
+    return { ok: false, skipped: true };
+  }
+
+  const isChinese = data.language === 'zh';
+
+  const templateName = isChinese
+    ? 'course_enquiry_followup_zh_v1'
+    : 'course_enquiry_followup_v1';
+
+  const languageCode = isChinese
+    ? 'zh_CN'
+    : 'en';
+
+  const response = await fetch(
+    `https://graph.facebook.com/v25.0/${phoneNumberId}/messages`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to,
+        type: 'template',
+        template: {
+          name: templateName,
+          language: {
+            code: languageCode
+          },
+          components: [
+            {
+              type: 'body',
+              parameters: [
+                {
+                  type: 'text',
+                  text: data.name
+                },
+                {
+                  type: 'text',
+                  text: data.interest
+                }
+              ]
+            }
+          ]
+        }
+      })
+    }
+  );
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    console.error(
+      'WhatsApp enquiry template send failed:',
+      JSON.stringify(result)
+    );
+
+    return {
+      ok: false,
+      status: response.status,
+      result
+    };
+  }
+
+  const waMessageId =
+    result?.messages?.[0]?.id || '';
+
+  console.log(
+    'WhatsApp enquiry template accepted:',
+    templateName,
+    waMessageId
+  );
+
+  if (db && enquiryId && waMessageId) {
+    const renderedText = isChinese
+      ? `您好 ${data.name}，感谢您关注量子易经国际学院。\n\n您之前曾咨询 ${data.interest}。\n\n如果您想进一步了解课程内容、上课时间、学费、报名方式，或想知道课程是否适合您，欢迎直接回复这则 WhatsApp 信息，我们的团队会协助您。\n\n量子易经国际学院`
+      : `Hello ${data.name}, thank you for your interest in Quantum YiJing International Academy.\n\nYou recently enquired about ${data.interest}.\n\nIf you would like more information about the course content, schedule, fees, registration, or whether the programme is suitable for you, simply reply to this WhatsApp message and our team will assist you.\n\nQuantum YiJing International Academy`;
+
+    try {
+      await db.prepare(`
+        INSERT OR IGNORE INTO whatsapp_messages (
+          wa_message_id,
+          wa_phone_number_id,
+          sender_wa_id,
+          message_type,
+          message_text,
+          message_timestamp,
+          raw_payload,
+          direction,
+          enquiry_id
+        )
+        VALUES (?, ?, ?, 'template', ?, ?, ?, 'outbound', ?)
+      `).bind(
+        waMessageId,
+        phoneNumberId,
+        to,
+        renderedText,
+        Math.floor(Date.now() / 1000),
+        JSON.stringify(result),
+        enquiryId
+      ).run();
+
+      await db.prepare(`
+        INSERT INTO crm_activities (
+          enquiry_id,
+          activity_type,
+          description,
+          activity_date
+        )
+        VALUES (?, 'WhatsApp Template', ?, ?)
+      `).bind(
+        enquiryId,
+        `Course enquiry WhatsApp template sent: ${templateName}`,
+        activityDate
+      ).run();
+    } catch (error) {
+      console.error(
+        'WhatsApp enquiry logging failed:',
+        error
+      );
+    }
+  }
+
+  return {
+    ok: true,
+    waMessageId,
+    templateName
+  };
+}
 
 function acknowledgementHtml(name, reference, interest, submitted, message) {
   const safeName = escapeHtml(name);
@@ -353,6 +512,21 @@ info@quantumyijing.com`
     } catch (error) {
       emailWarning = true;
       console.error('Enquiry email delivery failed after enquiry was recorded', error);
+    }
+
+    try {
+      await sendWhatsAppEnquiryTemplate(
+        context.env,
+        context.env.ENQUIRIES_DB,
+        data,
+        inserted?.id,
+        submitted
+      );
+    } catch (error) {
+      console.error(
+        'WhatsApp enquiry follow-up failed after enquiry was recorded',
+        error
+      );
     }
   }
 
