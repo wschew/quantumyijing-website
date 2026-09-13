@@ -690,6 +690,33 @@ export async function onRequestPost(context) {
       const value =
         change.value || {};
 
+      // Diagnostic logging for Meta WhatsApp delivery status callbacks.
+    for (const waStatus of value.statuses || []) {
+      const errors = (waStatus.errors || []).map(
+        (error) => ({
+          code: error.code ?? null,
+          title: error.title ?? null,
+          message: error.message ?? null,
+          details:
+          error.error_data?.details ??
+          null
+      })
+    );
+
+  console.log(
+    "WhatsApp message delivery status.",
+    {
+      messageId:
+        waStatus.id || null,
+      status:
+        waStatus.status || null,
+      timestamp:
+        waStatus.timestamp || null,
+      errors
+    }
+  );
+}  
+
       const incomingPhoneNumberId =
         value.metadata?.phone_number_id ||
         null;
