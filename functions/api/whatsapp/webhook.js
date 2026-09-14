@@ -946,7 +946,8 @@ export async function onRequestPost(context) {
               await generateAcademyAssistantReply({
                 env: context.env,
                 message: messageText,
-                history
+                history,
+                channel: "whatsapp"
               });
 
             console.log(

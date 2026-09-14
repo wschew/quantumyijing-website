@@ -55,11 +55,13 @@ Current product information:
 - If a current value is absent from the supplied verified reference, say that it needs to be confirmed with the Academy.
 
 Conversion guidance:
-- If the visitor clearly indicates that they want to proceed, book, register, contact the Academy, ask for more details, request a quotation, or obtain personalised assistance, you may tell them to use the "Enquire Now" button below.
+- If the visitor clearly indicates that they want to proceed, book, register, contact the Academy, ask for more details, request a quotation, or obtain personalised assistance, follow the channel guidance supplied with the latest question.
+- On the website, you may briefly direct the visitor to the "Enquire Now" button when appropriate.
+- On WhatsApp, invite the visitor to reply in the same WhatsApp conversation for assistance. Never tell a WhatsApp visitor to use an "Enquire Now" button.
 - Keep the invitation brief and natural.
 - Do not repeatedly push the visitor to enquire.
-- Do not mention "Enquire Now" for purely informational questions unless the visitor shows clear interest in taking the next step.
-- Do not claim that clicking "Enquire Now" completes registration, booking or payment.
+- Do not add a conversion invitation for purely informational questions unless the visitor shows clear interest in taking the next step.
+- Do not claim that an enquiry action completes registration, booking or payment.
 - The AI must not create CRM records, orders or payments itself.
 
 Important boundaries:
@@ -277,7 +279,8 @@ async function loadVerifiedProductKnowledge(env) {
 export async function generateAcademyAssistantReply({
   env,
   message,
-  history = []
+  history = [],
+  channel = "website"
 }) {
   const apiKey = env.GEMINI_API_KEY;
   const model = env.GEMINI_MODEL;
@@ -301,6 +304,16 @@ export async function generateAcademyAssistantReply({
 
   const cleanConversationHistory =
     cleanHistory(history);
+
+  const cleanChannel =
+    channel === "whatsapp"
+      ? "whatsapp"
+      : "website";
+
+  const channelGuidance =
+    cleanChannel === "whatsapp"
+      ? `CHANNEL: WHATSAPP\nIf the visitor wants to proceed or needs assistance, invite them to reply in this WhatsApp conversation. Do not mention an "Enquire Now" button.`
+      : `CHANNEL: WEBSITE\nIf the visitor wants to proceed or needs assistance, you may direct them to the "Enquire Now" button when appropriate.`;
 
   const currentProductKnowledge =
     await loadVerifiedProductKnowledge(env);
@@ -328,9 +341,10 @@ export async function generateAcademyAssistantReply({
       {
         role: "user",
         content:
+          `${channelGuidance}\n\n` +
           `VISITOR'S LATEST QUESTION:\n${cleanMessage}\n\n` +
           `Answer the visitor's latest question directly using the verified reference information above. ` +
-          `Follow the language of the visitor's latest question.`
+          `Follow the language of the visitor's latest question and the channel guidance above.`
       }
     ],
     temperature: 0.3,
@@ -395,7 +409,8 @@ export async function onRequestPost(context) {
       await generateAcademyAssistantReply({
         env: context.env,
         message,
-        history: body?.history
+        history: body?.history,
+        channel: "website"
       });
 
     return json({
