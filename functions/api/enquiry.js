@@ -279,6 +279,160 @@ async function sendWhatsAppEnquiryTemplate(env, db, data, enquiryId, activityDat
   };
 }
 
+
+async function sendWhatsAppRegistrationReminder(env, db, data, enquiryId, activityDate, orderInfo) {
+  const token = env.WHATSAPP_ACCESS_TOKEN;
+  const phoneNumberId = env.WHATSAPP_PHONE_NUMBER_ID;
+
+  if (!token || !phoneNumberId || !data.phone || !orderInfo?.productName) {
+    console.warn('WhatsApp registration reminder skipped: configuration, phone, or product name missing.');
+    return { ok: false, skipped: true };
+  }
+
+  let to = String(data.phone || '')
+    .trim()
+    .replace(/[^\d+]/g, '');
+
+  if (to.startsWith('+')) {
+    to = to.slice(1);
+  }
+
+  if (to.startsWith('00')) {
+    to = to.slice(2);
+  }
+
+  // Malaysian local mobile format, e.g. 0164403198 -> 60164403198
+  if (to.startsWith('0') && String(data.country || '').toLowerCase().includes('malaysia')) {
+    to = `60${to.slice(1)}`;
+  }
+
+  if (!to) {
+    console.warn('WhatsApp registration reminder skipped: invalid phone.');
+    return { ok: false, skipped: true };
+  }
+
+  const isChinese = data.language === 'zh';
+  const templateName = 'course_registration_reminder_v1';
+  const languageCode = isChinese ? 'zh_CN' : 'en';
+
+  const response = await fetch(
+    `https://graph.facebook.com/v25.0/${phoneNumberId}/messages`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to,
+        type: 'template',
+        template: {
+          name: templateName,
+          language: {
+            code: languageCode
+          },
+          components: [
+            {
+              type: 'body',
+              parameters: [
+                {
+                  type: 'text',
+                  text: data.name
+                },
+                {
+                  type: 'text',
+                  text: orderInfo.productName
+                }
+              ]
+            }
+          ]
+        }
+      })
+    }
+  );
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    console.error(
+      'WhatsApp registration reminder send failed:',
+      JSON.stringify(result)
+    );
+
+    return {
+      ok: false,
+      status: response.status,
+      result
+    };
+  }
+
+  const waMessageId = result?.messages?.[0]?.id || '';
+
+  console.log(
+    'WhatsApp registration reminder accepted:',
+    templateName,
+    waMessageId
+  );
+
+  if (db && enquiryId && waMessageId) {
+    const renderedText = isChinese
+      ? `您好 ${data.name}，这是关于您之前咨询 ${orderInfo.productName} 的温馨提醒。\n\n目前课程仍开放报名。\n\n如果您需要我们协助报名、了解课程详情或付款安排，欢迎直接回复这则 WhatsApp 信息，我们的团队会协助您。\n\n量子易经国际学院`
+      : `Hello ${data.name}, this is a reminder regarding your interest in ${orderInfo.productName}.\n\nRegistration is currently available.\n\nIf you would like assistance with registration, course details, or payment arrangements, simply reply to this WhatsApp message and our team will assist you.\n\nQuantum YiJing International Academy`;
+
+    try {
+      await db.prepare(`
+        INSERT OR IGNORE INTO whatsapp_messages (
+          wa_message_id,
+          wa_phone_number_id,
+          sender_wa_id,
+          message_type,
+          message_text,
+          message_timestamp,
+          raw_payload,
+          direction,
+          enquiry_id
+        )
+        VALUES (?, ?, ?, 'template', ?, ?, ?, 'outbound', ?)
+      `).bind(
+        waMessageId,
+        phoneNumberId,
+        to,
+        renderedText,
+        Math.floor(Date.now() / 1000),
+        JSON.stringify(result),
+        enquiryId
+      ).run();
+
+      await db.prepare(`
+        INSERT INTO crm_activities (
+          enquiry_id,
+          activity_type,
+          description,
+          activity_date
+        )
+        VALUES (?, 'WhatsApp Template', ?, ?)
+      `).bind(
+        enquiryId,
+        `Course registration WhatsApp reminder sent: ${templateName}`,
+        activityDate
+      ).run();
+    } catch (error) {
+      console.error(
+        'WhatsApp registration reminder logging failed:',
+        error
+      );
+    }
+  }
+
+  return {
+    ok: true,
+    waMessageId,
+    templateName
+  };
+}
+
 function acknowledgementHtml(name, reference, interest, submitted, message) {
   const safeName = escapeHtml(name);
   const safeReference = escapeHtml(reference);
@@ -525,6 +679,25 @@ info@quantumyijing.com`
     } catch (error) {
       console.error(
         'WhatsApp enquiry follow-up failed after enquiry was recorded',
+        error
+      );
+    }
+  }
+
+
+  if (isRegistration) {
+    try {
+      await sendWhatsAppRegistrationReminder(
+        context.env,
+        context.env.ENQUIRIES_DB,
+        data,
+        inserted?.id,
+        submitted,
+        orderInfo
+      );
+    } catch (error) {
+      console.error(
+        'WhatsApp registration reminder failed after registration was recorded',
         error
       );
     }
