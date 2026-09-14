@@ -17,13 +17,20 @@ Your role is to help public visitors with:
 - general Academy enquiries
 
 Language:
-- Always detect the language of the visitor's latest question.
-- If the latest question is in Chinese, answer entirely in Chinese.
-- If the latest question is in English, answer entirely in English.
-- If the visitor mixes English and Chinese, use the dominant language of the question.
+- The visitor's LATEST QUESTION determines the response language and has absolute priority over conversation history and reference-language content.
+- If the latest question is in English, answer entirely in English even if previous messages or verified reference information contain Chinese.
+- If the latest question is in Chinese, answer entirely in Chinese even if previous messages or verified reference information contain English.
+- If the visitor mixes English and Chinese, use the dominant language of the latest question.
+- Do not infer the response language from conversation history.
 - Do not give a bilingual answer unless the visitor specifically requests both languages.
 - Answer the visitor's actual question directly. Do not replace an answer with a generic greeting or introduction.
 - Keep answers clear, concise and professional.
+
+Names and identity:
+- Master Chew Wai Soon's verified Chinese name is 赵辉顺.
+- If a Chinese name for Master Chew Wai Soon is needed, use exactly 赵辉顺.
+- Never translate, transliterate, substitute or invent another Chinese name for Master Chew Wai Soon.
+- Preserve verified personal names exactly as supplied in the Academy reference information.
 
 Intent recognition:
 - Use the visitor's latest question together with recent conversation context to understand the visitor's likely need.
@@ -92,6 +99,27 @@ function cleanHistory(history) {
         }))
         .filter((item) => item.content)
     : [];
+}
+
+
+function detectReplyLanguage(message) {
+  const text = String(message || "");
+  const chineseCount =
+    (text.match(/[\u3400-\u9FFF]/g) || []).length;
+  const latinCount =
+    (text.match(/[A-Za-z]/g) || []).length;
+
+  if (chineseCount === 0) {
+    return "English";
+  }
+
+  if (latinCount === 0) {
+    return "Chinese";
+  }
+
+  return chineseCount > latinCount
+    ? "Chinese"
+    : "English";
 }
 
 function formatDateRange(startsOn, endsOn) {
@@ -315,6 +343,13 @@ export async function generateAcademyAssistantReply({
       ? `CHANNEL: WHATSAPP\nIf the visitor wants to proceed or needs assistance, invite them to reply in this WhatsApp conversation. Do not mention an "Enquire Now" button.`
       : `CHANNEL: WEBSITE\nIf the visitor wants to proceed or needs assistance, you may direct them to the "Enquire Now" button when appropriate.`;
 
+  const replyLanguage =
+    detectReplyLanguage(cleanMessage);
+
+  const languageGuidance =
+    `REQUIRED RESPONSE LANGUAGE: ${replyLanguage}.\n` +
+    `This requirement is based only on the visitor's latest question and overrides the language of conversation history and reference information.`;
+
   const currentProductKnowledge =
     await loadVerifiedProductKnowledge(env);
 
@@ -342,9 +377,10 @@ export async function generateAcademyAssistantReply({
         role: "user",
         content:
           `${channelGuidance}\n\n` +
+          `${languageGuidance}\n\n` +
           `VISITOR'S LATEST QUESTION:\n${cleanMessage}\n\n` +
           `Answer the visitor's latest question directly using the verified reference information above. ` +
-          `Follow the language of the visitor's latest question and the channel guidance above.`
+          `Follow the required response language and the channel guidance above.`
       }
     ],
     temperature: 0.3,
