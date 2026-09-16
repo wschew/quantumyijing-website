@@ -33,6 +33,19 @@ function cleanPhone(value) {
     .slice(0, 30);
 }
 
+async function loadReplyMode(db, phone) {
+  const row = await db.prepare(`
+    SELECT reply_mode
+    FROM whatsapp_conversations
+    WHERE sender_wa_id = ?
+    LIMIT 1
+  `).bind(phone).first();
+
+  return row?.reply_mode === "manual"
+    ? "manual"
+    : "ai";
+}
+
 async function loadConversation(db, phone) {
   const messages = await db.prepare(`
     SELECT
@@ -121,12 +134,16 @@ async function loadConversation(db, phone) {
     }
   }
 
+  const replyMode =
+    await loadReplyMode(db, phone);
+
   return {
     sender_wa_id: phone,
     whatsapp_name: whatsappName,
     message_count: rows.length,
     enquiry_id: enquiryId,
     enquiry: enquiry || null,
+    reply_mode: replyMode,
     messages: rows
   };
 }
@@ -173,6 +190,12 @@ async function loadConversationList(db) {
       m.message_type AS last_message_type,
       m.message_text AS last_message,
 
+      CASE
+        WHEN wc.reply_mode = 'manual'
+        THEN 'manual'
+        ELSE 'ai'
+      END AS reply_mode,
+
       e.reference AS crm_reference,
       e.name AS crm_name,
       e.email AS crm_email,
@@ -189,6 +212,9 @@ async function loadConversationList(db) {
 
     LEFT JOIN whatsapp_messages m
       ON m.id = c.last_message_id
+
+    LEFT JOIN whatsapp_conversations wc
+      ON wc.sender_wa_id = c.sender_wa_id
 
     LEFT JOIN enquiries e
       ON e.id = c.enquiry_id
@@ -277,6 +303,101 @@ export async function onRequestGet({
     return json({
       ok: false,
       error: "Unable to load WhatsApp Inbox"
+    }, 500);
+  }
+}
+
+export async function onRequestPost({
+  request,
+  env
+}) {
+  if (!authorized(request, env)) {
+    return json({
+      error: "Unauthorized"
+    }, 401);
+  }
+
+  const db = dbOf(env);
+
+  if (!db) {
+    return json({
+      error: "Database unavailable"
+    }, 503);
+  }
+
+  try {
+    const body =
+      await request.json().catch(() => ({}));
+
+    const phone =
+      cleanPhone(body.phone);
+
+    const replyMode =
+      body.reply_mode === "manual"
+        ? "manual"
+        : body.reply_mode === "ai"
+          ? "ai"
+          : "";
+
+    if (!phone) {
+      return json({
+        ok: false,
+        error: "Invalid WhatsApp number"
+      }, 400);
+    }
+
+    if (!replyMode) {
+      return json({
+        ok: false,
+        error: "Invalid WhatsApp reply mode"
+      }, 400);
+    }
+
+    const exists = await db.prepare(`
+      SELECT 1
+      FROM whatsapp_messages
+      WHERE sender_wa_id = ?
+      LIMIT 1
+    `).bind(phone).first();
+
+    if (!exists) {
+      return json({
+        ok: false,
+        error: "WhatsApp conversation not found"
+      }, 404);
+    }
+
+    await db.prepare(`
+      INSERT INTO whatsapp_conversations (
+        sender_wa_id,
+        reply_mode,
+        updated_at
+      )
+      VALUES (?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(sender_wa_id)
+      DO UPDATE SET
+        reply_mode = excluded.reply_mode,
+        updated_at = CURRENT_TIMESTAMP
+    `).bind(
+      phone,
+      replyMode
+    ).run();
+
+    return json({
+      ok: true,
+      sender_wa_id: phone,
+      reply_mode: replyMode
+    });
+
+  } catch (error) {
+    console.error(
+      "WhatsApp Inbox reply mode update failed:",
+      error
+    );
+
+    return json({
+      ok: false,
+      error: "Unable to update WhatsApp reply mode"
     }, 500);
   }
 }
