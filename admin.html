@@ -37,6 +37,7 @@
 
       <nav class="module-tabs" aria-label="Academy modules">
   <button id="crmTab" class="module-tab active" type="button">CRM & Follow-up</button>
+  <button id="whatsappTab" class="module-tab" type="button">WhatsApp Inbox</button>
   <button id="studentsTab" class="module-tab" type="button">Students</button>
   <button id="marketingTab" class="module-tab" type="button">Marketing</button>
   <button id="commerceTab" class="module-tab" type="button">Sales & Commerce</button>
@@ -141,7 +142,31 @@
         <p id="dashboardMessage" class="form-message" aria-live="polite"></p>
       </section>
       </div>
+      <div id="whatsappModule" hidden>
+        <section class="page-heading">
+          <div>
+            <p class="eyebrow">QY-AOS - WHATSAPP COMMUNICATION</p>
+            <h1>WhatsApp Inbox</h1>
+            <p>View WhatsApp conversations, customer history and linked CRM records.</p>
+          </div>
+          <button id="whatsappRefreshButton" class="secondary-button" type="button">Refresh</button>
+        </section>
 
+        <section class="panel records-panel">
+          <div class="panel-heading records-heading">
+            <div>
+              <h2>Conversations</h2>
+              <p id="whatsappConversationCount">0 conversations</p>
+            </div>
+          </div>
+
+          <div id="whatsappInboxContent">
+            <p>Select a WhatsApp conversation to view its message history.</p>
+          </div>
+
+          <p id="whatsappDashboardMessage" class="form-message" aria-live="polite"></p>
+        </section>
+      </div>
       <div id="studentsModule" hidden>
         <section class="page-heading">
           <div>

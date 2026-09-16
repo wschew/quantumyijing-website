@@ -193,14 +193,17 @@
   function switchModule(module) {
     state.activeModule = module;
     const crmMode = module === 'crm';
+    const whatsappMode = module === 'whatsapp';
     const studentMode = module === 'students';
     const marketingMode = module === 'marketing';
     const commerceMode = module === 'commerce';
     $('crmModule').hidden = !crmMode;
+    $('whatsappModule').hidden = !whatsappMode;
     $('studentsModule').hidden = !studentMode;
     $('marketingModule').hidden = !marketingMode;
     $('commerceModule').hidden = !commerceMode;
     $('crmTab').classList.toggle('active', crmMode);
+    $('whatsappTab').classList.toggle('active', whatsappMode);
     $('studentsTab').classList.toggle('active', studentMode);
     $('marketingTab').classList.toggle('active', marketingMode);
     $('commerceTab').classList.toggle('active', commerceMode);
@@ -531,6 +534,7 @@
   });
   $('logoutButton').addEventListener('click', () => { sessionStorage.removeItem('qyAdminToken'); state.token=''; $('adminToken').value=''; showLogin(); });
   $('crmTab').addEventListener('click', () => switchModule('crm'));
+  $('whatsappTab').addEventListener('click', () => switchModule('whatsapp'));
   $('studentsTab').addEventListener('click', () => switchModule('students'));
   $('marketingTab').addEventListener('click', () => switchModule('marketing'));
   $('commerceTab').addEventListener('click', () => switchModule('commerce'));
