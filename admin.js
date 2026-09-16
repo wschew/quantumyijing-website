@@ -345,9 +345,14 @@ async function loadWhatsAppConversation(phone) {
           message.message_timestamp ||
           '';
 
+        const messageClass =
+          message.direction === 'outbound'
+            ? 'whatsapp-message whatsapp-outbound'
+            : 'whatsapp-message whatsapp-inbound';
+
         return `
-          <article class="panel">
-            <div class="panel-heading">
+          <article class="${messageClass}">
+            <div class="whatsapp-message-header">
               <strong>${esc(direction)}</strong>
               <small>${esc(timestamp)}</small>
             </div>
