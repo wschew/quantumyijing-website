@@ -207,10 +207,72 @@
     $('studentsTab').classList.toggle('active', studentMode);
     $('marketingTab').classList.toggle('active', marketingMode);
     $('commerceTab').classList.toggle('active', commerceMode);
+    if (whatsappMode) loadWhatsAppInbox().catch(error =>
+      setMessage('whatsappDashboardMessage', error.message)
+    );
     if (studentMode) loadStudentAll().catch(handleStudentError);
     if (marketingMode) loadMarketingStats().catch(handleMarketingError);
     if (commerceMode) loadCommerceAll().catch(handleCommerceError);
   }
+
+  async function loadWhatsAppInbox() {
+  setMessage('whatsappDashboardMessage', 'Loading...', true);
+
+  const response = await api('/api/admin/whatsapp-inbox');
+  const data = await response.json();
+  const conversations = data.conversations || [];
+
+  $('whatsappConversationCount').textContent =
+    `${conversations.length} conversation${conversations.length === 1 ? '' : 's'}`;
+
+  const container = $('whatsappInboxContent');
+
+  if (!conversations.length) {
+    container.innerHTML =
+      '<p>No WhatsApp conversations found.</p>';
+
+    setMessage('whatsappDashboardMessage', '');
+    return;
+  }
+
+  container.innerHTML = conversations.map(row => {
+    const name =
+      row.whatsapp_name ||
+      row.crm_name ||
+      row.sender_wa_id ||
+      'Unknown';
+
+    const crm = row.enquiry_id
+      ? `CRM #${esc(row.enquiry_id)}${row.crm_reference ? ` · ${esc(row.crm_reference)}` : ''}`
+      : 'Not linked to CRM';
+
+    const lastMessage =
+      row.last_message || 'No message text';
+
+    return `
+      <article class="panel">
+        <div class="panel-heading">
+          <div>
+            <h3>${esc(name)}</h3>
+            <p>+${esc(row.sender_wa_id || '')}</p>
+          </div>
+          <strong>${esc(crm)}</strong>
+        </div>
+
+        <p>${esc(lastMessage)}</p>
+
+        <p>
+          <small>
+            ${esc(row.message_count || 0)} messages
+            · ${esc(row.last_direction || '')}
+          </small>
+        </p>
+      </article>
+    `;
+  }).join('');
+
+  setMessage('whatsappDashboardMessage', '');
+}
 
   async function loadMarketingStats() {
     setMessage('marketingDashboardMessage','Loading…',true);
@@ -535,6 +597,11 @@
   $('logoutButton').addEventListener('click', () => { sessionStorage.removeItem('qyAdminToken'); state.token=''; $('adminToken').value=''; showLogin(); });
   $('crmTab').addEventListener('click', () => switchModule('crm'));
   $('whatsappTab').addEventListener('click', () => switchModule('whatsapp'));
+  $('whatsappRefreshButton').addEventListener('click', () =>
+  loadWhatsAppInbox().catch(error =>
+    setMessage('whatsappDashboardMessage', error.message)
+    )
+  );
   $('studentsTab').addEventListener('click', () => switchModule('students'));
   $('marketingTab').addEventListener('click', () => switchModule('marketing'));
   $('commerceTab').addEventListener('click', () => switchModule('commerce'));
