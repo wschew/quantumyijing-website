@@ -159,10 +159,32 @@
               <p id="whatsappConversationCount">0 conversations</p>
             </div>
           </div>
-
           <div id="whatsappInboxContent">
             <p>Select a WhatsApp conversation to view its message history.</p>
           </div>
+
+          <section id="whatsappConversationPanel" class="panel" hidden>
+            <div class="panel-heading">
+              <div>
+                <h2 id="whatsappConversationName">Conversation</h2>
+                <p id="whatsappConversationMeta"></p>
+              </div>
+              <button
+                id="whatsappConversationBack"
+                class="secondary-button"
+                type="button"
+              >
+                Back to conversations
+              </button>
+            </div>
+
+            <div id="whatsappConversationCrm"></div>
+
+            <div
+              id="whatsappConversationMessages"
+              aria-live="polite"
+            ></div>
+          </section>
 
           <p id="whatsappDashboardMessage" class="form-message" aria-live="polite"></p>
         </section>

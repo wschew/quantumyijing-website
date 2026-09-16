@@ -303,11 +303,62 @@ async function loadWhatsAppConversation(phone) {
     throw new Error('WhatsApp conversation not found.');
   }
 
-  console.log(
-    'WhatsApp conversation loaded:',
-    conversation.sender_wa_id,
-    conversation.message_count
-  );
+  const name =
+    conversation.whatsapp_name ||
+    conversation.enquiry?.name ||
+    conversation.sender_wa_id ||
+    'WhatsApp Conversation';
+
+  $('whatsappConversationName').textContent = name;
+
+  $('whatsappConversationMeta').textContent =
+    `+${conversation.sender_wa_id || ''} · ${conversation.message_count || 0} messages`;
+
+  const enquiry = conversation.enquiry;
+
+  $('whatsappConversationCrm').innerHTML = enquiry
+    ? `
+      <p>
+        <strong>CRM:</strong>
+        #${esc(enquiry.id)}
+        ${enquiry.reference ? ` · ${esc(enquiry.reference)}` : ''}
+        ${enquiry.name ? ` · ${esc(enquiry.name)}` : ''}
+      </p>
+    `
+    : '<p><strong>CRM:</strong> Not linked to CRM</p>';
+
+  const messages = conversation.messages || [];
+
+  $('whatsappConversationMessages').innerHTML = messages.length
+    ? messages.map(message => {
+        const direction =
+          message.direction === 'outbound'
+            ? 'QY Academy'
+            : (message.sender_name || name);
+
+        const text =
+          message.message_text ||
+          `[${message.message_type || 'message'}]`;
+
+        const timestamp =
+          message.received_at ||
+          message.message_timestamp ||
+          '';
+
+        return `
+          <article class="panel">
+            <div class="panel-heading">
+              <strong>${esc(direction)}</strong>
+              <small>${esc(timestamp)}</small>
+            </div>
+            <p>${esc(text)}</p>
+          </article>
+        `;
+      }).join('')
+    : '<p>No messages found in this conversation.</p>';
+
+  $('whatsappInboxContent').hidden = true;
+  $('whatsappConversationPanel').hidden = false;
 
   setMessage('whatsappDashboardMessage', '');
 }
@@ -636,10 +687,16 @@ async function loadWhatsAppConversation(phone) {
   $('crmTab').addEventListener('click', () => switchModule('crm'));
   $('whatsappTab').addEventListener('click', () => switchModule('whatsapp'));
   $('whatsappRefreshButton').addEventListener('click', () =>
-  loadWhatsAppInbox().catch(error =>
-    setMessage('whatsappDashboardMessage', error.message)
+    loadWhatsAppInbox().catch(error =>
+      setMessage('whatsappDashboardMessage', error.message)
     )
   );
+
+  $('whatsappConversationBack').addEventListener('click', () => {
+    $('whatsappConversationPanel').hidden = true;
+    $('whatsappInboxContent').hidden = false;
+    setMessage('whatsappDashboardMessage', '');
+  });
   $('studentsTab').addEventListener('click', () => switchModule('students'));
   $('marketingTab').addEventListener('click', () => switchModule('marketing'));
   $('commerceTab').addEventListener('click', () => switchModule('commerce'));
