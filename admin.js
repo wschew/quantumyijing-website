@@ -250,7 +250,12 @@
       row.last_message || 'No message text';
 
     return `
-      <article class="panel">
+      <article
+        class="panel"
+        data-whatsapp-phone="${esc(row.sender_wa_id || '')}"
+        role="button"
+        tabindex="0"
+      >
         <div class="panel-heading">
           <div>
             <h3>${esc(name)}</h3>
@@ -270,6 +275,39 @@
       </article>
     `;
   }).join('');
+
+  setMessage('whatsappDashboardMessage', '');
+}
+
+async function loadWhatsAppConversation(phone) {
+  const cleanPhone = String(phone || '').replace(/\D/g, '');
+
+  if (!cleanPhone) {
+    throw new Error('Invalid WhatsApp number.');
+  }
+
+  setMessage(
+    'whatsappDashboardMessage',
+    'Loading conversation...',
+    true
+  );
+
+  const response = await api(
+    `/api/admin/whatsapp-inbox?phone=${encodeURIComponent(cleanPhone)}`
+  );
+
+  const data = await response.json();
+  const conversation = data.conversation;
+
+  if (!conversation) {
+    throw new Error('WhatsApp conversation not found.');
+  }
+
+  console.log(
+    'WhatsApp conversation loaded:',
+    conversation.sender_wa_id,
+    conversation.message_count
+  );
 
   setMessage('whatsappDashboardMessage', '');
 }
@@ -636,6 +674,21 @@
   $('prevPage').addEventListener('click', async () => { if(state.page>1){state.page--;await loadRecords().catch(handleError);} });
   $('nextPage').addEventListener('click', async () => { if(state.page*state.pageSize<state.total){state.page++;await loadRecords().catch(handleError);} });
   document.addEventListener('click', async e => {
+    const whatsappConversation =
+      e.target.closest('[data-whatsapp-phone]');
+
+    if (whatsappConversation) {
+      const phone =
+        whatsappConversation.dataset.whatsappPhone;
+
+      loadWhatsAppConversation(phone).catch(error =>
+        setMessage(
+          'whatsappDashboardMessage',
+          error.message
+        )
+      );
+    }
+
     const openButton=e.target.closest('[data-open-id]'); if(openButton) openRecordById(Number(openButton.dataset.openId));
     const followButton=e.target.closest('[data-follow-days]'); if(followButton) quickFollowUp(Number(followButton.dataset.followDays));
     const studentButton=e.target.closest('[data-open-student]'); if(studentButton) openStudentById(Number(studentButton.dataset.openStudent));
