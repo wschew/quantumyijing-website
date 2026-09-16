@@ -246,12 +246,17 @@
       ? `CRM #${esc(row.enquiry_id)}${row.crm_reference ? ` · ${esc(row.crm_reference)}` : ''}`
       : 'Not linked to CRM';
 
-    const lastMessage =
+    const fullLastMessage =
       row.last_message || 'No message text';
+
+    const lastMessage =
+      fullLastMessage.length > 120
+        ? `${fullLastMessage.slice(0, 120).trim()}…`
+        : fullLastMessage;
 
     return `
       <article
-        class="panel"
+        class="panel whatsapp-conversation-card"
         data-whatsapp-phone="${esc(row.sender_wa_id || '')}"
         role="button"
         tabindex="0"

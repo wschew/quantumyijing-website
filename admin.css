@@ -88,6 +88,45 @@
 #commerceOrdersBody .money strong{font-size:1.02rem}
 
 /* WhatsApp Inbox */
+#whatsappInboxContent {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.whatsapp-conversation-card {
+  width: 100%;
+  margin: 0;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+.whatsapp-conversation-card:hover {
+  border-color: #b7cee8;
+  box-shadow: 0 8px 22px rgba(13,48,92,.08);
+  transform: translateY(-1px);
+}
+
+.whatsapp-conversation-card:focus-visible {
+  outline: 3px solid rgba(23,104,196,.18);
+  outline-offset: 2px;
+}
+
+.whatsapp-conversation-card h3 {
+  margin: 0 0 3px;
+  color: var(--navy);
+}
+
+.whatsapp-conversation-card > p {
+  margin: 8px 0 0;
+  line-height: 1.45;
+}
+
+.whatsapp-conversation-card small {
+  color: var(--muted);
+}
+
 #whatsappConversationMessages {
   display: flex;
   flex-direction: column;
