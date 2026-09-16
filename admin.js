@@ -6,6 +6,8 @@
     page: 1, pageSize: 25, total: 0, selected: null,
     studentPage: 1, studentPageSize: 25, studentTotal: 0, selectedStudent: null,
     activeModule: 'crm',
+    selectedWhatsAppPhone: '',
+    selectedWhatsAppReplyMode: 'ai',
     products: [],
     orders: [],
     payments: [],
@@ -284,6 +286,101 @@
   setMessage('whatsappDashboardMessage', '');
 }
 
+function renderWhatsAppReplyMode(mode) {
+  const normalized =
+    mode === 'manual' ? 'manual' : 'ai';
+
+  state.selectedWhatsAppReplyMode = normalized;
+
+  const aiButton = $('whatsappReplyModeAi');
+  const manualButton = $('whatsappReplyModeManual');
+  const status = $('whatsappReplyModeStatus');
+
+  aiButton.classList.toggle(
+    'active',
+    normalized === 'ai'
+  );
+
+  manualButton.classList.toggle(
+    'active',
+    normalized === 'manual'
+  );
+
+  aiButton.setAttribute(
+    'aria-pressed',
+    normalized === 'ai' ? 'true' : 'false'
+  );
+
+  manualButton.setAttribute(
+    'aria-pressed',
+    normalized === 'manual' ? 'true' : 'false'
+  );
+
+  status.textContent =
+    normalized === 'manual'
+      ? 'Manual — automatic AI replies are paused.'
+      : 'AI Auto — Academy AI replies automatically.';
+}
+
+async function updateWhatsAppReplyMode(mode) {
+  const phone =
+    state.selectedWhatsAppPhone;
+
+  if (!phone) {
+    throw new Error(
+      'No WhatsApp conversation selected.'
+    );
+  }
+
+  if (mode !== 'ai' && mode !== 'manual') {
+    throw new Error(
+      'Invalid WhatsApp reply mode.'
+    );
+  }
+
+  const aiButton = $('whatsappReplyModeAi');
+  const manualButton = $('whatsappReplyModeManual');
+
+  aiButton.disabled = true;
+  manualButton.disabled = true;
+
+  setMessage(
+    'whatsappDashboardMessage',
+    'Updating reply mode...',
+    true
+  );
+
+  try {
+    const response = await api(
+      '/api/admin/whatsapp-inbox',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          phone,
+          reply_mode: mode
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    renderWhatsAppReplyMode(
+      data.reply_mode
+    );
+
+    setMessage(
+      'whatsappDashboardMessage',
+      data.reply_mode === 'manual'
+        ? 'Manual mode enabled. Automatic AI replies are paused.'
+        : 'AI Auto mode enabled.',
+      true
+    );
+  } finally {
+    aiButton.disabled = false;
+    manualButton.disabled = false;
+  }
+}
+
 async function loadWhatsAppConversation(phone) {
   const cleanPhone = String(phone || '').replace(/\D/g, '');
 
@@ -318,6 +415,13 @@ async function loadWhatsAppConversation(phone) {
 
   $('whatsappConversationMeta').textContent =
     `+${conversation.sender_wa_id || ''} · ${conversation.message_count || 0} messages`;
+
+  state.selectedWhatsAppPhone =
+    conversation.sender_wa_id || cleanPhone;
+
+  renderWhatsAppReplyMode(
+    conversation.reply_mode
+  );
 
   const enquiry = conversation.enquiry;
 
@@ -703,10 +807,29 @@ async function loadWhatsAppConversation(phone) {
   );
 
   $('whatsappConversationBack').addEventListener('click', () => {
+    state.selectedWhatsAppPhone = '';
     $('whatsappConversationPanel').hidden = true;
     $('whatsappInboxContent').hidden = false;
     setMessage('whatsappDashboardMessage', '');
   });
+
+  $('whatsappReplyModeAi').addEventListener('click', () =>
+    updateWhatsAppReplyMode('ai').catch(error =>
+      setMessage(
+        'whatsappDashboardMessage',
+        error.message
+      )
+    )
+  );
+
+  $('whatsappReplyModeManual').addEventListener('click', () =>
+    updateWhatsAppReplyMode('manual').catch(error =>
+      setMessage(
+        'whatsappDashboardMessage',
+        error.message
+      )
+    )
+  );
   $('studentsTab').addEventListener('click', () => switchModule('students'));
   $('marketingTab').addEventListener('click', () => switchModule('marketing'));
   $('commerceTab').addEventListener('click', () => switchModule('commerce'));

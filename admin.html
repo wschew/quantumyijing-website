@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Academy Operating System | Quantum YiJing International Academy</title>
   <link rel="icon" href="images/quantum-yijing-logo.png">
-  <link rel="stylesheet" href="admin.css?v=3.8.1">
+  <link rel="stylesheet" href="admin.css?v=3.8.2">
 </head>
 <body>
   <main class="crm-shell">
@@ -179,6 +179,40 @@
             </div>
 
             <div id="whatsappConversationCrm"></div>
+
+            <div
+              id="whatsappReplyModeControl"
+              class="whatsapp-reply-mode"
+            >
+              <div>
+                <strong>Reply Mode</strong>
+                <p id="whatsappReplyModeStatus">
+                  Loading reply mode...
+                </p>
+              </div>
+
+              <div
+                class="whatsapp-reply-mode-actions"
+                role="group"
+                aria-label="WhatsApp reply mode"
+              >
+                <button
+                  id="whatsappReplyModeAi"
+                  class="secondary-button"
+                  type="button"
+                >
+                  AI Auto
+                </button>
+
+                <button
+                  id="whatsappReplyModeManual"
+                  class="secondary-button"
+                  type="button"
+                >
+                  Manual
+                </button>
+              </div>
+            </div>
 
             <div
               id="whatsappConversationMessages"
@@ -464,6 +498,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=3.3.16e" defer></script>
+  <script src="admin.js?v=3.8.2" defer></script>
 </body>
 </html>
