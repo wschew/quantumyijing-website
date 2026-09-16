@@ -94,6 +94,10 @@
   margin-top: 16px;
 }
 
+#whatsappInboxContent[hidden] {
+  display: none;
+}
+
 .whatsapp-conversation-card {
   width: 100%;
   margin: 0;
