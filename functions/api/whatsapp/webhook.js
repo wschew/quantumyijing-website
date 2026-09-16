@@ -367,6 +367,30 @@ async function loadConversationHistory(
     }));
 }
 
+/*
+ * Return the WhatsApp reply mode for one conversation.
+ *
+ * No settings row means AI mode so existing conversations
+ * keep their current automatic-reply behaviour.
+ */
+async function getWhatsAppReplyMode(
+  db,
+  senderWaId
+) {
+  const row = await db.prepare(`
+    SELECT reply_mode
+    FROM whatsapp_conversations
+    WHERE sender_wa_id = ?
+    LIMIT 1
+  `).bind(
+    senderWaId
+  ).first();
+
+  return row?.reply_mode === "manual"
+    ? "manual"
+    : "ai";
+}
+
 async function sendWhatsAppReply({
   accessToken,
   phoneNumberId,
@@ -930,6 +954,24 @@ export async function onRequestPost(context) {
           outboundPhoneNumberId
         ) {
           try {
+            const replyMode =
+              await getWhatsAppReplyMode(
+                db,
+                senderWaId
+              );
+
+            console.log(
+              "WhatsApp conversation reply mode:",
+              replyMode
+            );
+
+            if (replyMode === "manual") {
+              console.log(
+                "WhatsApp Academy AI reply skipped: manual mode."
+              );
+              continue;
+            }
+
             const history =
               await loadConversationHistory(
                 db,
