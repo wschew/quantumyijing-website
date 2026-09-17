@@ -248,6 +248,15 @@
       ? `CRM #${esc(row.enquiry_id)}${row.crm_reference ? ` · ${esc(row.crm_reference)}` : ''}`
       : 'Not linked to CRM';
 
+    const replyMode =
+      row.reply_mode === 'manual'
+        ? 'manual'
+        : 'ai';
+
+    const replyModeLabel =
+      replyMode === 'manual'
+        ? 'Manual'
+        : 'AI Auto';
     const fullLastMessage =
       row.last_message || 'No message text';
 
@@ -268,7 +277,12 @@
             <h3>${esc(name)}</h3>
             <p>+${esc(row.sender_wa_id || '')}</p>
           </div>
-          <strong>${esc(crm)}</strong>
+          <div class="whatsapp-card-status">
+            <span class="whatsapp-mode-badge whatsapp-mode-${replyMode}">
+              ${replyModeLabel}
+            </span>
+            <strong>${esc(crm)}</strong>
+          </div>
         </div>
 
         <p>${esc(lastMessage)}</p>

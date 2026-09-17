@@ -131,6 +131,37 @@
   color: var(--muted);
 }
 
+.whatsapp-card-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.whatsapp-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.whatsapp-mode-ai {
+  color: #1768c4;
+  background: #eaf3ff;
+  border: 1px solid #cfe0f4;
+}
+
+.whatsapp-mode-manual {
+  color: #7a4b00;
+  background: #fff4d6;
+  border: 1px solid #ead49a;
+}
+
 #whatsappConversationMessages {
   display: flex;
   flex-direction: column;
