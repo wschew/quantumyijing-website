@@ -8,6 +8,7 @@
     activeModule: 'crm',
     selectedWhatsAppPhone: '',
     selectedWhatsAppReplyMode: 'ai',
+    whatsappInboxFilter: 'all',
     products: [],
     orders: [],
     payments: [],
@@ -225,6 +226,13 @@
 
   const params = new URLSearchParams();
   if (search) params.set('q', search);
+
+  if (state.whatsappInboxFilter !== 'all') {
+    params.set(
+      'filter',
+      state.whatsappInboxFilter
+    );
+  }
 
   const endpoint =
     `/api/admin/whatsapp-inbox${params.toString() ? `?${params}` : ''}`;
@@ -942,6 +950,37 @@ async function loadWhatsAppConversation(phone) {
     loadWhatsAppInbox().catch(error =>
       setMessage('whatsappDashboardMessage', error.message)
     );
+  });
+
+  document.querySelectorAll('[data-whatsapp-filter]').forEach(button => {
+    button.addEventListener('click', () => {
+      const filter =
+        button.dataset.whatsappFilter || 'all';
+
+      state.whatsappInboxFilter =
+        ['unread', 'manual', 'ai'].includes(filter)
+          ? filter
+          : 'all';
+
+      document.querySelectorAll('[data-whatsapp-filter]').forEach(item => {
+        const active =
+          item.dataset.whatsappFilter ===
+          state.whatsappInboxFilter;
+
+        item.classList.toggle('active', active);
+        item.setAttribute(
+          'aria-pressed',
+          active ? 'true' : 'false'
+        );
+      });
+
+      loadWhatsAppInbox().catch(error =>
+        setMessage(
+          'whatsappDashboardMessage',
+          error.message
+        )
+      );
+    });
   });
 
   $('whatsappConversationBack').addEventListener('click', () => {

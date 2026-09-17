@@ -366,3 +366,27 @@
     width: 100%;
   }
 }
+
+/* WhatsApp Inbox filters */
+.whatsapp-inbox-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.whatsapp-inbox-filters .secondary-button {
+  padding: 8px 13px;
+}
+
+.whatsapp-inbox-filters .secondary-button.active {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: #fff;
+}
+
+@media (max-width: 680px) {
+  .whatsapp-inbox-filters .secondary-button {
+    flex: 1 1 calc(50% - 4px);
+  }
+}
