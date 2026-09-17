@@ -137,7 +137,20 @@
   align-items: flex-end;
   gap: 6px;
 }
-
+.whatsapp-unread-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  color: #b42318;
+  background: #fff0ee;
+  border: 1px solid #f2c7c2;
+}
 .whatsapp-mode-badge {
   display: inline-flex;
   align-items: center;

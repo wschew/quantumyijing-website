@@ -257,6 +257,15 @@
       replyMode === 'manual'
         ? 'Manual'
         : 'AI Auto';
+
+    const unreadCount =
+      Math.max(0, Number(row.unread_count) || 0);
+
+    const unreadLabel =
+      unreadCount > 0
+        ? `NEW · ${unreadCount}`
+        : '';
+
     const fullLastMessage =
       row.last_message || 'No message text';
 
@@ -278,6 +287,11 @@
             <p>+${esc(row.sender_wa_id || '')}</p>
           </div>
           <div class="whatsapp-card-status">
+            ${unreadCount > 0 ? `
+              <span class="whatsapp-unread-badge">
+                ${esc(unreadLabel)}
+              </span>
+            ` : ''}
             <span class="whatsapp-mode-badge whatsapp-mode-${replyMode}">
               ${replyModeLabel}
             </span>
@@ -478,6 +492,23 @@ async function loadWhatsAppConversation(phone) {
 
   if (!conversation) {
     throw new Error('WhatsApp conversation not found.');
+  }
+
+  const markReadResponse = await api(
+    '/api/admin/whatsapp-inbox',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        phone: cleanPhone,
+        action: 'mark_read'
+      })
+    }
+  );
+
+  if (!markReadResponse.ok) {
+    console.warn(
+      'Unable to mark WhatsApp conversation as read.'
+    );
   }
 
   const name =
@@ -895,7 +926,13 @@ async function loadWhatsAppConversation(phone) {
     }
     $('whatsappConversationPanel').hidden = true;
     $('whatsappInboxContent').hidden = false;
-    setMessage('whatsappDashboardMessage', '');
+
+      loadWhatsAppInbox().catch(error =>
+        setMessage(
+          'whatsappDashboardMessage',
+        error.message
+      )
+    );
   });
 
   $('whatsappReplyModeAi').addEventListener('click', () =>
