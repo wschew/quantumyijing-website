@@ -220,7 +220,16 @@
   async function loadWhatsAppInbox() {
   setMessage('whatsappDashboardMessage', 'Loading...', true);
 
-  const response = await api('/api/admin/whatsapp-inbox');
+  const search =
+    $('whatsappInboxSearch')?.value.trim() || '';
+
+  const params = new URLSearchParams();
+  if (search) params.set('q', search);
+
+  const endpoint =
+    `/api/admin/whatsapp-inbox${params.toString() ? `?${params}` : ''}`;
+
+  const response = await api(endpoint);
   const data = await response.json();
   const conversations = data.conversations || [];
 
@@ -916,6 +925,24 @@ async function loadWhatsAppConversation(phone) {
       setMessage('whatsappDashboardMessage', error.message)
     )
   );
+
+  $('whatsappInboxSearch').addEventListener('keydown', event => {
+    if (event.key !== 'Enter') return;
+
+    event.preventDefault();
+
+    loadWhatsAppInbox().catch(error =>
+      setMessage('whatsappDashboardMessage', error.message)
+    );
+  });
+
+  $('whatsappInboxSearchClear').addEventListener('click', () => {
+    $('whatsappInboxSearch').value = '';
+
+    loadWhatsAppInbox().catch(error =>
+      setMessage('whatsappDashboardMessage', error.message)
+    );
+  });
 
   $('whatsappConversationBack').addEventListener('click', () => {
     state.selectedWhatsAppPhone = '';
