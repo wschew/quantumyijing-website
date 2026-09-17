@@ -257,3 +257,68 @@
     flex: 1;
   }
 }
+
+/* WhatsApp Inbox manual reply composer */
+.whatsapp-manual-reply {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.whatsapp-manual-reply label {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.whatsapp-manual-reply label strong {
+  color: var(--navy);
+}
+
+.whatsapp-manual-reply label span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.whatsapp-manual-reply textarea {
+  min-height: 104px;
+  resize: vertical;
+}
+
+.whatsapp-manual-reply textarea[disabled] {
+  background: #f3f6f9;
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.whatsapp-manual-reply-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.whatsapp-manual-reply-actions span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.whatsapp-manual-reply-actions .primary-button[disabled] {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 680px) {
+  .whatsapp-manual-reply-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .whatsapp-manual-reply-actions .primary-button {
+    width: 100%;
+  }
+}

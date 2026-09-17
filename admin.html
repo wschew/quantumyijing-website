@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Academy Operating System | Quantum YiJing International Academy</title>
   <link rel="icon" href="images/quantum-yijing-logo.png">
-  <link rel="stylesheet" href="admin.css?v=3.8.2">
+  <link rel="stylesheet" href="admin.css?v=3.8.3">
 </head>
 <body>
   <main class="crm-shell">
@@ -210,6 +210,34 @@
                   type="button"
                 >
                   Manual
+                </button>
+              </div>
+            </div>
+
+            <div
+              id="whatsappManualReplyComposer"
+              class="whatsapp-manual-reply"
+            >
+              <label for="whatsappManualReplyMessage">
+                <strong>Manual Reply</strong>
+                <span id="whatsappManualReplyHelp">Switch to Manual mode to send a staff reply.</span>
+              </label>
+              <textarea
+                id="whatsappManualReplyMessage"
+                rows="4"
+                maxlength="4096"
+                placeholder="Type a reply to this WhatsApp conversation..."
+                disabled
+              ></textarea>
+              <div class="whatsapp-manual-reply-actions">
+                <span id="whatsappManualReplyCount">0 / 4096</span>
+                <button
+                  id="whatsappManualReplySend"
+                  class="primary-button"
+                  type="button"
+                  disabled
+                >
+                  Send Reply
                 </button>
               </div>
             </div>
@@ -498,6 +526,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=3.8.2" defer></script>
+  <script src="admin.js?v=3.8.3" defer></script>
 </body>
 </html>
