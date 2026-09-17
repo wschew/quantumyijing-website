@@ -33,6 +33,12 @@ function cleanPhone(value) {
     .slice(0, 30);
 }
 
+function cleanSearch(value) {
+  return String(value || "")
+    .trim()
+    .slice(0, 120);
+}
+
 async function loadReplyMode(db, phone) {
   const row = await db.prepare(`
     SELECT reply_mode
@@ -148,7 +154,7 @@ async function loadConversation(db, phone) {
   };
 }
 
-async function loadConversationList(db) {
+async function loadConversationList(db, search = "") {
   const result = await db.prepare(`
     WITH conversations AS (
       SELECT
@@ -230,12 +236,26 @@ async function loadConversationList(db) {
     LEFT JOIN enquiries e
       ON e.id = c.enquiry_id
 
+    WHERE (
+      ? = ''
+      OR c.sender_wa_id LIKE ?
+      OR c.whatsapp_name LIKE ?
+      OR e.name LIKE ?
+      OR e.reference LIKE ?
+    )
+
     ORDER BY
       c.last_message_timestamp DESC,
       c.last_message_id DESC
 
     LIMIT 200
-  `).all();
+  `).bind(
+    search,
+    `%${search}%`,
+    `%${search}%`,
+    `%${search}%`,
+    `%${search}%`
+  ).all();
 
   return result.results || [];
 }
@@ -262,6 +282,9 @@ export async function onRequestGet({
     const url = new URL(request.url);
     const requestedPhone =
       url.searchParams.get("phone");
+
+    const search =
+      cleanSearch(url.searchParams.get("q"));
 
     /*
      * Detail mode:
@@ -298,7 +321,7 @@ export async function onRequestGet({
      * GET /api/admin/whatsapp-inbox
      */
     const conversations =
-      await loadConversationList(db);
+      await loadConversationList(db, search);
 
     return json({
       ok: true,
