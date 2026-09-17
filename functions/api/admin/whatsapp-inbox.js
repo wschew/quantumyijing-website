@@ -196,6 +196,17 @@ async function loadConversationList(db) {
         ELSE 'ai'
       END AS reply_mode,
 
+      (
+        SELECT COUNT(*)
+        FROM whatsapp_messages unread
+        WHERE unread.sender_wa_id = c.sender_wa_id
+          AND unread.direction = 'inbound'
+          AND unread.id > COALESCE(
+            wc.last_read_message_id,
+            0
+          )
+      ) AS unread_count,
+
       e.reference AS crm_reference,
       e.name AS crm_name,
       e.email AS crm_email,
@@ -332,24 +343,10 @@ export async function onRequestPost({
     const phone =
       cleanPhone(body.phone);
 
-    const replyMode =
-      body.reply_mode === "manual"
-        ? "manual"
-        : body.reply_mode === "ai"
-          ? "ai"
-          : "";
-
     if (!phone) {
       return json({
         ok: false,
         error: "Invalid WhatsApp number"
-      }, 400);
-    }
-
-    if (!replyMode) {
-      return json({
-        ok: false,
-        error: "Invalid WhatsApp reply mode"
       }, 400);
     }
 
@@ -365,6 +362,68 @@ export async function onRequestPost({
         ok: false,
         error: "WhatsApp conversation not found"
       }, 404);
+    }
+
+    if (body.action === "mark_read") {
+      const latest = await db.prepare(`
+        SELECT MAX(id) AS last_message_id
+        FROM whatsapp_messages
+        WHERE sender_wa_id = ?
+      `).bind(phone).first();
+
+      const lastReadMessageId =
+        Number(latest?.last_message_id || 0);
+
+      if (!Number.isInteger(lastReadMessageId) ||
+          lastReadMessageId <= 0) {
+        return json({
+          ok: false,
+          error: "WhatsApp conversation not found"
+        }, 404);
+      }
+
+      await db.prepare(`
+        INSERT INTO whatsapp_conversations (
+          sender_wa_id,
+          reply_mode,
+          last_read_message_id,
+          updated_at
+        )
+        VALUES (?, 'ai', ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(sender_wa_id)
+        DO UPDATE SET
+          last_read_message_id =
+            excluded.last_read_message_id,
+          updated_at = CURRENT_TIMESTAMP
+      `).bind(
+        phone,
+        lastReadMessageId
+      ).run();
+
+      const replyMode =
+        await loadReplyMode(db, phone);
+
+      return json({
+        ok: true,
+        sender_wa_id: phone,
+        action: "mark_read",
+        last_read_message_id: lastReadMessageId,
+        reply_mode: replyMode
+      });
+    }
+
+    const replyMode =
+      body.reply_mode === "manual"
+        ? "manual"
+        : body.reply_mode === "ai"
+          ? "ai"
+          : "";
+
+    if (!replyMode) {
+      return json({
+        ok: false,
+        error: "Invalid WhatsApp reply mode"
+      }, 400);
     }
 
     await db.prepare(`
@@ -391,13 +450,13 @@ export async function onRequestPost({
 
   } catch (error) {
     console.error(
-      "WhatsApp Inbox reply mode update failed:",
+      "WhatsApp Inbox update failed:",
       error
     );
 
     return json({
       ok: false,
-      error: "Unable to update WhatsApp reply mode"
+      error: "Unable to update WhatsApp Inbox"
     }, 500);
   }
 }
