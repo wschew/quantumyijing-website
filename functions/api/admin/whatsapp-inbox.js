@@ -39,6 +39,16 @@ function cleanSearch(value) {
     .slice(0, 120);
 }
 
+function cleanFilter(value) {
+  const filter = String(value || "")
+    .trim()
+    .toLowerCase();
+
+  return ["unread", "manual", "ai"].includes(filter)
+    ? filter
+    : "all";
+}
+
 async function loadReplyMode(db, phone) {
   const row = await db.prepare(`
     SELECT reply_mode
@@ -154,7 +164,7 @@ async function loadConversation(db, phone) {
   };
 }
 
-async function loadConversationList(db, search = "") {
+async function loadConversationList(db, search = "", filter = "all") {
   const result = await db.prepare(`
     WITH conversations AS (
       SELECT
@@ -243,6 +253,34 @@ async function loadConversationList(db, search = "") {
       OR e.name LIKE ?
       OR e.reference LIKE ?
     )
+      AND (
+        ? = 'all'
+        OR (
+          ? = 'manual'
+          AND wc.reply_mode = 'manual'
+        )
+        OR (
+          ? = 'ai'
+          AND (
+            wc.reply_mode = 'ai'
+            OR wc.reply_mode IS NULL
+          )
+        )
+        OR (
+          ? = 'unread'
+          AND (
+            SELECT COUNT(*)
+            FROM whatsapp_messages unread_filter
+            WHERE unread_filter.sender_wa_id =
+              c.sender_wa_id
+              AND unread_filter.direction = 'inbound'
+              AND unread_filter.id > COALESCE(
+                wc.last_read_message_id,
+                0
+              )
+          ) > 0
+        )
+      )
 
     ORDER BY
       c.last_message_timestamp DESC,
@@ -254,7 +292,11 @@ async function loadConversationList(db, search = "") {
     `%${search}%`,
     `%${search}%`,
     `%${search}%`,
-    `%${search}%`
+    `%${search}%`,
+    filter,
+    filter,
+    filter,
+    filter
   ).all();
 
   return result.results || [];
@@ -285,6 +327,9 @@ export async function onRequestGet({
 
     const search =
       cleanSearch(url.searchParams.get("q"));
+
+    const filter =
+      cleanFilter(url.searchParams.get("filter"));
 
     /*
      * Detail mode:
@@ -321,7 +366,11 @@ export async function onRequestGet({
      * GET /api/admin/whatsapp-inbox
      */
     const conversations =
-      await loadConversationList(db, search);
+      await loadConversationList(
+        db,
+        search,
+        filter
+      );
 
     return json({
       ok: true,
