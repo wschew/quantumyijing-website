@@ -44,7 +44,14 @@ function cleanFilter(value) {
     .trim()
     .toLowerCase();
 
-  return ["unread", "manual", "ai"].includes(filter)
+  return [
+    "unread",
+    "manual",
+    "ai",
+    "open",
+    "follow_up",
+    "closed"
+  ].includes(filter)
     ? filter
     : "all";
 }
@@ -305,6 +312,21 @@ async function loadConversationList(db, search = "", filter = "all") {
               )
           ) > 0
         )
+        OR (
+          ? = 'open'
+          AND (
+            wc.conversation_status = 'open'
+            OR wc.conversation_status IS NULL
+          )
+        )
+        OR (
+          ? = 'follow_up'
+          AND wc.conversation_status = 'follow_up'
+        )
+        OR (
+          ? = 'closed'
+          AND wc.conversation_status = 'closed'
+        )
       )
 
     ORDER BY
@@ -318,6 +340,9 @@ async function loadConversationList(db, search = "", filter = "all") {
     `%${search}%`,
     `%${search}%`,
     `%${search}%`,
+    filter,
+    filter,
+    filter,
     filter,
     filter,
     filter,
