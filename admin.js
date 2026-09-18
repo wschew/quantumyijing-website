@@ -355,6 +355,20 @@
   setMessage('whatsappDashboardMessage', '');
 }
 
+function showWhatsAppConversationList() {
+  state.selectedWhatsAppPhone = '';
+  state.selectedWhatsAppReplyMode = 'ai';
+  state.selectedWhatsAppConversationStatus = 'open';
+
+  if ($('whatsappManualReplyMessage')) {
+    $('whatsappManualReplyMessage').value = '';
+    updateWhatsAppManualReplyCount();
+  }
+
+  $('whatsappConversationPanel').hidden = true;
+  $('whatsappInboxContent').hidden = false;
+}
+
 function renderWhatsAppReplyMode(mode) {
   const normalized =
     mode === 'manual' ? 'manual' : 'ai';
@@ -1060,6 +1074,8 @@ async function loadWhatsAppConversation(phone) {
     if (event.key !== 'Enter') return;
 
     event.preventDefault();
+
+    showWhatsAppConversationList();
 
     loadWhatsAppInbox().catch(error =>
       setMessage('whatsappDashboardMessage', error.message)
