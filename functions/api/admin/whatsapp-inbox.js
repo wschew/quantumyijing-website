@@ -62,6 +62,19 @@ async function loadReplyMode(db, phone) {
     : "ai";
 }
 
+async function loadConversationStatus(db, phone) {
+  const row = await db.prepare(`
+    SELECT conversation_status
+    FROM whatsapp_conversations
+    WHERE sender_wa_id = ?
+    LIMIT 1
+  `).bind(phone).first();
+
+  return ["follow_up", "closed"].includes(row?.conversation_status)
+    ? row.conversation_status
+    : "open";
+}
+
 async function loadConversation(db, phone) {
   const messages = await db.prepare(`
     SELECT
@@ -153,6 +166,9 @@ async function loadConversation(db, phone) {
   const replyMode =
     await loadReplyMode(db, phone);
 
+  const conversationStatus =
+    await loadConversationStatus(db, phone);
+
   return {
     sender_wa_id: phone,
     whatsapp_name: whatsappName,
@@ -160,6 +176,7 @@ async function loadConversation(db, phone) {
     enquiry_id: enquiryId,
     enquiry: enquiry || null,
     reply_mode: replyMode,
+    conversation_status: conversationStatus,
     messages: rows
   };
 }
@@ -211,6 +228,14 @@ async function loadConversationList(db, search = "", filter = "all") {
         THEN 'manual'
         ELSE 'ai'
       END AS reply_mode,
+
+      CASE
+        WHEN wc.conversation_status = 'follow_up'
+        THEN 'follow_up'
+        WHEN wc.conversation_status = 'closed'
+        THEN 'closed'
+        ELSE 'open'
+      END AS conversation_status,
 
       (
         SELECT COUNT(*)
@@ -480,6 +505,51 @@ export async function onRequestPost({
         sender_wa_id: phone,
         action: "mark_read",
         last_read_message_id: lastReadMessageId,
+        reply_mode: replyMode
+      });
+    }
+
+    if (body.action === "set_status") {
+      const conversationStatus =
+        ["open", "follow_up", "closed"].includes(
+          body.conversation_status
+        )
+          ? body.conversation_status
+          : "";
+
+      if (!conversationStatus) {
+        return json({
+          ok: false,
+          error: "Invalid WhatsApp conversation status"
+        }, 400);
+      }
+
+      await db.prepare(`
+        INSERT INTO whatsapp_conversations (
+          sender_wa_id,
+          reply_mode,
+          conversation_status,
+          updated_at
+        )
+        VALUES (?, 'ai', ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(sender_wa_id)
+        DO UPDATE SET
+          conversation_status =
+            excluded.conversation_status,
+          updated_at = CURRENT_TIMESTAMP
+      `).bind(
+        phone,
+        conversationStatus
+      ).run();
+
+      const replyMode =
+        await loadReplyMode(db, phone);
+
+      return json({
+        ok: true,
+        sender_wa_id: phone,
+        action: "set_status",
+        conversation_status: conversationStatus,
         reply_mode: replyMode
       });
     }
