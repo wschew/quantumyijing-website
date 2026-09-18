@@ -39,6 +39,19 @@ function cleanSearch(value) {
     .slice(0, 120);
 }
 
+
+function cleanFollowUpDate(value) {
+  return String(value || "")
+    .trim()
+    .slice(0, 10);
+}
+
+function cleanNextAction(value) {
+  return String(value || "")
+    .trim()
+    .slice(0, 300);
+}
+
 function cleanFilter(value) {
   const filter = String(value || "")
     .trim()
@@ -604,6 +617,96 @@ export async function onRequestPost({
         action: "mark_read",
         last_read_message_id: lastReadMessageId,
         reply_mode: replyMode
+      });
+    }
+
+    if (body.action === "set_follow_up") {
+      const followUpDate = cleanFollowUpDate(body.follow_up_date);
+      const nextAction = cleanNextAction(body.next_action);
+
+      if (followUpDate && !/^\d{4}-\d{2}-\d{2}$/.test(followUpDate)) {
+        return json({ ok: false, error: "Invalid follow-up date" }, 400);
+      }
+
+      const enquiryId = await loadLatestEnquiryId(db, phone);
+
+      if (!enquiryId) {
+        return json({
+          ok: false,
+          error: "WhatsApp conversation is not linked to CRM"
+        }, 409);
+      }
+
+      const current = await db.prepare(`
+        SELECT follow_up_date, next_action
+        FROM enquiries
+        WHERE id = ?
+        LIMIT 1
+      `).bind(enquiryId).first();
+
+      if (!current) {
+        return json({
+          ok: false,
+          error: "Linked CRM enquiry not found"
+        }, 404);
+      }
+
+      const previousFollowUpDate = String(current.follow_up_date || "");
+      const previousNextAction = String(current.next_action || "");
+      const changed =
+        previousFollowUpDate !== followUpDate ||
+        previousNextAction !== nextAction;
+
+      if (changed) {
+        await db.prepare(`
+          UPDATE enquiries
+          SET follow_up_date = ?,
+              next_action = ?,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).bind(followUpDate, nextAction, enquiryId).run();
+
+        const changes = [];
+
+        if (previousFollowUpDate !== followUpDate) {
+          changes.push(
+            followUpDate
+              ? `Follow-up scheduled for ${followUpDate}.`
+              : "Follow-up date cleared."
+          );
+        }
+
+        if (previousNextAction !== nextAction) {
+          changes.push(
+            nextAction
+              ? `Next action: ${nextAction}.`
+              : "Next action cleared."
+          );
+        }
+
+        try {
+          await logCrmActivity({
+            db,
+            enquiryId,
+            activityType: "WhatsApp Follow-up",
+            description: changes.join(" ")
+          });
+        } catch (error) {
+          console.error(
+            "WhatsApp follow-up CRM activity failed:",
+            error instanceof Error ? error.message : "Unknown error"
+          );
+        }
+      }
+
+      return json({
+        ok: true,
+        sender_wa_id: phone,
+        action: "set_follow_up",
+        enquiry_id: enquiryId,
+        follow_up_date: followUpDate,
+        next_action: nextAction,
+        changed
       });
     }
 
