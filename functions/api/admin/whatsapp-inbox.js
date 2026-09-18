@@ -85,6 +85,63 @@ async function loadConversationStatus(db, phone) {
     : "open";
 }
 
+
+async function loadLatestEnquiryId(db, phone) {
+  const row = await db.prepare(`
+    SELECT enquiry_id
+    FROM whatsapp_messages
+    WHERE sender_wa_id = ?
+      AND enquiry_id IS NOT NULL
+    ORDER BY
+      COALESCE(message_timestamp, 0) DESC,
+      id DESC
+    LIMIT 1
+  `).bind(phone).first();
+
+  const enquiryId = Number(row?.enquiry_id);
+
+  return Number.isInteger(enquiryId) && enquiryId > 0
+    ? enquiryId
+    : null;
+}
+
+async function logCrmActivity({
+  db,
+  enquiryId,
+  activityType,
+  description
+}) {
+  if (!enquiryId) {
+    return;
+  }
+
+  const activityDate =
+    new Date().toISOString();
+
+  await db.prepare(`
+    INSERT INTO crm_activities (
+      enquiry_id,
+      activity_type,
+      description,
+      activity_date
+    )
+    VALUES (?, ?, ?, ?)
+  `).bind(
+    enquiryId,
+    activityType,
+    description,
+    activityDate
+  ).run();
+}
+
+function conversationStatusLabel(status) {
+  return status === "follow_up"
+    ? "Follow Up"
+    : status === "closed"
+      ? "Closed"
+      : "Open";
+}
+
 async function loadConversation(db, phone) {
   const messages = await db.prepare(`
     SELECT
@@ -565,6 +622,12 @@ export async function onRequestPost({
         }, 400);
       }
 
+      const previousStatus =
+        await loadConversationStatus(db, phone);
+
+      const enquiryId =
+        await loadLatestEnquiryId(db, phone);
+
       await db.prepare(`
         INSERT INTO whatsapp_conversations (
           sender_wa_id,
@@ -582,6 +645,29 @@ export async function onRequestPost({
         phone,
         conversationStatus
       ).run();
+
+      if (
+        previousStatus !== conversationStatus &&
+        enquiryId
+      ) {
+        try {
+          await logCrmActivity({
+            db,
+            enquiryId,
+            activityType:
+              "WhatsApp Conversation Status",
+            description:
+              `WhatsApp conversation status changed from ${conversationStatusLabel(previousStatus)} to ${conversationStatusLabel(conversationStatus)}.`
+          });
+        } catch (error) {
+          console.error(
+            "WhatsApp conversation status CRM activity failed:",
+            error instanceof Error
+              ? error.message
+              : "Unknown error"
+          );
+        }
+      }
 
       const replyMode =
         await loadReplyMode(db, phone);
