@@ -1085,6 +1085,8 @@ async function loadWhatsAppConversation(phone) {
   $('whatsappInboxSearchClear').addEventListener('click', () => {
     $('whatsappInboxSearch').value = '';
 
+    showWhatsAppConversationList();
+
     loadWhatsAppInbox().catch(error =>
       setMessage('whatsappDashboardMessage', error.message)
     );
