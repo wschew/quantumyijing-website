@@ -296,6 +296,22 @@
           ? 'Closed'
           : 'Open';
 
+    const followUpDate =
+      String(row.crm_follow_up_date || '').trim();
+
+    const nextAction =
+      String(row.crm_next_action || '').trim();
+
+    const followUpIndicator =
+      followUpDate || nextAction
+        ? `
+          <p class="whatsapp-follow-up-indicator">
+            <strong>Follow-up${followUpDate ? ` · ${esc(followUpDate)}` : ''}</strong>
+            ${nextAction ? `<br><small>${esc(nextAction)}</small>` : ''}
+          </p>
+        `
+        : '';
+
     const unreadCount =
       Math.max(0, Number(row.unread_count) || 0);
 
@@ -341,6 +357,8 @@
         </div>
 
         <p>${esc(lastMessage)}</p>
+
+        ${followUpIndicator}
 
         <p>
           <small>
