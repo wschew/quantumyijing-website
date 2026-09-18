@@ -335,6 +335,47 @@
             </div>
 
             <div
+              id="whatsappFollowUpControl"
+              class="whatsapp-manual-reply"
+            >
+              <label for="whatsappFollowUpDate">
+                <strong>CRM Follow-up</strong>
+                <span id="whatsappFollowUpHelp">Set the next CRM follow-up for this WhatsApp contact.</span>
+              </label>
+
+              <div class="edit-grid edit-grid-v25">
+                <label>
+                  Follow-up Date
+                  <input
+                    id="whatsappFollowUpDate"
+                    type="date"
+                  >
+                </label>
+
+                <label>
+                  Next Action
+                  <input
+                    id="whatsappFollowUpNextAction"
+                    type="text"
+                    maxlength="300"
+                    placeholder="e.g. Send course brochure"
+                  >
+                </label>
+              </div>
+
+              <div class="whatsapp-manual-reply-actions">
+                <span id="whatsappFollowUpStatus"></span>
+                <button
+                  id="whatsappFollowUpSave"
+                  class="primary-button"
+                  type="button"
+                >
+                  Save Follow-up
+                </button>
+              </div>
+            </div>
+
+            <div
               id="whatsappManualReplyComposer"
               class="whatsapp-manual-reply"
             >

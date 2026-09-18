@@ -501,6 +501,103 @@ async function updateWhatsAppConversationStatus(status) {
   }
 }
 
+function renderWhatsAppFollowUp(enquiry) {
+  const dateInput = $('whatsappFollowUpDate');
+  const nextActionInput = $('whatsappFollowUpNextAction');
+  const saveButton = $('whatsappFollowUpSave');
+  const help = $('whatsappFollowUpHelp');
+  const status = $('whatsappFollowUpStatus');
+
+  if (!dateInput || !nextActionInput || !saveButton || !help || !status) {
+    return;
+  }
+
+  const linked = Boolean(enquiry?.id);
+
+  dateInput.value = linked
+    ? String(enquiry.follow_up_date || '')
+    : '';
+
+  nextActionInput.value = linked
+    ? String(enquiry.next_action || '')
+    : '';
+
+  dateInput.disabled = !linked;
+  nextActionInput.disabled = !linked;
+  saveButton.disabled = !linked;
+
+  help.textContent = linked
+    ? `Linked to CRM #${enquiry.id}${enquiry.reference ? ` · ${enquiry.reference}` : ''}.`
+    : 'This WhatsApp conversation is not linked to CRM.';
+
+  status.textContent = '';
+}
+
+async function saveWhatsAppFollowUp() {
+  const phone = state.selectedWhatsAppPhone;
+  const dateInput = $('whatsappFollowUpDate');
+  const nextActionInput = $('whatsappFollowUpNextAction');
+  const saveButton = $('whatsappFollowUpSave');
+  const status = $('whatsappFollowUpStatus');
+
+  if (!phone) {
+    throw new Error('No WhatsApp conversation selected.');
+  }
+
+  if (!dateInput || !nextActionInput || !saveButton || !status) {
+    throw new Error('WhatsApp follow-up controls are unavailable.');
+  }
+
+  const followUpDate = dateInput.value;
+  const nextAction = nextActionInput.value.trim();
+
+  saveButton.disabled = true;
+  saveButton.textContent = 'Saving...';
+  status.textContent = 'Saving follow-up...';
+
+  try {
+    const response = await api(
+      '/api/admin/whatsapp-inbox',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          phone,
+          action: 'set_follow_up',
+          follow_up_date: followUpDate,
+          next_action: nextAction
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    await loadWhatsAppConversation(phone);
+
+    const refreshedStatus = $('whatsappFollowUpStatus');
+    if (refreshedStatus) {
+      refreshedStatus.textContent = data.changed
+        ? 'Follow-up saved to CRM.'
+        : 'No follow-up changes to save.';
+    }
+
+    setMessage(
+      'whatsappDashboardMessage',
+      data.changed
+        ? 'CRM follow-up saved.'
+        : 'CRM follow-up is unchanged.',
+      true
+    );
+  } finally {
+    saveButton.textContent = 'Save Follow-up';
+
+    if (!saveButton.disabled) {
+      return;
+    }
+
+    saveButton.disabled = false;
+  }
+}
+
 function renderWhatsAppManualReplyComposer() {
   const textarea = $('whatsappManualReplyMessage');
   const sendButton = $('whatsappManualReplySend');
@@ -688,6 +785,8 @@ async function loadWhatsAppConversation(phone) {
   );
 
   const enquiry = conversation.enquiry;
+
+  renderWhatsAppFollowUp(enquiry);
 
   $('whatsappConversationCrm').innerHTML = enquiry
     ? `
@@ -1219,6 +1318,17 @@ async function loadWhatsAppConversation(phone) {
         error.message
       )
     )
+  );
+
+  $('whatsappFollowUpSave').addEventListener('click', () =>
+    saveWhatsAppFollowUp().catch(error => {
+      const status = $('whatsappFollowUpStatus');
+      if (status) status.textContent = error.message;
+      setMessage(
+        'whatsappDashboardMessage',
+        error.message
+      );
+    })
   );
 
   $('whatsappManualReplyMessage').addEventListener('input',
