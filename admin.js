@@ -10,6 +10,7 @@
     selectedWhatsAppReplyMode: 'ai',
     selectedWhatsAppConversationStatus: 'open',
     whatsappInboxFilter: 'all',
+    whatsappInboxStatusFilter: 'all',
     products: [],
     orders: [],
     payments: [],
@@ -235,6 +236,13 @@
     );
   }
 
+  if (state.whatsappInboxStatusFilter !== 'all') {
+    params.set(
+      'status',
+      state.whatsappInboxStatusFilter
+    );
+  }
+
   const endpoint =
     `/api/admin/whatsapp-inbox${params.toString() ? `?${params}` : ''}`;
 
@@ -276,6 +284,18 @@
         ? 'Manual'
         : 'AI Auto';
 
+    const conversationStatus =
+      ['follow_up', 'closed'].includes(row.conversation_status)
+        ? row.conversation_status
+        : 'open';
+
+    const conversationStatusLabel =
+      conversationStatus === 'follow_up'
+        ? 'Follow Up'
+        : conversationStatus === 'closed'
+          ? 'Closed'
+          : 'Open';
+
     const unreadCount =
       Math.max(0, Number(row.unread_count) || 0);
 
@@ -312,6 +332,9 @@
             ` : ''}
             <span class="whatsapp-mode-badge whatsapp-mode-${replyMode}">
               ${replyModeLabel}
+            </span>
+            <span class="whatsapp-mode-badge">
+              ${esc(conversationStatusLabel)}
             </span>
             <strong>${esc(crm)}</strong>
           </div>
@@ -1065,6 +1088,37 @@ async function loadWhatsAppConversation(phone) {
         const active =
           item.dataset.whatsappFilter ===
           state.whatsappInboxFilter;
+
+        item.classList.toggle('active', active);
+        item.setAttribute(
+          'aria-pressed',
+          active ? 'true' : 'false'
+        );
+      });
+
+      loadWhatsAppInbox().catch(error =>
+        setMessage(
+          'whatsappDashboardMessage',
+          error.message
+        )
+      );
+    });
+  });
+
+  document.querySelectorAll('[data-whatsapp-status-filter]').forEach(button => {
+    button.addEventListener('click', () => {
+      const statusFilter =
+        button.dataset.whatsappStatusFilter || 'all';
+
+      state.whatsappInboxStatusFilter =
+        ['open', 'follow_up', 'closed'].includes(statusFilter)
+          ? statusFilter
+          : 'all';
+
+      document.querySelectorAll('[data-whatsapp-status-filter]').forEach(item => {
+        const active =
+          item.dataset.whatsappStatusFilter ===
+          state.whatsappInboxStatusFilter;
 
         item.classList.toggle('active', active);
         item.setAttribute(
