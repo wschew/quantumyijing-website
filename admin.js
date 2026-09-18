@@ -1147,6 +1147,8 @@ async function loadWhatsAppConversation(phone) {
         );
       });
 
+      showWhatsAppConversationList();
+
       loadWhatsAppInbox().catch(error =>
         setMessage(
           'whatsappDashboardMessage',
