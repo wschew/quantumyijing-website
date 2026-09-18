@@ -8,6 +8,7 @@
     activeModule: 'crm',
     selectedWhatsAppPhone: '',
     selectedWhatsAppReplyMode: 'ai',
+    selectedWhatsAppConversationStatus: 'open',
     whatsappInboxFilter: 'all',
     products: [],
     orders: [],
@@ -369,6 +370,100 @@ function renderWhatsAppReplyMode(mode) {
   renderWhatsAppManualReplyComposer();
 }
 
+function renderWhatsAppConversationStatus(status) {
+  const normalized =
+    ['follow_up', 'closed'].includes(status)
+      ? status
+      : 'open';
+
+  state.selectedWhatsAppConversationStatus = normalized;
+
+  const buttons = {
+    open: $('whatsappConversationStatusOpen'),
+    follow_up: $('whatsappConversationStatusFollowUp'),
+    closed: $('whatsappConversationStatusClosed')
+  };
+
+  Object.entries(buttons).forEach(([value, button]) => {
+    if (!button) return;
+    const active = value === normalized;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+
+  const statusText = $('whatsappConversationStatusText');
+  if (statusText) {
+    statusText.textContent =
+      normalized === 'follow_up'
+        ? 'Follow Up — this conversation needs further action.'
+        : normalized === 'closed'
+          ? 'Closed — no current follow-up is required.'
+          : 'Open — this conversation is active.';
+  }
+}
+
+async function updateWhatsAppConversationStatus(status) {
+  const phone = state.selectedWhatsAppPhone;
+
+  if (!phone) {
+    throw new Error('No WhatsApp conversation selected.');
+  }
+
+  if (!['open', 'follow_up', 'closed'].includes(status)) {
+    throw new Error('Invalid WhatsApp conversation status.');
+  }
+
+  const buttons = [
+    $('whatsappConversationStatusOpen'),
+    $('whatsappConversationStatusFollowUp'),
+    $('whatsappConversationStatusClosed')
+  ].filter(Boolean);
+
+  buttons.forEach(button => {
+    button.disabled = true;
+  });
+
+  setMessage(
+    'whatsappDashboardMessage',
+    'Updating conversation status...',
+    true
+  );
+
+  try {
+    const response = await api(
+      '/api/admin/whatsapp-inbox',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          phone,
+          action: 'set_status',
+          conversation_status: status
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    renderWhatsAppConversationStatus(
+      data.conversation_status
+    );
+
+    setMessage(
+      'whatsappDashboardMessage',
+      data.conversation_status === 'follow_up'
+        ? 'Conversation marked for follow-up.'
+        : data.conversation_status === 'closed'
+          ? 'Conversation closed.'
+          : 'Conversation reopened.',
+      true
+    );
+  } finally {
+    buttons.forEach(button => {
+      button.disabled = false;
+    });
+  }
+}
+
 function renderWhatsAppManualReplyComposer() {
   const textarea = $('whatsappManualReplyMessage');
   const sendButton = $('whatsappManualReplySend');
@@ -549,6 +644,10 @@ async function loadWhatsAppConversation(phone) {
 
   renderWhatsAppReplyMode(
     conversation.reply_mode
+  );
+
+  renderWhatsAppConversationStatus(
+    conversation.conversation_status
   );
 
   const enquiry = conversation.enquiry;
@@ -986,6 +1085,7 @@ async function loadWhatsAppConversation(phone) {
   $('whatsappConversationBack').addEventListener('click', () => {
     state.selectedWhatsAppPhone = '';
     state.selectedWhatsAppReplyMode = 'ai';
+    state.selectedWhatsAppConversationStatus = 'open';
     if ($('whatsappManualReplyMessage')) {
       $('whatsappManualReplyMessage').value = '';
       updateWhatsAppManualReplyCount();
@@ -1018,6 +1118,33 @@ async function loadWhatsAppConversation(phone) {
       )
     )
   );
+  $('whatsappConversationStatusOpen').addEventListener('click', () =>
+    updateWhatsAppConversationStatus('open').catch(error =>
+      setMessage(
+        'whatsappDashboardMessage',
+        error.message
+      )
+    )
+  );
+
+  $('whatsappConversationStatusFollowUp').addEventListener('click', () =>
+    updateWhatsAppConversationStatus('follow_up').catch(error =>
+      setMessage(
+        'whatsappDashboardMessage',
+        error.message
+      )
+    )
+  );
+
+  $('whatsappConversationStatusClosed').addEventListener('click', () =>
+    updateWhatsAppConversationStatus('closed').catch(error =>
+      setMessage(
+        'whatsappDashboardMessage',
+        error.message
+      )
+    )
+  );
+
   $('whatsappManualReplyMessage').addEventListener('input',
     updateWhatsAppManualReplyCount
   );
