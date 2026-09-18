@@ -44,15 +44,18 @@ function cleanFilter(value) {
     .trim()
     .toLowerCase();
 
-  return [
-    "unread",
-    "manual",
-    "ai",
-    "open",
-    "follow_up",
-    "closed"
-  ].includes(filter)
+  return ["unread", "manual", "ai"].includes(filter)
     ? filter
+    : "all";
+}
+
+function cleanStatusFilter(value) {
+  const status = String(value || "")
+    .trim()
+    .toLowerCase();
+
+  return ["open", "follow_up", "closed"].includes(status)
+    ? status
     : "all";
 }
 
@@ -188,7 +191,12 @@ async function loadConversation(db, phone) {
   };
 }
 
-async function loadConversationList(db, search = "", filter = "all") {
+async function loadConversationList(
+  db,
+  search = "",
+  filter = "all",
+  statusFilter = "all"
+) {
   const result = await db.prepare(`
     WITH conversations AS (
       SELECT
@@ -312,6 +320,9 @@ async function loadConversationList(db, search = "", filter = "all") {
               )
           ) > 0
         )
+      )
+      AND (
+        ? = 'all'
         OR (
           ? = 'open'
           AND (
@@ -344,9 +355,10 @@ async function loadConversationList(db, search = "", filter = "all") {
     filter,
     filter,
     filter,
-    filter,
-    filter,
-    filter
+    statusFilter,
+    statusFilter,
+    statusFilter,
+    statusFilter
   ).all();
 
   return result.results || [];
@@ -380,6 +392,9 @@ export async function onRequestGet({
 
     const filter =
       cleanFilter(url.searchParams.get("filter"));
+
+    const statusFilter =
+      cleanStatusFilter(url.searchParams.get("status"));
 
     /*
      * Detail mode:
@@ -419,7 +434,8 @@ export async function onRequestGet({
       await loadConversationList(
         db,
         search,
-        filter
+        filter,
+        statusFilter
       );
 
     return json({
