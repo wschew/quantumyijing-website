@@ -11,6 +11,7 @@
     selectedWhatsAppConversationStatus: 'open',
     whatsappInboxFilter: 'all',
     whatsappInboxStatusFilter: 'all',
+    whatsappInboxFollowUpFilter: 'all',
     products: [],
     orders: [],
     payments: [],
@@ -240,6 +241,13 @@
     params.set(
       'status',
       state.whatsappInboxStatusFilter
+    );
+  }
+
+  if (state.whatsappInboxFollowUpFilter !== 'all') {
+    params.set(
+      'followup',
+      state.whatsappInboxFollowUpFilter
     );
   }
 
@@ -1256,6 +1264,39 @@ async function loadWhatsAppConversation(phone) {
         const active =
           item.dataset.whatsappStatusFilter ===
           state.whatsappInboxStatusFilter;
+
+        item.classList.toggle('active', active);
+        item.setAttribute(
+          'aria-pressed',
+          active ? 'true' : 'false'
+        );
+      });
+
+      showWhatsAppConversationList();
+
+      loadWhatsAppInbox().catch(error =>
+        setMessage(
+          'whatsappDashboardMessage',
+          error.message
+        )
+      );
+    });
+  });
+
+  document.querySelectorAll('[data-whatsapp-followup-filter]').forEach(button => {
+    button.addEventListener('click', () => {
+      const followUpFilter =
+        button.dataset.whatsappFollowupFilter || 'all';
+
+      state.whatsappInboxFollowUpFilter =
+        ['overdue', 'today', 'upcoming'].includes(followUpFilter)
+          ? followUpFilter
+          : 'all';
+
+      document.querySelectorAll('[data-whatsapp-followup-filter]').forEach(item => {
+        const active =
+          item.dataset.whatsappFollowupFilter ===
+          state.whatsappInboxFollowUpFilter;
 
         item.classList.toggle('active', active);
         item.setAttribute(
