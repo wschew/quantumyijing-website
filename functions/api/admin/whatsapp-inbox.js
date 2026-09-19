@@ -52,6 +52,25 @@ function cleanNextAction(value) {
     .slice(0, 300);
 }
 
+function malaysiaDate() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kuala_Lumpur",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(new Date());
+}
+
+function cleanFollowUpFilter(value) {
+  const followUp = String(value || "")
+    .trim()
+    .toLowerCase();
+
+  return ["overdue", "today", "upcoming"].includes(followUp)
+    ? followUp
+    : "all";
+}
+
 function cleanFilter(value) {
   const filter = String(value || "")
     .trim()
@@ -265,7 +284,9 @@ async function loadConversationList(
   db,
   search = "",
   filter = "all",
-  statusFilter = "all"
+  statusFilter = "all",
+  followUpFilter = "all",
+  today = malaysiaDate()
 ) {
   const result = await db.prepare(`
     WITH conversations AS (
@@ -409,6 +430,29 @@ async function loadConversationList(
           AND wc.conversation_status = 'closed'
         )
       )
+      AND (
+        ? = 'all'
+        OR (
+          ? = 'overdue'
+          AND e.follow_up_date != ''
+          AND e.follow_up_date < ?
+          AND e.status != 'Closed'
+          AND e.lifecycle_stage != 'Closed'
+        )
+        OR (
+          ? = 'today'
+          AND e.follow_up_date = ?
+          AND e.status != 'Closed'
+          AND e.lifecycle_stage != 'Closed'
+        )
+        OR (
+          ? = 'upcoming'
+          AND e.follow_up_date > ?
+          AND e.follow_up_date <= date(?, '+7 day')
+          AND e.status != 'Closed'
+          AND e.lifecycle_stage != 'Closed'
+        )
+      )
 
     ORDER BY
       c.last_message_timestamp DESC,
@@ -428,7 +472,15 @@ async function loadConversationList(
     statusFilter,
     statusFilter,
     statusFilter,
-    statusFilter
+    statusFilter,
+    followUpFilter,
+    followUpFilter,
+    today,
+    followUpFilter,
+    today,
+    followUpFilter,
+    today,
+    today
   ).all();
 
   return result.results || [];
@@ -465,6 +517,9 @@ export async function onRequestGet({
 
     const statusFilter =
       cleanStatusFilter(url.searchParams.get("status"));
+
+    const followUpFilter =
+      cleanFollowUpFilter(url.searchParams.get("followup"));
 
     /*
      * Detail mode:
@@ -505,7 +560,9 @@ export async function onRequestGet({
         db,
         search,
         filter,
-        statusFilter
+        statusFilter,
+        followUpFilter,
+        malaysiaDate()
       );
 
     return json({
