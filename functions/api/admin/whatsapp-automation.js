@@ -69,6 +69,10 @@ function normalizeWhatsAppPhone(
     phone = `60${phone.slice(1)}`;
   }
 
+  if (!/^[1-9]\d{7,14}$/.test(phone)) {
+    return "";
+  }
+
   return phone;
 }
 
