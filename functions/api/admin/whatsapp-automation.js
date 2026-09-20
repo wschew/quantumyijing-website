@@ -615,6 +615,71 @@ async function claimAutomationStep({
     claimed: changes > 0
   };
 }
+async function finishAutomationStep({
+  db,
+  automationId,
+  sent,
+  waMessageId = "",
+  errorMessage = ""
+}) {
+  const cleanAutomationId =
+    Number(automationId || 0);
+
+  if (!cleanAutomationId) {
+    return {
+      ok: false,
+      updated: false
+    };
+  }
+
+  const status =
+    sent ? "Sent" : "Failed";
+
+  const cleanMessageId =
+    String(waMessageId || "").trim();
+
+  const cleanError =
+    String(errorMessage || "")
+      .trim()
+      .slice(0, 2000);
+
+  const result =
+    await db.prepare(`
+      UPDATE whatsapp_automation_logs
+      SET
+        status = ?,
+        sent_at = ?,
+        wa_message_id = ?,
+        error_message = ?
+      WHERE automation_id = ?
+        AND step_no = 1
+        AND status = 'Pending'
+    `).bind(
+      status,
+      sent
+        ? new Date().toISOString()
+        : "",
+      sent
+        ? cleanMessageId
+        : "",
+      sent
+        ? ""
+        : cleanError,
+      cleanAutomationId
+    ).run();
+
+  const changes =
+    Number(
+      result?.meta?.changes || 0
+    );
+
+  return {
+    ok: true,
+    updated: changes > 0,
+    status
+  };
+}
+
 async function enrollPaidCourses({
   db
 }) {
