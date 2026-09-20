@@ -621,6 +621,98 @@ async function matchDueRegistrations({
     };
   });
 }
+function validateDueAutomation({
+  automation,
+  registration,
+  dueAt
+}) {
+  if (!automation || !registration) {
+    return {
+      ok: false,
+      reason: "registration_not_matched"
+    };
+  }
+
+  const expectedSequenceCode =
+    courseSequenceCode({
+      sku: registration.sku,
+      startsOn: registration.starts_on
+    });
+
+  if (
+    !expectedSequenceCode ||
+    expectedSequenceCode !==
+      String(
+        automation.sequence_code || ""
+      ).trim()
+  ) {
+    return {
+      ok: false,
+      reason: "sequence_mismatch"
+    };
+  }
+
+  const expectedSendAt =
+    reminderAtUtc({
+      startsOn: registration.starts_on,
+      daysBefore: 7
+    });
+
+  const scheduledSendAt =
+    String(
+      automation.next_send_at || ""
+    ).trim();
+
+  if (
+    !expectedSendAt ||
+    scheduledSendAt !== expectedSendAt
+  ) {
+    return {
+      ok: false,
+      reason: "schedule_mismatch"
+    };
+  }
+
+  const parsedDueAt =
+    new Date(dueAt);
+
+  if (
+    !dueAt ||
+    Number.isNaN(parsedDueAt.getTime()) ||
+    new Date(expectedSendAt).getTime() >
+      parsedDueAt.getTime()
+  ) {
+    return {
+      ok: false,
+      reason: "not_due"
+    };
+  }
+
+  const payload =
+    buildCourseReminder7dPayload(
+      registration
+    );
+
+  const messageText =
+    renderCourseReminder7dText(
+      registration
+    );
+
+  if (!payload || !messageText) {
+    return {
+      ok: false,
+      reason: "invalid_reminder"
+    };
+  }
+
+  return {
+    ok: true,
+    payload,
+    messageText,
+    templateCode:
+      payload.template?.name || ""
+  };
+}
 async function claimAutomationStep({
   db,
   automation,
