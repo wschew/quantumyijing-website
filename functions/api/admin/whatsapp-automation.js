@@ -897,6 +897,52 @@ async function logAutomationCrmActivity({
     inserted: true
   };
 }
+async function completeAutomationStep({
+  db,
+  automationId
+}) {
+  const cleanAutomationId =
+    Number(automationId || 0);
+
+  if (!cleanAutomationId) {
+    return {
+      ok: false,
+      updated: false
+    };
+  }
+
+  const now =
+    new Date().toISOString();
+
+  const result =
+    await db.prepare(`
+      UPDATE whatsapp_automations
+      SET
+        status = 'Completed',
+        current_step = 1,
+        last_send_at = ?,
+        next_send_at = '',
+        stop_reason = '',
+        updated_at = ?
+      WHERE id = ?
+        AND status = 'Active'
+        AND current_step = 0
+    `).bind(
+      now,
+      now,
+      cleanAutomationId
+    ).run();
+
+  const changes =
+    Number(
+      result?.meta?.changes || 0
+    );
+
+  return {
+    ok: true,
+    updated: changes > 0
+  };
+}
 async function enrollPaidCourses({
   db
 }) {
