@@ -760,7 +760,96 @@ async function finishAutomationStep({
     status
   };
 }
+async function storeAutomationOutboundMessage({
+  db,
+  env,
+  registration,
+  sendResult
+}) {
+  const waMessageId =
+    String(
+      sendResult?.waMessageId || ""
+    ).trim();
 
+  const phoneNumberId =
+    String(
+      sendResult?.phoneNumberId ||
+      env.WHATSAPP_PHONE_NUMBER_ID ||
+      ""
+    ).trim();
+
+  const businessAccountId =
+    env.WHATSAPP_BUSINESS_ACCOUNT_ID ||
+    null;
+
+  const senderWaId =
+    registrationPhone(registration);
+
+  const enquiryId =
+    Number(
+      registration?.enquiry_id || 0
+    );
+
+  const message =
+    renderCourseReminder7dText(
+      registration
+    );
+
+  if (
+    !waMessageId ||
+    !phoneNumberId ||
+    !senderWaId ||
+    !enquiryId ||
+    !message
+  ) {
+    return {
+      ok: false,
+      inserted: false
+    };
+  }
+
+  const result =
+    await db.prepare(`
+      INSERT OR IGNORE INTO whatsapp_messages (
+        wa_message_id,
+        wa_phone_number_id,
+        wa_business_account_id,
+        sender_wa_id,
+        sender_name,
+        message_type,
+        message_text,
+        message_timestamp,
+        raw_payload,
+        direction,
+        enquiry_id
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      waMessageId,
+      phoneNumberId,
+      businessAccountId,
+      senderWaId,
+      "Quantum YiJing Academy",
+      "template",
+      message,
+      Math.floor(Date.now() / 1000),
+      JSON.stringify(
+        sendResult?.result || {}
+      ),
+      "outbound",
+      enquiryId
+    ).run();
+
+  const changes =
+    Number(
+      result?.meta?.changes || 0
+    );
+
+  return {
+    ok: true,
+    inserted: changes > 0
+  };
+}
 async function enrollPaidCourses({
   db
 }) {
