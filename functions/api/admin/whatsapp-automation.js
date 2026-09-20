@@ -1115,6 +1115,148 @@ async function failAutomationStep({
     updated: changes > 0
   };
 }
+async function runDueAutomations({
+  db,
+  env,
+  dueAt
+}) {
+  const dueAutomations =
+    await loadDueAutomations({
+      db,
+      dueAt
+    });
+
+  const matches =
+    await matchDueRegistrations({
+      db,
+      dueAutomations
+    });
+
+  let checked = 0;
+  let sent = 0;
+  let failed = 0;
+  let skipped = 0;
+
+  for (const item of matches) {
+    checked += 1;
+
+    const automation =
+      item.automation;
+
+    const registration =
+      item.registration;
+
+    const validation =
+      validateDueAutomation({
+        automation,
+        registration,
+        dueAt
+      });
+
+    if (!validation.ok) {
+      skipped += 1;
+      continue;
+    }
+
+    const claim =
+      await claimAutomationStep({
+        db,
+        automation,
+        templateCode:
+          validation.templateCode
+      });
+
+    if (
+      !claim.ok ||
+      !claim.claimed
+    ) {
+      skipped += 1;
+      continue;
+    }
+
+    const sendResult =
+      await sendWhatsAppTemplate({
+        env,
+        payload:
+          validation.payload
+      });
+
+    if (!sendResult.ok) {
+      const errorMessage =
+        whatsappSendError(
+          sendResult
+        );
+
+      await finishAutomationStep({
+        db,
+        automationId:
+          automation.id,
+        sent: false,
+        errorMessage
+      });
+
+      await failAutomationStep({
+        db,
+        automationId:
+          automation.id,
+        reason: errorMessage
+      });
+
+      failed += 1;
+      continue;
+    }
+
+    await finishAutomationStep({
+      db,
+      automationId:
+        automation.id,
+      sent: true,
+      waMessageId:
+        sendResult.waMessageId
+    });
+
+    try {
+      await storeAutomationOutboundMessage({
+        db,
+        env,
+        registration,
+        sendResult
+      });
+    } catch (error) {
+      console.error(
+        "WhatsApp automation outbound audit failed:",
+        error
+      );
+    }
+
+    try {
+      await logAutomationCrmActivity({
+        db,
+        registration
+      });
+    } catch (error) {
+      console.error(
+        "WhatsApp automation CRM audit failed:",
+        error
+      );
+    }
+
+    await completeAutomationStep({
+      db,
+      automationId:
+        automation.id
+    });
+
+    sent += 1;
+  }
+
+  return {
+    checked,
+    sent,
+    failed,
+    skipped
+  };
+}
 async function enrollPaidCourses({
   db
 }) {
