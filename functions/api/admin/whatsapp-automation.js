@@ -173,6 +173,7 @@ function reminderAtUtc({
 
   return reminder.toISOString();
 }
+
 async function loadPaidCourseRegistrations({
   db
 }) {
@@ -273,6 +274,38 @@ async function loadDueAutomations({
   ).all();
 
   return rows.results || [];
+}
+
+async function matchDueRegistrations({
+  db,
+  dueAutomations
+}) {
+  const registrations =
+    await loadPaidCourseRegistrations({
+      db
+    });
+
+  return dueAutomations.map((automation) => {
+    const registration =
+      registrations.find((row) => {
+        const sequenceCode =
+          courseSequenceCode({
+            sku: row.sku,
+            startsOn: row.starts_on
+          });
+
+        return (
+          Number(row.enquiry_id || 0) ===
+            Number(automation.enquiry_id || 0) &&
+          sequenceCode === automation.sequence_code
+        );
+      }) || null;
+
+    return {
+      automation,
+      registration
+    };
+  });
 }
 
 async function enrollPaidCourses({
@@ -381,6 +414,7 @@ async function enrollPaidCourses({
     skipped
   };
 }
+
 export async function onRequestPost({
   request,
   env
