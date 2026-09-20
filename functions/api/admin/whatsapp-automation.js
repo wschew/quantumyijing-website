@@ -540,7 +540,81 @@ async function matchDueRegistrations({
     };
   });
 }
+async function claimAutomationStep({
+  db,
+  automation,
+  templateCode
+}) {
+  const automationId =
+    Number(automation?.id || 0);
 
+  const enquiryId =
+    Number(automation?.enquiry_id || 0);
+
+  const sequenceCode =
+    String(
+      automation?.sequence_code || ""
+    ).trim();
+
+  const cleanTemplateCode =
+    String(templateCode || "").trim();
+
+  if (
+    !automationId ||
+    !enquiryId ||
+    !sequenceCode ||
+    !cleanTemplateCode
+  ) {
+    return {
+      ok: false,
+      claimed: false,
+      reason: "invalid_claim"
+    };
+  }
+
+  const result =
+    await db.prepare(`
+      INSERT OR IGNORE INTO whatsapp_automation_logs (
+        automation_id,
+        enquiry_id,
+        sequence_code,
+        step_no,
+        template_code,
+        status,
+        sent_at,
+        wa_message_id,
+        error_message,
+        created_at
+      )
+      VALUES (
+        ?,
+        ?,
+        ?,
+        1,
+        ?,
+        'Pending',
+        '',
+        '',
+        '',
+        CURRENT_TIMESTAMP
+      )
+    `).bind(
+      automationId,
+      enquiryId,
+      sequenceCode,
+      cleanTemplateCode
+    ).run();
+
+  const changes =
+    Number(
+      result?.meta?.changes || 0
+    );
+
+  return {
+    ok: true,
+    claimed: changes > 0
+  };
+}
 async function enrollPaidCourses({
   db
 }) {
