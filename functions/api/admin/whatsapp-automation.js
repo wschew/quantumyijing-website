@@ -850,6 +850,53 @@ async function storeAutomationOutboundMessage({
     inserted: changes > 0
   };
 }
+async function logAutomationCrmActivity({
+  db,
+  registration
+}) {
+  const enquiryId =
+    Number(
+      registration?.enquiry_id || 0
+    );
+
+  if (!enquiryId) {
+    return {
+      ok: false,
+      inserted: false
+    };
+  }
+
+  const courseName =
+    String(
+      registration?.name_en ||
+      registration?.name_zh ||
+      registration?.sku ||
+      "course"
+    ).trim();
+
+  const activityDate =
+    new Date().toISOString();
+
+  await db.prepare(`
+    INSERT INTO crm_activities (
+      enquiry_id,
+      activity_type,
+      description,
+      activity_date
+    )
+    VALUES (?, ?, ?, ?)
+  `).bind(
+    enquiryId,
+    "WhatsApp Template",
+    `7-day course reminder sent for ${courseName}.`,
+    activityDate
+  ).run();
+
+  return {
+    ok: true,
+    inserted: true
+  };
+}
 async function enrollPaidCourses({
   db
 }) {
