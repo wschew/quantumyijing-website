@@ -96,6 +96,5 @@ if(directOrder){
     }
   },250);
 }
-const d=await r.json();if(!r.ok)throw new Error(d.error||('HTTP '+r.status));$('#status').textContent='Payment verified. Accounting eligibility and receipt processing completed.';await load();}catch(err){$('#status').textContent=err.message;btn.disabled=false;}});
 </script>
 </body></html>
