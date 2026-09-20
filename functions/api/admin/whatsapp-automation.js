@@ -482,11 +482,16 @@ async function enrollPaidCourses({
         daysBefore: 7
       });
 
+    const reminderAlreadyPassed =
+      nextSendAt &&
+      new Date(nextSendAt).getTime() <= Date.now();
+
     if (
       !enquiryId ||
       !phone ||
       !sequenceCode ||
-      !nextSendAt
+      !nextSendAt ||
+      reminderAlreadyPassed
     ) {
       skipped += 1;
       continue;
