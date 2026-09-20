@@ -142,6 +142,45 @@ function parseIsoDate(value) {
 
   return date;
 }
+function formatCourseDate({
+  startsOn,
+  language
+}) {
+  const date =
+    parseIsoDate(startsOn);
+
+  if (!date) {
+    return "";
+  }
+
+  const year =
+    date.getUTCFullYear();
+  const month =
+    date.getUTCMonth();
+  const day =
+    date.getUTCDate();
+
+  if (cleanLanguage(language) === "zh") {
+    return `${year}年${month + 1}月${day}日`;
+  }
+
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December"
+  ];
+
+  return `${day} ${months[month]} ${year}`;
+}
 
 function reminderAtUtc({
   startsOn,
