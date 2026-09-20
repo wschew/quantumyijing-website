@@ -455,7 +455,37 @@ async function sendWhatsAppTemplate({
     };
   }
 }
+function whatsappSendError(
+  sendResult
+) {
+  const directError =
+    String(
+      sendResult?.error || ""
+    ).trim();
 
+  if (directError) {
+    return directError.slice(0, 2000);
+  }
+
+  const metaMessage =
+    String(
+      sendResult?.result?.error?.message ||
+      ""
+    ).trim();
+
+  if (metaMessage) {
+    return metaMessage.slice(0, 2000);
+  }
+
+  const status =
+    Number(sendResult?.status || 0);
+
+  if (status) {
+    return `WhatsApp send failed with HTTP ${status}`;
+  }
+
+  return "WhatsApp send failed";
+}
 function reminderAtUtc({
   startsOn,
   daysBefore
