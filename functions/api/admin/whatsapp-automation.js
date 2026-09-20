@@ -1524,6 +1524,41 @@ export async function onRequestPost({
     }
   }
 
+  if (action === "run_due") {
+    try {
+      const dueAt =
+        new Date().toISOString();
+
+      const result =
+        await runDueAutomations({
+          db,
+          env,
+          dueAt
+        });
+
+      return json({
+        ok: true,
+        action: "run_due",
+        due_at: dueAt,
+        ...result
+      });
+    } catch (error) {
+      console.error(
+        "WhatsApp automation run failed:",
+        error
+      );
+
+      return json(
+        {
+          ok: false,
+          error:
+            "Unable to run due WhatsApp automations"
+        },
+        500
+      );
+    }
+  }
+
   if (action !== "enroll") {
     return json(
       {
