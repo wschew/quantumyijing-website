@@ -226,7 +226,7 @@ function registrationPhone(row) {
   const orderPhone =
     normalizeWhatsAppPhone(
       row.customer_phone,
-      row.customer_country
+      row.customer_country || row.enquiry_country
     );
 
   if (orderPhone) {
