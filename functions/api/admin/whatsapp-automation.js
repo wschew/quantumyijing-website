@@ -187,6 +187,7 @@ async function loadPaidCourseRegistrations({
       o.customer_country,
       o.payment_status,
 
+      e.name AS enquiry_name,
       e.phone AS enquiry_phone,
       e.country AS enquiry_country,
       e.language AS enquiry_language,
