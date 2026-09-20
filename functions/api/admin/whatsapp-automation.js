@@ -245,6 +245,36 @@ function registrationLanguage(row) {
   );
 }
 
+async function loadDueAutomations({
+  db,
+  dueAt
+}) {
+  const rows = await db.prepare(`
+    SELECT
+      id,
+      enquiry_id,
+      sequence_code,
+      status,
+      current_step,
+      started_at,
+      next_send_at,
+      last_send_at,
+      stop_reason
+    FROM whatsapp_automations
+    WHERE status = 'Active'
+      AND current_step = 0
+      AND COALESCE(next_send_at, '') <> ''
+      AND next_send_at <= ?
+    ORDER BY next_send_at ASC, id ASC
+    LIMIT ?
+  `).bind(
+    dueAt,
+    MAX_RUN_BATCH
+  ).all();
+
+  return rows.results || [];
+}
+
 async function enrollPaidCourses({
   db
 }) {
