@@ -1035,6 +1035,56 @@ async function completeAutomationStep({
     updated: changes > 0
   };
 }
+async function failAutomationStep({
+  db,
+  automationId,
+  reason = ""
+}) {
+  const cleanAutomationId =
+    Number(automationId || 0);
+
+  if (!cleanAutomationId) {
+    return {
+      ok: false,
+      updated: false
+    };
+  }
+
+  const cleanReason =
+    String(reason || "")
+      .trim()
+      .slice(0, 2000);
+
+  const now =
+    new Date().toISOString();
+
+  const result =
+    await db.prepare(`
+      UPDATE whatsapp_automations
+      SET
+        status = 'Failed',
+        next_send_at = '',
+        stop_reason = ?,
+        updated_at = ?
+      WHERE id = ?
+        AND status = 'Active'
+        AND current_step = 0
+    `).bind(
+      cleanReason,
+      now,
+      cleanAutomationId
+    ).run();
+
+  const changes =
+    Number(
+      result?.meta?.changes || 0
+    );
+
+  return {
+    ok: true,
+    updated: changes > 0
+  };
+}
 async function enrollPaidCourses({
   db
 }) {
