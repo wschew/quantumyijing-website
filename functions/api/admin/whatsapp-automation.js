@@ -1154,10 +1154,17 @@ async function runDueAutomations({
       });
 
     if (!validation.ok) {
-      skipped += 1;
+      await failAutomationStep({
+        db,
+        automationId:
+          automation.id,
+        reason:
+          `Pre-send validation failed: ${validation.reason || "unknown"}`
+      });
+
+      failed += 1;
       continue;
     }
-
     const claim =
       await claimAutomationStep({
         db,
