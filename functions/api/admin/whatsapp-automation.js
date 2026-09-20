@@ -245,6 +245,7 @@ function buildCourseReminder7dPayload(
 
   return {
     messaging_product: "whatsapp",
+    recipient_type: "individual",
     to: phone,
     type: "template",
     template: {
