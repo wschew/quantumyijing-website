@@ -283,6 +283,87 @@ function buildCourseReminder7dPayload(
     }
   };
 }
+function renderCourseReminder7dText(
+  registration
+) {
+  const language =
+    registrationLanguage(registration);
+
+  const name =
+    String(
+      registration.customer_name ||
+      registration.enquiry_name ||
+      ""
+    ).trim();
+
+  const isChinese =
+    language === "zh";
+
+  const courseName =
+    String(
+      isChinese
+        ? registration.name_zh ||
+          registration.name_en ||
+          ""
+        : registration.name_en ||
+          registration.name_zh ||
+          ""
+    ).trim();
+
+  const delivery =
+    String(
+      isChinese
+        ? registration.delivery_zh ||
+          registration.delivery_en ||
+          ""
+        : registration.delivery_en ||
+          registration.delivery_zh ||
+          ""
+    ).trim();
+
+  const courseDate =
+    formatCourseDate({
+      startsOn: registration.starts_on,
+      language
+    });
+
+  if (
+    !name ||
+    !courseName ||
+    !courseDate ||
+    !delivery
+  ) {
+    return "";
+  }
+
+  if (isChinese) {
+    return [
+      `您好 ${name}，`,
+      "",
+      `温馨提醒：您报名的 ${courseName} 课程将在 7 天后开课。`,
+      "",
+      `课程日期：${courseDate}`,
+      `上课方式：${delivery}`,
+      "",
+      "期待在课程中与您见面。",
+      "",
+      "量子易经国际学院"
+    ].join("\n");
+  }
+
+  return [
+    `Hello ${name},`,
+    "",
+    `This is a reminder that your ${courseName} course will begin in 7 days.`,
+    "",
+    `Course date: ${courseDate}`,
+    `Delivery: ${delivery}`,
+    "",
+    "We look forward to welcoming you to the course.",
+    "",
+    "Quantum YiJing International Academy"
+  ].join("\n");
+}
 
 async function sendWhatsAppTemplate({
   env,
