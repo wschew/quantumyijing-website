@@ -284,6 +284,97 @@ function buildCourseReminder7dPayload(
   };
 }
 
+async function sendWhatsAppTemplate({
+  env,
+  payload
+}) {
+  const token =
+    env.WHATSAPP_ACCESS_TOKEN;
+
+  const phoneNumberId =
+    env.WHATSAPP_PHONE_NUMBER_ID;
+
+  if (
+    !token ||
+    !phoneNumberId ||
+    !payload
+  ) {
+    return {
+      ok: false,
+      skipped: true,
+      error:
+        "WhatsApp configuration or payload missing"
+    };
+  }
+
+  try {
+    const response =
+      await fetch(
+        `https://graph.facebook.com/${GRAPH_API_VERSION}/${phoneNumberId}/messages`,
+        {
+          method: "POST",
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+            "Content-Type":
+              "application/json"
+          },
+          body:
+            JSON.stringify(payload)
+        }
+      );
+
+    const result =
+      await response
+        .json()
+        .catch(() => ({}));
+
+    if (!response.ok) {
+      console.error(
+        "WhatsApp automation send failed:",
+        JSON.stringify(result)
+      );
+
+      return {
+        ok: false,
+        status: response.status,
+        result
+      };
+    }
+
+    const waMessageId =
+      result?.messages?.[0]?.id || "";
+
+    if (!waMessageId) {
+      return {
+        ok: false,
+        status: response.status,
+        result,
+        error:
+          "Meta accepted response without message id"
+      };
+    }
+
+    return {
+      ok: true,
+      waMessageId,
+      phoneNumberId,
+      result
+    };
+  } catch (error) {
+    console.error(
+      "WhatsApp automation request failed:",
+      error
+    );
+
+    return {
+      ok: false,
+      error:
+        "WhatsApp request failed"
+    };
+  }
+}
+
 function reminderAtUtc({
   startsOn,
   daysBefore
