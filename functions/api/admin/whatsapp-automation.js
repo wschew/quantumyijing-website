@@ -637,6 +637,11 @@ export async function onRequestPost({
               item.automation,
             matched:
               Boolean(registration),
+            payload: registration
+              ? buildCourseReminder7dPayload(
+                  registration
+                )
+              : null,
             recipient: registration
               ? {
                   phone:
