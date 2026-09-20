@@ -182,6 +182,103 @@ function formatCourseDate({
   return `${day} ${months[month]} ${year}`;
 }
 
+function buildCourseReminder7dPayload(
+  registration
+) {
+  const language =
+    registrationLanguage(registration);
+
+  const phone =
+    registrationPhone(registration);
+
+  const name =
+    String(
+      registration.customer_name ||
+      registration.enquiry_name ||
+      ""
+    ).trim();
+
+  const isChinese =
+    language === "zh";
+
+  const courseName =
+    String(
+      isChinese
+        ? registration.name_zh ||
+          registration.name_en ||
+          ""
+        : registration.name_en ||
+          registration.name_zh ||
+          ""
+    ).trim();
+
+  const delivery =
+    String(
+      isChinese
+        ? registration.delivery_zh ||
+          registration.delivery_en ||
+          ""
+        : registration.delivery_en ||
+          registration.delivery_zh ||
+          ""
+    ).trim();
+
+  const courseDate =
+    formatCourseDate({
+      startsOn: registration.starts_on,
+      language
+    });
+
+  if (
+    !phone ||
+    !name ||
+    !courseName ||
+    !courseDate ||
+    !delivery
+  ) {
+    return null;
+  }
+
+  return {
+    messaging_product: "whatsapp",
+    to: phone,
+    type: "template",
+    template: {
+      name: isChinese
+        ? "course_class_reminder_7d_zh_v1"
+        : "course_class_reminder_7d_v1",
+      language: {
+        code: isChinese
+          ? "zh_CN"
+          : "en"
+      },
+      components: [
+        {
+          type: "body",
+          parameters: [
+            {
+              type: "text",
+              text: name
+            },
+            {
+              type: "text",
+              text: courseName
+            },
+            {
+              type: "text",
+              text: courseDate
+            },
+            {
+              type: "text",
+              text: delivery
+            }
+          ]
+        }
+      ]
+    }
+  };
+}
+
 function reminderAtUtc({
   startsOn,
   daysBefore
