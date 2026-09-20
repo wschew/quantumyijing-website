@@ -452,6 +452,112 @@ export async function onRequestPost({
       .trim()
       .toLowerCase();
 
+  if (action === "preview_due") {
+    try {
+      const requestedAt =
+        String(
+          url.searchParams.get("at") || ""
+        ).trim();
+
+      const parsedAt =
+        new Date(requestedAt);
+
+      if (
+        !requestedAt ||
+        Number.isNaN(parsedAt.getTime())
+      ) {
+        return json(
+          {
+            ok: false,
+            error: "Valid at timestamp required"
+          },
+          400
+        );
+      }
+
+      const dueAt =
+        parsedAt.toISOString();
+
+      const dueAutomations =
+        await loadDueAutomations({
+          db,
+          dueAt
+        });
+
+      const matches =
+        await matchDueRegistrations({
+          db,
+          dueAutomations
+        });
+
+      const items =
+        matches.map((item) => {
+          const registration =
+            item.registration;
+
+          return {
+            automation:
+              item.automation,
+            matched:
+              Boolean(registration),
+            recipient: registration
+              ? {
+                  phone:
+                    registrationPhone(
+                      registration
+                    ),
+                  language:
+                    registrationLanguage(
+                      registration
+                    ),
+                  name:
+                    registration.customer_name ||
+                    ""
+                }
+              : null,
+            course: registration
+              ? {
+                  sku:
+                    registration.sku,
+                  name_en:
+                    registration.name_en,
+                  name_zh:
+                    registration.name_zh,
+                  starts_on:
+                    registration.starts_on,
+                  delivery_en:
+                    registration.delivery_en,
+                  delivery_zh:
+                    registration.delivery_zh
+                }
+              : null
+          };
+        });
+
+      return json({
+        ok: true,
+        action: "preview_due",
+        due_at: dueAt,
+        count: items.length,
+        items
+      });
+    } catch (error) {
+      console.error(
+        "WhatsApp automation preview failed:",
+        error
+      );
+
+      return json(
+        {
+          ok: false,
+          error:
+            "Unable to preview due WhatsApp automations"
+        },
+        500
+      );
+    }
+  }
+
   if (action !== "enroll") {
     return json(
       {
