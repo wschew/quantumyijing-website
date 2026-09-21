@@ -6,6 +6,12 @@
     page: 1, pageSize: 25, total: 0, selected: null,
     studentPage: 1, studentPageSize: 25, studentTotal: 0, selectedStudent: null,
     activeModule: 'crm',
+    selectedWhatsAppPhone: '',
+    selectedWhatsAppReplyMode: 'ai',
+    selectedWhatsAppConversationStatus: 'open',
+    whatsappInboxFilter: 'all',
+    whatsappInboxStatusFilter: 'all',
+    whatsappInboxFollowUpFilter: 'all',
     products: [],
     orders: [],
     payments: [],
@@ -193,21 +199,672 @@
   function switchModule(module) {
     state.activeModule = module;
     const crmMode = module === 'crm';
+    const whatsappMode = module === 'whatsapp';
     const studentMode = module === 'students';
     const marketingMode = module === 'marketing';
     const commerceMode = module === 'commerce';
     $('crmModule').hidden = !crmMode;
+    $('whatsappModule').hidden = !whatsappMode;
     $('studentsModule').hidden = !studentMode;
     $('marketingModule').hidden = !marketingMode;
     $('commerceModule').hidden = !commerceMode;
     $('crmTab').classList.toggle('active', crmMode);
+    $('whatsappTab').classList.toggle('active', whatsappMode);
     $('studentsTab').classList.toggle('active', studentMode);
     $('marketingTab').classList.toggle('active', marketingMode);
     $('commerceTab').classList.toggle('active', commerceMode);
+    if (whatsappMode) loadWhatsAppInbox().catch(error =>
+      setMessage('whatsappDashboardMessage', error.message)
+    );
     if (studentMode) loadStudentAll().catch(handleStudentError);
     if (marketingMode) loadMarketingStats().catch(handleMarketingError);
     if (commerceMode) loadCommerceAll().catch(handleCommerceError);
   }
+
+  async function loadWhatsAppInbox() {
+  setMessage('whatsappDashboardMessage', 'Loading...', true);
+
+  const search =
+    $('whatsappInboxSearch')?.value.trim() || '';
+
+  const params = new URLSearchParams();
+  if (search) params.set('q', search);
+
+  if (state.whatsappInboxFilter !== 'all') {
+    params.set(
+      'filter',
+      state.whatsappInboxFilter
+    );
+  }
+
+  if (state.whatsappInboxStatusFilter !== 'all') {
+    params.set(
+      'status',
+      state.whatsappInboxStatusFilter
+    );
+  }
+
+  if (state.whatsappInboxFollowUpFilter !== 'all') {
+    params.set(
+      'followup',
+      state.whatsappInboxFollowUpFilter
+    );
+  }
+
+  const endpoint =
+    `/api/admin/whatsapp-inbox${params.toString() ? `?${params}` : ''}`;
+
+  const response = await api(endpoint);
+  const data = await response.json();
+  const conversations = data.conversations || [];
+
+  $('whatsappConversationCount').textContent =
+    `${conversations.length} conversation${conversations.length === 1 ? '' : 's'}`;
+
+  const container = $('whatsappInboxContent');
+
+  if (!conversations.length) {
+    container.innerHTML =
+      '<p>No WhatsApp conversations found.</p>';
+
+    setMessage('whatsappDashboardMessage', '');
+    return;
+  }
+
+  container.innerHTML = conversations.map(row => {
+    const name =
+      row.whatsapp_name ||
+      row.crm_name ||
+      row.sender_wa_id ||
+      'Unknown';
+
+    const crm = row.enquiry_id
+      ? `CRM #${esc(row.enquiry_id)}${row.crm_reference ? ` · ${esc(row.crm_reference)}` : ''}`
+      : 'Not linked to CRM';
+
+    const replyMode =
+      row.reply_mode === 'manual'
+        ? 'manual'
+        : 'ai';
+
+    const replyModeLabel =
+      replyMode === 'manual'
+        ? 'Manual'
+        : 'AI Auto';
+
+    const conversationStatus =
+      ['follow_up', 'closed'].includes(row.conversation_status)
+        ? row.conversation_status
+        : 'open';
+
+    const conversationStatusLabel =
+      conversationStatus === 'follow_up'
+        ? 'Follow Up'
+        : conversationStatus === 'closed'
+          ? 'Closed'
+          : 'Open';
+
+    const followUpDate =
+      String(row.crm_follow_up_date || '').trim();
+
+    const nextAction =
+      String(row.crm_next_action || '').trim();
+
+    const followUpIndicator =
+      followUpDate || nextAction
+        ? `
+          <p class="whatsapp-follow-up-indicator">
+            <strong>Follow-up${followUpDate ? ` · ${esc(followUpDate)}` : ''}</strong>
+            ${nextAction ? `<br><small>${esc(nextAction)}</small>` : ''}
+          </p>
+        `
+        : '';
+
+    const unreadCount =
+      Math.max(0, Number(row.unread_count) || 0);
+
+    const unreadLabel =
+      unreadCount > 0
+        ? `NEW · ${unreadCount}`
+        : '';
+
+    const fullLastMessage =
+      row.last_message || 'No message text';
+
+    const lastMessage =
+      fullLastMessage.length > 120
+        ? `${fullLastMessage.slice(0, 120).trim()}…`
+        : fullLastMessage;
+
+    return `
+      <article
+        class="panel whatsapp-conversation-card"
+        data-whatsapp-phone="${esc(row.sender_wa_id || '')}"
+        role="button"
+        tabindex="0"
+      >
+        <div class="panel-heading">
+          <div>
+            <h3>${esc(name)}</h3>
+            <p>+${esc(row.sender_wa_id || '')}</p>
+          </div>
+          <div class="whatsapp-card-status">
+            ${unreadCount > 0 ? `
+              <span class="whatsapp-unread-badge">
+                ${esc(unreadLabel)}
+              </span>
+            ` : ''}
+            <span class="whatsapp-mode-badge whatsapp-mode-${replyMode}">
+              ${replyModeLabel}
+            </span>
+            <span class="whatsapp-mode-badge">
+              ${esc(conversationStatusLabel)}
+            </span>
+            <strong>${esc(crm)}</strong>
+          </div>
+        </div>
+
+        <p>${esc(lastMessage)}</p>
+
+        ${followUpIndicator}
+
+        <p>
+          <small>
+            ${esc(row.message_count || 0)} messages
+            · ${esc(row.last_direction || '')}
+          </small>
+        </p>
+      </article>
+    `;
+  }).join('');
+
+  setMessage('whatsappDashboardMessage', '');
+}
+
+function showWhatsAppConversationList() {
+  state.selectedWhatsAppPhone = '';
+  state.selectedWhatsAppReplyMode = 'ai';
+  state.selectedWhatsAppConversationStatus = 'open';
+
+  if ($('whatsappManualReplyMessage')) {
+    $('whatsappManualReplyMessage').value = '';
+    updateWhatsAppManualReplyCount();
+  }
+
+  $('whatsappConversationPanel').hidden = true;
+  $('whatsappInboxContent').hidden = false;
+}
+
+function renderWhatsAppReplyMode(mode) {
+  const normalized =
+    mode === 'manual' ? 'manual' : 'ai';
+
+  state.selectedWhatsAppReplyMode = normalized;
+
+  const aiButton = $('whatsappReplyModeAi');
+  const manualButton = $('whatsappReplyModeManual');
+  const status = $('whatsappReplyModeStatus');
+
+  aiButton.classList.toggle(
+    'active',
+    normalized === 'ai'
+  );
+
+  manualButton.classList.toggle(
+    'active',
+    normalized === 'manual'
+  );
+
+  aiButton.setAttribute(
+    'aria-pressed',
+    normalized === 'ai' ? 'true' : 'false'
+  );
+
+  manualButton.setAttribute(
+    'aria-pressed',
+    normalized === 'manual' ? 'true' : 'false'
+  );
+
+  status.textContent =
+    normalized === 'manual'
+      ? 'Manual — automatic AI replies are paused.'
+      : 'AI Auto — Academy AI replies automatically.';
+
+  renderWhatsAppManualReplyComposer();
+}
+
+function renderWhatsAppConversationStatus(status) {
+  const normalized =
+    ['follow_up', 'closed'].includes(status)
+      ? status
+      : 'open';
+
+  state.selectedWhatsAppConversationStatus = normalized;
+
+  const buttons = {
+    open: $('whatsappConversationStatusOpen'),
+    follow_up: $('whatsappConversationStatusFollowUp'),
+    closed: $('whatsappConversationStatusClosed')
+  };
+
+  Object.entries(buttons).forEach(([value, button]) => {
+    if (!button) return;
+    const active = value === normalized;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+
+  const statusText = $('whatsappConversationStatusText');
+  if (statusText) {
+    statusText.textContent =
+      normalized === 'follow_up'
+        ? 'Follow Up — this conversation needs further action.'
+        : normalized === 'closed'
+          ? 'Closed — no current follow-up is required.'
+          : 'Open — this conversation is active.';
+  }
+}
+
+async function updateWhatsAppConversationStatus(status) {
+  const phone = state.selectedWhatsAppPhone;
+
+  if (!phone) {
+    throw new Error('No WhatsApp conversation selected.');
+  }
+
+  if (!['open', 'follow_up', 'closed'].includes(status)) {
+    throw new Error('Invalid WhatsApp conversation status.');
+  }
+
+  const buttons = [
+    $('whatsappConversationStatusOpen'),
+    $('whatsappConversationStatusFollowUp'),
+    $('whatsappConversationStatusClosed')
+  ].filter(Boolean);
+
+  buttons.forEach(button => {
+    button.disabled = true;
+  });
+
+  setMessage(
+    'whatsappDashboardMessage',
+    'Updating conversation status...',
+    true
+  );
+
+  try {
+    const response = await api(
+      '/api/admin/whatsapp-inbox',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          phone,
+          action: 'set_status',
+          conversation_status: status
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    renderWhatsAppConversationStatus(
+      data.conversation_status
+    );
+
+    setMessage(
+      'whatsappDashboardMessage',
+      data.conversation_status === 'follow_up'
+        ? 'Conversation marked for follow-up.'
+        : data.conversation_status === 'closed'
+          ? 'Conversation closed.'
+          : 'Conversation reopened.',
+      true
+    );
+  } finally {
+    buttons.forEach(button => {
+      button.disabled = false;
+    });
+  }
+}
+
+function renderWhatsAppFollowUp(enquiry) {
+  const dateInput = $('whatsappFollowUpDate');
+  const nextActionInput = $('whatsappFollowUpNextAction');
+  const saveButton = $('whatsappFollowUpSave');
+  const help = $('whatsappFollowUpHelp');
+  const status = $('whatsappFollowUpStatus');
+
+  if (!dateInput || !nextActionInput || !saveButton || !help || !status) {
+    return;
+  }
+
+  const linked = Boolean(enquiry?.id);
+
+  dateInput.value = linked
+    ? String(enquiry.follow_up_date || '')
+    : '';
+
+  nextActionInput.value = linked
+    ? String(enquiry.next_action || '')
+    : '';
+
+  dateInput.disabled = !linked;
+  nextActionInput.disabled = !linked;
+  saveButton.disabled = !linked;
+
+  help.textContent = linked
+    ? `Linked to CRM #${enquiry.id}${enquiry.reference ? ` · ${enquiry.reference}` : ''}.`
+    : 'This WhatsApp conversation is not linked to CRM.';
+
+  status.textContent = '';
+}
+
+async function saveWhatsAppFollowUp() {
+  const phone = state.selectedWhatsAppPhone;
+  const dateInput = $('whatsappFollowUpDate');
+  const nextActionInput = $('whatsappFollowUpNextAction');
+  const saveButton = $('whatsappFollowUpSave');
+  const status = $('whatsappFollowUpStatus');
+
+  if (!phone) {
+    throw new Error('No WhatsApp conversation selected.');
+  }
+
+  if (!dateInput || !nextActionInput || !saveButton || !status) {
+    throw new Error('WhatsApp follow-up controls are unavailable.');
+  }
+
+  const followUpDate = dateInput.value;
+  const nextAction = nextActionInput.value.trim();
+
+  saveButton.disabled = true;
+  saveButton.textContent = 'Saving...';
+  status.textContent = 'Saving follow-up...';
+
+  try {
+    const response = await api(
+      '/api/admin/whatsapp-inbox',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          phone,
+          action: 'set_follow_up',
+          follow_up_date: followUpDate,
+          next_action: nextAction
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    await loadWhatsAppConversation(phone);
+
+    const refreshedStatus = $('whatsappFollowUpStatus');
+    if (refreshedStatus) {
+      refreshedStatus.textContent = data.changed
+        ? 'Follow-up saved to CRM.'
+        : 'No follow-up changes to save.';
+    }
+
+    setMessage(
+      'whatsappDashboardMessage',
+      data.changed
+        ? 'CRM follow-up saved.'
+        : 'CRM follow-up is unchanged.',
+      true
+    );
+  } finally {
+    saveButton.textContent = 'Save Follow-up';
+
+    if (!saveButton.disabled) {
+      return;
+    }
+
+    saveButton.disabled = false;
+  }
+}
+
+function renderWhatsAppManualReplyComposer() {
+  const textarea = $('whatsappManualReplyMessage');
+  const sendButton = $('whatsappManualReplySend');
+  const help = $('whatsappManualReplyHelp');
+
+  if (!textarea || !sendButton || !help) return;
+
+  const manual =
+    state.selectedWhatsAppReplyMode === 'manual' &&
+    Boolean(state.selectedWhatsAppPhone);
+
+  textarea.disabled = !manual;
+  sendButton.disabled = !manual || !textarea.value.trim();
+  help.textContent = manual
+    ? 'Staff reply is enabled. Automatic AI replies are paused for this conversation.'
+    : 'Switch to Manual mode to send a staff reply.';
+}
+
+function updateWhatsAppManualReplyCount() {
+  const textarea = $('whatsappManualReplyMessage');
+  const count = $('whatsappManualReplyCount');
+  if (!textarea || !count) return;
+  count.textContent = `${textarea.value.length} / 4096`;
+  renderWhatsAppManualReplyComposer();
+}
+
+async function sendWhatsAppManualReply() {
+  const phone = state.selectedWhatsAppPhone;
+  const textarea = $('whatsappManualReplyMessage');
+  const sendButton = $('whatsappManualReplySend');
+  const message = textarea?.value.trim() || '';
+
+  if (!phone) throw new Error('No WhatsApp conversation selected.');
+  if (state.selectedWhatsAppReplyMode !== 'manual') {
+    throw new Error('Switch this conversation to Manual mode before sending a staff reply.');
+  }
+  if (!message) throw new Error('Please enter a WhatsApp reply.');
+
+  textarea.disabled = true;
+  sendButton.disabled = true;
+  sendButton.textContent = 'Sending...';
+  setMessage('whatsappDashboardMessage', 'Sending WhatsApp reply...', true);
+
+  try {
+    await api('/api/admin/whatsapp-reply', {
+      method: 'POST',
+      body: JSON.stringify({ phone, message })
+    });
+
+    textarea.value = '';
+    updateWhatsAppManualReplyCount();
+    await loadWhatsAppConversation(phone);
+    setMessage('whatsappDashboardMessage', 'WhatsApp reply sent and saved.', true);
+  } finally {
+    sendButton.textContent = 'Send Reply';
+    renderWhatsAppManualReplyComposer();
+  }
+}
+
+async function updateWhatsAppReplyMode(mode) {
+  const phone =
+    state.selectedWhatsAppPhone;
+
+  if (!phone) {
+    throw new Error(
+      'No WhatsApp conversation selected.'
+    );
+  }
+
+  if (mode !== 'ai' && mode !== 'manual') {
+    throw new Error(
+      'Invalid WhatsApp reply mode.'
+    );
+  }
+
+  const aiButton = $('whatsappReplyModeAi');
+  const manualButton = $('whatsappReplyModeManual');
+
+  aiButton.disabled = true;
+  manualButton.disabled = true;
+
+  setMessage(
+    'whatsappDashboardMessage',
+    'Updating reply mode...',
+    true
+  );
+
+  try {
+    const response = await api(
+      '/api/admin/whatsapp-inbox',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          phone,
+          reply_mode: mode
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    renderWhatsAppReplyMode(
+      data.reply_mode
+    );
+
+    setMessage(
+      'whatsappDashboardMessage',
+      data.reply_mode === 'manual'
+        ? 'Manual mode enabled. Automatic AI replies are paused.'
+        : 'AI Auto mode enabled.',
+      true
+    );
+  } finally {
+    aiButton.disabled = false;
+    manualButton.disabled = false;
+  }
+}
+
+async function loadWhatsAppConversation(phone) {
+  const cleanPhone = String(phone || '').replace(/\D/g, '');
+
+  if (!cleanPhone) {
+    throw new Error('Invalid WhatsApp number.');
+  }
+
+  setMessage(
+    'whatsappDashboardMessage',
+    'Loading conversation...',
+    true
+  );
+
+  const response = await api(
+    `/api/admin/whatsapp-inbox?phone=${encodeURIComponent(cleanPhone)}`
+  );
+
+  const data = await response.json();
+  const conversation = data.conversation;
+
+  if (!conversation) {
+    throw new Error('WhatsApp conversation not found.');
+  }
+
+  const markReadResponse = await api(
+    '/api/admin/whatsapp-inbox',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        phone: cleanPhone,
+        action: 'mark_read'
+      })
+    }
+  );
+
+  if (!markReadResponse.ok) {
+    console.warn(
+      'Unable to mark WhatsApp conversation as read.'
+    );
+  }
+
+  const name =
+    conversation.whatsapp_name ||
+    conversation.enquiry?.name ||
+    conversation.sender_wa_id ||
+    'WhatsApp Conversation';
+
+  $('whatsappConversationName').textContent = name;
+
+  $('whatsappConversationMeta').textContent =
+    `+${conversation.sender_wa_id || ''} · ${conversation.message_count || 0} messages`;
+
+  state.selectedWhatsAppPhone =
+    conversation.sender_wa_id || cleanPhone;
+
+  if ($('whatsappManualReplyMessage')) {
+    $('whatsappManualReplyMessage').value = '';
+    updateWhatsAppManualReplyCount();
+  }
+
+  renderWhatsAppReplyMode(
+    conversation.reply_mode
+  );
+
+  renderWhatsAppConversationStatus(
+    conversation.conversation_status
+  );
+
+  const enquiry = conversation.enquiry;
+
+  renderWhatsAppFollowUp(enquiry);
+
+  $('whatsappConversationCrm').innerHTML = enquiry
+    ? `
+      <p>
+        <strong>CRM:</strong>
+        #${esc(enquiry.id)}
+        ${enquiry.reference ? ` · ${esc(enquiry.reference)}` : ''}
+        ${enquiry.name ? ` · ${esc(enquiry.name)}` : ''}
+      </p>
+    `
+    : '<p><strong>CRM:</strong> Not linked to CRM</p>';
+
+  const messages = conversation.messages || [];
+
+  $('whatsappConversationMessages').innerHTML = messages.length
+    ? messages.map(message => {
+        const direction =
+          message.direction === 'outbound'
+            ? 'QY Academy'
+            : (message.sender_name || name);
+
+        const text =
+          message.message_text ||
+          `[${message.message_type || 'message'}]`;
+
+        const timestamp =
+          message.received_at ||
+          message.message_timestamp ||
+          '';
+
+        const messageClass =
+          message.direction === 'outbound'
+            ? 'whatsapp-message whatsapp-outbound'
+            : 'whatsapp-message whatsapp-inbound';
+
+        return `
+          <article class="${messageClass}">
+            <div class="whatsapp-message-header">
+              <strong>${esc(direction)}</strong>
+              <small>${esc(timestamp)}</small>
+            </div>
+            <p>${esc(text)}</p>
+          </article>
+        `;
+      }).join('')
+    : '<p>No messages found in this conversation.</p>';
+
+  $('whatsappInboxContent').hidden = true;
+  $('whatsappConversationPanel').hidden = false;
+
+  setMessage('whatsappDashboardMessage', '');
+}
 
   async function loadMarketingStats() {
     setMessage('marketingDashboardMessage','Loading…',true);
@@ -531,6 +1188,221 @@
   });
   $('logoutButton').addEventListener('click', () => { sessionStorage.removeItem('qyAdminToken'); state.token=''; $('adminToken').value=''; showLogin(); });
   $('crmTab').addEventListener('click', () => switchModule('crm'));
+  $('whatsappTab').addEventListener('click', () => switchModule('whatsapp'));
+  $('whatsappRefreshButton').addEventListener('click', () =>
+    loadWhatsAppInbox().catch(error =>
+      setMessage('whatsappDashboardMessage', error.message)
+    )
+  );
+
+  $('whatsappInboxSearch').addEventListener('keydown', event => {
+    if (event.key !== 'Enter') return;
+
+    event.preventDefault();
+
+    showWhatsAppConversationList();
+
+    loadWhatsAppInbox().catch(error =>
+      setMessage('whatsappDashboardMessage', error.message)
+    );
+  });
+
+  $('whatsappInboxSearchClear').addEventListener('click', () => {
+    $('whatsappInboxSearch').value = '';
+
+    showWhatsAppConversationList();
+
+    loadWhatsAppInbox().catch(error =>
+      setMessage('whatsappDashboardMessage', error.message)
+    );
+  });
+
+  document.querySelectorAll('[data-whatsapp-filter]').forEach(button => {
+    button.addEventListener('click', () => {
+      const filter =
+        button.dataset.whatsappFilter || 'all';
+
+      state.whatsappInboxFilter =
+        ['unread', 'manual', 'ai'].includes(filter)
+          ? filter
+          : 'all';
+
+      document.querySelectorAll('[data-whatsapp-filter]').forEach(item => {
+        const active =
+          item.dataset.whatsappFilter ===
+          state.whatsappInboxFilter;
+
+        item.classList.toggle('active', active);
+        item.setAttribute(
+          'aria-pressed',
+          active ? 'true' : 'false'
+        );
+      });
+
+      showWhatsAppConversationList();
+
+      loadWhatsAppInbox().catch(error =>
+        setMessage(
+          'whatsappDashboardMessage',
+          error.message
+        )
+      );
+    });
+  });
+
+  document.querySelectorAll('[data-whatsapp-status-filter]').forEach(button => {
+    button.addEventListener('click', () => {
+      const statusFilter =
+        button.dataset.whatsappStatusFilter || 'all';
+
+      state.whatsappInboxStatusFilter =
+        ['open', 'follow_up', 'closed'].includes(statusFilter)
+          ? statusFilter
+          : 'all';
+
+      document.querySelectorAll('[data-whatsapp-status-filter]').forEach(item => {
+        const active =
+          item.dataset.whatsappStatusFilter ===
+          state.whatsappInboxStatusFilter;
+
+        item.classList.toggle('active', active);
+        item.setAttribute(
+          'aria-pressed',
+          active ? 'true' : 'false'
+        );
+      });
+
+      showWhatsAppConversationList();
+
+      loadWhatsAppInbox().catch(error =>
+        setMessage(
+          'whatsappDashboardMessage',
+          error.message
+        )
+      );
+    });
+  });
+
+  document.querySelectorAll('[data-whatsapp-followup-filter]').forEach(button => {
+    button.addEventListener('click', () => {
+      const followUpFilter =
+        button.dataset.whatsappFollowupFilter || 'all';
+
+      state.whatsappInboxFollowUpFilter =
+        ['overdue', 'today', 'upcoming'].includes(followUpFilter)
+          ? followUpFilter
+          : 'all';
+
+      document.querySelectorAll('[data-whatsapp-followup-filter]').forEach(item => {
+        const active =
+          item.dataset.whatsappFollowupFilter ===
+          state.whatsappInboxFollowUpFilter;
+
+        item.classList.toggle('active', active);
+        item.setAttribute(
+          'aria-pressed',
+          active ? 'true' : 'false'
+        );
+      });
+
+      showWhatsAppConversationList();
+
+      loadWhatsAppInbox().catch(error =>
+        setMessage(
+          'whatsappDashboardMessage',
+          error.message
+        )
+      );
+    });
+  });
+
+  $('whatsappConversationBack').addEventListener('click', () => {
+    state.selectedWhatsAppPhone = '';
+    state.selectedWhatsAppReplyMode = 'ai';
+    state.selectedWhatsAppConversationStatus = 'open';
+    if ($('whatsappManualReplyMessage')) {
+      $('whatsappManualReplyMessage').value = '';
+      updateWhatsAppManualReplyCount();
+    }
+    $('whatsappConversationPanel').hidden = true;
+    $('whatsappInboxContent').hidden = false;
+
+      loadWhatsAppInbox().catch(error =>
+        setMessage(
+          'whatsappDashboardMessage',
+        error.message
+      )
+    );
+  });
+
+  $('whatsappReplyModeAi').addEventListener('click', () =>
+    updateWhatsAppReplyMode('ai').catch(error =>
+      setMessage(
+        'whatsappDashboardMessage',
+        error.message
+      )
+    )
+  );
+
+  $('whatsappReplyModeManual').addEventListener('click', () =>
+    updateWhatsAppReplyMode('manual').catch(error =>
+      setMessage(
+        'whatsappDashboardMessage',
+        error.message
+      )
+    )
+  );
+  $('whatsappConversationStatusOpen').addEventListener('click', () =>
+    updateWhatsAppConversationStatus('open').catch(error =>
+      setMessage(
+        'whatsappDashboardMessage',
+        error.message
+      )
+    )
+  );
+
+  $('whatsappConversationStatusFollowUp').addEventListener('click', () =>
+    updateWhatsAppConversationStatus('follow_up').catch(error =>
+      setMessage(
+        'whatsappDashboardMessage',
+        error.message
+      )
+    )
+  );
+
+  $('whatsappConversationStatusClosed').addEventListener('click', () =>
+    updateWhatsAppConversationStatus('closed').catch(error =>
+      setMessage(
+        'whatsappDashboardMessage',
+        error.message
+      )
+    )
+  );
+
+  $('whatsappFollowUpSave').addEventListener('click', () =>
+    saveWhatsAppFollowUp().catch(error => {
+      const status = $('whatsappFollowUpStatus');
+      if (status) status.textContent = error.message;
+      setMessage(
+        'whatsappDashboardMessage',
+        error.message
+      );
+    })
+  );
+
+  $('whatsappManualReplyMessage').addEventListener('input',
+    updateWhatsAppManualReplyCount
+  );
+
+  $('whatsappManualReplySend').addEventListener('click', () =>
+    sendWhatsAppManualReply().catch(error =>
+      setMessage(
+        'whatsappDashboardMessage',
+        error.message
+      )
+    )
+  );
+
   $('studentsTab').addEventListener('click', () => switchModule('students'));
   $('marketingTab').addEventListener('click', () => switchModule('marketing'));
   $('commerceTab').addEventListener('click', () => switchModule('commerce'));
@@ -565,6 +1437,21 @@
   $('prevPage').addEventListener('click', async () => { if(state.page>1){state.page--;await loadRecords().catch(handleError);} });
   $('nextPage').addEventListener('click', async () => { if(state.page*state.pageSize<state.total){state.page++;await loadRecords().catch(handleError);} });
   document.addEventListener('click', async e => {
+    const whatsappConversation =
+      e.target.closest('[data-whatsapp-phone]');
+
+    if (whatsappConversation) {
+      const phone =
+        whatsappConversation.dataset.whatsappPhone;
+
+      loadWhatsAppConversation(phone).catch(error =>
+        setMessage(
+          'whatsappDashboardMessage',
+          error.message
+        )
+      );
+    }
+
     const openButton=e.target.closest('[data-open-id]'); if(openButton) openRecordById(Number(openButton.dataset.openId));
     const followButton=e.target.closest('[data-follow-days]'); if(followButton) quickFollowUp(Number(followButton.dataset.followDays));
     const studentButton=e.target.closest('[data-open-student]'); if(studentButton) openStudentById(Number(studentButton.dataset.openStudent));

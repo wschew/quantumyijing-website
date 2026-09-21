@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Academy Operating System | Quantum YiJing International Academy</title>
   <link rel="icon" href="images/quantum-yijing-logo.png">
-  <link rel="stylesheet" href="admin.css?v=3.1.1">
+  <link rel="stylesheet" href="admin.css?v=3.8.3">
 </head>
 <body>
   <main class="crm-shell">
@@ -37,6 +37,7 @@
 
       <nav class="module-tabs" aria-label="Academy modules">
   <button id="crmTab" class="module-tab active" type="button">CRM & Follow-up</button>
+  <button id="whatsappTab" class="module-tab" type="button">WhatsApp Inbox</button>
   <button id="studentsTab" class="module-tab" type="button">Students</button>
   <button id="marketingTab" class="module-tab" type="button">Marketing</button>
   <button id="commerceTab" class="module-tab" type="button">Sales & Commerce</button>
@@ -141,7 +142,299 @@
         <p id="dashboardMessage" class="form-message" aria-live="polite"></p>
       </section>
       </div>
+      <div id="whatsappModule" hidden>
+        <section class="page-heading">
+          <div>
+            <p class="eyebrow">QY-AOS - WHATSAPP COMMUNICATION</p>
+            <h1>WhatsApp Inbox</h1>
+            <p>View WhatsApp conversations, customer history and linked CRM records.</p>
+          </div>
+          <button id="whatsappRefreshButton" class="secondary-button" type="button">Refresh</button>
+        </section>
 
+        <section class="panel records-panel">
+          <div class="panel-heading records-heading">
+            <div>
+              <h2>Conversations</h2>
+              <p id="whatsappConversationCount">0 conversations</p>
+            </div>
+          </div>
+          <div class="whatsapp-inbox-search">
+            <input
+              id="whatsappInboxSearch"
+              type="search"
+              placeholder="Search name, phone or CRM reference"
+              autocomplete="off"
+              aria-label="Search WhatsApp conversations"
+        >
+        <button
+          id="whatsappInboxSearchClear"
+          class="secondary-button"
+          type="button"
+        >
+          Clear
+        </button>
+      </div>
+            <div
+              class="whatsapp-inbox-filters"
+              role="group"
+              aria-label="Filter WhatsApp conversations"
+            >
+              <button
+                class="secondary-button active"
+                type="button"
+                data-whatsapp-filter="all"
+                aria-pressed="true"
+              >
+                All
+              </button>
+              <button
+                class="secondary-button"
+                type="button"
+                data-whatsapp-filter="unread"
+                aria-pressed="false"
+              >
+                Unread
+              </button>
+              <button
+                class="secondary-button"
+                type="button"
+                data-whatsapp-filter="manual"
+                aria-pressed="false"
+              >
+                Manual
+              </button>
+              <button
+                class="secondary-button"
+                type="button"
+                data-whatsapp-filter="ai"
+                aria-pressed="false"
+              >
+                AI Auto
+              </button>
+            </div>
+
+            <div
+              class="whatsapp-inbox-filters"
+              role="group"
+              aria-label="Filter WhatsApp conversations by status"
+            >
+              <button class="secondary-button active" type="button"
+                data-whatsapp-status-filter="all" aria-pressed="true">
+                All Statuses
+              </button>
+              <button class="secondary-button" type="button"
+                data-whatsapp-status-filter="open" aria-pressed="false">
+                Open
+              </button>
+              <button class="secondary-button" type="button"
+                data-whatsapp-status-filter="follow_up" aria-pressed="false">
+                Follow Up
+              </button>
+              <button class="secondary-button" type="button"
+                data-whatsapp-status-filter="closed" aria-pressed="false">
+                Closed
+              </button>
+            </div>
+
+            <div
+              class="whatsapp-inbox-filters"
+              role="group"
+              aria-label="Filter WhatsApp conversations by CRM follow-up"
+            >
+              <button class="secondary-button active" type="button"
+                data-whatsapp-followup-filter="all" aria-pressed="true">
+                All Follow-ups
+              </button>
+              <button class="secondary-button" type="button"
+                data-whatsapp-followup-filter="overdue" aria-pressed="false">
+                Overdue
+              </button>
+              <button class="secondary-button" type="button"
+                data-whatsapp-followup-filter="today" aria-pressed="false">
+                Due Today
+              </button>
+              <button class="secondary-button" type="button"
+                data-whatsapp-followup-filter="upcoming" aria-pressed="false">
+                Upcoming
+              </button>
+            </div>
+
+          <div id="whatsappInboxContent">
+            <p>Select a WhatsApp conversation to view its message history.</p>
+          </div>
+
+          <section id="whatsappConversationPanel" class="panel" hidden>
+            <div class="panel-heading">
+              <div>
+                <h2 id="whatsappConversationName">Conversation</h2>
+                <p id="whatsappConversationMeta"></p>
+              </div>
+              <button
+                id="whatsappConversationBack"
+                class="secondary-button"
+                type="button"
+              >
+                Back to conversations
+              </button>
+            </div>
+
+            <div id="whatsappConversationCrm"></div>
+
+            <div
+              id="whatsappReplyModeControl"
+              class="whatsapp-reply-mode"
+            >
+              <div>
+                <strong>Reply Mode</strong>
+                <p id="whatsappReplyModeStatus">
+                  Loading reply mode...
+                </p>
+              </div>
+
+              <div
+                class="whatsapp-reply-mode-actions"
+                role="group"
+                aria-label="WhatsApp reply mode"
+              >
+                <button
+                  id="whatsappReplyModeAi"
+                  class="secondary-button"
+                  type="button"
+                >
+                  AI Auto
+                </button>
+
+                <button
+                  id="whatsappReplyModeManual"
+                  class="secondary-button"
+                  type="button"
+                >
+                  Manual
+                </button>
+              </div>
+            </div>
+
+            <div
+              id="whatsappConversationStatusControl"
+              class="whatsapp-reply-mode"
+            >
+              <div>
+                <strong>Conversation Status</strong>
+                <p id="whatsappConversationStatusText">
+                  Loading conversation status...
+                </p>
+              </div>
+
+              <div
+                class="whatsapp-reply-mode-actions"
+                role="group"
+                aria-label="WhatsApp conversation status"
+              >
+                <button
+                  id="whatsappConversationStatusOpen"
+                  class="secondary-button"
+                  type="button"
+                >
+                  Open
+                </button>
+
+                <button
+                  id="whatsappConversationStatusFollowUp"
+                  class="secondary-button"
+                  type="button"
+                >
+                  Follow Up
+                </button>
+
+                <button
+                  id="whatsappConversationStatusClosed"
+                  class="secondary-button"
+                  type="button"
+                >
+                  Closed
+                </button>
+              </div>
+            </div>
+
+            <div
+              id="whatsappFollowUpControl"
+              class="whatsapp-manual-reply"
+            >
+              <label for="whatsappFollowUpDate">
+                <strong>CRM Follow-up</strong>
+                <span id="whatsappFollowUpHelp">Set the next CRM follow-up for this WhatsApp contact.</span>
+              </label>
+
+              <div class="edit-grid edit-grid-v25">
+                <label>
+                  Follow-up Date
+                  <input
+                    id="whatsappFollowUpDate"
+                    type="date"
+                  >
+                </label>
+
+                <label>
+                  Next Action
+                  <input
+                    id="whatsappFollowUpNextAction"
+                    type="text"
+                    maxlength="300"
+                    placeholder="e.g. Send course brochure"
+                  >
+                </label>
+              </div>
+
+              <div class="whatsapp-manual-reply-actions">
+                <span id="whatsappFollowUpStatus"></span>
+                <button
+                  id="whatsappFollowUpSave"
+                  class="primary-button"
+                  type="button"
+                >
+                  Save Follow-up
+                </button>
+              </div>
+            </div>
+
+            <div
+              id="whatsappManualReplyComposer"
+              class="whatsapp-manual-reply"
+            >
+              <label for="whatsappManualReplyMessage">
+                <strong>Manual Reply</strong>
+                <span id="whatsappManualReplyHelp">Switch to Manual mode to send a staff reply.</span>
+              </label>
+              <textarea
+                id="whatsappManualReplyMessage"
+                rows="4"
+                maxlength="4096"
+                placeholder="Type a reply to this WhatsApp conversation..."
+                disabled
+              ></textarea>
+              <div class="whatsapp-manual-reply-actions">
+                <span id="whatsappManualReplyCount">0 / 4096</span>
+                <button
+                  id="whatsappManualReplySend"
+                  class="primary-button"
+                  type="button"
+                  disabled
+                >
+                  Send Reply
+                </button>
+              </div>
+            </div>
+
+            <div
+              id="whatsappConversationMessages"
+              aria-live="polite"
+            ></div>
+          </section>
+
+          <p id="whatsappDashboardMessage" class="form-message" aria-live="polite"></p>
+        </section>
+      </div>
       <div id="studentsModule" hidden>
         <section class="page-heading">
           <div>
@@ -417,6 +710,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=3.3.16e" defer></script>
+  <script src="admin.js?v=3.8.3" defer></script>
 </body>
 </html>

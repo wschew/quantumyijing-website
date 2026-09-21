@@ -681,7 +681,7 @@ async function savePayment(context) {
       fee===null?0:fee,
       net===null?0:net,
       settlementDate || null,
-      bank,
+      bank===null?0:bank,
       storedVerification,'',issuer,notes,
       settlementStatus,reconciledAt
     ).run();
