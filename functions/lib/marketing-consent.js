@@ -1,241 +1,322 @@
-import {
-  normalizeMarketingContact,
-  getMarketingConsent,
-  isMarketingEligible,
-  setMarketingConsent
-} from "../../lib/marketing-consent.js";
+/*
+ * Quantum YiJing v3.9
+ * Marketing Consent Foundation
+ *
+ * Shared consent logic for:
+ * - WhatsApp marketing
+ * - Email marketing
+ * - Admin CRM
+ * - Future campaign manager
+ * - Future audience segmentation
+ *
+ * IMPORTANT:
+ * No consent record = NOT eligible for marketing.
+ * Only an explicit opted_in record is marketing-eligible.
+ */
 
-
-function bearer(request) {
-  const header =
-    request.headers.get("authorization") || "";
-
-  return header
-    .toLowerCase()
-    .startsWith("bearer ")
-    ? header.slice(7).trim()
-    : "";
-}
-
-
-function authorized(request, env) {
-  return (
-    !!env.ADMIN_TOKEN &&
-    bearer(request) === env.ADMIN_TOKEN
-  );
-}
-
-
-function dbOf(env) {
-  return (
-    env.ENQUIRIES_DB ||
-    env.DB ||
-    env.D1 ||
-    null
-  );
-}
-
-
-function json(data, status = 200) {
-  return Response.json(
-    data,
-    {
-      status,
-      headers: {
-        "cache-control": "no-store"
-      }
-    }
-  );
-}
-
-
-export async function onRequestPost({
-  request,
-  env
-}) {
-  if (!authorized(request, env)) {
-    return json(
-      {
-        ok: false,
-        error: "Unauthorized"
-      },
-      401
-    );
-  }
-
-  const db =
-    dbOf(env);
-
-  if (!db) {
-    return json(
-      {
-        ok: false,
-        error: "Database unavailable"
-      },
-      503
-    );
-  }
-
-  let body;
-
-  try {
-    body =
-      await request.json();
-  } catch {
-    return json(
-      {
-        ok: false,
-        error: "Invalid JSON"
-      },
-      400
-    );
-  }
-
-  const action =
-    String(body.action || "read")
+export function normalizeMarketingContact(
+  channel,
+  value
+) {
+  const normalizedChannel =
+    String(channel || "")
       .trim()
       .toLowerCase();
 
-  const channel =
-    String(body.channel || "")
-      .trim()
-      .toLowerCase();
-
-  const contactValue =
-    String(body.contact_value || "")
+  const raw =
+    String(value || "")
       .trim();
 
-  const normalized =
+  if (normalizedChannel === "whatsapp") {
+    return raw
+      .replace(/\D/g, "")
+      .slice(0, 30);
+  }
+
+  if (normalizedChannel === "email") {
+    return raw
+      .toLowerCase()
+      .slice(0, 320);
+  }
+
+  return "";
+}
+
+export async function getMarketingConsent({
+  db,
+  channel,
+  contactValue
+}) {
+  if (!db) {
+    throw new Error("Database is required");
+  }
+
+  const normalizedChannel =
+    String(channel || "")
+      .trim()
+      .toLowerCase();
+
+  if (
+    normalizedChannel !== "whatsapp" &&
+    normalizedChannel !== "email"
+  ) {
+    return null;
+  }
+
+  const normalizedContact =
     normalizeMarketingContact(
-      channel,
+      normalizedChannel,
       contactValue
     );
 
-  if (
-    action !== "read" &&
-    action !== "opt_in" &&
-    action !== "opt_out"
-  ) {
-    return json(
-      {
-        ok: false,
-        error: "Invalid action"
-      },
-      400
-    );
+  if (!normalizedContact) {
+    return null;
   }
 
-  if (!normalized) {
-    return json(
-      {
-        ok: false,
-        error: "Invalid channel or contact"
-      },
-      400
-    );
-  }
-
-  try {
-    let writtenConsent = null;
-
-    if (
-      action === "opt_in" ||
-      action === "opt_out"
-    ) {
-      writtenConsent =
-        await setMarketingConsent({
-          db,
-          channel,
-          contactValue,
-          status:
-            action === "opt_in"
-              ? "opted_in"
-              : "opted_out",
-          enquiryId:
-            body.enquiry_id ?? null,
-          source:
-            body.source ||
-            "v3.9-preview-test",
-          consentTextVersion:
-            body.consent_text_version ||
-            "test-v1",
-          notes:
-            body.notes ||
-            "Temporary v3.9 Preview consent test"
-        });
-    }
-
-    const consent =
-      await getMarketingConsent({
-        db,
-        channel,
-        contactValue
-      });
-
-    const eligible =
-      await isMarketingEligible({
-        db,
-        channel,
-        contactValue
-      });
-
-    let events = [];
-
-    if (consent?.id) {
-      const eventRows =
-        await db.prepare(`
-          SELECT
-            id,
-            marketing_consent_id,
-            enquiry_id,
-            channel,
-            contact_value,
-            event_type,
-            source,
-            consent_text_version,
-            notes,
-            created_at
-          FROM marketing_consent_events
-          WHERE marketing_consent_id = ?
-          ORDER BY id ASC
-        `).bind(
-          consent.id
-        ).all();
-
-      events =
-        eventRows.results || [];
-    }
-
-    return json({
-      ok: true,
-      action,
+  const row = await db.prepare(`
+    SELECT
+      id,
       channel,
-      supplied_contact:
-        contactValue,
-      normalized_contact:
-        normalized,
-      written_consent:
-        writtenConsent,
-      consent,
-      marketing_eligible:
-        eligible,
-      consent_events:
-        events
+      contact_value,
+      status,
+      enquiry_id,
+      consent_source,
+      consent_text_version,
+      consented_at,
+      opted_out_at,
+      created_at,
+      updated_at
+    FROM marketing_consents
+    WHERE channel = ?
+      AND contact_value = ?
+    LIMIT 1
+  `).bind(
+    normalizedChannel,
+    normalizedContact
+  ).first();
+
+  return row || null;
+}
+
+export async function isMarketingEligible({
+  db,
+  channel,
+  contactValue
+}) {
+  const consent =
+    await getMarketingConsent({
+      db,
+      channel,
+      contactValue
     });
 
-  } catch (error) {
-    console.error(
-      "Marketing consent test failed:",
-      error
+  return consent?.status === "opted_in";
+}
+
+export async function setMarketingConsent({
+  db,
+  channel,
+  contactValue,
+  status,
+  enquiryId = null,
+  source = "",
+  consentTextVersion = "",
+  notes = ""
+}) {
+  if (!db) {
+    throw new Error("Database is required");
+  }
+
+  const normalizedChannel =
+    String(channel || "")
+      .trim()
+      .toLowerCase();
+
+  if (
+    normalizedChannel !== "whatsapp" &&
+    normalizedChannel !== "email"
+  ) {
+    throw new Error("Invalid marketing channel");
+  }
+
+  const normalizedContact =
+    normalizeMarketingContact(
+      normalizedChannel,
+      contactValue
     );
 
-    return json(
-      {
-        ok: false,
-        error:
-          "Unable to test marketing consent"
-      },
-      500
+  if (!normalizedContact) {
+    throw new Error("Contact value is required");
+  }
+
+  const normalizedStatus =
+    String(status || "")
+      .trim()
+      .toLowerCase();
+
+  if (
+    normalizedStatus !== "opted_in" &&
+    normalizedStatus !== "opted_out"
+  ) {
+    throw new Error(
+      "Invalid marketing consent status"
     );
   }
+
+  const safeEnquiryId =
+    Number(enquiryId) > 0
+      ? Number(enquiryId)
+      : null;
+
+  const safeSource =
+    String(source || "")
+      .trim()
+      .slice(0, 200);
+
+  const safeVersion =
+    String(consentTextVersion || "")
+      .trim()
+      .slice(0, 100);
+
+  const safeNotes =
+    String(notes || "")
+      .trim()
+      .slice(0, 1000);
+
+  const eventType =
+    normalizedStatus === "opted_in"
+      ? "opt_in"
+      : "opt_out";
+
+  const current =
+    await getMarketingConsent({
+      db,
+      channel: normalizedChannel,
+      contactValue: normalizedContact
+    });
+
+  const statements = [];
+
+  if (!current) {
+    statements.push(
+      db.prepare(`
+        INSERT INTO marketing_consents (
+          channel,
+          contact_value,
+          status,
+          enquiry_id,
+          consent_source,
+          consent_text_version,
+          consented_at,
+          opted_out_at,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          ?, ?, ?, ?, ?, ?,
+          CASE
+            WHEN ? = 'opted_in'
+            THEN CURRENT_TIMESTAMP
+            ELSE ''
+          END,
+          CASE
+            WHEN ? = 'opted_out'
+            THEN CURRENT_TIMESTAMP
+            ELSE ''
+          END,
+          CURRENT_TIMESTAMP,
+          CURRENT_TIMESTAMP
+        )
+      `).bind(
+        normalizedChannel,
+        normalizedContact,
+        normalizedStatus,
+        safeEnquiryId,
+        safeSource,
+        safeVersion,
+        normalizedStatus,
+        normalizedStatus
+      )
+    );
+  } else {
+    statements.push(
+      db.prepare(`
+        UPDATE marketing_consents
+        SET
+          status = ?,
+          enquiry_id =
+            COALESCE(?, enquiry_id),
+          consent_source = ?,
+          consent_text_version = ?,
+          consented_at =
+            CASE
+              WHEN ? = 'opted_in'
+              THEN CURRENT_TIMESTAMP
+              ELSE consented_at
+            END,
+          opted_out_at =
+            CASE
+              WHEN ? = 'opted_out'
+              THEN CURRENT_TIMESTAMP
+              ELSE ''
+            END,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).bind(
+        normalizedStatus,
+        safeEnquiryId,
+        safeSource,
+        safeVersion,
+        normalizedStatus,
+        normalizedStatus,
+        current.id
+      )
+    );
+  }
+
+  statements.push(
+    db.prepare(`
+      INSERT INTO marketing_consent_events (
+        marketing_consent_id,
+        enquiry_id,
+        channel,
+        contact_value,
+        event_type,
+        source,
+        consent_text_version,
+        notes,
+        created_at
+      )
+      SELECT
+        id,
+        ?,
+        channel,
+        contact_value,
+        ?,
+        ?,
+        ?,
+        ?,
+        CURRENT_TIMESTAMP
+      FROM marketing_consents
+      WHERE channel = ?
+        AND contact_value = ?
+      LIMIT 1
+    `).bind(
+      safeEnquiryId,
+      eventType,
+      safeSource,
+      safeVersion,
+      safeNotes,
+      normalizedChannel,
+      normalizedContact
+    )
+  );
+
+  await db.batch(statements);
+
+  return await getMarketingConsent({
+    db,
+    channel: normalizedChannel,
+    contactValue: normalizedContact
+  });
 }
