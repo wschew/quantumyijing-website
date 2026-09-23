@@ -1,7 +1,8 @@
 import {
   normalizeMarketingContact,
   getMarketingConsent,
-  isMarketingEligible
+  isMarketingEligible,
+  setMarketingConsent
 } from "../../lib/marketing-consent.js";
 
 
@@ -90,6 +91,11 @@ export async function onRequestPost({
     );
   }
 
+  const action =
+    String(body.action || "read")
+      .trim()
+      .toLowerCase();
+
   const channel =
     String(body.channel || "")
       .trim()
@@ -105,7 +111,60 @@ export async function onRequestPost({
       contactValue
     );
 
+  if (
+    action !== "read" &&
+    action !== "opt_in" &&
+    action !== "opt_out"
+  ) {
+    return json(
+      {
+        ok: false,
+        error: "Invalid action"
+      },
+      400
+    );
+  }
+
+  if (!normalized) {
+    return json(
+      {
+        ok: false,
+        error: "Invalid channel or contact"
+      },
+      400
+    );
+  }
+
   try {
+    let writtenConsent = null;
+
+    if (
+      action === "opt_in" ||
+      action === "opt_out"
+    ) {
+      writtenConsent =
+        await setMarketingConsent({
+          db,
+          channel,
+          contactValue,
+          status:
+            action === "opt_in"
+              ? "opted_in"
+              : "opted_out",
+          enquiryId:
+            body.enquiry_id ?? null,
+          source:
+            body.source ||
+            "v3.9-preview-test",
+          consentTextVersion:
+            body.consent_text_version ||
+            "test-v1",
+          notes:
+            body.notes ||
+            "Temporary v3.9 Preview consent test"
+        });
+    }
+
     const consent =
       await getMarketingConsent({
         db,
@@ -120,16 +179,48 @@ export async function onRequestPost({
         contactValue
       });
 
+    let events = [];
+
+    if (consent?.id) {
+      const eventRows =
+        await db.prepare(`
+          SELECT
+            id,
+            marketing_consent_id,
+            enquiry_id,
+            channel,
+            contact_value,
+            event_type,
+            source,
+            consent_text_version,
+            notes,
+            created_at
+          FROM marketing_consent_events
+          WHERE marketing_consent_id = ?
+          ORDER BY id ASC
+        `).bind(
+          consent.id
+        ).all();
+
+      events =
+        eventRows.results || [];
+    }
+
     return json({
       ok: true,
+      action,
       channel,
       supplied_contact:
         contactValue,
       normalized_contact:
         normalized,
+      written_consent:
+        writtenConsent,
       consent,
       marketing_eligible:
-        eligible
+        eligible,
+      consent_events:
+        events
     });
 
   } catch (error) {
