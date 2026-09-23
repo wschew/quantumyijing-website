@@ -195,6 +195,13 @@ export async function setMarketingConsent({
       contactValue: normalizedContact
     });
 
+  // Idempotency protection:
+  // Repeated requests for the already-current consent state are a no-op.
+  // A real state transition (opted_in <-> opted_out) is still audited.
+  if (current && current.status === normalizedStatus) {
+    return current;
+  }
+
   const statements = [];
 
   if (!current) {
