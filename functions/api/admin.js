@@ -42,6 +42,7 @@ function buildFilters(url) {
   const source = clean(url.searchParams.get('source'), 100);
   const campaign = clean(url.searchParams.get('campaign'), 120);
   const affiliate = clean(url.searchParams.get('affiliate'), 100);
+  const whatsappConsent = clean(url.searchParams.get('whatsappConsent'), 20);
   const from = clean(url.searchParams.get('from'), 10);
   const to = clean(url.searchParams.get('to'), 10);
   const conditions = [];
@@ -58,6 +59,35 @@ function buildFilters(url) {
   if (source) { conditions.push('(a.marketing_source = ? OR a.utm_source = ?)'); values.push(source, source); }
   if (campaign) { conditions.push('(a.campaign_code = ? OR a.utm_campaign = ?)'); values.push(campaign, campaign); }
   if (affiliate) { conditions.push('a.affiliate_code = ?'); values.push(affiliate); }
+  if (whatsappConsent === 'opted_in' || whatsappConsent === 'opted_out') {
+  conditions.push(`
+    EXISTS (
+      SELECT 1
+      FROM marketing_consents mc
+      WHERE mc.channel = 'whatsapp'
+        AND mc.status = ?
+        AND (
+          mc.enquiry_id = e.id
+          OR mc.contact_value = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(e.phone, '+', ''), ' ', ''), '-', ''), '(', ''), ')', '')
+        )
+    )
+  `);
+  values.push(whatsappConsent);
+}
+
+if (whatsappConsent === 'none') {
+  conditions.push(`
+    NOT EXISTS (
+      SELECT 1
+      FROM marketing_consents mc
+      WHERE mc.channel = 'whatsapp'
+        AND (
+          mc.enquiry_id = e.id
+          OR mc.contact_value = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(e.phone, '+', ''), ' ', ''), '-', ''), '(', ''), ')', '')
+        )
+    )
+  `);
+}
   if (/^\d{4}-\d{2}-\d{2}$/.test(from)) { conditions.push('e.submitted_date >= ?'); values.push(from); }
   if (/^\d{4}-\d{2}-\d{2}$/.test(to)) { conditions.push('e.submitted_date <= ?'); values.push(to); }
   return { where: conditions.length ? `WHERE ${conditions.join(' AND ')}` : '', values };
