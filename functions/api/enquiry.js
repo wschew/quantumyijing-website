@@ -1,3 +1,7 @@
+import {
+  setMarketingConsent
+} from "../lib/marketing-consent.js";
+
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const ACADEMY_NAME = 'Quantum YiJing International Academy';
 const FROM_ADDRESS = `${ACADEMY_NAME} <info@quantumyijing.com>`;
@@ -568,6 +572,10 @@ export async function onRequestPost(context) {
     message: requestedRegistration ? incomingMessage : (incomingMessage || fallbackEnquiryMessage),
     language: body.language === 'zh' ? 'zh' : 'en'
   };
+  // Explicit optional consent for ongoing WhatsApp marketing.
+  // Absence of this value means no proven marketing consent.
+  const whatsappMarketingOptIn =
+    body.whatsappMarketingConsent === 'on';
 
   const attribution = {
     marketingSource: clean(body.marketingSource, 80) || 'Website',
@@ -620,6 +628,45 @@ export async function onRequestPost(context) {
   } catch (error) {
     console.error('Enquiry/order persistence failed', error);
     return json({ error: 'Unable to record registration. Please try again.' }, 500);
+  }
+    /*
+   * Record explicit WhatsApp marketing consent separately from
+   * the enquiry transaction.
+   *
+   * A failed consent write must not invalidate an enquiry that
+   * has already been successfully recorded. The fail-closed
+   * consent model means a failed write simply leaves the contact
+   * without proven marketing eligibility.
+   */
+  if (
+    whatsappMarketingOptIn &&
+    data.phone &&
+    inserted?.id
+  ) {
+    try {
+      await setMarketingConsent({
+        db: context.env.ENQUIRIES_DB,
+        channel: 'whatsapp',
+        contactValue: data.phone,
+        status: 'opted_in',
+        enquiryId: inserted.id,
+        source: 'website_enquiry_form',
+        consentTextVersion: 'whatsapp-marketing-v1',
+        notes: 'Explicit WhatsApp marketing consent from website enquiry form.'
+      });
+
+      console.log(
+        'Website WhatsApp marketing opt-in recorded:',
+        inserted.id
+      );
+    } catch (error) {
+      console.error(
+        'Website WhatsApp marketing opt-in failed after enquiry was recorded:',
+        error instanceof Error
+          ? error.message
+          : error
+      );
+    }
   }
 
   const isRegistration = requestedRegistration;
