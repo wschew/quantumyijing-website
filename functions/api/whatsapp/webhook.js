@@ -980,6 +980,32 @@ export async function onRequestPost(context) {
           outboundPhoneNumberId
         ) {
           try {
+            if (
+              isWhatsAppMarketingOptOutCommand(
+                messageText
+              )
+            ) {
+              await setMarketingConsent({
+                db,
+                channel: "whatsapp",
+                contactValue: senderWaId,
+                status: "opted_out",
+                enquiryId,
+                source:
+                  "whatsapp_inbound_keyword",
+                consentTextVersion: "",
+                notes:
+                  `Inbound opt-out command: ${String(messageText).trim()}`
+              });
+
+              console.log(
+                "WhatsApp marketing opt-out recorded:",
+                senderWaId
+              );
+
+              continue;
+            }
+
             const replyMode =
               await getWhatsAppReplyMode(
                 db,
