@@ -126,6 +126,14 @@
           <label>Marketing source<input id="filterSource" type="search" placeholder="TikTok, Facebook…"></label>
           <label>Campaign<input id="filterCampaign" type="search" placeholder="Campaign code / UTM"></label>
           <label>Affiliate<input id="filterAffiliate" type="search" placeholder="Affiliate code"></label>
+          <label>WhatsApp marketing
+            <select id="filterWhatsappConsent">
+            <option value="">All</option>
+            <option value="opted_in">Opted In</option>
+            <option value="opted_out">Opted Out</option>
+            <option value="none">No Consent</option>
+            </select>
+          </label>
           <label>From<input id="filterFrom" type="date"></label>
           <label>To<input id="filterTo" type="date"></label>
           <button class="primary-button" type="submit">Apply filters</button>

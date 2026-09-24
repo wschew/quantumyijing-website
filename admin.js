@@ -34,7 +34,7 @@
 
   const filters = () => {
     const params = new URLSearchParams({ page: state.page, pageSize: state.pageSize });
-    [['q','filterQ'],['status','filterStatus'],['lifecycle','filterLifecycle'],['priority','filterPriority'],['interest','filterInterest'],['source','filterSource'],['campaign','filterCampaign'],['affiliate','filterAffiliate'],['from','filterFrom'],['to','filterTo']].forEach(([key,id]) => {
+    [['q','filterQ'],['status','filterStatus'],['lifecycle','filterLifecycle'],['priority','filterPriority'],['interest','filterInterest'],['source','filterSource'],['campaign','filterCampaign'],['affiliate','filterAffiliate'],['whatsappConsent','filterWhatsappConsent'],['from','filterFrom'],['to','filterTo']].forEach(([key,id]) => {
       const value = $(id).value.trim(); if (value) params.set(key, value);
     });
     return params;
