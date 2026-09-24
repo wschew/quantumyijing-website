@@ -570,6 +570,83 @@ async function storeOutboundReply({
   return inserted;
 }
 
+/*
+ * Store an outbound WhatsApp system message after Meta
+ * successfully accepts the message.
+ *
+ * Used for non-AI messages such as marketing opt-out
+ * confirmations. This deliberately remains separate from
+ * storeOutboundReply() so existing AI reply behaviour and
+ * CRM activity semantics are unchanged.
+ */
+async function storeOutboundSystemMessage({
+  db,
+  metaResult,
+  phoneNumberId,
+  businessAccountId,
+  senderWaId,
+  enquiryId,
+  message
+}) {
+  const outboundMessageId =
+    metaResult?.messages?.[0]?.id ||
+    null;
+
+  if (!outboundMessageId) {
+    console.warn(
+      "WhatsApp outbound system message ID missing; message not stored."
+    );
+
+    return false;
+  }
+
+  const now =
+    Math.floor(Date.now() / 1000);
+
+  const insertResult =
+    await db.prepare(`
+      INSERT OR IGNORE INTO whatsapp_messages (
+        wa_message_id,
+        wa_phone_number_id,
+        wa_business_account_id,
+        sender_wa_id,
+        sender_name,
+        message_type,
+        message_text,
+        message_timestamp,
+        raw_payload,
+        direction,
+        enquiry_id
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      outboundMessageId,
+      phoneNumberId,
+      businessAccountId,
+      senderWaId,
+      "Quantum YiJing Academy",
+      "text",
+      message,
+      now,
+      JSON.stringify(metaResult),
+      "outbound",
+      enquiryId
+    ).run();
+
+  const inserted =
+    Number(
+      insertResult?.meta?.changes || 0
+    ) > 0;
+
+  if (inserted) {
+    console.log(
+      "WhatsApp outbound system message stored."
+    );
+  }
+
+  return inserted;
+}
+
 export async function onRequestGet(context) {
   const url =
     new URL(context.request.url);
