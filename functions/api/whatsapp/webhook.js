@@ -2,6 +2,10 @@ import {
   generateAcademyAssistantReply
 } from "../ai/academy.js";
 
+import {
+  setMarketingConsent
+} from "../../lib/marketing-consent.js";
+
 const MAX_WHATSAPP_HISTORY = 6;
 
 function toHex(buffer) {
