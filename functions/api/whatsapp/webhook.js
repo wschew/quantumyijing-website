@@ -1049,85 +1049,117 @@ export async function onRequestPost(context) {
         }
 
         if (
+          messageType === "text" &&
+          messageText &&
+          senderWaId &&
+          isWhatsAppMarketingOptOutCommand(
+            messageText
+          )
+        ) {
+          /*
+           * Process marketing opt-out even when this Meta message ID
+           * has already been stored. This makes a webhook retry able
+           * to recover if the original consent write failed after the
+           * inbound message was inserted.
+           *
+           * Do not swallow consent-write errors here. If the write
+           * fails, the webhook request must fail so Meta can retry.
+           */
+          await setMarketingConsent({
+            db,
+            channel: "whatsapp",
+            contactValue: senderWaId,
+            status: "opted_out",
+            enquiryId,
+            source:
+              "whatsapp_inbound_keyword",
+            consentTextVersion: "",
+            notes:
+              `Inbound opt-out command: ${String(messageText).trim()}`
+          });
+
+          console.log(
+            "WhatsApp marketing opt-out recorded:",
+            senderWaId
+          );
+
+          /*
+           * Only the first delivery of this Meta message may send the
+           * confirmation. Duplicate webhook deliveries must not send
+           * duplicate confirmation messages.
+           */
+          if (
+            inserted &&
+            accessToken &&
+            outboundPhoneNumberId
+          ) {
+            const optOutConfirmation =
+              "You have been unsubscribed from WhatsApp marketing messages. " +
+              "You can still contact us here for enquiries and support.\n\n" +
+              "您已取消订阅 WhatsApp 营销信息。您仍可通过此 WhatsApp 联系我们进行咨询与获取支持。";
+
+            const confirmationResult =
+              await sendWhatsAppReply({
+                accessToken,
+                phoneNumberId:
+                  outboundPhoneNumberId,
+                to: senderWaId,
+                message:
+                  optOutConfirmation
+              });
+
+            if (confirmationResult.ok) {
+              await storeOutboundSystemMessage({
+                db,
+                metaResult:
+                  confirmationResult.result,
+                phoneNumberId:
+                  outboundPhoneNumberId,
+                businessAccountId,
+                senderWaId,
+                enquiryId,
+                message:
+                  optOutConfirmation
+              });
+
+              console.log(
+                "WhatsApp marketing opt-out confirmation sent."
+              );
+            } else {
+              console.error(
+                "WhatsApp marketing opt-out confirmation failed."
+              );
+            }
+          } else if (
+            inserted &&
+            (
+              !accessToken ||
+              !outboundPhoneNumberId
+            )
+          ) {
+            console.warn(
+              "WhatsApp marketing opt-out recorded, but confirmation was not sent because outbound WhatsApp credentials are unavailable."
+            );
+          } else {
+            console.log(
+              "Duplicate WhatsApp opt-out webhook processed without sending another confirmation."
+            );
+          }
+
+          continue;
+        }
+
+        /*
+         * Preserve existing duplicate protection for normal
+         * customer-service / Gemini AI messages.
+         */
+        if (
           inserted &&
           messageType === "text" &&
           messageText &&
           senderWaId
         ) {
           try {
-            if (
-              isWhatsAppMarketingOptOutCommand(
-                messageText
-              )
-            ) {
-              await setMarketingConsent({
-                db,
-                channel: "whatsapp",
-                contactValue: senderWaId,
-                status: "opted_out",
-                enquiryId,
-                source:
-                  "whatsapp_inbound_keyword",
-                consentTextVersion: "",
-                notes:
-                  `Inbound opt-out command: ${String(messageText).trim()}`
-              });
-
-              console.log(
-                "WhatsApp marketing opt-out recorded:",
-                senderWaId
-              );
-
-              if (
-                accessToken &&
-                outboundPhoneNumberId
-              ) {
-                const optOutConfirmation =
-                  "You have been unsubscribed from WhatsApp marketing messages. " +
-                  "You can still contact us here for enquiries and support.\n\n" +
-                  "您已取消订阅 WhatsApp 营销信息。您仍可通过此 WhatsApp 联系我们进行咨询与获取支持。";
-
-                const confirmationResult =
-                  await sendWhatsAppReply({
-                    accessToken,
-                    phoneNumberId:
-                      outboundPhoneNumberId,
-                    to: senderWaId,
-                    message:
-                      optOutConfirmation
-                  });
-
-                if (confirmationResult.ok) {
-                  await storeOutboundSystemMessage({
-                    db,
-                    metaResult:
-                      confirmationResult.result,
-                    phoneNumberId:
-                      outboundPhoneNumberId,
-                    businessAccountId,
-                    senderWaId,
-                    enquiryId,
-                    message:
-                      optOutConfirmation
-                  });
-
-                  console.log(
-                    "WhatsApp marketing opt-out confirmation sent."
-                  );
-                } else {
-                  console.error(
-                    "WhatsApp marketing opt-out confirmation failed."
-                  );
-                }
-              } else {
-                console.warn(
-                  "WhatsApp marketing opt-out recorded, but confirmation was not sent because outbound WhatsApp credentials are unavailable."
-                );
-              }
-
-              continue;
-            }
-
             if (
               !accessToken ||
               !outboundPhoneNumberId
