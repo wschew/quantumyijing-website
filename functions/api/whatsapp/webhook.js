@@ -1052,9 +1052,7 @@ export async function onRequestPost(context) {
           inserted &&
           messageType === "text" &&
           messageText &&
-          senderWaId &&
-          accessToken &&
-          outboundPhoneNumberId
+          senderWaId
         ) {
           try {
             if (
@@ -1078,46 +1076,66 @@ export async function onRequestPost(context) {
               console.log(
                 "WhatsApp marketing opt-out recorded:",
                 senderWaId
-        );
+              );
 
-              const optOutConfirmation =
-                "You have been unsubscribed from WhatsApp marketing messages. " +
-                "You can still contact us here for enquiries and support.\n\n" +
-                "您已取消订阅 WhatsApp 营销信息。您仍可通过此 WhatsApp 联系我们进行咨询与获取支持。";
+              if (
+                accessToken &&
+                outboundPhoneNumberId
+              ) {
+                const optOutConfirmation =
+                  "You have been unsubscribed from WhatsApp marketing messages. " +
+                  "You can still contact us here for enquiries and support.\n\n" +
+                  "您已取消订阅 WhatsApp 营销信息。您仍可通过此 WhatsApp 联系我们进行咨询与获取支持。";
 
-              const confirmationResult =
-                await sendWhatsAppReply({
-                  accessToken,
-                  phoneNumberId:
-                    outboundPhoneNumberId,
-                  to: senderWaId,
-                  message: optOutConfirmation
-          });
+                const confirmationResult =
+                  await sendWhatsAppReply({
+                    accessToken,
+                    phoneNumberId:
+                      outboundPhoneNumberId,
+                    to: senderWaId,
+                    message:
+                      optOutConfirmation
+                  });
 
-        if (confirmationResult.ok) {
-          await storeOutboundSystemMessage({
-            db,
-            metaResult:
-              confirmationResult.result,
-            phoneNumberId:
-              outboundPhoneNumberId,
-            businessAccountId,
-            senderWaId,
-            enquiryId,
-            message:
-              optOutConfirmation
-        });
+                if (confirmationResult.ok) {
+                  await storeOutboundSystemMessage({
+                    db,
+                    metaResult:
+                      confirmationResult.result,
+                    phoneNumberId:
+                      outboundPhoneNumberId,
+                    businessAccountId,
+                    senderWaId,
+                    enquiryId,
+                    message:
+                      optOutConfirmation
+                  });
 
-        console.log(
-          "WhatsApp marketing opt-out confirmation sent."
-        );
-      } else {
-        console.error(
-          "WhatsApp marketing opt-out confirmation failed."
-        );
-      }
+                  console.log(
+                    "WhatsApp marketing opt-out confirmation sent."
+                  );
+                } else {
+                  console.error(
+                    "WhatsApp marketing opt-out confirmation failed."
+                  );
+                }
+              } else {
+                console.warn(
+                  "WhatsApp marketing opt-out recorded, but confirmation was not sent because outbound WhatsApp credentials are unavailable."
+                );
+              }
 
-      continue;
+              continue;
+            }
+
+            if (
+              !accessToken ||
+              !outboundPhoneNumberId
+            ) {
+              console.warn(
+                "WhatsApp Academy AI reply skipped: outbound WhatsApp credentials are unavailable."
+              );
+              continue;
             }
 
             const replyMode =
