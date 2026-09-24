@@ -1078,9 +1078,46 @@ export async function onRequestPost(context) {
               console.log(
                 "WhatsApp marketing opt-out recorded:",
                 senderWaId
-              );
+        );
 
-              continue;
+              const optOutConfirmation =
+                "You have been unsubscribed from WhatsApp marketing messages. " +
+                "You can still contact us here for enquiries and support.\n\n" +
+                "您已取消订阅 WhatsApp 营销信息。您仍可通过此 WhatsApp 联系我们进行咨询与获取支持。";
+
+              const confirmationResult =
+                await sendWhatsAppReply({
+                  accessToken,
+                  phoneNumberId:
+                    outboundPhoneNumberId,
+                  to: senderWaId,
+                  message: optOutConfirmation
+          });
+
+        if (confirmationResult.ok) {
+          await storeOutboundSystemMessage({
+            db,
+            metaResult:
+              confirmationResult.result,
+            phoneNumberId:
+              outboundPhoneNumberId,
+            businessAccountId,
+            senderWaId,
+            enquiryId,
+            message:
+              optOutConfirmation
+        });
+
+        console.log(
+          "WhatsApp marketing opt-out confirmation sent."
+        );
+      } else {
+        console.error(
+          "WhatsApp marketing opt-out confirmation failed."
+        );
+      }
+
+      continue;
             }
 
             const replyMode =
