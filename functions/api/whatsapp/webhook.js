@@ -101,6 +101,28 @@ function normalizePhone(value) {
   return String(value || "")
     .replace(/\D/g, "");
 }
+/*
+ * Recognize explicit standalone WhatsApp marketing opt-out commands.
+ *
+ * Keep this deliberately conservative so ordinary conversation containing
+ * words such as "stop" does not accidentally unsubscribe a contact.
+ */
+function isWhatsAppMarketingOptOutCommand(value) {
+  const command = String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toUpperCase();
+
+  return new Set([
+    "STOP",
+    "UNSUBSCRIBE",
+    "OPT OUT",
+    "取消订阅",
+    "取消訂閱",
+    "退订",
+    "退訂"
+  ]).has(command);
+}
 
 /*
  * Generate common CRM representations of a WhatsApp number.
