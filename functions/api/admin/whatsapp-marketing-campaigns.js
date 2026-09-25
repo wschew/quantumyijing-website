@@ -389,13 +389,40 @@ async function previewAudience({
 }
 
 async function generateCampaignRecipients({ db, campaign }) {
-  const preview = await previewAudience({ db, campaign });
+  if (
+    Number(campaign.sent_count || 0) > 0 ||
+    Number(campaign.skipped_count || 0) > 0 ||
+    Number(campaign.failed_count || 0) > 0
+  ) {
+    const error = new Error(
+      "Recipient generation is blocked because this campaign already has delivery activity"
+    );
+    error.code = "CAMPAIGN_HAS_DELIVERY_ACTIVITY";
+    throw error;
+  }
+
+  const nonPending = await db.prepare(`
+    SELECT COUNT(*) AS count
+    FROM whatsapp_marketing_recipients
+    WHERE campaign_id = ?
+      AND status <> 'Pending'
+  `).bind(campaign.id).first();
+
+  if (Number(nonPending?.count || 0) > 0) {
+    const error = new Error(
+      "Recipient generation is blocked because this campaign has non-pending recipients"
+    );
+    error.code = "CAMPAIGN_HAS_NON_PENDING_RECIPIENTS";
+    throw error;
+  }
+
+const preview = await previewAudience({ db, campaign });
   const recipients = preview.recipients || [];
 
   const statements = [
     db.prepare(`
       DELETE FROM whatsapp_marketing_recipients
-      WHERE campaign_id = ? AND status = 'Pending'
+      WHERE campaign_id = ?
     `).bind(campaign.id)
   ];
 
