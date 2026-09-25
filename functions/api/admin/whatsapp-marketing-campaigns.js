@@ -1,3 +1,8 @@
+import {
+  isMarketingEligible,
+  normalizeMarketingContact
+} from "../../lib/marketing-consent.js";
+
 function bearer(request) {
   const header =
     request.headers.get("authorization") || "";
@@ -95,6 +100,292 @@ function normalizeAudienceFilters(value) {
   }
 
   return JSON.stringify(value);
+}
+function parseStoredAudienceFilters(value) {
+  try {
+    const parsed =
+      JSON.parse(value || "{}");
+
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      !Array.isArray(parsed)
+    ) {
+      return parsed;
+    }
+  } catch {
+    // Invalid stored JSON fails closed.
+  }
+
+  return {};
+}
+function buildAudienceCandidateFilters(filters) {
+  const safe =
+    filters &&
+    typeof filters === "object" &&
+    !Array.isArray(filters)
+      ? filters
+      : {};
+
+  const conditions = [];
+  const values = [];
+
+  const q = cleanText(safe.q, 200);
+  const status = cleanText(safe.status, 40);
+  const lifecycle = cleanText(safe.lifecycle, 40);
+  const interest = cleanText(safe.interest, 100);
+  const priority = cleanText(safe.priority, 20);
+  const source = cleanText(safe.source, 100);
+  const campaign = cleanText(safe.campaign, 120);
+  const affiliate = cleanText(safe.affiliate, 100);
+  const from = cleanText(safe.from, 10);
+  const to = cleanText(safe.to, 10);
+
+  if (q) {
+    conditions.push(`
+      (
+        e.name LIKE ?
+        OR e.email LIKE ?
+        OR e.phone LIKE ?
+        OR e.country LIKE ?
+        OR e.reference LIKE ?
+        OR e.message LIKE ?
+        OR s.student_id LIKE ?
+      )
+    `);
+
+    const like = `%${q}%`;
+
+    values.push(
+      like, like, like, like,
+      like, like, like
+    );
+  }
+
+  if (status) {
+    conditions.push("e.status = ?");
+    values.push(status);
+  }
+
+  if (lifecycle) {
+    conditions.push("e.lifecycle_stage = ?");
+    values.push(lifecycle);
+  }
+
+  if (interest) {
+    conditions.push("e.interest = ?");
+    values.push(interest);
+  }
+
+  if (priority) {
+    conditions.push("e.priority = ?");
+    values.push(priority);
+  }
+
+  if (source) {
+    conditions.push(`
+      (
+        a.marketing_source = ?
+        OR a.utm_source = ?
+      )
+    `);
+    values.push(source, source);
+  }
+
+  if (campaign) {
+    conditions.push(`
+      (
+        a.campaign_code = ?
+        OR a.utm_campaign = ?
+      )
+    `);
+    values.push(campaign, campaign);
+  }
+
+  if (affiliate) {
+    conditions.push("a.affiliate_code = ?");
+    values.push(affiliate);
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(from)) {
+    conditions.push("e.submitted_date >= ?");
+    values.push(from);
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+    conditions.push("e.submitted_date <= ?");
+    values.push(to);
+  }
+
+  return {
+    where:
+      conditions.length
+        ? `WHERE ${conditions.join(" AND ")}`
+        : "",
+    values
+  };
+}
+async function previewAudience({
+  db,
+  campaign
+}) {
+  const filters =
+    parseStoredAudienceFilters(
+      campaign.audience_filters
+    );
+
+  const {
+    where,
+    values
+  } =
+    buildAudienceCandidateFilters(
+      filters
+    );
+
+  const result =
+    await db.prepare(`
+      SELECT
+        e.id,
+        e.reference,
+        e.name,
+        e.phone,
+        e.email,
+        e.country,
+        e.interest,
+        e.language,
+        e.status,
+        e.lifecycle_stage,
+        e.priority,
+        e.submitted_date,
+        s.student_id,
+        s.programme,
+        a.marketing_source,
+        a.campaign_code,
+        a.utm_source,
+        a.utm_medium,
+        a.utm_campaign,
+        a.affiliate_code
+      FROM enquiries e
+      LEFT JOIN students s
+        ON s.enquiry_id = e.id
+      LEFT JOIN enquiry_attribution a
+        ON a.enquiry_id = e.id
+      ${where}
+      ORDER BY e.id DESC
+    `).bind(
+      ...values
+    ).all();
+
+  const candidates =
+    result.results || [];
+
+  const recipients = [];
+  const seenContacts =
+    new Set();
+
+  let noPhoneCount = 0;
+  let notOptedInCount = 0;
+  let duplicateContactCount = 0;
+
+  for (const row of candidates) {
+    const contactValue =
+      normalizeMarketingContact(
+        "whatsapp",
+        row.phone
+      );
+
+    if (!contactValue) {
+      noPhoneCount += 1;
+      continue;
+    }
+
+    const eligible =
+      await isMarketingEligible({
+        db,
+        channel: "whatsapp",
+        contactValue
+      });
+
+    if (!eligible) {
+      notOptedInCount += 1;
+      continue;
+    }
+
+    if (
+      seenContacts.has(contactValue)
+    ) {
+      duplicateContactCount += 1;
+      continue;
+    }
+
+    seenContacts.add(contactValue);
+
+    recipients.push({
+      enquiry_id: Number(row.id),
+      reference: row.reference || "",
+      name: row.name || "",
+      contact_value: contactValue,
+      phone: row.phone || "",
+      email: row.email || "",
+      country: row.country || "",
+      interest: row.interest || "",
+      language: row.language || "",
+      status: row.status || "",
+      lifecycle_stage:
+        row.lifecycle_stage || "",
+      priority: row.priority || "",
+      submitted_date:
+        row.submitted_date || "",
+      student_id:
+        row.student_id || "",
+      programme:
+        row.programme || "",
+      marketing_source:
+        row.marketing_source || "",
+      attribution_campaign_code:
+        row.campaign_code || "",
+      utm_source:
+        row.utm_source || "",
+      utm_medium:
+        row.utm_medium || "",
+      utm_campaign:
+        row.utm_campaign || "",
+      affiliate_code:
+        row.affiliate_code || "",
+      marketing_consent:
+        "opted_in"
+    });
+  }
+
+  return {
+    filters,
+
+    enforcement: {
+      channel: "whatsapp",
+      required_consent: "opted_in",
+      contact_deduplication:
+        "canonical_whatsapp_contact"
+    },
+
+    counts: {
+      crm_candidates:
+        candidates.length,
+
+      eligible_unique_recipients:
+        recipients.length,
+
+      excluded_no_phone:
+        noPhoneCount,
+
+      excluded_not_opted_in:
+        notOptedInCount,
+
+      excluded_duplicate_contact:
+        duplicateContactCount
+    },
+
+    recipients
+  };
 }
 
 async function loadCampaign(db, id) {
@@ -305,6 +596,101 @@ export async function onRequestPost({
       {
         ok: false,
         error: "Invalid JSON body"
+      },
+      400
+    );
+  }
+
+  const action =
+    cleanText(
+      body?.action,
+      50
+    ).toLowerCase();
+
+  if (action === "preview_audience") {
+    const campaignId =
+      parseCampaignId(
+        body?.campaign_id
+      );
+
+    if (!campaignId) {
+      return json(
+        {
+          ok: false,
+          error:
+            "campaign_id is required"
+        },
+        400
+      );
+    }
+
+    try {
+      const campaign =
+        await loadCampaign(
+          db,
+          campaignId
+        );
+
+      if (!campaign) {
+        return json(
+          {
+            ok: false,
+            error:
+              "Campaign not found"
+          },
+          404
+        );
+      }
+
+      if (
+        campaign.status !== "Draft"
+      ) {
+        return json(
+          {
+            ok: false,
+            error:
+              "Audience preview is allowed only for Draft campaigns"
+          },
+          409
+        );
+      }
+
+      const preview =
+        await previewAudience({
+          db,
+          campaign
+        });
+
+      return json({
+        ok: true,
+        action:
+          "preview_audience",
+        campaign:
+          campaignResponse(campaign),
+        preview
+      });
+    } catch (error) {
+      console.error(
+        "WhatsApp marketing audience preview failed",
+        error
+      );
+
+      return json(
+        {
+          ok: false,
+          error:
+            "Unable to preview campaign audience"
+        },
+        500
+      );
+    }
+  }
+
+  if (action) {
+    return json(
+      {
+        ok: false,
+        error: "Unsupported action"
       },
       400
     );
