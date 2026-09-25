@@ -388,6 +388,65 @@ async function previewAudience({
   };
 }
 
+async function generateCampaignRecipients({ db, campaign }) {
+  const preview = await previewAudience({ db, campaign });
+  const recipients = preview.recipients || [];
+
+  const statements = [
+    db.prepare(`
+      DELETE FROM whatsapp_marketing_recipients
+      WHERE campaign_id = ? AND status = 'Pending'
+    `).bind(campaign.id)
+  ];
+
+  for (const recipient of recipients) {
+    statements.push(
+      db.prepare(`
+        INSERT INTO whatsapp_marketing_recipients (
+          campaign_id, enquiry_id, contact_value, recipient_name,
+          status, consent_status_at_selection, consent_checked_at
+        )
+        VALUES (?, ?, ?, ?, 'Pending', 'opted_in', CURRENT_TIMESTAMP)
+      `).bind(
+        campaign.id,
+        recipient.enquiry_id,
+        recipient.contact_value,
+        recipient.name || ""
+      )
+    );
+  }
+
+  statements.push(
+    db.prepare(`
+      UPDATE whatsapp_marketing_campaigns
+      SET total_recipients = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ? AND status = 'Draft'
+    `).bind(recipients.length, campaign.id)
+  );
+
+  await db.batch(statements);
+
+  const generated = await db.prepare(`
+    SELECT
+      id, campaign_id, enquiry_id, contact_value, recipient_name,
+      status, consent_status_at_selection, consent_checked_at,
+      skip_reason, error_message, wa_message_id, sent_at,
+      created_at, updated_at
+    FROM whatsapp_marketing_recipients
+    WHERE campaign_id = ?
+    ORDER BY id ASC
+  `).bind(campaign.id).all();
+
+  const refreshedCampaign = await loadCampaign(db, campaign.id);
+
+  return {
+    preview_counts: preview.counts,
+    generated_count: recipients.length,
+    campaign: campaignResponse(refreshedCampaign),
+    recipients: generated.results || []
+  };
+}
+
 async function loadCampaign(db, id) {
   return db.prepare(`
     SELECT
@@ -680,6 +739,53 @@ export async function onRequestPost({
           ok: false,
           error:
             "Unable to preview campaign audience"
+        },
+        500
+      );
+    }
+  }
+
+  if (action === "generate_recipients") {
+    const campaignId = parseCampaignId(body?.campaign_id);
+
+    if (!campaignId) {
+      return json({ ok: false, error: "campaign_id is required" }, 400);
+    }
+
+    try {
+      const campaign = await loadCampaign(db, campaignId);
+
+      if (!campaign) {
+        return json({ ok: false, error: "Campaign not found" }, 404);
+      }
+
+      if (campaign.status !== "Draft") {
+        return json(
+          {
+            ok: false,
+            error: "Recipient generation is allowed only for Draft campaigns"
+          },
+          409
+        );
+      }
+
+      const generation = await generateCampaignRecipients({ db, campaign });
+
+      return json({
+        ok: true,
+        action: "generate_recipients",
+        generation
+      });
+    } catch (error) {
+      console.error(
+        "WhatsApp marketing recipient generation failed",
+        error
+      );
+
+      return json(
+        {
+          ok: false,
+          error: "Unable to generate campaign recipients"
         },
         500
       );
