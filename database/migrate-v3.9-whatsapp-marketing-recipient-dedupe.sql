@@ -1,0 +1,2 @@
+﻿CREATE UNIQUE INDEX IF NOT EXISTS idx_whatsapp_marketing_recipients_campaign_contact
+ON whatsapp_marketing_recipients(campaign_id, contact_value);
