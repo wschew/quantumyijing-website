@@ -296,7 +296,8 @@ async function previewAudience({
     const contactValue =
       normalizeMarketingContact(
         "whatsapp",
-        row.phone
+        row.phone,
+        { country: row.country }
       );
 
     if (!contactValue) {
