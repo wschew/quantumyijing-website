@@ -580,6 +580,82 @@ async function checkRecipientSendEligibility({
   };
 }
 
+async function claimRecipientForSending({
+  db,
+  campaign,
+  recipientId
+}) {
+  const id =
+    parseCampaignId(recipientId);
+
+  if (!id) {
+    return {
+      ok: false,
+      claimed: false,
+      reason: "recipient_id_required"
+    };
+  }
+
+  const updateResult =
+    await db.prepare(`
+      UPDATE whatsapp_marketing_recipients
+      SET
+        status = 'Processing',
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+        AND campaign_id = ?
+        AND status = 'Pending'
+    `).bind(
+      id,
+      campaign.id
+    ).run();
+
+  const changed =
+    Number(updateResult?.meta?.changes || 0);
+
+  const recipient =
+    await db.prepare(`
+      SELECT
+        id,
+        campaign_id,
+        enquiry_id,
+        contact_value,
+        recipient_name,
+        status,
+        consent_status_at_selection,
+        consent_checked_at,
+        skip_reason,
+        error_message,
+        wa_message_id,
+        sent_at
+      FROM whatsapp_marketing_recipients
+      WHERE id = ?
+        AND campaign_id = ?
+      LIMIT 1
+    `).bind(
+      id,
+      campaign.id
+    ).first();
+
+  if (!recipient) {
+    return {
+      ok: false,
+      claimed: false,
+      reason: "recipient_not_found"
+    };
+  }
+
+  return {
+    ok: true,
+    claimed: changed === 1,
+    reason:
+      changed === 1
+        ? "recipient_claimed"
+        : "recipient_not_pending",
+    recipient
+  };
+}
+
 async function skipRecipientIfCurrentlyNotOptedIn({
   db,
   campaign,
@@ -1216,6 +1292,119 @@ export async function onRequestPost({
       );
     }
   }
+  if (
+    action ===
+    "claim_recipient_for_sending"
+  ) {
+    const campaignId =
+      parseCampaignId(
+        body?.campaign_id
+      );
+
+    const recipientId =
+      Number(body?.recipient_id);
+
+    if (!campaignId) {
+      return json(
+        {
+          ok: false,
+          error:
+            "campaign_id is required"
+        },
+        400
+      );
+    }
+
+    if (
+      !Number.isInteger(recipientId) ||
+      recipientId <= 0
+    ) {
+      return json(
+        {
+          ok: false,
+          error:
+            "recipient_id is required"
+        },
+        400
+      );
+    }
+
+    try {
+      const campaign =
+        await loadCampaign(
+          db,
+          campaignId
+        );
+
+      if (!campaign) {
+        return json(
+          {
+            ok: false,
+            error:
+              "Campaign not found"
+          },
+          404
+        );
+      }
+
+      if (
+        campaign.status !== "Draft"
+      ) {
+        return json(
+          {
+            ok: false,
+            error:
+              "Recipient claim test is allowed only for Draft campaigns"
+          },
+          409
+        );
+      }
+
+      const result =
+        await claimRecipientForSending({
+          db,
+          campaign,
+          recipientId
+        });
+
+      if (
+        !result.ok &&
+        result.reason ===
+          "recipient_not_found"
+      ) {
+        return json(
+          {
+            ok: false,
+            error:
+              "Recipient not found for campaign"
+          },
+          404
+        );
+      }
+
+      return json({
+        ok: true,
+        action:
+          "claim_recipient_for_sending",
+        result
+      });
+    } catch (error) {
+      console.error(
+        "WhatsApp marketing recipient claim test failed",
+        error
+      );
+
+      return json(
+        {
+          ok: false,
+          error:
+            "Unable to process recipient claim test"
+        },
+        500
+      );
+    }
+  }
+
   if (action === "generate_recipients") {
     const campaignId = parseCampaignId(body?.campaign_id);
 
