@@ -416,7 +416,7 @@ async function generateCampaignRecipients({ db, campaign }) {
     throw error;
   }
 
-const preview = await previewAudience({ db, campaign });
+  const preview = await previewAudience({ db, campaign });
   const recipients = preview.recipients || [];
 
   const statements = [
@@ -804,6 +804,19 @@ export async function onRequestPost({
         generation
       });
     } catch (error) {
+      if (
+        error?.code === "CAMPAIGN_HAS_DELIVERY_ACTIVITY" ||
+        error?.code === "CAMPAIGN_HAS_NON_PENDING_RECIPIENTS"
+      ) {
+        return json(
+          {
+            ok: false,
+            error: error.message
+          },
+          409
+        );
+      }
+
       console.error(
         "WhatsApp marketing recipient generation failed",
         error
