@@ -16,7 +16,8 @@
 
 export function normalizeMarketingContact(
   channel,
-  value
+  value,
+  options = {}
 ) {
   const normalizedChannel =
     String(channel || "")
@@ -28,9 +29,27 @@ export function normalizeMarketingContact(
       .trim();
 
   if (normalizedChannel === "whatsapp") {
-    return raw
-      .replace(/\D/g, "")
-      .slice(0, 30);
+    let normalized =
+      raw
+        .replace(/\D/g, "")
+        .slice(0, 30);
+
+    const country =
+      String(options?.country || "")
+        .trim()
+        .toLowerCase();
+
+    // Match the established v3.8 enquiry WhatsApp behavior:
+    // Malaysian local mobile format 01... -> 601...
+    if (
+      normalized.startsWith("0") &&
+      country.includes("malaysia")
+    ) {
+      normalized =
+        `60${normalized.slice(1)}`;
+    }
+
+    return normalized;
   }
 
   if (normalizedChannel === "email") {
@@ -41,7 +60,6 @@ export function normalizeMarketingContact(
 
   return "";
 }
-
 export async function getMarketingConsent({
   db,
   channel,
@@ -118,6 +136,7 @@ export async function setMarketingConsent({
   channel,
   contactValue,
   status,
+  country = "",
   enquiryId = null,
   source = "",
   consentTextVersion = "",
@@ -142,7 +161,8 @@ export async function setMarketingConsent({
   const normalizedContact =
     normalizeMarketingContact(
       normalizedChannel,
-      contactValue
+      contactValue,
+      { country }
     );
 
   if (!normalizedContact) {

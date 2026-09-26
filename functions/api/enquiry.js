@@ -649,6 +649,7 @@ export async function onRequestPost(context) {
         channel: 'whatsapp',
         contactValue: data.phone,
         status: 'opted_in',
+        country: data.country,
         enquiryId: inserted.id,
         source: 'website_enquiry_form',
         consentTextVersion: 'whatsapp-marketing-v1',
