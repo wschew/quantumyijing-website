@@ -579,6 +579,116 @@ async function checkRecipientSendEligibility({
   };
 }
 
+async function skipRecipientIfCurrentlyNotOptedIn({
+  db,
+  campaign,
+  recipientId
+}) {
+  const eligibility =
+    await checkRecipientSendEligibility({
+      db,
+      campaign,
+      recipientId
+    });
+
+  if (
+    !eligibility.ok &&
+    eligibility.reason === "recipient_not_found"
+  ) {
+    return eligibility;
+  }
+
+  if (
+    !eligibility.ok ||
+    eligibility.eligible ||
+    eligibility.reason !==
+      "current_consent_not_opted_in"
+  ) {
+    return {
+      ...eligibility,
+      skipped: false
+    };
+  }
+
+  const updateResult =
+    await db.prepare(`
+      UPDATE whatsapp_marketing_recipients
+      SET
+        status = 'Skipped',
+        consent_checked_at = CURRENT_TIMESTAMP,
+        skip_reason = 'current_consent_not_opted_in',
+        error_message = '',
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+        AND campaign_id = ?
+        AND status = 'Pending'
+    `).bind(
+      recipientId,
+      campaign.id
+    ).run();
+
+  const changed =
+    Number(updateResult?.meta?.changes || 0);
+
+  if (changed === 1) {
+    await db.prepare(`
+      UPDATE whatsapp_marketing_campaigns
+      SET
+        skipped_count = skipped_count + 1,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(
+      campaign.id
+    ).run();
+  }
+
+  const recipient =
+    await db.prepare(`
+      SELECT
+        id,
+        campaign_id,
+        enquiry_id,
+        contact_value,
+        recipient_name,
+        status,
+        consent_status_at_selection,
+        consent_checked_at,
+        skip_reason,
+        error_message,
+        wa_message_id,
+        sent_at
+      FROM whatsapp_marketing_recipients
+      WHERE id = ?
+        AND campaign_id = ?
+      LIMIT 1
+    `).bind(
+      recipientId,
+      campaign.id
+    ).first();
+
+  const refreshedCampaign =
+    await loadCampaign(
+      db,
+      campaign.id
+    );
+
+  return {
+    ok: true,
+    eligible: false,
+    skipped: changed === 1,
+    reason:
+      changed === 1
+        ? "current_consent_not_opted_in"
+        : "recipient_not_pending",
+    current_consent_required:
+      "opted_in",
+    contact_value:
+      eligibility.contact_value || "",
+    recipient,
+    campaign:
+      campaignResponse(refreshedCampaign)
+  };
+}
 async function loadCampaign(db, id) {
   return db.prepare(`
     SELECT
@@ -993,6 +1103,118 @@ export async function onRequestPost({
     }
   }
 
+  if (
+    action ===
+    "skip_recipient_if_not_opted_in"
+  ) {
+    const campaignId =
+      parseCampaignId(
+        body?.campaign_id
+      );
+
+    const recipientId =
+      Number(body?.recipient_id);
+
+    if (!campaignId) {
+      return json(
+        {
+          ok: false,
+          error:
+            "campaign_id is required"
+        },
+        400
+      );
+    }
+
+    if (
+      !Number.isInteger(recipientId) ||
+      recipientId <= 0
+    ) {
+      return json(
+        {
+          ok: false,
+          error:
+            "recipient_id is required"
+        },
+        400
+      );
+    }
+
+    try {
+      const campaign =
+        await loadCampaign(
+          db,
+          campaignId
+        );
+
+      if (!campaign) {
+        return json(
+          {
+            ok: false,
+            error:
+              "Campaign not found"
+          },
+          404
+        );
+      }
+
+      if (
+        campaign.status !== "Draft"
+      ) {
+        return json(
+          {
+            ok: false,
+            error:
+              "Recipient skip test is allowed only for Draft campaigns"
+          },
+          409
+        );
+      }
+
+      const result =
+        await skipRecipientIfCurrentlyNotOptedIn({
+          db,
+          campaign,
+          recipientId
+        });
+
+      if (
+        !result.ok &&
+        result.reason ===
+          "recipient_not_found"
+      ) {
+        return json(
+          {
+            ok: false,
+            error:
+              "Recipient not found for campaign"
+          },
+          404
+        );
+      }
+
+      return json({
+        ok: true,
+        action:
+          "skip_recipient_if_not_opted_in",
+        result
+      });
+    } catch (error) {
+      console.error(
+        "WhatsApp marketing recipient skip test failed",
+        error
+      );
+
+      return json(
+        {
+          ok: false,
+          error:
+            "Unable to process recipient skip test"
+        },
+        500
+      );
+    }
+  }
   if (action === "generate_recipients") {
     const campaignId = parseCampaignId(body?.campaign_id);
 
