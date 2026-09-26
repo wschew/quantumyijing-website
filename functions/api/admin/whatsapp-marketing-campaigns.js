@@ -102,22 +102,27 @@ function normalizeAudienceFilters(value) {
   return JSON.stringify(value);
 }
 function parseStoredAudienceFilters(value) {
-  try {
-    const parsed =
-      JSON.parse(value || "{}");
+  let parsed;
 
-    if (
-      parsed &&
-      typeof parsed === "object" &&
-      !Array.isArray(parsed)
-    ) {
-      return parsed;
-    }
+  try {
+    parsed = JSON.parse(value || "{}");
   } catch {
-    // Invalid stored JSON fails closed.
+    throw new Error(
+      "Invalid stored audience_filters JSON"
+    );
   }
 
-  return {};
+  if (
+    !parsed ||
+    typeof parsed !== "object" ||
+    Array.isArray(parsed)
+  ) {
+    throw new Error(
+      "Invalid stored audience_filters"
+    );
+  }
+
+  return parsed;
 }
 function buildAudienceCandidateFilters(filters) {
   const safe =
