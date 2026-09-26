@@ -656,6 +656,103 @@ async function claimRecipientForSending({
   };
 }
 
+async function checkProcessingRecipientConsent({
+  db,
+  campaign,
+  recipientId
+}) {
+  const id =
+    parseCampaignId(recipientId);
+
+  if (!id) {
+    return {
+      ok: false,
+      eligible: false,
+      reason: "recipient_id_required"
+    };
+  }
+
+  const recipient =
+    await db.prepare(`
+      SELECT
+        id,
+        campaign_id,
+        enquiry_id,
+        contact_value,
+        recipient_name,
+        status,
+        consent_status_at_selection,
+        consent_checked_at,
+        skip_reason,
+        error_message,
+        wa_message_id,
+        sent_at
+      FROM whatsapp_marketing_recipients
+      WHERE id = ?
+        AND campaign_id = ?
+      LIMIT 1
+    `).bind(
+      id,
+      campaign.id
+    ).first();
+
+  if (!recipient) {
+    return {
+      ok: false,
+      eligible: false,
+      reason: "recipient_not_found"
+    };
+  }
+
+  if (recipient.status !== "Processing") {
+    return {
+      ok: true,
+      eligible: false,
+      reason: "recipient_not_processing",
+      recipient
+    };
+  }
+
+  const contactValue =
+    normalizeMarketingContact(
+      "whatsapp",
+      recipient.contact_value
+    );
+
+  if (
+    !contactValue ||
+    contactValue !== recipient.contact_value
+  ) {
+    return {
+      ok: true,
+      eligible: false,
+      reason: "invalid_canonical_contact",
+      recipient
+    };
+  }
+
+  const eligible =
+    await isMarketingEligible({
+      db,
+      channel: "whatsapp",
+      contactValue
+    });
+
+  return {
+    ok: true,
+    eligible,
+    reason:
+      eligible
+        ? "current_consent_opted_in"
+        : "current_consent_not_opted_in",
+    current_consent_required:
+      "opted_in",
+    contact_value:
+      contactValue,
+    recipient
+  };
+}
+
 async function skipRecipientIfCurrentlyNotOptedIn({
   db,
   campaign,
@@ -1399,6 +1496,119 @@ export async function onRequestPost({
           ok: false,
           error:
             "Unable to process recipient claim test"
+        },
+        500
+      );
+    }
+  }
+
+  if (
+    action ===
+    "check_processing_recipient_consent"
+  ) {
+    const campaignId =
+      parseCampaignId(
+        body?.campaign_id
+      );
+
+    const recipientId =
+      Number(body?.recipient_id);
+
+    if (!campaignId) {
+      return json(
+        {
+          ok: false,
+          error:
+            "campaign_id is required"
+        },
+        400
+      );
+    }
+
+    if (
+      !Number.isInteger(recipientId) ||
+      recipientId <= 0
+    ) {
+      return json(
+        {
+          ok: false,
+          error:
+            "recipient_id is required"
+        },
+        400
+      );
+    }
+
+    try {
+      const campaign =
+        await loadCampaign(
+          db,
+          campaignId
+        );
+
+      if (!campaign) {
+        return json(
+          {
+            ok: false,
+            error:
+              "Campaign not found"
+          },
+          404
+        );
+      }
+
+      if (
+        campaign.status !== "Draft"
+      ) {
+        return json(
+          {
+            ok: false,
+            error:
+              "Processing consent check is allowed only for Draft campaigns"
+          },
+          409
+        );
+      }
+
+      const result =
+        await checkProcessingRecipientConsent({
+          db,
+          campaign,
+          recipientId
+        });
+
+      if (
+        !result.ok &&
+        result.reason ===
+          "recipient_not_found"
+      ) {
+        return json(
+          {
+            ok: false,
+            error:
+              "Recipient not found for campaign"
+          },
+          404
+        );
+      }
+
+      return json({
+        ok: true,
+        action:
+          "check_processing_recipient_consent",
+        result
+      });
+    } catch (error) {
+      console.error(
+        "WhatsApp marketing processing consent check failed",
+        error
+      );
+
+      return json(
+        {
+          ok: false,
+          error:
+            "Unable to process recipient consent check"
         },
         500
       );
