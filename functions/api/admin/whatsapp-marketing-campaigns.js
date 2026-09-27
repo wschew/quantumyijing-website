@@ -1458,6 +1458,124 @@ async function finalizeProcessingRecipientAsSent({
   };
 }
 
+async function prepareMarketingRecipientForSend({
+  db,
+  campaign,
+  recipientId
+}) {
+  const claim =
+    await claimRecipientForSending({
+      db,
+      campaign,
+      recipientId
+    });
+
+  if (!claim?.claimed) {
+    return {
+      ok: false,
+      ready_to_send: false,
+      reason:
+        claim?.reason ||
+        "recipient_claim_failed",
+      recipient:
+        claim?.recipient || null
+    };
+  }
+
+  const consent =
+    await checkProcessingRecipientConsent({
+      db,
+      campaign,
+      recipientId
+    });
+
+  if (!consent?.eligible) {
+    if (
+      consent?.reason ===
+      "current_consent_not_opted_in"
+    ) {
+      const skipped =
+        await skipProcessingRecipientIfCurrentlyNotOptedIn({
+          db,
+          campaign,
+          recipientId
+        });
+
+      return {
+        ok: true,
+        ready_to_send: false,
+        reason: "recipient_skipped_current_consent",
+        recipient:
+          skipped?.recipient ||
+          consent?.recipient || null,
+        campaign:
+          skipped?.campaign || null
+      };
+    }
+
+    return {
+      ok: false,
+      ready_to_send: false,
+      reason:
+        consent?.reason ||
+        "recipient_consent_check_failed",
+      recipient:
+        consent?.recipient || null
+    };
+  }
+
+  const templateName =
+    cleanText(
+      campaign?.template_name,
+      200
+    );
+
+  const templateLanguage =
+    cleanText(
+      campaign?.template_language,
+      50
+    );
+
+  const payload =
+    buildMarketingTemplatePayload({
+      contactValue:
+        consent?.recipient?.contact_value,
+      templateName,
+      templateLanguage
+    });
+
+  if (!payload) {
+    const failed =
+      await finalizeProcessingRecipientAsFailed({
+        db,
+        campaign,
+        recipientId,
+        errorMessage:
+          "Marketing template configuration is incomplete"
+      });
+
+    return {
+      ok: false,
+      ready_to_send: false,
+      reason: "invalid_template_configuration",
+      recipient:
+        failed?.recipient ||
+        consent?.recipient || null,
+      campaign:
+        failed?.campaign || null
+    };
+  }
+
+  return {
+    ok: true,
+    ready_to_send: true,
+    reason: "recipient_ready_for_meta_send",
+    recipient:
+      consent.recipient,
+    payload
+  };
+}
+
 async function loadCampaign(db, id) {
   return db.prepare(`
     SELECT
