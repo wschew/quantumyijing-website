@@ -2622,6 +2622,122 @@ export async function onRequestPost({
     }
   }
 
+  if (action === "send_recipient") {
+    const campaignId =
+      parseCampaignId(
+        body?.campaign_id
+      );
+
+    const recipientId =
+      Number(body?.recipient_id);
+
+    if (!campaignId) {
+      return json(
+        {
+          ok: false,
+          error:
+            "campaign_id is required"
+        },
+        400
+      );
+    }
+
+    if (
+      !Number.isInteger(recipientId) ||
+      recipientId <= 0
+    ) {
+      return json(
+        {
+          ok: false,
+          error:
+            "recipient_id is required"
+        },
+        400
+      );
+    }
+
+    try {
+      const campaign =
+        await loadCampaign(
+          db,
+          campaignId
+        );
+
+      if (!campaign) {
+        return json(
+          {
+            ok: false,
+            error:
+              "Campaign not found"
+          },
+          404
+        );
+      }
+
+      /*
+       * Initial controlled-send safety gate.
+       * Bulk/Ready/Sending campaign delivery is
+       * deliberately not enabled here.
+       */
+      if (
+        campaign.status !== "Draft"
+      ) {
+        return json(
+          {
+            ok: false,
+            error:
+              "Controlled recipient send is allowed only for Draft campaigns"
+          },
+          409
+        );
+      }
+
+      const result =
+        await sendPreparedMarketingRecipient({
+          db,
+          env: context.env,
+          campaign,
+          recipientId
+        });
+
+      if (
+        !result?.ok &&
+        result?.reason ===
+          "recipient_not_found"
+      ) {
+        return json(
+          {
+            ok: false,
+            error:
+              "Recipient not found for campaign"
+          },
+          404
+        );
+      }
+
+      return json({
+        ok: true,
+        action:
+          "send_recipient",
+        result
+      });
+    } catch (error) {
+      console.error(
+        "WhatsApp marketing controlled recipient send failed",
+        error
+      );
+
+      return json(
+        {
+          ok: false,
+          error:
+            "Unable to process controlled recipient send"
+        },
+        500
+      );
+    }
+  }
+
   if (action === "generate_recipients") {
     const campaignId = parseCampaignId(body?.campaign_id);
 
