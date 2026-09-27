@@ -1112,6 +1112,112 @@ async function skipProcessingRecipientIfCurrentlyNotOptedIn({
   };
 }
 
+async function logMarketingOutboundMessage({
+  db,
+  campaign,
+  recipient,
+  sendResult,
+  env
+}) {
+  const waMessageId =
+    cleanText(
+      sendResult?.waMessageId,
+      500
+    );
+
+  const phoneNumberId =
+    cleanText(
+      sendResult?.phoneNumberId,
+      200
+    );
+
+  const businessAccountId =
+    cleanText(
+      env?.WHATSAPP_BUSINESS_ACCOUNT_ID,
+      200
+    ) || null;
+
+  const senderWaId =
+    normalizeMarketingContact(
+      "whatsapp",
+      recipient?.contact_value
+    );
+
+  const enquiryId =
+    Number(recipient?.enquiry_id);
+
+  const templateName =
+    cleanText(
+      campaign?.template_name,
+      200
+    );
+
+  if (
+    !waMessageId ||
+    !phoneNumberId ||
+    !senderWaId ||
+    !Number.isInteger(enquiryId) ||
+    enquiryId <= 0 ||
+    !templateName
+  ) {
+    return {
+      ok: false,
+      inserted: false,
+      reason:
+        "invalid_outbound_history_data"
+    };
+  }
+
+  const message =
+    `[Marketing template: ${templateName}]`;
+
+  const result =
+    await db.prepare(`
+      INSERT OR IGNORE INTO whatsapp_messages (
+        wa_message_id,
+        wa_phone_number_id,
+        wa_business_account_id,
+        sender_wa_id,
+        sender_name,
+        message_type,
+        message_text,
+        message_timestamp,
+        raw_payload,
+        direction,
+        enquiry_id
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      waMessageId,
+      phoneNumberId,
+      businessAccountId,
+      senderWaId,
+      "Quantum YiJing Academy",
+      "template",
+      message,
+      Math.floor(Date.now() / 1000),
+      JSON.stringify(
+        sendResult?.result || {}
+      ),
+      "outbound",
+      enquiryId
+    ).run();
+
+  const changes =
+    Number(
+      result?.meta?.changes || 0
+    );
+
+  return {
+    ok: true,
+    inserted: changes > 0,
+    reason:
+      changes > 0
+        ? "outbound_history_inserted"
+        : "outbound_history_already_exists"
+  };
+}
+
 async function finalizeProcessingRecipientAsFailed({
   db,
   campaign,
