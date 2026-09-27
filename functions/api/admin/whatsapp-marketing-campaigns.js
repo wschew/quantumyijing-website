@@ -1112,6 +1112,126 @@ async function skipProcessingRecipientIfCurrentlyNotOptedIn({
   };
 }
 
+async function finalizeProcessingRecipientAsFailed({
+  db,
+  campaign,
+  recipientId,
+  errorMessage
+}) {
+  const id =
+    Number(recipientId);
+
+  const failureMessage =
+    cleanText(
+      errorMessage,
+      1000
+    );
+
+  if (
+    !Number.isInteger(id) ||
+    id <= 0
+  ) {
+    return {
+      ok: false,
+      failed: false,
+      reason:
+        "invalid_recipient_id"
+    };
+  }
+
+  if (!failureMessage) {
+    return {
+      ok: false,
+      failed: false,
+      reason:
+        "missing_error_message"
+    };
+  }
+
+  const updateResult =
+    await db.prepare(`
+      UPDATE whatsapp_marketing_recipients
+      SET
+        status = 'Failed',
+        consent_checked_at = CURRENT_TIMESTAMP,
+        skip_reason = '',
+        error_message = ?,
+        wa_message_id = '',
+        sent_at = '',
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+        AND campaign_id = ?
+        AND status = 'Processing'
+    `).bind(
+      failureMessage,
+      id,
+      campaign.id
+    ).run();
+
+  const changed =
+    Number(
+      updateResult?.meta?.changes || 0
+    );
+
+  if (changed === 1) {
+    await db.prepare(`
+      UPDATE whatsapp_marketing_campaigns
+      SET
+        failed_count = failed_count + 1,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(
+      campaign.id
+    ).run();
+  }
+
+  const recipient =
+    await db.prepare(`
+      SELECT
+        id,
+        campaign_id,
+        enquiry_id,
+        contact_value,
+        recipient_name,
+        status,
+        consent_status_at_selection,
+        consent_checked_at,
+        skip_reason,
+        error_message,
+        wa_message_id,
+        sent_at
+      FROM whatsapp_marketing_recipients
+      WHERE id = ?
+        AND campaign_id = ?
+      LIMIT 1
+    `).bind(
+      id,
+      campaign.id
+    ).first();
+
+  const refreshedCampaign =
+    await loadCampaign(
+      db,
+      campaign.id
+    );
+
+  return {
+    ok: true,
+    failed: changed === 1,
+    reason:
+      changed === 1
+        ? "recipient_failed"
+        : "recipient_not_processing",
+    error_message:
+      changed === 1
+        ? failureMessage
+        : recipient?.error_message || "",
+    recipient,
+    campaign:
+      campaignResponse(refreshedCampaign)
+  };
+}
+
 async function finalizeProcessingRecipientAsSent({
   db,
   campaign,
