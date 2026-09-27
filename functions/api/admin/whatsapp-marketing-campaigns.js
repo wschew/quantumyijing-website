@@ -1757,6 +1757,93 @@ async function sendPreparedMarketingRecipient({
   };
 }
 
+async function sendMarketingCampaignBatch({
+  db,
+  env,
+  campaign,
+  limit = 5
+}) {
+  const safeLimit =
+    Math.max(
+      1,
+      Math.min(
+        10,
+        Number.isInteger(Number(limit))
+          ? Number(limit)
+          : 5
+      )
+    );
+
+  const pending =
+    await db.prepare(`
+      SELECT id
+      FROM whatsapp_marketing_recipients
+      WHERE campaign_id = ?
+        AND status = 'Pending'
+      ORDER BY id ASC
+      LIMIT ?
+    `).bind(
+      campaign.id,
+      safeLimit
+    ).all();
+
+  const rows =
+    Array.isArray(pending?.results)
+      ? pending.results
+      : [];
+
+  const results = [];
+
+  for (const row of rows) {
+    const recipientId =
+      Number(row?.id);
+
+    if (
+      !Number.isInteger(recipientId) ||
+      recipientId <= 0
+    ) {
+      continue;
+    }
+
+    try {
+      const result =
+        await sendPreparedMarketingRecipient({
+          db,
+          env,
+          campaign,
+          recipientId
+        });
+
+      results.push({
+        recipient_id: recipientId,
+        ...result
+      });
+    } catch (error) {
+      console.error(
+        "WhatsApp marketing batch recipient failed:",
+        recipientId,
+        error
+      );
+
+      results.push({
+        recipient_id: recipientId,
+        ok: false,
+        sent: false,
+        reason:
+          "recipient_processing_exception"
+      });
+    }
+  }
+
+  return {
+    ok: true,
+    requested_limit: safeLimit,
+    selected_count: rows.length,
+    processed_count: results.length,
+    results
+  };
+}
+
 async function loadCampaign(db, id) {
   return db.prepare(`
     SELECT
