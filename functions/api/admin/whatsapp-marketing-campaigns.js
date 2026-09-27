@@ -2825,6 +2825,110 @@ export async function onRequestPost({
     }
   }
 
+  if (action === "send_batch") {
+    const campaignId =
+      parseCampaignId(
+        body?.campaign_id
+      );
+
+    const requestedLimit =
+      body?.limit === undefined
+        ? 5
+        : Number(body.limit);
+
+    if (!campaignId) {
+      return json(
+        {
+          ok: false,
+          error:
+            "campaign_id is required"
+        },
+        400
+      );
+    }
+
+    if (
+      !Number.isInteger(requestedLimit) ||
+      requestedLimit < 1 ||
+      requestedLimit > 10
+    ) {
+      return json(
+        {
+          ok: false,
+          error:
+            "limit must be an integer from 1 to 10"
+        },
+        400
+      );
+    }
+
+    try {
+      const campaign =
+        await loadCampaign(
+          db,
+          campaignId
+        );
+
+      if (!campaign) {
+        return json(
+          {
+            ok: false,
+            error:
+              "Campaign not found"
+          },
+          404
+        );
+      }
+
+      /*
+       * Initial controlled-batch safety gate.
+       * Full Ready/Sending campaign execution is
+       * deliberately not enabled here.
+       */
+      if (
+        campaign.status !== "Draft"
+      ) {
+        return json(
+          {
+            ok: false,
+            error:
+              "Controlled batch send is allowed only for Draft campaigns"
+          },
+          409
+        );
+      }
+
+      const result =
+        await sendMarketingCampaignBatch({
+          db,
+          env,
+          campaign,
+          limit: requestedLimit
+        });
+
+      return json({
+        ok: true,
+        action:
+          "send_batch",
+        result
+      });
+    } catch (error) {
+      console.error(
+        "WhatsApp marketing controlled batch send failed",
+        error
+      );
+
+      return json(
+        {
+          ok: false,
+          error:
+            "Unable to process controlled batch send"
+        },
+        500
+      );
+    }
+  }
+
   if (action === "generate_recipients") {
     const campaignId = parseCampaignId(body?.campaign_id);
 
