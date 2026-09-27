@@ -3,6 +3,8 @@ import {
   normalizeMarketingContact
 } from "../../lib/marketing-consent.js";
 
+const GRAPH_API_VERSION = "v25.0";
+
 function bearer(request) {
   const header =
     request.headers.get("authorization") || "";
@@ -58,6 +60,142 @@ function cleanLanguage(value) {
   }
 
   return "en";
+}
+
+function buildMarketingTemplatePayload({
+  contactValue,
+  templateName,
+  templateLanguage
+}) {
+  const to =
+    normalizeMarketingContact(
+      "whatsapp",
+      contactValue
+    );
+
+  const name =
+    cleanText(
+      templateName,
+      200
+    );
+
+  const languageCode =
+    cleanText(
+      templateLanguage,
+      50
+    );
+
+  if (
+    !to ||
+    !name ||
+    !languageCode
+  ) {
+    return null;
+  }
+
+  return {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to,
+    type: "template",
+    template: {
+      name,
+      language: {
+        code: languageCode
+      }
+    }
+  };
+}
+
+async function sendMarketingWhatsAppTemplate({
+  env,
+  payload
+}) {
+  const token =
+    env.WHATSAPP_ACCESS_TOKEN;
+
+  const phoneNumberId =
+    env.WHATSAPP_PHONE_NUMBER_ID;
+
+  if (
+    !token ||
+    !phoneNumberId ||
+    !payload
+  ) {
+    return {
+      ok: false,
+      skipped: true,
+      error:
+        "WhatsApp configuration or payload missing"
+    };
+  }
+
+  try {
+    const response =
+      await fetch(
+        `https://graph.facebook.com/${GRAPH_API_VERSION}/${phoneNumberId}/messages`,
+        {
+          method: "POST",
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+            "Content-Type":
+              "application/json"
+          },
+          body:
+            JSON.stringify(payload)
+        }
+      );
+
+    const result =
+      await response
+        .json()
+        .catch(() => ({}));
+
+    if (!response.ok) {
+      console.error(
+        "WhatsApp marketing send failed:",
+        JSON.stringify(result)
+      );
+
+      return {
+        ok: false,
+        status: response.status,
+        result
+      };
+    }
+
+    const waMessageId =
+      result?.messages?.[0]?.id || "";
+
+    if (!waMessageId) {
+      return {
+        ok: false,
+        status: response.status,
+        result,
+        error:
+          "Meta accepted response without message id"
+      };
+    }
+
+    return {
+      ok: true,
+      waMessageId,
+      phoneNumberId,
+      result
+    };
+  } catch (error) {
+    console.error(
+      "WhatsApp marketing request failed:",
+      error
+    );
+
+    return {
+      ok: false,
+      error:
+        "WhatsApp request failed"
+    };
+  }
 }
 
 function cleanCampaignCode(value) {
