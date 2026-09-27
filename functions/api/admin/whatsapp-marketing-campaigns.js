@@ -1576,6 +1576,158 @@ async function prepareMarketingRecipientForSend({
   };
 }
 
+async function sendPreparedMarketingRecipient({
+  db,
+  env,
+  campaign,
+  recipientId
+}) {
+  const prepared =
+    await prepareMarketingRecipientForSend({
+      db,
+      campaign,
+      recipientId
+    });
+
+  if (!prepared?.ready_to_send) {
+    return prepared;
+  }
+
+  /*
+   * Final consent gate immediately before the
+   * external Meta send.
+   */
+  const finalConsent =
+    await checkProcessingRecipientConsent({
+      db,
+      campaign,
+      recipientId
+    });
+
+  if (!finalConsent?.eligible) {
+    if (
+      finalConsent?.reason ===
+      "current_consent_not_opted_in"
+    ) {
+      return await skipProcessingRecipientIfCurrentlyNotOptedIn({
+        db,
+        campaign,
+        recipientId
+      });
+    }
+
+    return {
+      ok: false,
+      sent: false,
+      reason:
+        finalConsent?.reason ||
+        "final_consent_check_failed",
+      recipient:
+        finalConsent?.recipient || null
+    };
+  }
+
+  const sendResult =
+    await sendMarketingWhatsAppTemplate({
+      env,
+      payload: prepared.payload
+    });
+
+  if (!sendResult?.ok) {
+    const errorMessage =
+      cleanText(
+        sendResult?.error ||
+        (
+          sendResult?.status
+            ? `Meta send failed with HTTP ${sendResult.status}`
+            : "WhatsApp marketing send failed"
+        ),
+        1000
+      );
+
+    return await finalizeProcessingRecipientAsFailed({
+      db,
+      campaign,
+      recipientId,
+      errorMessage:
+        errorMessage ||
+        "WhatsApp marketing send failed"
+    });
+  }
+
+  /*
+   * Meta has accepted the message and returned
+   * a message ID. From this point onward we must
+   * not classify the recipient as Failed merely
+   * because a secondary history write fails.
+   */
+  const finalized =
+    await finalizeProcessingRecipientAsSent({
+      db,
+      campaign,
+      recipientId,
+      waMessageId:
+        sendResult.waMessageId
+    });
+
+  if (!finalized?.sent) {
+    return {
+      ok: false,
+      sent: false,
+      meta_accepted: true,
+      reason:
+        finalized?.reason ||
+        "post_meta_sent_finalization_failed",
+      wa_message_id:
+        sendResult.waMessageId,
+      recipient:
+        finalized?.recipient || null,
+      campaign:
+        finalized?.campaign || null
+    };
+  }
+
+  let history = null;
+
+  try {
+    history =
+      await logMarketingOutboundMessage({
+        db,
+        campaign,
+        recipient:
+          finalized.recipient,
+        sendResult,
+        env
+      });
+  } catch (error) {
+    console.error(
+      "WhatsApp marketing outbound history write failed:",
+      error
+    );
+
+    history = {
+      ok: false,
+      inserted: false,
+      reason:
+        "outbound_history_write_failed"
+    };
+  }
+
+  return {
+    ok: true,
+    sent: true,
+    meta_accepted: true,
+    reason: "recipient_sent",
+    wa_message_id:
+      sendResult.waMessageId,
+    recipient:
+      finalized.recipient,
+    campaign:
+      finalized.campaign,
+    history
+  };
+}
+
 async function loadCampaign(db, id) {
   return db.prepare(`
     SELECT
