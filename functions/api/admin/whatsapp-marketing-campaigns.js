@@ -2695,7 +2695,7 @@ export async function onRequestPost({
       const result =
         await sendPreparedMarketingRecipient({
           db,
-          env: context.env,
+          env,
           campaign,
           recipientId
         });
