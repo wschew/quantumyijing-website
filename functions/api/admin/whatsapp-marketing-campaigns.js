@@ -1645,6 +1645,35 @@ async function sendPreparedMarketingRecipient({
         1000
       );
 
+    /*
+     * A transport failure or a 2xx Meta response
+     * without a message ID has an uncertain delivery
+     * state. Do not mark Failed because an automatic
+     * retry could duplicate a message Meta received.
+     * Leave the recipient Processing for manual
+     * reconciliation.
+     */
+    const deliveryStateUnknown =
+      sendResult?.error ===
+        "WhatsApp request failed" ||
+      sendResult?.error ===
+        "Meta accepted response without message id";
+
+    if (deliveryStateUnknown) {
+      return {
+        ok: false,
+        sent: false,
+        delivery_state_unknown: true,
+        reason:
+          "meta_delivery_state_unknown",
+        error:
+          errorMessage ||
+          "WhatsApp delivery state is unknown",
+        recipient:
+          finalConsent?.recipient || null
+      };
+    }
+
     return await finalizeProcessingRecipientAsFailed({
       db,
       campaign,
