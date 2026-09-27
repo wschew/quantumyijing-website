@@ -1112,6 +1112,126 @@ async function skipProcessingRecipientIfCurrentlyNotOptedIn({
   };
 }
 
+async function finalizeProcessingRecipientAsSent({
+  db,
+  campaign,
+  recipientId,
+  waMessageId
+}) {
+  const id =
+    Number(recipientId);
+
+  const messageId =
+    cleanText(
+      waMessageId,
+      500
+    );
+
+  if (
+    !Number.isInteger(id) ||
+    id <= 0
+  ) {
+    return {
+      ok: false,
+      sent: false,
+      reason:
+        "invalid_recipient_id"
+    };
+  }
+
+  if (!messageId) {
+    return {
+      ok: false,
+      sent: false,
+      reason:
+        "missing_wa_message_id"
+    };
+  }
+
+  const updateResult =
+    await db.prepare(`
+      UPDATE whatsapp_marketing_recipients
+      SET
+        status = 'Sent',
+        consent_checked_at = CURRENT_TIMESTAMP,
+        skip_reason = '',
+        error_message = '',
+        wa_message_id = ?,
+        sent_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+        AND campaign_id = ?
+        AND status = 'Processing'
+    `).bind(
+      messageId,
+      id,
+      campaign.id
+    ).run();
+
+  const changed =
+    Number(
+      updateResult?.meta?.changes || 0
+    );
+
+  if (changed === 1) {
+    await db.prepare(`
+      UPDATE whatsapp_marketing_campaigns
+      SET
+        sent_count = sent_count + 1,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(
+      campaign.id
+    ).run();
+  }
+
+  const recipient =
+    await db.prepare(`
+      SELECT
+        id,
+        campaign_id,
+        enquiry_id,
+        contact_value,
+        recipient_name,
+        status,
+        consent_status_at_selection,
+        consent_checked_at,
+        skip_reason,
+        error_message,
+        wa_message_id,
+        sent_at
+      FROM whatsapp_marketing_recipients
+      WHERE id = ?
+        AND campaign_id = ?
+      LIMIT 1
+    `).bind(
+      id,
+      campaign.id
+    ).first();
+
+  const refreshedCampaign =
+    await loadCampaign(
+      db,
+      campaign.id
+    );
+
+  return {
+    ok: true,
+    sent: changed === 1,
+    reason:
+      changed === 1
+        ? "recipient_sent"
+        : "recipient_not_processing",
+    wa_message_id:
+      changed === 1
+        ? messageId
+        : recipient?.wa_message_id || "",
+    recipient,
+    campaign:
+      campaignResponse(refreshedCampaign)
+  };
+}
+
 async function loadCampaign(db, id) {
   return db.prepare(`
     SELECT
