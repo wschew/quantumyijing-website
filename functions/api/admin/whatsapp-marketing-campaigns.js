@@ -3102,6 +3102,81 @@ export async function onRequestPost({
 
 
 
+
+  if (action === "resume_campaign") {
+    const campaignId =
+      parseCampaignId(
+        body?.campaign_id
+      );
+
+    if (!campaignId) {
+      return json(
+        {
+          ok: false,
+          error:
+            "campaign_id is required"
+        },
+        400
+      );
+    }
+
+    try {
+      const campaign =
+        await loadCampaign(
+          db,
+          campaignId
+        );
+
+      if (!campaign) {
+        return json(
+          {
+            ok: false,
+            error:
+              "Campaign not found"
+          },
+          404
+        );
+      }
+
+      const result =
+        await resumeMarketingCampaign({
+          db,
+          campaign
+        });
+
+      if (!result.ok) {
+        return json(
+          {
+            ok: false,
+            action: "resume_campaign",
+            result
+          },
+          409
+        );
+      }
+
+      return json({
+        ok: true,
+        action: "resume_campaign",
+        result
+      });
+    } catch (error) {
+      console.error(
+        "WhatsApp marketing campaign resume failed",
+        error
+      );
+
+      return json(
+        {
+          ok: false,
+          error:
+            "Unable to resume campaign"
+        },
+        500
+      );
+    }
+  }
+
   if (action === "pause_campaign") {
     const campaignId =
       parseCampaignId(
