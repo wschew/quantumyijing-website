@@ -1954,6 +1954,72 @@ async function validateCampaignReadyState({
   };
 }
 
+
+async function markCampaignReady({
+  db,
+  campaign
+}) {
+  const validation =
+    await validateCampaignReadyState({
+      db,
+      campaign
+    });
+
+  if (!validation?.ready) {
+    return {
+      ok: false,
+      changed: false,
+      reason:
+        validation?.reason ||
+        "campaign_not_ready",
+      validation
+    };
+  }
+
+  const update =
+    await db.prepare(`
+      UPDATE whatsapp_marketing_campaigns
+      SET
+        status = 'Ready',
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+        AND status = 'Draft'
+    `).bind(
+      campaign.id
+    ).run();
+
+  const changes =
+    Number(update?.meta?.changes || 0);
+
+  const current =
+    await loadCampaign(
+      db,
+      campaign.id
+    );
+
+  if (changes !== 1) {
+    return {
+      ok: false,
+      changed: false,
+      reason:
+        "campaign_state_changed",
+      validation,
+      campaign:
+        campaignResponse(current)
+    };
+  }
+
+  return {
+    ok: true,
+    changed: true,
+    reason:
+      "campaign_marked_ready",
+    validation,
+    campaign:
+      campaignResponse(current)
+  };
+}
+
 async function loadCampaign(db, id) {
   return db.prepare(`
     SELECT
