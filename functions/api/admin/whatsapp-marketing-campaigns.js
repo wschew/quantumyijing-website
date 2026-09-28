@@ -1845,6 +1845,57 @@ async function sendMarketingCampaignBatch({
 }
 
 
+async function getCampaignRecipientSummary({
+  db,
+  campaignId
+}) {
+  const counts =
+    await db.prepare(`
+      SELECT
+        COUNT(*) AS total_count,
+        SUM(
+          CASE WHEN status = 'Pending'
+          THEN 1 ELSE 0 END
+        ) AS pending_count,
+        SUM(
+          CASE WHEN status = 'Processing'
+          THEN 1 ELSE 0 END
+        ) AS processing_count,
+        SUM(
+          CASE WHEN status = 'Sent'
+          THEN 1 ELSE 0 END
+        ) AS sent_count,
+        SUM(
+          CASE WHEN status = 'Skipped'
+          THEN 1 ELSE 0 END
+        ) AS skipped_count,
+        SUM(
+          CASE WHEN status = 'Failed'
+          THEN 1 ELSE 0 END
+        ) AS failed_count
+      FROM whatsapp_marketing_recipients
+      WHERE campaign_id = ?
+    `).bind(
+      campaignId
+    ).first();
+
+  return {
+    total:
+      Number(counts?.total_count || 0),
+    pending:
+      Number(counts?.pending_count || 0),
+    processing:
+      Number(counts?.processing_count || 0),
+    sent:
+      Number(counts?.sent_count || 0),
+    skipped:
+      Number(counts?.skipped_count || 0),
+    failed:
+      Number(counts?.failed_count || 0)
+  };
+}
+
+
 async function validateCampaignReadyState({
   db,
   campaign
@@ -1876,50 +1927,11 @@ async function validateCampaignReadyState({
     };
   }
 
-  const counts =
-    await db.prepare(`
-      SELECT
-        COUNT(*) AS total_count,
-        SUM(
-          CASE WHEN status = 'Pending'
-          THEN 1 ELSE 0 END
-        ) AS pending_count,
-        SUM(
-          CASE WHEN status = 'Processing'
-          THEN 1 ELSE 0 END
-        ) AS processing_count,
-        SUM(
-          CASE WHEN status = 'Sent'
-          THEN 1 ELSE 0 END
-        ) AS sent_count,
-        SUM(
-          CASE WHEN status = 'Skipped'
-          THEN 1 ELSE 0 END
-        ) AS skipped_count,
-        SUM(
-          CASE WHEN status = 'Failed'
-          THEN 1 ELSE 0 END
-        ) AS failed_count
-      FROM whatsapp_marketing_recipients
-      WHERE campaign_id = ?
-    `).bind(
-      campaign.id
-    ).first();
-
-  const summary = {
-    total:
-      Number(counts?.total_count || 0),
-    pending:
-      Number(counts?.pending_count || 0),
-    processing:
-      Number(counts?.processing_count || 0),
-    sent:
-      Number(counts?.sent_count || 0),
-    skipped:
-      Number(counts?.skipped_count || 0),
-    failed:
-      Number(counts?.failed_count || 0)
-  };
+  const summary =
+    await getCampaignRecipientSummary({
+      db,
+      campaignId: campaign.id
+    });
 
   if (summary.total <= 0) {
     return {
