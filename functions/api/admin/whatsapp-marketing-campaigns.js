@@ -4068,18 +4068,18 @@ export async function onRequestPost({
       }
 
       /*
-       * Initial controlled-batch safety gate.
-       * Full Ready/Sending campaign execution is
-       * deliberately not enabled here.
+       * C5K lifecycle-controlled batch delivery gate.
+       * Batch delivery is allowed only while
+       * the campaign is in Sending state.
        */
       if (
-        campaign.status !== "Draft"
+        campaign.status !== "Sending"
       ) {
         return json(
           {
             ok: false,
             error:
-              "Controlled batch send is allowed only for Draft campaigns"
+              "Batch send is allowed only for Sending campaigns"
           },
           409
         );
