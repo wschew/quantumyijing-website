@@ -1967,6 +1967,76 @@ async function validateCampaignReadyState({
 }
 
 
+async function validateCampaignCompletionState({
+  db,
+  campaign
+}) {
+  if (!campaign) {
+    return {
+      ok: false,
+      complete: false,
+      reason: "campaign_not_found"
+    };
+  }
+
+  if (campaign.status !== "Sending") {
+    return {
+      ok: false,
+      complete: false,
+      reason: "campaign_not_sending"
+    };
+  }
+
+  const summary =
+    await getCampaignRecipientSummary({
+      db,
+      campaignId: campaign.id
+    });
+
+  if (summary.total <= 0) {
+    return {
+      ok: true,
+      complete: false,
+      reason: "no_recipients",
+      recipients: summary
+    };
+  }
+
+  if (
+    summary.pending > 0 ||
+    summary.processing > 0
+  ) {
+    return {
+      ok: true,
+      complete: false,
+      reason: "campaign_has_active_recipients",
+      recipients: summary
+    };
+  }
+
+  const terminalCount =
+    summary.sent +
+    summary.skipped +
+    summary.failed;
+
+  if (terminalCount !== summary.total) {
+    return {
+      ok: true,
+      complete: false,
+      reason: "recipient_ledger_not_terminal",
+      recipients: summary
+    };
+  }
+
+  return {
+    ok: true,
+    complete: true,
+    reason: "campaign_completion_ready",
+    recipients: summary
+  };
+}
+
+
 async function markCampaignReady({
   db,
   campaign
