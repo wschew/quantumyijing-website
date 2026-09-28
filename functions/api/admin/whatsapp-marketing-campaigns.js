@@ -3253,6 +3253,81 @@ export async function onRequestPost({
 
 
 
+  if (action === "complete_campaign") {
+    const campaignId =
+      parseCampaignId(
+        body?.campaign_id
+      );
+
+    if (!campaignId) {
+      return json(
+        {
+          ok: false,
+          error:
+            "campaign_id is required"
+        },
+        400
+      );
+    }
+
+    try {
+      const campaign =
+        await loadCampaign(
+          db,
+          campaignId
+        );
+
+      if (!campaign) {
+        return json(
+          {
+            ok: false,
+            error:
+              "Campaign not found"
+          },
+          404
+        );
+      }
+
+      const result =
+        await completeMarketingCampaign({
+          db,
+          campaign
+        });
+
+      if (!result.ok) {
+        return json(
+          {
+            ok: false,
+            action:
+              "complete_campaign",
+            result
+          },
+          409
+        );
+      }
+
+      return json({
+        ok: true,
+        action:
+          "complete_campaign",
+        result
+      });
+    } catch (error) {
+      return json(
+        {
+          ok: false,
+          error:
+            String(
+              error?.message ||
+              error
+            )
+        },
+        500
+      );
+    }
+  }
+
+
   if (action === "resume_campaign") {
     const campaignId =
       parseCampaignId(
