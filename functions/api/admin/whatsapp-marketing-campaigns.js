@@ -1844,6 +1844,116 @@ async function sendMarketingCampaignBatch({
   };
 }
 
+
+async function validateCampaignReadyState({
+  db,
+  campaign
+}) {
+  if (!campaign) {
+    return {
+      ok: false,
+      ready: false,
+      reason: "campaign_not_found"
+    };
+  }
+
+  if (campaign.status !== "Draft") {
+    return {
+      ok: false,
+      ready: false,
+      reason: "campaign_not_draft"
+    };
+  }
+
+  if (
+    !String(campaign.template_name || "").trim() ||
+    !String(campaign.template_language || "").trim()
+  ) {
+    return {
+      ok: true,
+      ready: false,
+      reason: "template_not_configured"
+    };
+  }
+
+  const counts =
+    await db.prepare(`
+      SELECT
+        COUNT(*) AS total_count,
+        SUM(
+          CASE WHEN status = 'Pending'
+          THEN 1 ELSE 0 END
+        ) AS pending_count,
+        SUM(
+          CASE WHEN status = 'Processing'
+          THEN 1 ELSE 0 END
+        ) AS processing_count,
+        SUM(
+          CASE WHEN status = 'Sent'
+          THEN 1 ELSE 0 END
+        ) AS sent_count,
+        SUM(
+          CASE WHEN status = 'Skipped'
+          THEN 1 ELSE 0 END
+        ) AS skipped_count,
+        SUM(
+          CASE WHEN status = 'Failed'
+          THEN 1 ELSE 0 END
+        ) AS failed_count
+      FROM whatsapp_marketing_recipients
+      WHERE campaign_id = ?
+    `).bind(
+      campaign.id
+    ).first();
+
+  const summary = {
+    total:
+      Number(counts?.total_count || 0),
+    pending:
+      Number(counts?.pending_count || 0),
+    processing:
+      Number(counts?.processing_count || 0),
+    sent:
+      Number(counts?.sent_count || 0),
+    skipped:
+      Number(counts?.skipped_count || 0),
+    failed:
+      Number(counts?.failed_count || 0)
+  };
+
+  if (summary.total <= 0) {
+    return {
+      ok: true,
+      ready: false,
+      reason: "no_recipients",
+      recipients: summary
+    };
+  }
+
+  if (
+    summary.pending !== summary.total ||
+    summary.processing !== 0 ||
+    summary.sent !== 0 ||
+    summary.skipped !== 0 ||
+    summary.failed !== 0
+  ) {
+    return {
+      ok: true,
+      ready: false,
+      reason:
+        "recipient_ledger_not_ready",
+      recipients: summary
+    };
+  }
+
+  return {
+    ok: true,
+    ready: true,
+    reason: "campaign_ready",
+    recipients: summary
+  };
+}
+
 async function loadCampaign(db, id) {
   return db.prepare(`
     SELECT
