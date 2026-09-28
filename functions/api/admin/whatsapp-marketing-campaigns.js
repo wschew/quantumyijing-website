@@ -3949,18 +3949,18 @@ export async function onRequestPost({
       }
 
       /*
-       * Initial controlled-send safety gate.
-       * Bulk/Ready/Sending campaign delivery is
-       * deliberately not enabled here.
+       * C5K lifecycle-controlled delivery gate.
+       * Recipient delivery is allowed only while
+       * the campaign is in Sending state.
        */
       if (
-        campaign.status !== "Draft"
+        campaign.status !== "Sending"
       ) {
         return json(
           {
             ok: false,
             error:
-              "Controlled recipient send is allowed only for Draft campaigns"
+              "Recipient send is allowed only for Sending campaigns"
           },
           409
         );
