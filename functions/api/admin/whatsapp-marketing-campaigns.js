@@ -2020,6 +2020,82 @@ async function markCampaignReady({
   };
 }
 
+
+async function startMarketingCampaign({
+  db,
+  campaign
+}) {
+  if (!campaign) {
+    return {
+      ok: false,
+      changed: false,
+      reason: "campaign_not_found"
+    };
+  }
+
+  if (campaign.status !== "Ready") {
+    return {
+      ok: false,
+      changed: false,
+      reason: "campaign_not_ready"
+    };
+  }
+
+  if (
+    String(campaign.started_at || "").trim()
+  ) {
+    return {
+      ok: false,
+      changed: false,
+      reason:
+        "campaign_already_started"
+    };
+  }
+
+  const update =
+    await db.prepare(`
+      UPDATE whatsapp_marketing_campaigns
+      SET
+        status = 'Sending',
+        started_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+        AND status = 'Ready'
+        AND started_at = ''
+    `).bind(
+      campaign.id
+    ).run();
+
+  const changes =
+    Number(update?.meta?.changes || 0);
+
+  const current =
+    await loadCampaign(
+      db,
+      campaign.id
+    );
+
+  if (changes !== 1) {
+    return {
+      ok: false,
+      changed: false,
+      reason:
+        "campaign_state_changed",
+      campaign:
+        campaignResponse(current)
+    };
+  }
+
+  return {
+    ok: true,
+    changed: true,
+    reason:
+      "campaign_started",
+    campaign:
+      campaignResponse(current)
+  };
+}
+
 async function loadCampaign(db, id) {
   return db.prepare(`
     SELECT
