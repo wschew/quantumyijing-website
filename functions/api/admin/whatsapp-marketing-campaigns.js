@@ -3026,6 +3026,81 @@ export async function onRequestPost({
 
 
 
+
+  if (action === "pause_campaign") {
+    const campaignId =
+      parseCampaignId(
+        body?.campaign_id
+      );
+
+    if (!campaignId) {
+      return json(
+        {
+          ok: false,
+          error:
+            "campaign_id is required"
+        },
+        400
+      );
+    }
+
+    try {
+      const campaign =
+        await loadCampaign(
+          db,
+          campaignId
+        );
+
+      if (!campaign) {
+        return json(
+          {
+            ok: false,
+            error:
+              "Campaign not found"
+          },
+          404
+        );
+      }
+
+      const result =
+        await pauseMarketingCampaign({
+          db,
+          campaign
+        });
+
+      if (!result.ok) {
+        return json(
+          {
+            ok: false,
+            action: "pause_campaign",
+            result
+          },
+          409
+        );
+      }
+
+      return json({
+        ok: true,
+        action: "pause_campaign",
+        result
+      });
+    } catch (error) {
+      console.error(
+        "WhatsApp marketing campaign pause failed",
+        error
+      );
+
+      return json(
+        {
+          ok: false,
+          error:
+            "Unable to pause campaign"
+        },
+        500
+      );
+    }
+  }
+
   if (action === "start_campaign") {
     const campaignId =
       parseCampaignId(
