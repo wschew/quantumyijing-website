@@ -2333,9 +2333,10 @@ async function cancelMarketingCampaign({
         status = 'Cancelled',
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-        AND status IN ('Ready', 'Sending')
+        AND status = ?
     `).bind(
-      campaign.id
+      campaign.id,
+      previousStatus
     ).run();
 
   const changes =
