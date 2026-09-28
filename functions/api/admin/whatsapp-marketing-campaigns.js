@@ -2885,6 +2885,81 @@ export async function onRequestPost({
     }
   }
 
+
+  if (action === "mark_ready") {
+    const campaignId =
+      parseCampaignId(
+        body?.campaign_id
+      );
+
+    if (!campaignId) {
+      return json(
+        {
+          ok: false,
+          error:
+            "campaign_id is required"
+        },
+        400
+      );
+    }
+
+    try {
+      const campaign =
+        await loadCampaign(
+          db,
+          campaignId
+        );
+
+      if (!campaign) {
+        return json(
+          {
+            ok: false,
+            error:
+              "Campaign not found"
+          },
+          404
+        );
+      }
+
+      const result =
+        await markCampaignReady({
+          db,
+          campaign
+        });
+
+      if (!result.ok) {
+        return json(
+          {
+            ok: false,
+            action: "mark_ready",
+            result
+          },
+          409
+        );
+      }
+
+      return json({
+        ok: true,
+        action: "mark_ready",
+        result
+      });
+    } catch (error) {
+      console.error(
+        "WhatsApp marketing mark ready failed",
+        error
+      );
+
+      return json(
+        {
+          ok: false,
+          error:
+            "Unable to mark campaign ready"
+        },
+        500
+      );
+    }
+  }
+
   if (action === "send_recipient") {
     const campaignId =
       parseCampaignId(
