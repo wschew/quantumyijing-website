@@ -2247,6 +2247,78 @@ async function startMarketingCampaign({
 }
 
 
+async function cancelMarketingCampaign({
+  db,
+  campaign
+}) {
+  if (!campaign) {
+    return {
+      ok: false,
+      changed: false,
+      reason: "campaign_not_found"
+    };
+  }
+
+  if (
+    campaign.status !== "Ready" &&
+    campaign.status !== "Sending"
+  ) {
+    return {
+      ok: false,
+      changed: false,
+      reason:
+        "campaign_not_cancellable"
+    };
+  }
+
+  const previousStatus =
+    campaign.status;
+
+  const update =
+    await db.prepare(`
+      UPDATE whatsapp_marketing_campaigns
+      SET
+        status = 'Cancelled',
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+        AND status IN ('Ready', 'Sending')
+    `).bind(
+      campaign.id
+    ).run();
+
+  const changes =
+    Number(update?.meta?.changes || 0);
+
+  const current =
+    await loadCampaign(
+      db,
+      campaign.id
+    );
+
+  if (changes !== 1) {
+    return {
+      ok: false,
+      changed: false,
+      reason:
+        "campaign_state_changed",
+      campaign:
+        campaignResponse(current)
+    };
+  }
+
+  return {
+    ok: true,
+    changed: true,
+    reason:
+      "campaign_cancelled",
+    previous_status:
+      previousStatus,
+    campaign:
+      campaignResponse(current)
+  };
+}
+
+
 async function pauseMarketingCampaign({
   db,
   campaign
