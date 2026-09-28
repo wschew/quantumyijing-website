@@ -2159,6 +2159,81 @@ async function pauseMarketingCampaign({
   };
 }
 
+
+async function resumeMarketingCampaign({
+  db,
+  campaign
+}) {
+  if (!campaign) {
+    return {
+      ok: false,
+      changed: false,
+      reason: "campaign_not_found"
+    };
+  }
+
+  if (campaign.status !== "Paused") {
+    return {
+      ok: false,
+      changed: false,
+      reason: "campaign_not_paused"
+    };
+  }
+
+  if (
+    !String(campaign.started_at || "").trim()
+  ) {
+    return {
+      ok: false,
+      changed: false,
+      reason:
+        "campaign_never_started"
+    };
+  }
+
+  const update =
+    await db.prepare(`
+      UPDATE whatsapp_marketing_campaigns
+      SET
+        status = 'Sending',
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+        AND status = 'Paused'
+        AND started_at <> ''
+    `).bind(
+      campaign.id
+    ).run();
+
+  const changes =
+    Number(update?.meta?.changes || 0);
+
+  const current =
+    await loadCampaign(
+      db,
+      campaign.id
+    );
+
+  if (changes !== 1) {
+    return {
+      ok: false,
+      changed: false,
+      reason:
+        "campaign_state_changed",
+      campaign:
+        campaignResponse(current)
+    };
+  }
+
+  return {
+    ok: true,
+    changed: true,
+    reason:
+      "campaign_resumed",
+    campaign:
+      campaignResponse(current)
+  };
+}
+
 async function loadCampaign(db, id) {
   return db.prepare(`
     SELECT
