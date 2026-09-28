@@ -2037,6 +2037,74 @@ async function validateCampaignCompletionState({
 }
 
 
+async function completeMarketingCampaign({
+  db,
+  campaign
+}) {
+  const validation =
+    await validateCampaignCompletionState({
+      db,
+      campaign
+    });
+
+  if (!validation?.complete) {
+    return {
+      ok: false,
+      changed: false,
+      reason:
+        validation?.reason ||
+        "campaign_not_completion_ready",
+      validation
+    };
+  }
+
+  const update =
+    await db.prepare(`
+      UPDATE whatsapp_marketing_campaigns
+      SET
+        status = 'Completed',
+        completed_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+        AND status = 'Sending'
+        AND completed_at = ''
+    `).bind(
+      campaign.id
+    ).run();
+
+  const changes =
+    Number(update?.meta?.changes || 0);
+
+  const current =
+    await loadCampaign(
+      db,
+      campaign.id
+    );
+
+  if (changes !== 1) {
+    return {
+      ok: false,
+      changed: false,
+      reason:
+        "campaign_state_changed",
+      validation,
+      campaign:
+        campaignResponse(current)
+    };
+  }
+
+  return {
+    ok: true,
+    changed: true,
+    reason:
+      "campaign_completed",
+    validation,
+    campaign:
+      campaignResponse(current)
+  };
+}
+
+
 async function markCampaignReady({
   db,
   campaign
