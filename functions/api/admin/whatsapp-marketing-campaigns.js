@@ -1576,6 +1576,65 @@ async function prepareMarketingRecipientForSend({
   };
 }
 
+async function releaseProcessingRecipientIfCampaignStopped({
+  db,
+  campaign,
+  recipientId
+}) {
+  const currentCampaign =
+    await loadCampaign(
+      db,
+      campaign.id
+    );
+
+  if (!currentCampaign) {
+    return {
+      ok: false,
+      released: false,
+      reason: "campaign_not_found",
+      campaign: null
+    };
+  }
+
+  if (currentCampaign.status === "Sending") {
+    return {
+      ok: true,
+      released: false,
+      reason: "campaign_still_sending",
+      campaign:
+        campaignResponse(currentCampaign)
+    };
+  }
+
+  const updateResult =
+    await db.prepare(`
+      UPDATE whatsapp_marketing_recipients
+      SET
+        status = 'Pending',
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+        AND campaign_id = ?
+        AND status = 'Processing'
+    `).bind(
+      recipientId,
+      campaign.id
+    ).run();
+
+  const changed =
+    Number(updateResult?.meta?.changes || 0);
+
+  return {
+    ok: true,
+    released: changed === 1,
+    reason:
+      changed === 1
+        ? "campaign_not_sending"
+        : "recipient_not_processing",
+    campaign:
+      campaignResponse(currentCampaign)
+  };
+}
+
 async function sendPreparedMarketingRecipient({
   db,
   env,
@@ -1622,6 +1681,39 @@ async function sendPreparedMarketingRecipient({
       reason:
         finalConsent?.reason ||
         "final_consent_check_failed",
+      recipient:
+        finalConsent?.recipient || null
+    };
+  }
+
+  /*
+   * C5K final lifecycle gate immediately before
+   * the external Meta send. If the campaign was
+   * paused/cancelled/failed after the recipient
+   * was claimed, release Processing back to Pending
+   * and do not send.
+   */
+  const lifecycleGate =
+    await releaseProcessingRecipientIfCampaignStopped({
+      db,
+      campaign,
+      recipientId
+    });
+
+  if (
+    !lifecycleGate?.ok ||
+    lifecycleGate?.campaign?.status !== "Sending"
+  ) {
+    return {
+      ok: false,
+      sent: false,
+      reason:
+        lifecycleGate?.reason ||
+        "campaign_not_sending",
+      released:
+        lifecycleGate?.released === true,
+      campaign:
+        lifecycleGate?.campaign || null,
       recipient:
         finalConsent?.recipient || null
     };
