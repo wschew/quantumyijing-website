@@ -996,12 +996,17 @@ async function loadWhatsAppConversation(phone) {
       completed: 0
     });
 
+    const rate = value =>
+      totals.recipients > 0
+        ? ((value / totals.recipients) * 100).toFixed(1) + '%'
+        : '—';
+
     $('waMarketingStatCampaigns').textContent = rows.length;
     $('waMarketingStatCompleted').textContent = totals.completed;
     $('waMarketingStatRecipients').textContent = totals.recipients;
-    $('waMarketingStatSent').textContent = totals.sent;
-    $('waMarketingStatSkipped').textContent = totals.skipped;
-    $('waMarketingStatFailed').textContent = totals.failed;
+    $('waMarketingStatSendRate').textContent = rate(totals.sent);
+    $('waMarketingStatSkipRate').textContent = rate(totals.skipped);
+    $('waMarketingStatFailureRate').textContent = rate(totals.failed);
   }
 
   function parseWhatsAppMarketingUtc(value) {
