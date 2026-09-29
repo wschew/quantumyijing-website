@@ -498,7 +498,82 @@
           </div>
           <a class="primary-button button-link" href="products.html" target="_blank">View Marketing Hub</a>
         </section>
-        <section class="stats-grid marketing-stats-grid" aria-label="Marketing summary">
+        <section id="whatsappMarketingCampaignManager" class="panel records-panel">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">WHATSAPP MARKETING</p>
+        <h2>Campaign Manager</h2>
+        <p>Create consent-based WhatsApp campaigns and control their delivery lifecycle.</p>
+      </div>
+      <button id="whatsappMarketingRefreshButton" class="secondary-button" type="button">Refresh Campaigns</button>
+    </div>
+
+    <form id="whatsappMarketingCreateForm" class="filter-grid">
+      <label>
+        Campaign Code
+        <input id="whatsappMarketingCampaignCode" name="campaign_code" type="text" maxlength="100" placeholder="SEP2026-YJ12" required>
+      </label>
+
+      <label>
+        Campaign Name
+        <input id="whatsappMarketingCampaignName" name="name" type="text" maxlength="200" placeholder="YJ12 September Campaign" required>
+      </label>
+
+      <label>
+        Campaign Language
+        <select id="whatsappMarketingLanguage" name="language">
+          <option value="en">English</option>
+          <option value="zh-CN">Chinese</option>
+        </select>
+      </label>
+
+      <label>
+        Meta Template Name
+        <input id="whatsappMarketingTemplateName" name="template_name" type="text" maxlength="200" placeholder="qy_marketing_test_v1">
+      </label>
+
+      <label>
+        Template Language
+        <input id="whatsappMarketingTemplateLanguage" name="template_language" type="text" maxlength="50" value="en">
+      </label>
+
+      <div class="filter-actions">
+        <button class="primary-button" type="submit">Create Draft Campaign</button>
+      </div>
+    </form>
+
+    <p class="form-note">
+      Audience recipients are generated only from contacts with current explicit WhatsApp marketing consent.
+      Consent is checked again immediately before each send.
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Campaign</th>
+            <th>Status</th>
+            <th>Template</th>
+            <th>Recipients</th>
+            <th>Sent</th>
+            <th>Skipped</th>
+            <th>Failed</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="whatsappMarketingCampaignBody">
+          <tr>
+            <td colspan="9">Loading campaigns...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p id="whatsappMarketingMessage" class="form-message" aria-live="polite"></p>
+  </section>
+
+  <section class="stats-grid marketing-stats-grid" aria-label="Marketing summary">
           <article><span>Tracked enquiries</span><strong id="marketingStatAttributed">0</strong></article>
           <article><span>Campaign enquiries</span><strong id="marketingStatCampaigns">0</strong></article>
           <article><span>Affiliate enquiries</span><strong id="marketingStatAffiliates">0</strong></article>

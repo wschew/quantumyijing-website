@@ -217,7 +217,10 @@
       setMessage('whatsappDashboardMessage', error.message)
     );
     if (studentMode) loadStudentAll().catch(handleStudentError);
-    if (marketingMode) loadMarketingStats().catch(handleMarketingError);
+    if (marketingMode) {
+      loadMarketingStats().catch(handleMarketingError);
+      loadWhatsAppMarketingCampaigns().catch(handleWhatsAppMarketingError);
+    }
     if (commerceMode) loadCommerceAll().catch(handleCommerceError);
   }
 
@@ -866,6 +869,271 @@ async function loadWhatsAppConversation(phone) {
   setMessage('whatsappDashboardMessage', '');
 }
 
+  async function whatsappMarketingApi(body) {
+    const response = await api('/api/admin/whatsapp-marketing-campaigns', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body || {})
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || data.ok === false) {
+      const error = new Error(
+        data.error ||
+        data.result?.error ||
+        'WhatsApp marketing request failed'
+      );
+      error.status = response.status;
+      throw error;
+    }
+
+    return data;
+  }
+
+  function whatsappMarketingStatusActions(campaign) {
+    const id = Number(campaign.id);
+    const status = campaign.status || '';
+
+    if (status === 'Draft') {
+      return `
+        <button class="view-button"
+          type="button"
+          data-wa-marketing-action="preview"
+          data-campaign-id="${id}">Preview Audience</button>
+        <button class="view-button"
+          type="button"
+          data-wa-marketing-action="generate"
+          data-campaign-id="${id}">Generate Recipients</button>
+      `;
+    }
+
+    if (status === 'Ready') {
+      return '<small>Ready for lifecycle control</small>';
+    }
+
+    if (status === 'Sending') {
+      return '<small>Sending</small>';
+    }
+
+    if (status === 'Paused') {
+      return '<small>Paused</small>';
+    }
+
+    return '<small>—</small>';
+  }
+
+  function renderWhatsAppMarketingCampaigns(campaigns) {
+    const body = $('whatsappMarketingCampaignBody');
+
+    if (!body) return;
+
+    body.innerHTML = '';
+
+    if (!campaigns.length) {
+      body.innerHTML =
+        '<tr><td colspan="9">No WhatsApp marketing campaigns yet.</td></tr>';
+      return;
+    }
+
+    campaigns.forEach(campaign => {
+      body.insertAdjacentHTML('beforeend', `
+        <tr>
+          <td>
+            <strong>${esc(campaign.name || '')}</strong><br>
+            <small>${esc(campaign.campaign_code || '')}</small>
+          </td>
+          <td><strong>${esc(campaign.status || '')}</strong></td>
+          <td>
+            ${esc(campaign.template_name || '—')}<br>
+            <small>${esc(campaign.template_language || campaign.language || '')}</small>
+          </td>
+          <td>${Number(campaign.total_recipients || 0)}</td>
+          <td>${Number(campaign.sent_count || 0)}</td>
+          <td>${Number(campaign.skipped_count || 0)}</td>
+          <td>${Number(campaign.failed_count || 0)}</td>
+          <td>${esc(campaign.created_at || '—')}</td>
+          <td class="actions-cell">
+            ${whatsappMarketingStatusActions(campaign)}
+          </td>
+        </tr>
+      `);
+    });
+  }
+
+  async function loadWhatsAppMarketingCampaigns() {
+    setMessage('whatsappMarketingMessage', 'Loading campaigns...', true);
+
+    const response =
+      await api('/api/admin/whatsapp-marketing-campaigns');
+
+    const data = await response.json();
+
+    if (!response.ok || data.ok === false) {
+      const error = new Error(
+        data.error || 'Unable to load WhatsApp marketing campaigns'
+      );
+      error.status = response.status;
+      throw error;
+    }
+
+    renderWhatsAppMarketingCampaigns(data.campaigns || []);
+    setMessage('whatsappMarketingMessage', '', true);
+  }
+
+  async function createWhatsAppMarketingCampaign(event) {
+    event.preventDefault();
+
+    const campaignCode =
+      $('whatsappMarketingCampaignCode').value.trim();
+
+    const name =
+      $('whatsappMarketingCampaignName').value.trim();
+
+    const language =
+      $('whatsappMarketingLanguage').value;
+
+    const templateName =
+      $('whatsappMarketingTemplateName').value.trim();
+
+    const templateLanguage =
+      $('whatsappMarketingTemplateLanguage').value.trim();
+
+    setMessage(
+      'whatsappMarketingMessage',
+      'Creating draft campaign...',
+      true
+    );
+
+    const response =
+      await api('/api/admin/whatsapp-marketing-campaigns', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          campaign_code: campaignCode,
+          name,
+          language,
+          template_name: templateName,
+          template_language: templateLanguage,
+          audience_filters: {
+            whatsappConsent: 'opted_in'
+          }
+        })
+      });
+
+    const data = await response.json();
+
+    if (!response.ok || data.ok === false) {
+      const error = new Error(
+        data.error || 'Unable to create campaign'
+      );
+      error.status = response.status;
+      throw error;
+    }
+
+    $('whatsappMarketingCreateForm').reset();
+    $('whatsappMarketingLanguage').value = 'en';
+    $('whatsappMarketingTemplateLanguage').value = 'en';
+
+    setMessage(
+      'whatsappMarketingMessage',
+      'Draft campaign created successfully.',
+      true
+    );
+
+    await loadWhatsAppMarketingCampaigns();
+  }
+
+  async function handleWhatsAppMarketingTableClick(event) {
+    const button =
+      event.target.closest('[data-wa-marketing-action]');
+
+    if (!button) return;
+
+    const action =
+      button.dataset.waMarketingAction;
+
+    const campaignId =
+      Number(button.dataset.campaignId || 0);
+
+    if (!campaignId) return;
+
+    if (action === 'preview') {
+      setMessage(
+        'whatsappMarketingMessage',
+        'Previewing eligible audience...',
+        true
+      );
+
+      const data = await whatsappMarketingApi({
+        action: 'preview_audience',
+        campaign_id: campaignId
+      });
+
+      const counts = data.preview?.counts || {};
+
+      setMessage(
+        'whatsappMarketingMessage',
+        'Audience preview: ' +
+          Number(counts.eligible || counts.eligible_count || 0) +
+          ' eligible contact(s).',
+        true
+      );
+
+      return;
+    }
+
+    if (action === 'generate') {
+      const confirmed = window.confirm(
+        'Generate the recipient ledger for this campaign? ' +
+        'Only contacts with current explicit WhatsApp marketing consent will be included.'
+      );
+
+      if (!confirmed) return;
+
+      setMessage(
+        'whatsappMarketingMessage',
+        'Generating recipients...',
+        true
+      );
+
+      const data = await whatsappMarketingApi({
+        action: 'generate_recipients',
+        campaign_id: campaignId
+      });
+
+      const count =
+        Number(data.generation?.generated_count || 0);
+
+      setMessage(
+        'whatsappMarketingMessage',
+        'Recipient generation complete: ' +
+          count +
+          ' recipient(s).',
+        true
+      );
+
+      await loadWhatsAppMarketingCampaigns();
+    }
+  }
+
+  function handleWhatsAppMarketingError(error) {
+    if (error.status === 401) {
+      sessionStorage.removeItem('qyAdminToken');
+      showLogin();
+      setMessage(
+        'loginMessage',
+        'Your session is not authorized. Please log in again.'
+      );
+      return;
+    }
+
+    setMessage(
+      'whatsappMarketingMessage',
+      error.message || 'WhatsApp marketing operation failed.'
+    );
+  }
+
   async function loadMarketingStats() {
     setMessage('marketingDashboardMessage','Loading…',true);
     const response = await api('/api/admin?action=marketingstats');
@@ -1416,6 +1684,15 @@ async function loadWhatsAppConversation(phone) {
   $('productNameEn').addEventListener('input',()=>{if(!$('productId').value && !$('productSlug').dataset.manual){$('productSlug').value=slugify($('productNameEn').value);}}); $('productSlug').addEventListener('input',()=>{$('productSlug').dataset.manual='1';});
   $('orderDialogClose').addEventListener('click',()=>$('orderDialog').close()); $('orderClose').addEventListener('click',()=>$('orderDialog').close()); $('orderSave').addEventListener('click',saveOrder);
   $('marketingRefreshButton').addEventListener('click', () => loadMarketingStats().catch(handleMarketingError));
+  $('whatsappMarketingRefreshButton').addEventListener('click', () =>
+    loadWhatsAppMarketingCampaigns().catch(handleWhatsAppMarketingError)
+  );
+  $('whatsappMarketingCreateForm').addEventListener('submit', event =>
+    createWhatsAppMarketingCampaign(event).catch(handleWhatsAppMarketingError)
+  );
+  $('whatsappMarketingCampaignBody').addEventListener('click', event =>
+    handleWhatsAppMarketingTableClick(event).catch(handleWhatsAppMarketingError)
+  );
   $('studentFilterForm').addEventListener('submit', async e => { e.preventDefault(); state.studentPage=1; await loadStudents().catch(handleStudentError); });
   $('studentClearFilters').addEventListener('click', async () => { $('studentFilterForm').reset(); state.studentPage=1; await loadStudents().catch(handleStudentError); });
   $('studentRefreshButton').addEventListener('click', () => loadStudentAll().catch(handleStudentError));
