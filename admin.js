@@ -974,6 +974,36 @@ async function loadWhatsAppConversation(phone) {
     return '<small>—</small>';
   }
 
+  function renderWhatsAppMarketingAnalytics(campaigns) {
+    const rows = Array.isArray(campaigns) ? campaigns : [];
+
+    const totals = rows.reduce((summary, campaign) => {
+      summary.recipients += Number(campaign.total_recipients || 0);
+      summary.sent += Number(campaign.sent_count || 0);
+      summary.skipped += Number(campaign.skipped_count || 0);
+      summary.failed += Number(campaign.failed_count || 0);
+
+      if (campaign.status === 'Completed') {
+        summary.completed += 1;
+      }
+
+      return summary;
+    }, {
+      recipients: 0,
+      sent: 0,
+      skipped: 0,
+      failed: 0,
+      completed: 0
+    });
+
+    $('waMarketingStatCampaigns').textContent = rows.length;
+    $('waMarketingStatCompleted').textContent = totals.completed;
+    $('waMarketingStatRecipients').textContent = totals.recipients;
+    $('waMarketingStatSent').textContent = totals.sent;
+    $('waMarketingStatSkipped').textContent = totals.skipped;
+    $('waMarketingStatFailed').textContent = totals.failed;
+  }
+
   function renderWhatsAppMarketingCampaigns(campaigns) {
     const body = $('whatsappMarketingCampaignBody');
 
@@ -1028,7 +1058,9 @@ async function loadWhatsAppConversation(phone) {
       throw error;
     }
 
-    renderWhatsAppMarketingCampaigns(data.campaigns || []);
+    const campaigns = data.campaigns || [];
+    renderWhatsAppMarketingAnalytics(campaigns);
+    renderWhatsAppMarketingCampaigns(campaigns);
     setMessage('whatsappMarketingMessage', '', true);
   }
 
