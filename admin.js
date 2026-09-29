@@ -895,29 +895,39 @@ async function loadWhatsAppConversation(phone) {
     const id = Number(campaign.id);
     const status = campaign.status || '';
 
+    const button = (action, label, className = 'view-button') =>
+      `<button class="${className}"
+        type="button"
+        data-wa-marketing-action="${action}"
+        data-campaign-id="${id}">${label}</button>`;
+
     if (status === 'Draft') {
-      return `
-        <button class="view-button"
-          type="button"
-          data-wa-marketing-action="preview"
-          data-campaign-id="${id}">Preview Audience</button>
-        <button class="view-button"
-          type="button"
-          data-wa-marketing-action="generate"
-          data-campaign-id="${id}">Generate Recipients</button>
-      `;
+      return [
+        button('preview', 'Preview Audience'),
+        button('generate', 'Generate Recipients'),
+        button('mark_ready', 'Mark Ready'),
+        button('cancel_campaign', 'Cancel')
+      ].join(' ');
     }
 
     if (status === 'Ready') {
-      return '<small>Ready for lifecycle control</small>';
+      return [
+        button('start_campaign', 'Start'),
+        button('cancel_campaign', 'Cancel')
+      ].join(' ');
     }
 
     if (status === 'Sending') {
-      return '<small>Sending</small>';
+      return [
+        button('send_batch', 'Send 1'),
+        button('pause_campaign', 'Pause'),
+        button('complete_campaign', 'Complete'),
+        button('cancel_campaign', 'Cancel')
+      ].join(' ');
     }
 
     if (status === 'Paused') {
-      return '<small>Paused</small>';
+      return button('resume_campaign', 'Resume');
     }
 
     return '<small>—</small>';
@@ -1057,6 +1067,92 @@ async function loadWhatsAppConversation(phone) {
       Number(button.dataset.campaignId || 0);
 
     if (!campaignId) return;
+
+    const lifecycleActions = new Set([
+      'mark_ready',
+      'start_campaign',
+      'pause_campaign',
+      'resume_campaign',
+      'complete_campaign',
+      'cancel_campaign'
+    ]);
+
+    if (lifecycleActions.has(action)) {
+      const labels = {
+        mark_ready: 'Mark this campaign Ready?',
+        start_campaign: 'Start this campaign?',
+        pause_campaign: 'Pause this campaign?',
+        resume_campaign: 'Resume this campaign?',
+        complete_campaign: 'Mark this campaign Completed?',
+        cancel_campaign: 'Cancel this campaign? This campaign cannot be resumed after cancellation.'
+      };
+
+      if (!window.confirm(labels[action])) return;
+
+      setMessage(
+        'whatsappMarketingMessage',
+        'Updating campaign...',
+        true
+      );
+
+      await whatsappMarketingApi({
+        action,
+        campaign_id: campaignId
+      });
+
+      await loadWhatsAppMarketingCampaigns();
+      return;
+    }
+
+    if (action === 'send_batch') {
+      const confirmed = window.confirm(
+        'Send the next eligible WhatsApp marketing recipient? ' +
+        'Consent will be checked again immediately before sending.'
+      );
+
+      if (!confirmed) return;
+
+      setMessage(
+        'whatsappMarketingMessage',
+        'Sending controlled batch of 1...',
+        true
+      );
+
+      const data = await whatsappMarketingApi({
+        action: 'send_batch',
+        campaign_id: campaignId,
+        limit: 1
+      });
+
+      const result = data.result || {};
+
+      const selected =
+        Number(
+          result.selected_count ??
+          result.selected ??
+          0
+        );
+
+      const sent =
+        Number(
+          result.sent_count ??
+          result.sent ??
+          0
+        );
+
+      setMessage(
+        'whatsappMarketingMessage',
+        'Batch finished. Selected: ' +
+          selected +
+          ', sent: ' +
+          sent +
+          '.',
+        true
+      );
+
+      await loadWhatsAppMarketingCampaigns();
+      return;
+    }
 
     if (action === 'preview') {
       setMessage(
