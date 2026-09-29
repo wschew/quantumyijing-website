@@ -1211,30 +1211,40 @@ async function loadWhatsAppConversation(phone) {
 
       const eligible =
         Number(
-          counts.eligible ??
-          counts.eligible_count ??
-          0
+          counts.eligible_unique_recipients || 0
         );
 
       const total =
         Number(
-          counts.total ??
-          counts.total_count ??
-          0
+          counts.crm_candidates || 0
+        );
+
+      const noPhone =
+        Number(
+          counts.excluded_no_phone || 0
+        );
+
+      const notOptedIn =
+        Number(
+          counts.excluded_not_opted_in || 0
+        );
+
+      const duplicate =
+        Number(
+          counts.excluded_duplicate_contact || 0
         );
 
       const excluded =
-        Number(
-          counts.excluded ??
-          counts.excluded_count ??
-          Math.max(total - eligible, 0)
-        );
+        noPhone + notOptedIn + duplicate;
 
       const message =
         'Audience Preview\n\n' +
-        'Eligible: ' + eligible +
-        (total ? '\nTotal evaluated: ' + total : '') +
-        (total || excluded ? '\nExcluded: ' + excluded : '');
+        'CRM candidates: ' + total +
+        '\nEligible recipients: ' + eligible +
+        '\nExcluded: ' + excluded +
+        '\n  No phone: ' + noPhone +
+        '\n  Not opted in: ' + notOptedIn +
+        '\n  Duplicate contact: ' + duplicate;
 
       setMessage(
         'whatsappMarketingMessage',
