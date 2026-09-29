@@ -13,9 +13,15 @@
     .lead-eyebrow{font-size:.82rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.72}
     .lead-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start}
     .lead-card{background:#fff;border:1px solid #dfe7ef;border-radius:18px;padding:28px;box-shadow:0 12px 35px rgba(20,50,80,.08)}
-    .lead-card h1,.lead-card h2{margin-top:0}
-    .lead-form{display:grid;gap:16px}
+    .lead-card h1{margin:12px 0 18px;font-size:clamp(2.2rem,5vw,4.2rem);line-height:1.02;letter-spacing:-.035em}
+    .lead-card h2{margin:0 0 24px;font-size:clamp(1.8rem,3vw,2.8rem);line-height:1.08;letter-spacing:-.025em}
+    .lead-card p{line-height:1.65}
+    .lead-form{display:grid;grid-template-columns:1fr 1fr;gap:18px 24px}
     .lead-form label{display:grid;gap:7px;font-weight:600}
+    .lead-form .lead-check,
+    .lead-form .lead-note,
+    .lead-form .lead-button,
+    .lead-form .lead-status{grid-column:1 / -1}
     .lead-form input[type="text"],
     .lead-form input[type="email"]{width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid #bcc9d6;border-radius:8px;font:inherit}
     .lead-check{display:flex!important;grid-template-columns:none!important;gap:10px!important;align-items:flex-start;font-weight:400!important;font-size:.92rem;line-height:1.45}
@@ -29,7 +35,13 @@
     .form-honeypot{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;overflow:hidden!important}
     .language-switch{text-align:right;margin-bottom:18px}
     .language-switch button{border:1px solid #bcc9d6;background:#fff;border-radius:7px;padding:7px 10px;cursor:pointer}
-    @media(max-width:760px){.lead-grid{grid-template-columns:1fr}.lead-page{padding-top:24px}}
+    @media(max-width:760px){
+      .lead-grid{grid-template-columns:1fr}
+      .lead-form{grid-template-columns:1fr}
+      .lead-page{padding-top:24px}
+      .lead-card h1{font-size:2.5rem}
+      .lead-card h2{font-size:2rem}
+    }
   </style>
 </head>
 <body>
