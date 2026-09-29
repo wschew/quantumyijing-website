@@ -1004,6 +1004,81 @@ async function loadWhatsAppConversation(phone) {
     $('waMarketingStatFailed').textContent = totals.failed;
   }
 
+  function parseWhatsAppMarketingUtc(value) {
+    if (!value) return null;
+
+    const raw = String(value).trim();
+
+    const utcValue =
+      /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(raw)
+        ? raw.replace(' ', 'T') + 'Z'
+        : raw;
+
+    const date = new Date(utcValue);
+
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  function whatsappMarketingSendRate(campaign) {
+    const recipients = Math.max(
+      0,
+      Number(campaign.total_recipients || 0)
+    );
+
+    const sent = Math.max(
+      0,
+      Number(campaign.sent_count || 0)
+    );
+
+    if (!recipients) return '—';
+
+    return ((sent / recipients) * 100).toFixed(1) + '%';
+  }
+
+  function whatsappMarketingDuration(campaign) {
+    const start = parseWhatsAppMarketingUtc(campaign.started_at);
+
+    if (!start) return '—';
+
+    let end = parseWhatsAppMarketingUtc(campaign.completed_at);
+
+    if (!end) {
+      const status = String(campaign.status || '');
+
+      if (status !== 'Sending' && status !== 'Paused') {
+        return '—';
+      }
+
+      end = new Date();
+    }
+
+    const milliseconds = end.getTime() - start.getTime();
+
+    if (!Number.isFinite(milliseconds) || milliseconds < 0) {
+      return '—';
+    }
+
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (days > 0) {
+      return days + 'd ' + hours + 'h ' + minutes + 'm';
+    }
+
+    if (hours > 0) {
+      return hours + 'h ' + minutes + 'm';
+    }
+
+    if (minutes > 0) {
+      return minutes + 'm ' + seconds + 's';
+    }
+
+    return seconds + 's';
+  }
+
   function renderWhatsAppMarketingCampaigns(campaigns) {
     const body = $('whatsappMarketingCampaignBody');
 
@@ -1013,7 +1088,7 @@ async function loadWhatsAppConversation(phone) {
 
     if (!campaigns.length) {
       body.innerHTML =
-        '<tr><td colspan="9">No WhatsApp marketing campaigns yet.</td></tr>';
+        '<tr><td colspan="11">No WhatsApp marketing campaigns yet.</td></tr>';
       return;
     }
 
@@ -1033,6 +1108,8 @@ async function loadWhatsAppConversation(phone) {
           <td>${Number(campaign.sent_count || 0)}</td>
           <td>${Number(campaign.skipped_count || 0)}</td>
           <td>${Number(campaign.failed_count || 0)}</td>
+          <td>${esc(whatsappMarketingSendRate(campaign))}</td>
+          <td>${esc(whatsappMarketingDuration(campaign))}</td>
           <td>${esc(formatMYTDateTime(campaign.created_at))}</td>
           <td class="actions-cell">
             ${whatsappMarketingStatusActions(campaign)}
