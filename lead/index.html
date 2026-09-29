@@ -24,8 +24,27 @@
     .lead-form .lead-status{grid-column:1 / -1}
     .lead-form input[type="text"],
     .lead-form input[type="email"]{width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid #bcc9d6;border-radius:8px;font:inherit}
-    .lead-check{display:flex!important;grid-template-columns:none!important;gap:10px!important;align-items:flex-start;font-weight:400!important;font-size:.92rem;line-height:1.45}
-    .lead-check input{margin-top:4px}
+    .lead-check{display:flex!important;grid-template-columns:none!important;gap:12px!important;align-items:flex-start!important;font-weight:400!important;font-size:.92rem;line-height:1.45}
+    .lead-check input[type="checkbox"]{
+      appearance:auto!important;
+      -webkit-appearance:checkbox!important;
+      width:18px!important;
+      height:18px!important;
+      min-width:18px!important;
+      min-height:18px!important;
+      max-width:18px!important;
+      max-height:18px!important;
+      margin:3px 0 0 0!important;
+      padding:0!important;
+      flex:0 0 18px!important;
+    }
+    .lead-check span{
+      display:block;
+      flex:1 1 auto;
+      margin:0;
+      padding:0;
+      line-height:1.45;
+    }
     .lead-button{border:0;border-radius:9px;padding:13px 18px;font:inherit;font-weight:700;cursor:pointer;background:#173b63;color:#fff}
     .lead-button:disabled{opacity:.6;cursor:wait}
     .lead-status{min-height:24px;margin:0;font-size:.94rem}
