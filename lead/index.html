@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Free learning resources from Quantum YiJing International Academy.">
+  <title>Free Resource | Quantum YiJing International Academy</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .lead-page{max-width:980px;margin:0 auto;padding:40px 20px 70px}
+    .lead-header{text-align:center;margin-bottom:36px}
+    .lead-logo{width:110px;height:auto;margin-bottom:18px}
+    .lead-eyebrow{font-size:.82rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.72}
+    .lead-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start}
+    .lead-card{background:#fff;border:1px solid #dfe7ef;border-radius:18px;padding:28px;box-shadow:0 12px 35px rgba(20,50,80,.08)}
+    .lead-card h1,.lead-card h2{margin-top:0}
+    .lead-form{display:grid;gap:16px}
+    .lead-form label{display:grid;gap:7px;font-weight:600}
+    .lead-form input[type="text"],
+    .lead-form input[type="email"]{width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid #bcc9d6;border-radius:8px;font:inherit}
+    .lead-check{display:flex!important;grid-template-columns:none!important;gap:10px!important;align-items:flex-start;font-weight:400!important;font-size:.92rem;line-height:1.45}
+    .lead-check input{margin-top:4px}
+    .lead-button{border:0;border-radius:9px;padding:13px 18px;font:inherit;font-weight:700;cursor:pointer;background:#173b63;color:#fff}
+    .lead-button:disabled{opacity:.6;cursor:wait}
+    .lead-status{min-height:24px;margin:0;font-size:.94rem}
+    .lead-status.success{color:#176b3a}
+    .lead-status.error{color:#a32626}
+    .lead-note{font-size:.88rem;opacity:.72}
+    .form-honeypot{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;overflow:hidden!important}
+    .language-switch{text-align:right;margin-bottom:18px}
+    .language-switch button{border:1px solid #bcc9d6;background:#fff;border-radius:7px;padding:7px 10px;cursor:pointer}
+    @media(max-width:760px){.lead-grid{grid-template-columns:1fr}.lead-page{padding-top:24px}}
+  </style>
+</head>
+<body>
+<main class="lead-page">
+  <div class="language-switch">
+    <button type="button" id="languageToggle">中文</button>
+  </div>
+
+  <header class="lead-header">
+    <img class="lead-logo" src="assets/quantum-yijing-3d-logo.png" alt="Quantum YiJing International Academy">
+    <div class="lead-eyebrow"
+      data-en="Quantum YiJing International Academy"
+      data-zh="量子易经国际学院">Quantum YiJing International Academy</div>
+  </header>
+
+  <section class="lead-grid">
+    <article class="lead-card">
+      <p class="lead-eyebrow"
+        data-en="Complimentary Learning Resource"
+        data-zh="免费学习资源">Complimentary Learning Resource</p>
+
+      <h1 id="offerTitle"
+        data-en="Discover the Wisdom of Yi Jing"
+        data-zh="探索易经智慧">Discover the Wisdom of Yi Jing</h1>
+
+      <p id="offerDescription"
+        data-en="Register below to receive this complimentary educational resource from Quantum YiJing International Academy."
+        data-zh="填写以下资料，即可获取量子易经国际学院提供的免费学习资源。">
+        Register below to receive this complimentary educational resource from Quantum YiJing International Academy.
+      </p>
+
+      <p class="lead-note"
+        data-en="The resource itself is not yet attached to this Preview foundation. Your registration and marketing preferences can be tested independently."
+        data-zh="目前 Preview 基础版本尚未连接正式资源文件。我们可以先独立测试登记及营销同意流程。">
+        The resource itself is not yet attached to this Preview foundation. Your registration and marketing preferences can be tested independently.
+      </p>
+    </article>
+
+    <article class="lead-card">
+      <h2 data-en="Get the Free Resource" data-zh="获取免费资源">Get the Free Resource</h2>
+
+      <form id="leadMagnetForm" class="lead-form" novalidate>
+        <input class="form-honeypot" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+        <label>
+          <span data-en="Full Name *" data-zh="姓名 *">Full Name *</span>
+          <input type="text" name="name" maxlength="100" autocomplete="name" required>
+        </label>
+
+        <label>
+          <span data-en="Email *" data-zh="电邮 *">Email *</span>
+          <input type="email" name="email" maxlength="160" autocomplete="email" required>
+        </label>
+
+        <label>
+          <span data-en="WhatsApp / Phone" data-zh="WhatsApp／电话">WhatsApp / Phone</span>
+          <input type="text" name="phone" maxlength="60" autocomplete="tel">
+        </label>
+
+        <label>
+          <span data-en="Country / Region" data-zh="国家／地区">Country / Region</span>
+          <input type="text" name="country" maxlength="80" autocomplete="country-name">
+        </label>
+
+        <label class="lead-check">
+          <input type="checkbox" name="consent" required>
+          <span
+            data-en="I agree that my information may be used to provide this resource and respond to this request. I have read the Privacy Policy and Terms of Use."
+            data-zh="我同意学院使用我所提交的资料，以提供此资源及处理本次请求。我已阅读隐私政策及使用条款。">
+            I agree that my information may be used to provide this resource and respond to this request. I have read the Privacy Policy and Terms of Use.
+          </span>
+        </label>
+
+        <label class="lead-check">
+          <input type="checkbox" name="whatsappMarketingConsent">
+          <span
+            data-en="I would also like to receive course updates, events, offers and other marketing information from Quantum YiJing International Academy via WhatsApp. I can opt out at any time."
+            data-zh="我也愿意通过 WhatsApp 接收量子易经国际学院的课程更新、活动、优惠及其他营销信息。我可以随时取消订阅。">
+            I would also like to receive course updates, events, offers and other marketing information from Quantum YiJing International Academy via WhatsApp. I can opt out at any time.
+          </span>
+        </label>
+
+        <p class="lead-note">
+          <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>
+          ·
+          <a href="/terms.html" target="_blank" rel="noopener">Terms of Use</a>
+        </p>
+
+        <button class="lead-button" type="submit">
+          <span data-en="Request Free Resource" data-zh="索取免费资源">Request Free Resource</span>
+        </button>
+
+        <p id="leadMagnetStatus" class="lead-status" role="status" aria-live="polite"></p>
+      </form>
+    </article>
+  </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
