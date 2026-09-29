@@ -1209,13 +1209,42 @@ async function loadWhatsAppConversation(phone) {
 
       const counts = data.preview?.counts || {};
 
+      const eligible =
+        Number(
+          counts.eligible ??
+          counts.eligible_count ??
+          0
+        );
+
+      const total =
+        Number(
+          counts.total ??
+          counts.total_count ??
+          0
+        );
+
+      const excluded =
+        Number(
+          counts.excluded ??
+          counts.excluded_count ??
+          Math.max(total - eligible, 0)
+        );
+
+      const message =
+        'Audience Preview\n\n' +
+        'Eligible: ' + eligible +
+        (total ? '\nTotal evaluated: ' + total : '') +
+        (total || excluded ? '\nExcluded: ' + excluded : '');
+
       setMessage(
         'whatsappMarketingMessage',
         'Audience preview: ' +
-          Number(counts.eligible || counts.eligible_count || 0) +
+          eligible +
           ' eligible contact(s).',
         true
       );
+
+      window.alert(message);
 
       return;
     }
