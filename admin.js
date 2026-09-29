@@ -891,6 +891,47 @@ async function loadWhatsAppConversation(phone) {
     return data;
   }
 
+  function formatMYTDateTime(value) {
+    if (!value) return '—';
+
+    const raw = String(value).trim();
+
+    // D1/SQLite CURRENT_TIMESTAMP is UTC but normally has no timezone suffix.
+    const utcValue =
+      /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(raw)
+        ? raw.replace(' ', 'T') + 'Z'
+        : raw;
+
+    const date = new Date(utcValue);
+
+    if (Number.isNaN(date.getTime())) {
+      return raw;
+    }
+
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Kuala_Lumpur',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23'
+    }).formatToParts(date);
+
+    const get = type =>
+      parts.find(part => part.type === type)?.value || '';
+
+    return (
+      get('year') + '-' +
+      get('month') + '-' +
+      get('day') + ' ' +
+      get('hour') + ':' +
+      get('minute') + ':' +
+      get('second') + ' MYT'
+    );
+  }
+
   function whatsappMarketingStatusActions(campaign) {
     const id = Number(campaign.id);
     const status = campaign.status || '';
@@ -962,7 +1003,7 @@ async function loadWhatsAppConversation(phone) {
           <td>${Number(campaign.sent_count || 0)}</td>
           <td>${Number(campaign.skipped_count || 0)}</td>
           <td>${Number(campaign.failed_count || 0)}</td>
-          <td>${esc(campaign.created_at || '—')}</td>
+          <td>${esc(formatMYTDateTime(campaign.created_at))}</td>
           <td class="actions-cell">
             ${whatsappMarketingStatusActions(campaign)}
           </td>
