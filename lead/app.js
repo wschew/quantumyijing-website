@@ -14,6 +14,17 @@
       .replace(/[^a-zA-Z0-9_-]/g, '')
       .slice(0, 80) || 'general-yijing-resource';
 
+  // Explicit allow-list: public offer code -> downloadable resource.
+  // Never construct resource paths directly from visitor-supplied URL values.
+  const resources = {
+    'd3-test-guide': {
+      url: '/lead/resources/test-guide.pdf',
+      filename: 'test-guide.pdf'
+    }
+  };
+
+  const resource = resources[offer] || null;
+
   let language =
     params.get('lang') === 'zh' ||
     document.documentElement.lang.toLowerCase().startsWith('zh')
@@ -118,9 +129,30 @@
       form.reset();
 
       status.className = 'lead-status success';
-      status.textContent = language === 'zh'
-        ? '登记成功。您的参考编号是 ' + data.reference + '。正式资源连接后，将可在这里提供获取方式。'
-        : 'Registration successful. Your reference is ' + data.reference + '. Resource delivery will be enabled here once the final resource is connected.';
+
+      if (resource) {
+        const message = document.createElement('span');
+        message.textContent = language === 'zh'
+          ? '登记成功。您的参考编号是 ' + data.reference + '。'
+          : 'Registration successful. Your reference is ' + data.reference + '.';
+
+        const separator = document.createTextNode(' ');
+
+        const download = document.createElement('a');
+        download.href = resource.url;
+        download.download = resource.filename;
+        download.target = '_blank';
+        download.rel = 'noopener';
+        download.textContent = language === 'zh'
+          ? '下载免费资源'
+          : 'Download Free Resource';
+
+        status.replaceChildren(message, separator, download);
+      } else {
+        status.textContent = language === 'zh'
+          ? '登记成功。您的参考编号是 ' + data.reference + '。该资源目前尚未开放下载。'
+          : 'Registration successful. Your reference is ' + data.reference + '. This resource is not yet available for download.';
+      }
     } catch (error) {
       status.className = 'lead-status error';
       status.textContent =
