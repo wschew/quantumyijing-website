@@ -129,14 +129,13 @@
       form.reset();
 
       status.className = 'lead-status success';
+      status.textContent = '';
 
       if (resource) {
         const message = document.createElement('span');
         message.textContent = language === 'zh'
           ? '索取成功。您的参考编号是 ' + data.reference + '。'
           : 'Request successful. Your reference is ' + data.reference + '.';
-
-        const separator = document.createTextNode(' ');
 
         const download = document.createElement('a');
         download.href = resource.url;
@@ -145,10 +144,57 @@
         download.target = '_blank';
         download.rel = 'noopener';
         download.textContent = language === 'zh'
-          ? 'ä¸‹è½½å…è´¹èµ„æº'
+          ? '下载免费资源'
           : 'Download Free Resource';
 
-        status.replaceChildren(message, separator, download);
+        download.addEventListener('click', async event => {
+          event.preventDefault();
+
+          const originalText = download.textContent;
+          download.textContent = language === 'zh'
+            ? '正在准备下载…'
+            : 'Preparing download…';
+
+          try {
+            const trackingResponse = await fetch('/api/lead/download', {
+              method: 'POST',
+              headers: {
+                'content-type': 'application/json'
+              },
+              body: JSON.stringify({
+                reference: data.reference,
+                offer
+              })
+            });
+
+            const trackingData =
+              await trackingResponse.json().catch(() => ({}));
+
+            if (!trackingResponse.ok || !trackingData.url) {
+              throw new Error(
+                trackingData.error || 'Unable to prepare download.'
+              );
+            }
+
+            window.open(trackingData.url, '_blank', 'noopener');
+          } catch (downloadError) {
+            console.error(
+              'Lead magnet download tracking failed:',
+              downloadError
+            );
+
+            status.className = 'lead-status error';
+            status.textContent = language === 'zh'
+              ? '暂时无法准备下载，请稍后再试。'
+              : 'Unable to prepare the download. Please try again.';
+          } finally {
+            download.textContent = originalText;
+          }
+        });
+
+        status.appendChild(message);
+        status.appendChild(document.createElement('br'));
+        status.appendChild(download);
       } else {
         status.textContent = language === 'zh'
           ? '索取成功。您的参考编号是 ' + data.reference + '。该资源目前尚未开放下载。'
