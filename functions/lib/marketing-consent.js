@@ -140,7 +140,8 @@ export async function setMarketingConsent({
   enquiryId = null,
   source = "",
   consentTextVersion = "",
-  notes = ""
+  notes = "",
+  recordSameStateEvent = false
 }) {
   if (!db) {
     throw new Error("Database is required");
@@ -218,7 +219,11 @@ export async function setMarketingConsent({
   // Idempotency protection:
   // Repeated requests for the already-current consent state are a no-op.
   // A real state transition (opted_in <-> opted_out) is still audited.
-  if (current && current.status === normalizedStatus) {
+  if (
+    current &&
+    current.status === normalizedStatus &&
+    !recordSameStateEvent
+  ) {
     return current;
   }
 

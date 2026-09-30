@@ -653,7 +653,8 @@ export async function onRequestPost(context) {
         enquiryId: inserted.id,
         source: 'website_enquiry_form',
         consentTextVersion: 'whatsapp-marketing-v1',
-        notes: 'Explicit WhatsApp marketing consent from website enquiry form.'
+        notes: 'Explicit WhatsApp marketing consent from website enquiry form.',
+        recordSameStateEvent: true
       });
 
       console.log(
