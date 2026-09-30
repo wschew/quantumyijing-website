@@ -41,11 +41,11 @@
     });
 
     if (languageToggle) {
-      languageToggle.textContent = language === 'zh' ? 'English' : '中文';
+      languageToggle.textContent = language === 'zh' ? 'English' : 'ä¸­æ–‡';
     }
 
     document.title = language === 'zh'
-      ? '免费学习资源 | 量子易经国际学院'
+      ? 'å…è´¹å­¦ä¹ èµ„æº | é‡å­æ˜“ç»å›½é™…å­¦é™¢'
       : 'Free Resource | Quantum YiJing International Academy';
   }
 
@@ -73,7 +73,7 @@
 
     const buttonText = button.querySelector('[data-en][data-zh]');
     if (buttonText) {
-      buttonText.textContent = language === 'zh' ? '提交中…' : 'Submitting…';
+      buttonText.textContent = language === 'zh' ? 'æäº¤ä¸­â€¦' : 'Submittingâ€¦';
     }
 
     const body = {
@@ -84,8 +84,8 @@
 
       interest: 'General Enquiry',
       message: language === 'zh'
-        ? 'Lead Magnet：索取免费学习资源。资源编号：' + offer
-        : 'Lead Magnet — requested complimentary learning resource. Offer: ' + offer,
+        ? 'Lead Magnetï¼šç´¢å–å…è´¹å­¦ä¹ èµ„æºã€‚èµ„æºç¼–å·ï¼š' + offer
+        : 'Lead Magnet â€” requested complimentary learning resource. Offer: ' + offer,
       language,
 
       consent: formData.get('consent'),
@@ -121,7 +121,7 @@
         throw new Error(
           data.error ||
           (language === 'zh'
-            ? '暂时无法提交，请稍后再试。'
+            ? 'æš‚æ—¶æ— æ³•æäº¤ï¼Œè¯·ç¨åŽå†è¯•ã€‚'
             : 'Unable to submit your request. Please try again.')
         );
       }
@@ -133,25 +133,26 @@
       if (resource) {
         const message = document.createElement('span');
         message.textContent = language === 'zh'
-          ? '登记成功。您的参考编号是 ' + data.reference + '。'
-          : 'Registration successful. Your reference is ' + data.reference + '.';
+          ? '索取成功。您的参考编号是 ' + data.reference + '。'
+          : 'Request successful. Your reference is ' + data.reference + '.';
 
         const separator = document.createTextNode(' ');
 
         const download = document.createElement('a');
         download.href = resource.url;
         download.download = resource.filename;
+        download.className = 'lead-download';
         download.target = '_blank';
         download.rel = 'noopener';
         download.textContent = language === 'zh'
-          ? '下载免费资源'
+          ? 'ä¸‹è½½å…è´¹èµ„æº'
           : 'Download Free Resource';
 
         status.replaceChildren(message, separator, download);
       } else {
         status.textContent = language === 'zh'
-          ? '登记成功。您的参考编号是 ' + data.reference + '。该资源目前尚未开放下载。'
-          : 'Registration successful. Your reference is ' + data.reference + '. This resource is not yet available for download.';
+          ? '索取成功。您的参考编号是 ' + data.reference + '。该资源目前尚未开放下载。'
+          : 'Request successful. Your reference is ' + data.reference + '. This resource is not yet available for download.';
       }
     } catch (error) {
       status.className = 'lead-status error';
@@ -159,14 +160,14 @@
         error && error.message
           ? error.message
           : (language === 'zh'
-              ? '暂时无法提交，请稍后再试。'
+              ? 'æš‚æ—¶æ— æ³•æäº¤ï¼Œè¯·ç¨åŽå†è¯•ã€‚'
               : 'Unable to submit your request. Please try again.');
     } finally {
       button.disabled = false;
 
       if (buttonText) {
         buttonText.textContent = language === 'zh'
-          ? '索取免费资源'
+          ? 'ç´¢å–å…è´¹èµ„æº'
           : 'Request Free Resource';
       }
     }
