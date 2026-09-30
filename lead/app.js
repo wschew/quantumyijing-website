@@ -41,12 +41,12 @@
     });
 
     if (languageToggle) {
-      languageToggle.textContent = language === 'zh' ? 'English' : 'ä¸­æ–‡';
+      languageToggle.textContent = language === 'zh' ? 'English' : '中文';
     }
 
-    document.title = language === 'zh'
-      ? 'å…è´¹å­¦ä¹ èµ„æº | é‡å­æ˜“ç»å›½é™…å­¦é™¢'
-      : 'Free Resource | Quantum YiJing International Academy';
+document.title = language === 'zh'
+  ? '免费学习资源｜量子易经国际学院'
+  : 'Free Resource | Quantum YiJing International Academy';
   }
 
   if (languageToggle) {
@@ -73,7 +73,7 @@
 
     const buttonText = button.querySelector('[data-en][data-zh]');
     if (buttonText) {
-      buttonText.textContent = language === 'zh' ? 'æäº¤ä¸­â€¦' : 'Submittingâ€¦';
+      buttonText.textContent = language === 'zh' ? '提交中…' : 'Submitting…';
     }
 
     const body = {
@@ -84,8 +84,8 @@
 
       interest: 'General Enquiry',
       message: language === 'zh'
-        ? 'Lead Magnetï¼šç´¢å–å…è´¹å­¦ä¹ èµ„æºã€‚èµ„æºç¼–å·ï¼š' + offer
-        : 'Lead Magnet â€” requested complimentary learning resource. Offer: ' + offer,
+        ? 'Lead Magnet：索取免费学习资源。资源编号：' + offer
+        : 'Lead Magnet — requested complimentary learning resource. Offer: ' + offer,
       language,
 
       consent: formData.get('consent'),
@@ -121,7 +121,7 @@
         throw new Error(
           data.error ||
           (language === 'zh'
-            ? 'æš‚æ—¶æ— æ³•æäº¤ï¼Œè¯·ç¨åŽå†è¯•ã€‚'
+            ? '暂时无法提交，请稍后再试。'
             : 'Unable to submit your request. Please try again.')
         );
       }
@@ -206,14 +206,14 @@
         error && error.message
           ? error.message
           : (language === 'zh'
-              ? 'æš‚æ—¶æ— æ³•æäº¤ï¼Œè¯·ç¨åŽå†è¯•ã€‚'
+              ? '暂时无法提交，请稍后再试。'
               : 'Unable to submit your request. Please try again.');
     } finally {
       button.disabled = false;
 
       if (buttonText) {
         buttonText.textContent = language === 'zh'
-          ? 'ç´¢å–å…è´¹èµ„æº'
+          ? '索取免费资源'
           : 'Request Free Resource';
       }
     }
