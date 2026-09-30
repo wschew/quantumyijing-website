@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -11,14 +11,19 @@
       const incoming = new URLSearchParams(window.location.search);
 
       const offer =
-        (incoming.get('offer') || 'd3-test-guide')
+        (incoming.get('offer') || 'yijing-bagua-yinyang-cn')
           .trim()
           .replace(/[^a-zA-Z0-9_-]/g, '')
-          .slice(0, 80) || 'd3-test-guide';
+          .slice(0, 80) || 'yijing-bagua-yinyang-cn';
 
       const target = new URLSearchParams();
 
       target.set('offer', offer);
+
+      target.set(
+        'lang',
+        incoming.get('lang') || 'zh'
+      );
 
       target.set(
         'utm_source',
@@ -58,7 +63,7 @@
   <noscript>
     <meta
       http-equiv="refresh"
-      content="0;url=/lead/?offer=d3-test-guide&amp;utm_source=whatsapp-channel&amp;utm_medium=organic&amp;utm_campaign=lead-magnet"
+      content="0;url=/lead/?offer=yijing-bagua-yinyang-cn&amp;utm_source=whatsapp-channel&amp;utm_medium=organic&amp;utm_campaign=lead-magnet&amp;lang=zh"
     >
   </noscript>
 </head>
@@ -66,7 +71,7 @@
 <body>
   <p>
     Redirecting to the free resource…
-    <a href="/lead/?offer=d3-test-guide&amp;utm_source=whatsapp-channel&amp;utm_medium=organic&amp;utm_campaign=lead-magnet">
+   <a href="/lead/?offer=yijing-bagua-yinyang-cn&amp;utm_source=whatsapp-channel&amp;utm_medium=organic&amp;utm_campaign=lead-magnet&amp;lang=zh">
       Continue
     </a>
   </p>

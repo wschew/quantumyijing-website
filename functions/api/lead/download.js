@@ -17,6 +17,10 @@ const RESOURCES = {
   'd3-test-guide': {
     url: '/lead/resources/test-guide.pdf',
     label: 'test-guide.pdf'
+  },
+  'yijing-bagua-yinyang-cn': {
+    url: '/lead/resources/yijing-bagua-yinyang-introduction-cn.pdf',
+    label: 'yijing-bagua-yinyang-introduction-cn.pdf'
   }
 };
 
