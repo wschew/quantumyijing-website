@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -8,13 +8,50 @@
 
   <script>
     (() => {
-      const target =
-        '/lead/?offer=d3-test-guide' +
-        '&utm_source=whatsapp-channel' +
-        '&utm_medium=organic' +
-        '&utm_campaign=lead-magnet';
+      const incoming = new URLSearchParams(window.location.search);
 
-      window.location.replace(target);
+      const offer =
+        (incoming.get('offer') || 'd3-test-guide')
+          .trim()
+          .replace(/[^a-zA-Z0-9_-]/g, '')
+          .slice(0, 80) || 'd3-test-guide';
+
+      const target = new URLSearchParams();
+
+      target.set('offer', offer);
+
+      target.set(
+        'utm_source',
+        incoming.get('utm_source') || 'whatsapp-channel'
+      );
+
+      target.set(
+        'utm_medium',
+        incoming.get('utm_medium') || 'organic'
+      );
+
+      target.set(
+        'utm_campaign',
+        incoming.get('utm_campaign') || 'lead-magnet'
+      );
+
+      const optional = [
+        'utm_content',
+        'utm_term',
+        'aff',
+        'affiliate',
+        'lang'
+      ];
+
+      for (const key of optional) {
+        const value = incoming.get(key);
+
+        if (value) {
+          target.set(key, value);
+        }
+      }
+
+      window.location.replace('/lead/?' + target.toString());
     })();
   </script>
 
