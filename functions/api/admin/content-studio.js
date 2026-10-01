@@ -66,13 +66,13 @@ export async function onRequestGet(context) {
 
   try {
     if (id > 0) {
-      const draft = await getDraft(env.DB, id);
+      const draft = await getDraft(env.ENQUIRIES_DB, id);
 
       if (!draft) {
         return json({ ok: false, error: "Draft not found" }, 404);
       }
 
-      const events = await env.DB.prepare(`
+      const events = await env.ENQUIRIES_DB.prepare(`
         SELECT
           id,
           content_draft_id,
@@ -141,7 +141,7 @@ export async function onRequestGet(context) {
       LIMIT 100
     `;
 
-    const result = await env.DB.prepare(sql).bind(...bindings).all();
+    const result = await env.ENQUIRIES_DB.prepare(sql).bind(...bindings).all();
 
     return json({
       ok: true,
@@ -188,7 +188,7 @@ export async function onRequestPost(context) {
   }
 
   try {
-    const insert = await env.DB.prepare(`
+    const insert = await env.ENQUIRIES_DB.prepare(`
       INSERT INTO ai_content_drafts (
         content_type,
         language,
@@ -223,7 +223,7 @@ export async function onRequestPost(context) {
       throw new Error("Unable to determine inserted draft ID");
     }
 
-    await env.DB.prepare(`
+    await env.ENQUIRIES_DB.prepare(`
       INSERT INTO ai_content_events (
         content_draft_id,
         event_type,
@@ -236,7 +236,7 @@ export async function onRequestPost(context) {
       "Content Studio draft created"
     ).run();
 
-    const draft = await getDraft(env.DB, id);
+    const draft = await getDraft(env.ENQUIRIES_DB, id);
 
     return json({
       ok: true,
@@ -271,7 +271,7 @@ export async function onRequestPatch(context) {
   }
 
   try {
-    const existing = await getDraft(env.DB, id);
+    const existing = await getDraft(env.ENQUIRIES_DB, id);
 
     if (!existing) {
       return json({ ok: false, error: "Draft not found" }, 404);
@@ -327,7 +327,7 @@ export async function onRequestPatch(context) {
         ? (existing.approved_at || new Date().toISOString())
         : "";
 
-    await env.DB.prepare(`
+    await env.ENQUIRIES_DB.prepare(`
       UPDATE ai_content_drafts
       SET
         title = ?,
@@ -348,7 +348,7 @@ export async function onRequestPatch(context) {
       id
     ).run();
 
-    await env.DB.prepare(`
+    await env.ENQUIRIES_DB.prepare(`
       INSERT INTO ai_content_events (
         content_draft_id,
         event_type,
@@ -362,7 +362,7 @@ export async function onRequestPatch(context) {
       eventNotes
     ).run();
 
-    const draft = await getDraft(env.DB, id);
+    const draft = await getDraft(env.ENQUIRIES_DB, id);
 
     return json({
       ok: true,
@@ -375,3 +375,4 @@ export async function onRequestPatch(context) {
     return json({ ok: false, error: "Content Studio update failed" }, 500);
   }
 }
+
