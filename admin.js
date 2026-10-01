@@ -15,7 +15,9 @@
     products: [],
     orders: [],
     payments: [],
-    selectedPaymentId: 0
+    selectedPaymentId: 0,
+    contentDrafts: [],
+    selectedContentDraftId: 0
   };
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 
@@ -202,21 +204,30 @@
     const whatsappMode = module === 'whatsapp';
     const studentMode = module === 'students';
     const marketingMode = module === 'marketing';
+
+    const contentStudioMode = module === 'contentStudio';
     const commerceMode = module === 'commerce';
     $('crmModule').hidden = !crmMode;
     $('whatsappModule').hidden = !whatsappMode;
     $('studentsModule').hidden = !studentMode;
     $('marketingModule').hidden = !marketingMode;
+
+    contentStudioModule.hidden = !contentStudioMode;
     $('commerceModule').hidden = !commerceMode;
     $('crmTab').classList.toggle('active', crmMode);
     $('whatsappTab').classList.toggle('active', whatsappMode);
     $('studentsTab').classList.toggle('active', studentMode);
     $('marketingTab').classList.toggle('active', marketingMode);
+
+    contentStudioTab.classList.toggle('active', contentStudioMode);
     $('commerceTab').classList.toggle('active', commerceMode);
     if (whatsappMode) loadWhatsAppInbox().catch(error =>
       setMessage('whatsappDashboardMessage', error.message)
     );
     if (studentMode) loadStudentAll().catch(handleStudentError);
+    if (contentStudioMode) {
+      loadContentStudio().catch(handleContentStudioError);
+    }
     if (marketingMode) {
       loadMarketingStats().catch(handleMarketingError);
       loadWhatsAppMarketingCampaigns().catch(handleWhatsAppMarketingError);
@@ -1423,6 +1434,485 @@ async function loadWhatsAppConversation(phone) {
       error.message || 'WhatsApp marketing operation failed.'
     );
   }
+  function contentStudioStatusLabel(status) {
+    const value = String(status || 'draft');
+
+    if (value === 'approved') return 'Approved';
+    if (value === 'archived') return 'Archived';
+
+    return 'Draft';
+  }
+
+
+  function renderContentStudioDrafts(rows) {
+    state.contentDrafts =
+      Array.isArray(rows) ? rows : [];
+
+    const body =
+      $('contentStudioDraftsBody');
+
+    body.innerHTML = '';
+
+    if (!state.contentDrafts.length) {
+
+      body.innerHTML =
+        '<tr><td colspan="7">No Content Studio drafts yet.</td></tr>';
+
+      $('contentStudioDraftCount').textContent =
+        '0 drafts';
+
+      return;
+    }
+
+    state.contentDrafts.forEach(row => {
+
+      body.insertAdjacentHTML(
+        'beforeend',
+        `
+          <tr>
+            <td>${esc(row.id)}</td>
+
+            <td>
+              <strong>
+                ${esc(row.title || 'Untitled')}
+              </strong>
+            </td>
+
+            <td>${esc(row.content_type || '')}</td>
+
+            <td>${esc(row.language || '')}</td>
+
+            <td>
+              ${esc(contentStudioStatusLabel(row.status))}
+            </td>
+
+            <td>${esc(row.updated_at || '')}</td>
+
+            <td>
+              <button
+                type="button"
+                class="view-button"
+                data-content-draft-id="${esc(row.id)}"
+              >
+                Open
+              </button>
+            </td>
+
+          </tr>
+        `
+      );
+
+    });
+
+    $('contentStudioDraftCount').textContent =
+      `${state.contentDrafts.length} draft${
+        state.contentDrafts.length === 1
+          ? ''
+          : 's'
+      }`;
+  }
+
+
+  function renderContentStudioAudit(events) {
+
+    const host =
+      $('contentStudioAuditTimeline');
+
+    host.innerHTML = '';
+
+    const rows =
+      Array.isArray(events) ? events : [];
+
+    if (!rows.length) {
+
+      host.innerHTML =
+        '<div class="empty-state">No audit events recorded yet.</div>';
+
+      return;
+    }
+
+    rows
+      .slice()
+      .sort(
+        (a, b) =>
+          Number(a.id || 0) -
+          Number(b.id || 0)
+      )
+      .forEach(event => {
+
+        host.insertAdjacentHTML(
+          'beforeend',
+          `
+            <article class="timeline-item">
+
+              <strong>
+                ${esc(event.event_type || 'event')}
+              </strong>
+
+              <p>
+                ${esc(event.notes || '')}
+              </p>
+
+              <time>
+                ${esc(event.event_at || '')}
+              </time>
+
+            </article>
+          `
+        );
+
+      });
+  }
+
+
+  async function loadContentStudio() {
+
+    setMessage(
+      'contentStudioListMessage',
+      'Loading Content Studio drafts...',
+      true
+    );
+
+    const response =
+      await api('/api/admin/content-studio');
+
+    const data =
+      await response.json();
+
+    renderContentStudioDrafts(
+      data.drafts || []
+    );
+
+    setMessage(
+      'contentStudioListMessage',
+      '',
+      true
+    );
+  }
+
+
+  async function openContentStudioDraft(id) {
+
+    const draftId =
+      Number(id || 0);
+
+    if (!draftId) return;
+
+    setMessage(
+      'contentStudioEditorMessage',
+      'Loading draft...',
+      true
+    );
+
+    const response =
+      await api(
+        `/api/admin/content-studio?id=${draftId}`
+      );
+
+    const data =
+      await response.json();
+
+    const draft =
+      data.draft;
+
+    state.selectedContentDraftId =
+      Number(draft.id);
+
+    $('contentStudioEditId').value =
+      draft.id;
+
+    $('contentStudioEditTitle').value =
+      draft.title || '';
+
+    $('contentStudioEditContent').value =
+      draft.content || '';
+
+    $('contentStudioEditSourceReference').value =
+      draft.source_reference || '';
+
+    $('contentStudioEditPrompt').value =
+      draft.prompt || '';
+
+    $('contentStudioEditorHeading').textContent =
+      draft.title || `Draft #${draft.id}`;
+
+    $('contentStudioEditorStatus').textContent =
+      contentStudioStatusLabel(
+        draft.status
+      );
+
+    $('contentStudioApproveButton').disabled =
+      draft.status === 'approved' ||
+      draft.status === 'archived';
+
+    $('contentStudioSaveButton').disabled =
+      draft.status === 'archived';
+
+    renderContentStudioAudit(
+      data.events || []
+    );
+
+    $('contentStudioEditorPanel').hidden =
+      false;
+
+    setMessage(
+      'contentStudioEditorMessage',
+      '',
+      true
+    );
+  }
+
+
+  async function createContentStudioDraft(event) {
+
+    event.preventDefault();
+
+    setMessage(
+      'contentStudioCreateMessage',
+      'Creating draft...',
+      true
+    );
+
+    const response =
+      await api(
+        '/api/admin/content-studio',
+        {
+          method: 'POST',
+
+          body: JSON.stringify({
+
+            content_type:
+              $('contentStudioCreateType').value,
+
+            language:
+              $('contentStudioCreateLanguage').value,
+
+            title:
+              $('contentStudioCreateTitle')
+                .value
+                .trim(),
+
+            content:
+              $('contentStudioCreateContent')
+                .value
+                .trim(),
+
+            source_type:
+              'manual',
+
+            source_reference:
+              $('contentStudioCreateSourceReference')
+                .value
+                .trim(),
+
+            prompt:
+              $('contentStudioCreatePrompt')
+                .value
+                .trim(),
+
+            model:
+              '',
+
+            created_by:
+              'admin'
+          })
+        }
+      );
+
+    const data =
+      await response.json();
+
+    $('contentStudioCreateForm').reset();
+
+    $('contentStudioCreateLanguage').value =
+      'en';
+
+    $('contentStudioCreateType').value =
+      'social_post';
+
+    setMessage(
+      'contentStudioCreateMessage',
+      `Draft #${data.draft.id} created.`,
+      true
+    );
+
+    await loadContentStudio();
+
+    await openContentStudioDraft(
+      data.draft.id
+    );
+  }
+
+
+  async function saveContentStudioDraft() {
+
+    const id =
+      Number(
+        state.selectedContentDraftId || 0
+      );
+
+    if (!id) {
+
+      setMessage(
+        'contentStudioEditorMessage',
+        'No draft selected.'
+      );
+
+      return;
+    }
+
+    setMessage(
+      'contentStudioEditorMessage',
+      'Saving draft...',
+      true
+    );
+
+    await api(
+      '/api/admin/content-studio',
+      {
+        method: 'PATCH',
+
+        body: JSON.stringify({
+
+          id,
+
+          title:
+            $('contentStudioEditTitle')
+              .value
+              .trim(),
+
+          content:
+            $('contentStudioEditContent')
+              .value
+              .trim(),
+
+          source_reference:
+            $('contentStudioEditSourceReference')
+              .value
+              .trim(),
+
+          prompt:
+            $('contentStudioEditPrompt')
+              .value
+              .trim()
+        })
+      }
+    );
+
+    setMessage(
+      'contentStudioEditorMessage',
+      'Draft saved.',
+      true
+    );
+
+    await Promise.all([
+      loadContentStudio(),
+      openContentStudioDraft(id)
+    ]);
+  }
+
+
+  async function approveContentStudioDraft() {
+
+    const id =
+      Number(
+        state.selectedContentDraftId || 0
+      );
+
+    if (!id) return;
+
+    if (
+      !confirm(
+        'Approve this draft? Approval does not publish or send the content.'
+      )
+    ) {
+      return;
+    }
+
+    setMessage(
+      'contentStudioEditorMessage',
+      'Approving draft...',
+      true
+    );
+
+    await api(
+      '/api/admin/content-studio',
+      {
+        method: 'PATCH',
+
+        body: JSON.stringify({
+          id,
+          status: 'approved'
+        })
+      }
+    );
+
+    setMessage(
+      'contentStudioEditorMessage',
+      'Draft approved. It has not been published or sent.',
+      true
+    );
+
+    await Promise.all([
+      loadContentStudio(),
+      openContentStudioDraft(id)
+    ]);
+  }
+
+
+  function closeContentStudioEditor() {
+
+    state.selectedContentDraftId =
+      0;
+
+    $('contentStudioEditId').value =
+      '';
+
+    $('contentStudioEditorPanel').hidden =
+      true;
+
+    $('contentStudioAuditTimeline').innerHTML =
+      '';
+
+    setMessage(
+      'contentStudioEditorMessage',
+      '',
+      true
+    );
+  }
+
+
+  function handleContentStudioError(error) {
+
+    if (error.status === 401) {
+
+      sessionStorage.removeItem(
+        'qyAdminToken'
+      );
+
+      showLogin();
+
+      setMessage(
+        'loginMessage',
+        'Your session is not authorized. Please log in again.'
+      );
+
+      return;
+    }
+
+    if (
+      !$('contentStudioModule').hidden
+    ) {
+
+      setMessage(
+        'contentStudioListMessage',
+        error.message ||
+          'Content Studio request failed.'
+      );
+
+    }
+  }
+
 
   async function loadMarketingStats() {
     setMessage('marketingDashboardMessage','Loading…',true);
@@ -1963,6 +2453,60 @@ async function loadWhatsAppConversation(phone) {
 
   $('studentsTab').addEventListener('click', () => switchModule('students'));
   $('marketingTab').addEventListener('click', () => switchModule('marketing'));
+  $('contentStudioTab').addEventListener(
+    'click',
+    () => switchModule('contentStudio')
+  );
+
+  $('contentStudioRefreshButton').addEventListener(
+    'click',
+    () =>
+      loadContentStudio()
+        .catch(handleContentStudioError)
+  );
+
+  $('contentStudioCreateForm').addEventListener(
+    'submit',
+    event =>
+      createContentStudioDraft(event)
+        .catch(handleContentStudioError)
+  );
+
+  $('contentStudioDraftsBody').addEventListener(
+    'click',
+    event => {
+
+      const button =
+        event.target.closest(
+          '[data-content-draft-id]'
+        );
+
+      if (!button) return;
+
+      openContentStudioDraft(
+        button.dataset.contentDraftId
+      ).catch(handleContentStudioError);
+    }
+  );
+
+  $('contentStudioSaveButton').addEventListener(
+    'click',
+    () =>
+      saveContentStudioDraft()
+        .catch(handleContentStudioError)
+  );
+
+  $('contentStudioApproveButton').addEventListener(
+    'click',
+    () =>
+      approveContentStudioDraft()
+        .catch(handleContentStudioError)
+  );
+
+  $('contentStudioCloseEditorButton').addEventListener(
+    'click',
+    closeContentStudioEditor
+  );
   $('commerceTab').addEventListener('click', () => switchModule('commerce'));
   $('commerceRefreshButton').addEventListener('click', () => loadCommerceAll().catch(handleCommerceError));
   $('newProductButton').addEventListener('click', () => openProduct());

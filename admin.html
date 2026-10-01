@@ -40,6 +40,7 @@
   <button id="whatsappTab" class="module-tab" type="button">WhatsApp Inbox</button>
   <button id="studentsTab" class="module-tab" type="button">Students</button>
   <button id="marketingTab" class="module-tab" type="button">Marketing</button>
+  <button id="contentStudioTab" class="module-tab" type="button">Content Studio</button>
   <button id="commerceTab" class="module-tab" type="button">Sales & Commerce</button>
 
   <a
@@ -612,6 +613,276 @@
           <p id="marketingDashboardMessage" class="form-message" aria-live="polite"></p>
         </section>
       </div>
+      <div id="contentStudioModule" hidden>
+
+        <section class="page-heading">
+          <div>
+            <p class="eyebrow">QY-AOS · AI CONTENT STUDIO</p>
+            <h1>Content Studio</h1>
+            <p>Create, review and approve marketing content drafts before any external use.</p>
+          </div>
+
+          <button
+            id="contentStudioRefreshButton"
+            class="secondary-button"
+            type="button"
+          >
+            Refresh
+          </button>
+        </section>
+
+
+        <section class="panel records-panel">
+
+          <div class="panel-heading records-heading">
+            <div>
+              <h2>Create Draft</h2>
+              <p>
+                Manual draft creation. AI generation will be added after this workflow is validated.
+              </p>
+            </div>
+          </div>
+
+          <form id="contentStudioCreateForm" class="filter-grid">
+
+            <label>
+              Content type
+              <select id="contentStudioCreateType" required>
+                <option value="social_post">Social Post</option>
+                <option value="whatsapp_copy">WhatsApp Copy</option>
+                <option value="email_copy">Email Copy</option>
+                <option value="course_promotion">Course Promotion</option>
+                <option value="educational_post">Educational Post</option>
+                <option value="lead_magnet_promotion">Lead Magnet Promotion</option>
+                <option value="affiliate_asset">Affiliate Asset</option>
+              </select>
+            </label>
+
+            <label>
+              Language
+              <select id="contentStudioCreateLanguage" required>
+                <option value="en">English</option>
+                <option value="zh">中文</option>
+              </select>
+            </label>
+
+            <label>
+              Title
+              <input
+                id="contentStudioCreateTitle"
+                type="text"
+                maxlength="500"
+                placeholder="Draft title"
+              >
+            </label>
+
+            <label>
+              Source reference
+              <input
+                id="contentStudioCreateSourceReference"
+                type="text"
+                maxlength="1000"
+                placeholder="e.g. YJ12, lead magnet, course code"
+              >
+            </label>
+
+            <label style="grid-column:1/-1">
+              Content
+              <textarea
+                id="contentStudioCreateContent"
+                rows="7"
+                maxlength="50000"
+                placeholder="Enter draft content"
+              ></textarea>
+            </label>
+
+            <label style="grid-column:1/-1">
+              Prompt / brief
+              <textarea
+                id="contentStudioCreatePrompt"
+                rows="3"
+                maxlength="10000"
+                placeholder="Optional marketing brief or future AI prompt"
+              ></textarea>
+            </label>
+
+            <div style="grid-column:1/-1">
+              <button class="primary-button" type="submit">
+                Create Draft
+              </button>
+            </div>
+
+          </form>
+
+          <p
+            id="contentStudioCreateMessage"
+            class="form-message"
+            aria-live="polite"
+          ></p>
+
+        </section>
+
+
+        <section class="panel records-panel">
+
+          <div class="panel-heading records-heading">
+            <div>
+              <h2>Content Drafts</h2>
+              <p id="contentStudioDraftCount">0 drafts</p>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+
+            <table>
+
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Title</th>
+                  <th>Type</th>
+                  <th>Language</th>
+                  <th>Status</th>
+                  <th>Updated</th>
+                  <th></th>
+                </tr>
+              </thead>
+
+              <tbody id="contentStudioDraftsBody">
+                <tr>
+                  <td colspan="7">
+                    Open Content Studio to load drafts.
+                  </td>
+                </tr>
+              </tbody>
+
+            </table>
+
+          </div>
+
+          <p
+            id="contentStudioListMessage"
+            class="form-message"
+            aria-live="polite"
+          ></p>
+
+        </section>
+
+
+        <section
+          id="contentStudioEditorPanel"
+          class="panel records-panel"
+          hidden
+        >
+
+          <div class="panel-heading records-heading">
+
+            <div>
+              <p class="eyebrow">DRAFT EDITOR</p>
+
+              <h2 id="contentStudioEditorHeading">
+                Draft
+              </h2>
+
+              <p>
+                Status:
+                <strong id="contentStudioEditorStatus">
+                  Draft
+                </strong>
+              </p>
+            </div>
+
+            <button
+              id="contentStudioCloseEditorButton"
+              class="secondary-button"
+              type="button"
+            >
+              Close Editor
+            </button>
+
+          </div>
+
+          <input id="contentStudioEditId" type="hidden">
+
+          <div class="edit-grid edit-grid-v25">
+
+            <label>
+              Title
+              <input
+                id="contentStudioEditTitle"
+                type="text"
+                maxlength="500"
+              >
+            </label>
+
+            <label>
+              Source reference
+              <input
+                id="contentStudioEditSourceReference"
+                type="text"
+                maxlength="1000"
+              >
+            </label>
+
+          </div>
+
+          <label>
+            Content
+            <textarea
+              id="contentStudioEditContent"
+              rows="10"
+              maxlength="50000"
+            ></textarea>
+          </label>
+
+          <label>
+            Prompt / brief
+            <textarea
+              id="contentStudioEditPrompt"
+              rows="4"
+              maxlength="10000"
+            ></textarea>
+          </label>
+
+          <div class="dialog-actions split-actions">
+
+            <button
+              id="contentStudioSaveButton"
+              class="primary-button"
+              type="button"
+            >
+              Save Draft
+            </button>
+
+            <button
+              id="contentStudioApproveButton"
+              class="gold-button"
+              type="button"
+            >
+              Approve Draft
+            </button>
+
+          </div>
+
+          <p
+            id="contentStudioEditorMessage"
+            class="form-message"
+            aria-live="polite"
+          ></p>
+
+          <div class="section-title">
+            <h3>Audit History</h3>
+          </div>
+
+          <div
+            id="contentStudioAuditTimeline"
+            class="timeline"
+          ></div>
+
+        </section>
+
+      </div>
+
 
       <div id="commerceModule" hidden>
         <section class="page-heading">
@@ -804,6 +1075,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=3.8.3" defer></script>
+  <script src="admin.js?v=3.9-phase-f1" defer></script>
 </body>
 </html>
