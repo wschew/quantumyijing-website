@@ -16,16 +16,20 @@
 
   // Explicit allow-list: public offer code -> downloadable resource.
   // Never construct resource paths directly from visitor-supplied URL values.
-  const resources = {
-    'd3-test-guide': {
-      url: '/lead/resources/test-guide.pdf',
-      filename: 'test-guide.pdf'
-    },
-    'yijing-bagua-yinyang-cn': {
-      url: '/lead/resources/yijing-bagua-yinyang-introduction-cn.pdf',
-      filename: 'yijing-bagua-yinyang-introduction-cn.pdf'
-    }
-  };
+const resources = {
+  'd3-test-guide': {
+    url: '/lead/resources/test-guide.pdf',
+    filename: 'test-guide.pdf'
+  },
+  'yijing-bagua-yinyang-cn': {
+    url: '/lead/resources/yijing-bagua-yinyang-introduction-cn.pdf',
+    filename: 'yijing-bagua-yinyang-introduction-cn.pdf'
+  },
+  'yijing-bagua-yinyang-en': {
+    url: '/lead/resources/yijing-bagua-yinyang-introduction-en.pdf',
+    filename: 'yijing-bagua-yinyang-introduction-en.pdf'
+  }
+};
 
   const resource = resources[offer] || null;
 

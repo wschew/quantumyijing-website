@@ -21,7 +21,11 @@ const RESOURCES = {
   'yijing-bagua-yinyang-cn': {
     url: '/lead/resources/yijing-bagua-yinyang-introduction-cn.pdf',
     label: 'yijing-bagua-yinyang-introduction-cn.pdf'
-  }
+  },
+  'yijing-bagua-yinyang-en': {
+    url: '/lead/resources/yijing-bagua-yinyang-introduction-en.pdf',
+    label: 'yijing-bagua-yinyang-introduction-en.pdf'
+}
 };
 
 export async function onRequestPost(context) {
