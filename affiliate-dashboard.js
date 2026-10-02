@@ -285,6 +285,9 @@ async function load(){
   try{
     const [me,a,t,l,assets]=await Promise.all([api('/api/affiliate/portal/me'),api('/api/affiliate/portal/analytics'),api('/api/affiliate/portal/transactions'),api('/api/affiliate/portal/links'),api('/api/affiliate/portal/assets')]);
     const aff=me.affiliate||{},s=me.summary||{},currentMonth=Array.isArray(a.monthly_sales)&&a.monthly_sales.length?a.monthly_sales[a.monthly_sales.length-1]:{sales:0};
+
+    // Marketing Assets renders before legacy charts/tables.
+    renderMarketingAssets(assets);
     $('#welcome').textContent=`Welcome, ${aff.display_name||aff.full_name||'Affiliate'}`;
     $('#affiliateCode').textContent=aff.affiliate_code||'—';
     $('#membership').textContent=`Membership expires: ${String(aff.membership_expires_at||'—').slice(0,10)}`;
@@ -312,7 +315,6 @@ async function load(){
     stacked($('#categoryChart'),a.monthly_category_sales,a.category_labels||{});
     $('#generalLink').value=l.general_url||'';
     renderProducts(l,aff.affiliate_code||'');
-    renderMarketingAssets(assets);
     renderCommissions(t.commissions);
     renderPayouts(t.payouts);
     renderAdjustments(t.adjustments,t.adjustment_summary||{});
