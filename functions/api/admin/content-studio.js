@@ -1,4 +1,4 @@
-﻿function json(data, status = 200) {
+function json(data, status = 200) {
   return new Response(JSON.stringify(data, null, 2), {
     status,
     headers: {
@@ -32,6 +32,45 @@ const ALLOWED_STATUS = new Set([
   "archived"
 ]);
 
+const ALLOWED_OBJECTIVES = new Set([
+  "",
+  "educate",
+  "awareness",
+  "engagement",
+  "enquiry",
+  "registration",
+  "download",
+  "affiliate_promotion"
+]);
+
+const ALLOWED_TONES = new Set([
+  "",
+  "professional",
+  "educational",
+  "warm",
+  "conversational",
+  "inspirational",
+  "concise"
+]);
+
+const ALLOWED_PLATFORMS = new Set([
+  "",
+  "general",
+  "facebook",
+  "instagram",
+  "whatsapp",
+  "email",
+  "website",
+  "affiliate"
+]);
+
+const ALLOWED_OUTPUT_LENGTHS = new Set([
+  "",
+  "short",
+  "medium",
+  "long"
+]);
+
 async function getDraft(db, id) {
   return await db.prepare(`
     SELECT
@@ -46,6 +85,12 @@ async function getDraft(db, id) {
       model,
       status,
       created_by,
+      audience,
+      objective,
+      tone,
+      platform,
+      output_length,
+      cta,
       created_at,
       updated_at,
       approved_at
@@ -132,6 +177,12 @@ export async function onRequestGet(context) {
         model,
         status,
         created_by,
+        audience,
+        objective,
+        tone,
+        platform,
+        output_length,
+        cta,
         created_at,
         updated_at,
         approved_at
@@ -179,12 +230,35 @@ export async function onRequestPost(context) {
   const model = clean(body.model, 200);
   const createdBy = clean(body.created_by || "admin", 200);
 
+  const audience = clean(body.audience, 500);
+  const objective = clean(body.objective, 100).toLowerCase();
+  const tone = clean(body.tone, 100).toLowerCase();
+  const platform = clean(body.platform, 100).toLowerCase();
+  const outputLength = clean(body.output_length, 100).toLowerCase();
+  const cta = clean(body.cta, 500);
+
   if (!contentType) {
     return json({ ok: false, error: "content_type is required" }, 400);
   }
 
   if (!language) {
     return json({ ok: false, error: "language is required" }, 400);
+  }
+
+  if (!ALLOWED_OBJECTIVES.has(objective)) {
+    return json({ ok: false, error: "Invalid objective" }, 400);
+  }
+
+  if (!ALLOWED_TONES.has(tone)) {
+    return json({ ok: false, error: "Invalid tone" }, 400);
+  }
+
+  if (!ALLOWED_PLATFORMS.has(platform)) {
+    return json({ ok: false, error: "Invalid platform" }, 400);
+  }
+
+  if (!ALLOWED_OUTPUT_LENGTHS.has(outputLength)) {
+    return json({ ok: false, error: "Invalid output length" }, 400);
   }
 
   try {
@@ -200,11 +274,17 @@ export async function onRequestPost(context) {
         model,
         status,
         created_by,
+        audience,
+        objective,
+        tone,
+        platform,
+        output_length,
+        cta,
         created_at,
         updated_at,
         approved_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, '')
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, '')
     `).bind(
       contentType,
       language,
@@ -214,7 +294,13 @@ export async function onRequestPost(context) {
       sourceReference,
       prompt,
       model,
-      createdBy
+      createdBy,
+      audience,
+      objective,
+      tone,
+      platform,
+      outputLength,
+      cta
     ).run();
 
     const id = Number(insert.meta?.last_row_id || 0);
@@ -297,6 +383,36 @@ export async function onRequestPatch(context) {
         ? existing.prompt
         : clean(body.prompt, 10000);
 
+    const nextAudience =
+      body.audience === undefined
+        ? existing.audience
+        : clean(body.audience, 500);
+
+    const nextObjective =
+      body.objective === undefined
+        ? existing.objective
+        : clean(body.objective, 100).toLowerCase();
+
+    const nextTone =
+      body.tone === undefined
+        ? existing.tone
+        : clean(body.tone, 100).toLowerCase();
+
+    const nextPlatform =
+      body.platform === undefined
+        ? existing.platform
+        : clean(body.platform, 100).toLowerCase();
+
+    const nextOutputLength =
+      body.output_length === undefined
+        ? existing.output_length
+        : clean(body.output_length, 100).toLowerCase();
+
+    const nextCta =
+      body.cta === undefined
+        ? existing.cta
+        : clean(body.cta, 500);
+
     const nextStatus =
       body.status === undefined
         ? existing.status
@@ -304,6 +420,22 @@ export async function onRequestPatch(context) {
 
     if (!ALLOWED_STATUS.has(nextStatus)) {
       return json({ ok: false, error: "Invalid status" }, 400);
+    }
+
+    if (!ALLOWED_OBJECTIVES.has(nextObjective)) {
+      return json({ ok: false, error: "Invalid objective" }, 400);
+    }
+
+    if (!ALLOWED_TONES.has(nextTone)) {
+      return json({ ok: false, error: "Invalid tone" }, 400);
+    }
+
+    if (!ALLOWED_PLATFORMS.has(nextPlatform)) {
+      return json({ ok: false, error: "Invalid platform" }, 400);
+    }
+
+    if (!ALLOWED_OUTPUT_LENGTHS.has(nextOutputLength)) {
+      return json({ ok: false, error: "Invalid output length" }, 400);
     }
 
     let eventType = "edited";
@@ -334,6 +466,12 @@ export async function onRequestPatch(context) {
         content = ?,
         source_reference = ?,
         prompt = ?,
+        audience = ?,
+        objective = ?,
+        tone = ?,
+        platform = ?,
+        output_length = ?,
+        cta = ?,
         status = ?,
         updated_at = CURRENT_TIMESTAMP,
         approved_at = ?
@@ -343,6 +481,12 @@ export async function onRequestPatch(context) {
       nextContent,
       nextSourceReference,
       nextPrompt,
+      nextAudience,
+      nextObjective,
+      nextTone,
+      nextPlatform,
+      nextOutputLength,
+      nextCta,
       nextStatus,
       approvedAt,
       id
