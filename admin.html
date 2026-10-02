@@ -638,7 +638,7 @@
             <div>
               <h2>Create Draft</h2>
               <p>
-                Manual draft creation. AI generation will be added after this workflow is validated.
+                Create a manual draft or use Gemini to generate a draft from the Prompt / brief. AI-generated content always remains a draft until reviewed and approved by an administrator.
               </p>
             </div>
           </div>
@@ -709,6 +709,14 @@
             <div style="grid-column:1/-1">
               <button class="primary-button" type="submit">
                 Create Draft
+              </button>
+
+              <button
+                id="contentStudioGenerateButton"
+                class="secondary-button"
+                type="button"
+              >
+                Generate with AI
               </button>
             </div>
 
@@ -1075,6 +1083,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=3.9-phase-f1" defer></script>
+  <script src="admin.js?v=3.9-phase-f1-ai" defer></script>
 </body>
 </html>

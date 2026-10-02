@@ -1663,6 +1663,105 @@ async function loadWhatsAppConversation(phone) {
   }
 
 
+  async function generateContentStudioDraft() {
+
+    const prompt =
+      $('contentStudioCreatePrompt')
+        .value
+        .trim();
+
+    if (!prompt) {
+
+      setMessage(
+        'contentStudioCreateMessage',
+        'Please enter a Prompt / brief before generating with AI.'
+      );
+
+      $('contentStudioCreatePrompt').focus();
+
+      return;
+    }
+
+
+    const button =
+      $('contentStudioGenerateButton');
+
+    button.disabled = true;
+
+    setMessage(
+      'contentStudioCreateMessage',
+      'Generating draft with Gemini...',
+      true
+    );
+
+
+    try {
+
+      const response =
+        await api(
+          '/api/admin/content-studio-generate',
+          {
+            method: 'POST',
+
+            body: JSON.stringify({
+
+              content_type:
+                $('contentStudioCreateType').value,
+
+              language:
+                $('contentStudioCreateLanguage').value,
+
+              title:
+                $('contentStudioCreateTitle')
+                  .value
+                  .trim(),
+
+              source_reference:
+                $('contentStudioCreateSourceReference')
+                  .value
+                  .trim(),
+
+              prompt
+            })
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
+      if (!data?.draft?.id) {
+        throw new Error(
+          'AI generation completed without a valid draft.'
+        );
+      }
+
+
+      const draftId =
+        Number(data.draft.id);
+
+
+      setMessage(
+        'contentStudioCreateMessage',
+        `AI draft #${draftId} generated with ${data?.generation?.model || 'Gemini'}. Review it before approval.`,
+        true
+      );
+
+
+      await loadContentStudio();
+
+      await openContentStudioDraft(
+        draftId
+      );
+
+    }
+    finally {
+
+      button.disabled = false;
+    }
+  }
+
   async function createContentStudioDraft(event) {
 
     event.preventDefault();
@@ -1904,11 +2003,24 @@ async function loadWhatsAppConversation(phone) {
       !$('contentStudioModule').hidden
     ) {
 
-      setMessage(
-        'contentStudioListMessage',
+      const message =
         error.message ||
-          'Content Studio request failed.'
-      );
+        'Content Studio request failed.';
+
+      if (
+        $('contentStudioGenerateButton').disabled
+      ) {
+        setMessage(
+          'contentStudioCreateMessage',
+          message
+        );
+      }
+      else {
+        setMessage(
+          'contentStudioListMessage',
+          message
+        );
+      }
 
     }
   }
@@ -2465,6 +2577,12 @@ async function loadWhatsAppConversation(phone) {
         .catch(handleContentStudioError)
   );
 
+  $('contentStudioGenerateButton').addEventListener(
+    'click',
+    () =>
+      generateContentStudioDraft()
+        .catch(handleContentStudioError)
+  );
   $('contentStudioCreateForm').addEventListener(
     'submit',
     event =>
