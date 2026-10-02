@@ -206,6 +206,7 @@
     const marketingMode = module === 'marketing';
 
     const contentStudioMode = module === 'contentStudio';
+    const contentLibraryMode = module === 'contentLibrary';
     const commerceMode = module === 'commerce';
     $('crmModule').hidden = !crmMode;
     $('whatsappModule').hidden = !whatsappMode;
@@ -213,6 +214,7 @@
     $('marketingModule').hidden = !marketingMode;
 
     contentStudioModule.hidden = !contentStudioMode;
+    contentLibraryModule.hidden = !contentLibraryMode;
     $('commerceModule').hidden = !commerceMode;
     $('crmTab').classList.toggle('active', crmMode);
     $('whatsappTab').classList.toggle('active', whatsappMode);
@@ -220,6 +222,7 @@
     $('marketingTab').classList.toggle('active', marketingMode);
 
     contentStudioTab.classList.toggle('active', contentStudioMode);
+    contentLibraryTab.classList.toggle('active', contentLibraryMode);
     $('commerceTab').classList.toggle('active', commerceMode);
     if (whatsappMode) loadWhatsAppInbox().catch(error =>
       setMessage('whatsappDashboardMessage', error.message)
@@ -227,6 +230,9 @@
     if (studentMode) loadStudentAll().catch(handleStudentError);
     if (contentStudioMode) {
       loadContentStudio().catch(handleContentStudioError);
+    }
+    if (contentLibraryMode) {
+      loadContentLibrary().catch(handleContentLibraryError);
     }
     if (marketingMode) {
       loadMarketingStats().catch(handleMarketingError);
@@ -1441,6 +1447,481 @@ async function loadWhatsAppConversation(phone) {
     if (value === 'archived') return 'Archived';
 
     return 'Draft';
+  }
+
+
+  function contentLibraryStatusLabel(value) {
+    if (value === 'approved') return 'Approved';
+    if (value === 'archived') return 'Archived';
+    return value || '';
+  }
+
+
+  function contentLibraryFilters() {
+    const params = new URLSearchParams();
+
+    params.set(
+      'status',
+      $('contentLibraryStatus').value || 'approved'
+    );
+
+    [
+      ['search','contentLibrarySearch'],
+      ['content_type','contentLibraryType'],
+      ['language','contentLibraryLanguage'],
+      ['platform','contentLibraryPlatform'],
+      ['objective','contentLibraryObjective'],
+      ['tone','contentLibraryTone']
+    ].forEach(([key,id]) => {
+
+      const value =
+        $(id).value.trim();
+
+      if (value) {
+        params.set(
+          key,
+          value
+        );
+      }
+
+    });
+
+    return params;
+  }
+
+
+  function renderContentLibraryItems(rows) {
+    const items =
+      Array.isArray(rows)
+        ? rows
+        : [];
+
+    const body =
+      $('contentLibraryBody');
+
+    body.innerHTML = '';
+
+    if (!items.length) {
+
+      body.innerHTML =
+        '<tr><td colspan="8">No Content Library items match these filters.</td></tr>';
+
+      $('contentLibraryCount').textContent =
+        '0 items';
+
+      return;
+    }
+
+    items.forEach(item => {
+
+      body.insertAdjacentHTML(
+        'beforeend',
+        `
+          <tr>
+            <td>${esc(item.id)}</td>
+
+            <td>
+              <strong>${esc(item.title || 'Untitled')}</strong>
+            </td>
+
+            <td>${esc(item.content_type || '')}</td>
+            <td>${esc(item.language || '')}</td>
+            <td>${esc(item.platform || '')}</td>
+            <td>${esc(item.objective || '')}</td>
+
+            <td>
+              ${esc(contentLibraryStatusLabel(item.status))}
+            </td>
+
+            <td>
+              <button
+                type="button"
+                class="view-button"
+                data-content-library-id="${esc(item.id)}"
+              >
+                Open
+              </button>
+            </td>
+          </tr>
+        `
+      );
+
+    });
+
+    $('contentLibraryCount').textContent =
+      `${items.length} item${
+        items.length === 1 ? '' : 's'
+      }`;
+  }
+
+
+  function renderContentLibraryAudit(events) {
+    const timeline =
+      $('contentLibraryAuditTimeline');
+
+    const rows =
+      Array.isArray(events)
+        ? events
+        : [];
+
+    timeline.innerHTML = '';
+
+    if (!rows.length) {
+
+      timeline.innerHTML =
+        '<p>No audit events recorded.</p>';
+
+      return;
+    }
+
+    rows.forEach(event => {
+
+      timeline.insertAdjacentHTML(
+        'beforeend',
+        `
+          <div class="timeline-item">
+            <strong>${esc(event.event_type || '')}</strong>
+            <span>${esc(event.event_at || '')}</span>
+            <p>${esc(event.notes || '')}</p>
+          </div>
+        `
+      );
+
+    });
+  }
+
+
+  async function loadContentLibrary() {
+
+    setMessage(
+      'contentLibraryListMessage',
+      'Loading Content Library...',
+      true
+    );
+
+    const params =
+      contentLibraryFilters();
+
+    const response =
+      await api(
+        `/api/admin/content-library?${params.toString()}`
+      );
+
+    const data =
+      await response.json();
+
+    renderContentLibraryItems(
+      data.items || []
+    );
+
+    setMessage(
+      'contentLibraryListMessage',
+      '',
+      true
+    );
+  }
+
+
+  function closeContentLibraryDetail() {
+
+    const panel =
+      $('contentLibraryDetailPanel');
+
+    panel.hidden = true;
+
+    delete panel.dataset.itemId;
+    delete panel.dataset.status;
+
+    $('contentLibraryDetailContent').value = '';
+    $('contentLibraryAuditTimeline').innerHTML = '';
+
+    setMessage(
+      'contentLibraryDetailMessage',
+      '',
+      true
+    );
+  }
+
+
+  async function openContentLibraryItem(id) {
+
+    const itemId =
+      Number(id);
+
+    if (!Number.isInteger(itemId) || itemId <= 0) {
+      throw new Error(
+        'Invalid Content Library item.'
+      );
+    }
+
+    const response =
+      await api(
+        `/api/admin/content-library?id=${encodeURIComponent(itemId)}`
+      );
+
+    const data =
+      await response.json();
+
+    const item =
+      data.item;
+
+    if (!item) {
+      throw new Error(
+        'Content Library item not found.'
+      );
+    }
+
+    const panel =
+      $('contentLibraryDetailPanel');
+
+    panel.dataset.itemId =
+      String(item.id);
+
+    panel.dataset.status =
+      item.status || '';
+
+    $('contentLibraryDetailTitle').textContent =
+      item.title || 'Untitled';
+
+    $('contentLibraryDetailStatus').textContent =
+      contentLibraryStatusLabel(
+        item.status
+      );
+
+    $('contentLibraryDetailContent').value =
+      item.content || '';
+
+    $('contentLibraryDetailMeta').innerHTML =
+      `
+        <p><strong>ID:</strong> ${esc(item.id)}</p>
+        <p><strong>Content type:</strong> ${esc(item.content_type || '')}</p>
+        <p><strong>Language:</strong> ${esc(item.language || '')}</p>
+        <p><strong>Audience:</strong> ${esc(item.audience || '')}</p>
+        <p><strong>Objective:</strong> ${esc(item.objective || '')}</p>
+        <p><strong>Tone:</strong> ${esc(item.tone || '')}</p>
+        <p><strong>Platform:</strong> ${esc(item.platform || '')}</p>
+        <p><strong>Output length:</strong> ${esc(item.output_length || '')}</p>
+        <p><strong>CTA:</strong> ${esc(item.cta || '')}</p>
+        <p><strong>Source type:</strong> ${esc(item.source_type || '')}</p>
+        <p><strong>Source reference:</strong> ${esc(item.source_reference || '')}</p>
+        <p><strong>Model:</strong> ${esc(item.model || '')}</p>
+        <p><strong>Approved at:</strong> ${esc(item.approved_at || '')}</p>
+        <p><strong>Updated at:</strong> ${esc(item.updated_at || '')}</p>
+      `;
+
+    const archived =
+      item.status === 'archived';
+
+    $('contentLibraryArchiveButton').hidden =
+      archived;
+
+    $('contentLibraryRestoreButton').hidden =
+      !archived;
+
+    renderContentLibraryAudit(
+      data.events || []
+    );
+
+    panel.hidden = false;
+
+    setMessage(
+      'contentLibraryDetailMessage',
+      '',
+      true
+    );
+
+    panel.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }
+
+
+  async function copyContentLibraryContent() {
+
+    const text =
+      $('contentLibraryDetailContent').value || '';
+
+    if (!text) {
+
+      setMessage(
+        'contentLibraryDetailMessage',
+        'There is no content to copy.'
+      );
+
+      return;
+    }
+
+    try {
+
+      if (
+        navigator.clipboard &&
+        navigator.clipboard.writeText
+      ) {
+
+        await navigator.clipboard.writeText(
+          text
+        );
+
+      }
+      else {
+
+        const textarea =
+          document.createElement('textarea');
+
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+
+        document.body.appendChild(
+          textarea
+        );
+
+        textarea.select();
+
+        document.execCommand(
+          'copy'
+        );
+
+        textarea.remove();
+      }
+
+      setMessage(
+        'contentLibraryDetailMessage',
+        'Content copied.',
+        true
+      );
+
+    }
+    catch {
+
+      setMessage(
+        'contentLibraryDetailMessage',
+        'Unable to copy content automatically.'
+      );
+
+    }
+  }
+
+
+  async function updateContentLibraryStatus(action) {
+
+    const panel =
+      $('contentLibraryDetailPanel');
+
+    const id =
+      Number(
+        panel.dataset.itemId || 0
+      );
+
+    if (!id) {
+      throw new Error(
+        'No Content Library item selected.'
+      );
+    }
+
+    if (
+      action !== 'archive' &&
+      action !== 'restore'
+    ) {
+      throw new Error(
+        'Invalid Content Library action.'
+      );
+    }
+
+    const verb =
+      action === 'archive'
+        ? 'Archive'
+        : 'Restore';
+
+    if (
+      !window.confirm(
+        `${verb} this Content Library item?`
+      )
+    ) {
+      return;
+    }
+
+    const response =
+      await api(
+        '/api/admin/content-library',
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            id,
+            action
+          })
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if (!data.item) {
+      throw new Error(
+        'Content Library update failed.'
+      );
+    }
+
+    await Promise.all([
+      loadContentLibrary(),
+      openContentLibraryItem(id)
+    ]);
+
+    setMessage(
+      'contentLibraryDetailMessage',
+      action === 'archive'
+        ? 'Content archived.'
+        : 'Content restored.',
+      true
+    );
+  }
+
+
+  function clearContentLibraryFilters() {
+
+    $('contentLibrarySearch').value = '';
+    $('contentLibraryStatus').value = 'approved';
+    $('contentLibraryType').value = '';
+    $('contentLibraryLanguage').value = '';
+    $('contentLibraryPlatform').value = '';
+    $('contentLibraryObjective').value = '';
+    $('contentLibraryTone').value = '';
+
+    loadContentLibrary()
+      .catch(handleContentLibraryError);
+  }
+
+
+  function handleContentLibraryError(error) {
+
+    if (error.status === 401) {
+
+      sessionStorage.removeItem(
+        'qyAdminToken'
+      );
+
+      state.token = '';
+
+      showLogin();
+
+      setMessage(
+        'loginMessage',
+        'Your session is not authorized. Please log in again.'
+      );
+
+      return;
+    }
+
+    setMessage(
+      'contentLibraryListMessage',
+      error.message || 'Content Library error.'
+    );
+
+    setMessage(
+      'contentLibraryDetailMessage',
+      error.message || 'Content Library error.'
+    );
   }
 
 
@@ -2708,6 +3189,75 @@ async function loadWhatsAppConversation(phone) {
   $('contentStudioCloseEditorButton').addEventListener(
     'click',
     closeContentStudioEditor
+  );
+  $('contentLibraryTab').addEventListener(
+    'click',
+    () => switchModule('contentLibrary')
+  );
+
+  $('contentLibraryRefreshButton').addEventListener(
+    'click',
+    () =>
+      loadContentLibrary()
+        .catch(handleContentLibraryError)
+  );
+
+  $('contentLibraryFilterForm').addEventListener(
+    'submit',
+    event => {
+      event.preventDefault();
+
+      loadContentLibrary()
+        .catch(handleContentLibraryError);
+    }
+  );
+
+  $('contentLibraryClearFilters').addEventListener(
+    'click',
+    clearContentLibraryFilters
+  );
+
+  $('contentLibraryBody').addEventListener(
+    'click',
+    event => {
+
+      const button =
+        event.target.closest(
+          '[data-content-library-id]'
+        );
+
+      if (!button) return;
+
+      openContentLibraryItem(
+        button.dataset.contentLibraryId
+      ).catch(handleContentLibraryError);
+    }
+  );
+
+  $('contentLibraryCopyButton').addEventListener(
+    'click',
+    () =>
+      copyContentLibraryContent()
+        .catch(handleContentLibraryError)
+  );
+
+  $('contentLibraryArchiveButton').addEventListener(
+    'click',
+    () =>
+      updateContentLibraryStatus('archive')
+        .catch(handleContentLibraryError)
+  );
+
+  $('contentLibraryRestoreButton').addEventListener(
+    'click',
+    () =>
+      updateContentLibraryStatus('restore')
+        .catch(handleContentLibraryError)
+  );
+
+  $('contentLibraryCloseButton').addEventListener(
+    'click',
+    closeContentLibraryDetail
   );
   $('commerceTab').addEventListener('click', () => switchModule('commerce'));
   $('commerceRefreshButton').addEventListener('click', () => loadCommerceAll().catch(handleCommerceError));

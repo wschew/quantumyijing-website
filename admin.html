@@ -41,6 +41,7 @@
   <button id="studentsTab" class="module-tab" type="button">Students</button>
   <button id="marketingTab" class="module-tab" type="button">Marketing</button>
   <button id="contentStudioTab" class="module-tab" type="button">Content Studio</button>
+  <button id="contentLibraryTab" class="module-tab" type="button">Content Library</button>
   <button id="commerceTab" class="module-tab" type="button">Sales & Commerce</button>
 
   <a
@@ -1036,6 +1037,175 @@
       </div>
 
 
+      <div id="contentLibraryModule" hidden>
+
+        <section class="page-heading">
+          <div>
+            <p class="eyebrow">QY-AOS · APPROVED CONTENT LIBRARY</p>
+            <h1>Content Library</h1>
+            <p>Browse approved marketing content, review archived material and reuse administrator-approved assets.</p>
+          </div>
+
+          <div class="topbar-actions">
+            <button id="contentLibraryRefreshButton" class="secondary-button" type="button">Refresh</button>
+          </div>
+        </section>
+
+        <section class="panel records-panel">
+
+          <div class="panel-heading records-heading">
+            <div>
+              <h2>Approved Content</h2>
+              <p id="contentLibraryCount">0 items</p>
+            </div>
+          </div>
+
+          <form id="contentLibraryFilterForm" class="filter-grid">
+
+            <label>
+              Search
+              <input id="contentLibrarySearch" type="search" placeholder="Title, content, audience, CTA...">
+            </label>
+
+            <label>
+              Status
+              <select id="contentLibraryStatus">
+                <option value="approved">Approved</option>
+                <option value="archived">Archived</option>
+                <option value="all">Approved + Archived</option>
+              </select>
+            </label>
+
+            <label>
+              Content type
+              <select id="contentLibraryType">
+                <option value="">All</option>
+                <option value="social_post">Social Post</option>
+                <option value="whatsapp_copy">WhatsApp Copy</option>
+                <option value="email_copy">Email Copy</option>
+                <option value="course_promotion">Course Promotion</option>
+                <option value="educational_post">Educational Post</option>
+                <option value="lead_magnet_promotion">Lead Magnet Promotion</option>
+                <option value="affiliate_asset">Affiliate Asset</option>
+              </select>
+            </label>
+
+            <label>
+              Language
+              <select id="contentLibraryLanguage">
+                <option value="">All</option>
+                <option value="en">English</option>
+                <option value="zh">Chinese</option>
+              </select>
+            </label>
+
+            <label>
+              Platform
+              <select id="contentLibraryPlatform">
+                <option value="">All</option>
+                <option value="general">General</option>
+                <option value="facebook">Facebook</option>
+                <option value="instagram">Instagram</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="email">Email</option>
+                <option value="website">Website</option>
+                <option value="affiliate">Affiliate</option>
+              </select>
+            </label>
+
+            <label>
+              Objective
+              <select id="contentLibraryObjective">
+                <option value="">All</option>
+                <option value="educate">Educate</option>
+                <option value="awareness">Awareness</option>
+                <option value="engagement">Engagement</option>
+                <option value="enquiry">Enquiry</option>
+                <option value="registration">Registration</option>
+                <option value="download">Download</option>
+                <option value="affiliate_promotion">Affiliate Promotion</option>
+              </select>
+            </label>
+
+            <label>
+              Tone
+              <select id="contentLibraryTone">
+                <option value="">All</option>
+                <option value="professional">Professional</option>
+                <option value="educational">Educational</option>
+                <option value="warm">Warm</option>
+                <option value="conversational">Conversational</option>
+                <option value="inspirational">Inspirational</option>
+                <option value="concise">Concise</option>
+              </select>
+            </label>
+
+            <div class="topbar-actions">
+              <button class="primary-button" type="submit">Apply Filters</button>
+              <button id="contentLibraryClearFilters" class="secondary-button" type="button">Clear</button>
+            </div>
+
+          </form>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Title</th>
+                  <th>Type</th>
+                  <th>Language</th>
+                  <th>Platform</th>
+                  <th>Objective</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="contentLibraryBody"></tbody>
+            </table>
+          </div>
+
+          <p id="contentLibraryListMessage" class="form-message" aria-live="polite"></p>
+
+        </section>
+
+        <section id="contentLibraryDetailPanel" class="panel records-panel" hidden>
+
+          <div class="panel-heading records-heading">
+
+            <div>
+              <h2 id="contentLibraryDetailTitle">Content Library Item</h2>
+              <p id="contentLibraryDetailStatus"></p>
+            </div>
+
+            <div class="topbar-actions">
+              <button id="contentLibraryCopyButton" class="secondary-button" type="button">Copy Content</button>
+              <button id="contentLibraryArchiveButton" class="secondary-button" type="button">Archive</button>
+              <button id="contentLibraryRestoreButton" class="secondary-button" type="button" hidden>Restore</button>
+              <button id="contentLibraryCloseButton" class="secondary-button" type="button">Close</button>
+            </div>
+
+          </div>
+
+          <div id="contentLibraryDetailMeta" class="record-details"></div>
+
+          <label>
+            Approved Content
+            <textarea id="contentLibraryDetailContent" rows="14" readonly></textarea>
+          </label>
+
+          <p id="contentLibraryDetailMessage" class="form-message" aria-live="polite"></p>
+
+          <div class="section-title">
+            <h3>Audit History</h3>
+          </div>
+
+          <div id="contentLibraryAuditTimeline" class="timeline"></div>
+
+        </section>
+
+      </div>
+
       <div id="commerceModule" hidden>
         <section class="page-heading">
           <div>
@@ -1227,6 +1397,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=3.9-phase-f2-ui" defer></script>
+  <script src="admin.js?v=3.9-phase-f3-library" defer></script>
 </body>
 </html>
