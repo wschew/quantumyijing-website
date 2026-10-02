@@ -126,6 +126,98 @@ async function api(url){
   return d;
 }
 
+function renderMarketingAssets(payload){
+  const root=document.getElementById('marketingAssets');
+  if(!root)return;
+
+  root.textContent='';
+
+  const items=Array.isArray(payload?.assets)?payload.assets:[];
+
+  if(!items.length){
+    const empty=document.createElement('div');
+    empty.className='marketing-assets-empty';
+    empty.textContent='No approved marketing assets are currently available.';
+    root.appendChild(empty);
+    return;
+  }
+
+  for(const asset of items){
+    const card=document.createElement('article');
+    card.className='marketing-asset-card';
+
+    const head=document.createElement('div');
+    head.className='marketing-asset-head';
+
+    const titleWrap=document.createElement('div');
+
+    const title=document.createElement('h3');
+    title.className='marketing-asset-title';
+    title.textContent=asset.title||'Marketing Asset';
+
+    const product=document.createElement('div');
+    product.className='marketing-asset-product';
+    product.textContent=asset.product_name
+      ? `Product: ${asset.product_name}`
+      : 'Product';
+
+    titleWrap.append(title,product);
+    head.appendChild(titleWrap);
+    card.appendChild(head);
+
+    const meta=document.createElement('div');
+    meta.className='marketing-asset-meta';
+
+    const tags=[
+      asset.platform,
+      asset.language,
+      asset.output_length
+    ].filter(Boolean);
+
+    for(const value of tags){
+      const tag=document.createElement('span');
+      tag.className='marketing-asset-tag';
+      tag.textContent=String(value);
+      meta.appendChild(tag);
+    }
+
+    card.appendChild(meta);
+
+    const content=document.createElement('div');
+    content.className='marketing-asset-content';
+    content.textContent=asset.personalized_content||asset.content||'';
+    card.appendChild(content);
+
+    if(asset.personalized_url){
+      const linkBox=document.createElement('div');
+      linkBox.className='marketing-asset-link';
+
+      const link=document.createElement('a');
+      link.href=asset.personalized_url;
+      link.target='_blank';
+      link.rel='noopener noreferrer';
+      link.textContent=asset.personalized_url;
+
+      linkBox.appendChild(link);
+      card.appendChild(linkBox);
+    }
+
+    if(asset.approved_at){
+      const date=document.createElement('div');
+      date.className='marketing-asset-date';
+
+      const parsed=new Date(asset.approved_at);
+
+      date.textContent=Number.isNaN(parsed.getTime())
+        ? `Approved: ${asset.approved_at}`
+        : `Approved: ${parsed.toLocaleString()}`;
+
+      card.appendChild(date);
+    }
+
+    root.appendChild(card);
+  }
+}
 function renderProducts(l,affiliateCode=''){
   const body=$('#productLinks');
   if(!Array.isArray(l.products)||!l.products.length){
@@ -191,7 +283,7 @@ function renderAdjustments(rows,summary={}){
 
 async function load(){
   try{
-    const [me,a,t,l]=await Promise.all([api('/api/affiliate/portal/me'),api('/api/affiliate/portal/analytics'),api('/api/affiliate/portal/transactions'),api('/api/affiliate/portal/links')]);
+    const [me,a,t,l,assets]=await Promise.all([api('/api/affiliate/portal/me'),api('/api/affiliate/portal/analytics'),api('/api/affiliate/portal/transactions'),api('/api/affiliate/portal/links'),api('/api/affiliate/portal/assets')]);
     const aff=me.affiliate||{},s=me.summary||{},currentMonth=Array.isArray(a.monthly_sales)&&a.monthly_sales.length?a.monthly_sales[a.monthly_sales.length-1]:{sales:0};
     $('#welcome').textContent=`Welcome, ${aff.display_name||aff.full_name||'Affiliate'}`;
     $('#affiliateCode').textContent=aff.affiliate_code||'—';
@@ -220,6 +312,7 @@ async function load(){
     stacked($('#categoryChart'),a.monthly_category_sales,a.category_labels||{});
     $('#generalLink').value=l.general_url||'';
     renderProducts(l,aff.affiliate_code||'');
+    renderMarketingAssets(assets);
     renderCommissions(t.commissions);
     renderPayouts(t.payouts);
     renderAdjustments(t.adjustments,t.adjustment_summary||{});
