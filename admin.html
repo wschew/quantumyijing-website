@@ -686,6 +686,77 @@
               >
             </label>
 
+            <label>
+              Audience
+              <input
+                id="contentStudioCreateAudience"
+                type="text"
+                maxlength="500"
+                placeholder="e.g. prospective students, existing followers"
+              >
+            </label>
+
+            <label>
+              Objective
+              <select id="contentStudioCreateObjective">
+                <option value="">Not specified</option>
+                <option value="educate">Educate</option>
+                <option value="awareness">Awareness</option>
+                <option value="engagement">Engagement</option>
+                <option value="enquiry">Enquiry</option>
+                <option value="registration">Registration</option>
+                <option value="download">Download</option>
+                <option value="affiliate_promotion">Affiliate Promotion</option>
+              </select>
+            </label>
+
+            <label>
+              Tone
+              <select id="contentStudioCreateTone">
+                <option value="">Not specified</option>
+                <option value="professional">Professional</option>
+                <option value="educational">Educational</option>
+                <option value="warm">Warm</option>
+                <option value="conversational">Conversational</option>
+                <option value="inspirational">Inspirational</option>
+                <option value="concise">Concise</option>
+              </select>
+            </label>
+
+            <label>
+              Platform
+              <select id="contentStudioCreatePlatform">
+                <option value="">Not specified</option>
+                <option value="general">General</option>
+                <option value="facebook">Facebook</option>
+                <option value="instagram">Instagram</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="email">Email</option>
+                <option value="website">Website</option>
+                <option value="affiliate">Affiliate</option>
+              </select>
+            </label>
+
+            <label>
+              Output length
+              <select id="contentStudioCreateOutputLength">
+                <option value="">Not specified</option>
+                <option value="short">Short</option>
+                <option value="medium">Medium</option>
+                <option value="long">Long</option>
+              </select>
+            </label>
+
+            <label style="grid-column:1/-1">
+              Call to action
+              <input
+                id="contentStudioCreateCta"
+                type="text"
+                maxlength="500"
+                placeholder="Optional CTA, e.g. Register now, Download the guide, Contact us"
+              >
+            </label>
+
             <label style="grid-column:1/-1">
               Content
               <textarea
@@ -833,6 +904,79 @@
             </label>
 
           </div>
+
+          <div class="edit-grid edit-grid-v25">
+
+            <label>
+              Audience
+              <input
+                id="contentStudioEditAudience"
+                type="text"
+                maxlength="500"
+              >
+            </label>
+
+            <label>
+              Objective
+              <select id="contentStudioEditObjective">
+                <option value="">Not specified</option>
+                <option value="educate">Educate</option>
+                <option value="awareness">Awareness</option>
+                <option value="engagement">Engagement</option>
+                <option value="enquiry">Enquiry</option>
+                <option value="registration">Registration</option>
+                <option value="download">Download</option>
+                <option value="affiliate_promotion">Affiliate Promotion</option>
+              </select>
+            </label>
+
+            <label>
+              Tone
+              <select id="contentStudioEditTone">
+                <option value="">Not specified</option>
+                <option value="professional">Professional</option>
+                <option value="educational">Educational</option>
+                <option value="warm">Warm</option>
+                <option value="conversational">Conversational</option>
+                <option value="inspirational">Inspirational</option>
+                <option value="concise">Concise</option>
+              </select>
+            </label>
+
+            <label>
+              Platform
+              <select id="contentStudioEditPlatform">
+                <option value="">Not specified</option>
+                <option value="general">General</option>
+                <option value="facebook">Facebook</option>
+                <option value="instagram">Instagram</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="email">Email</option>
+                <option value="website">Website</option>
+                <option value="affiliate">Affiliate</option>
+              </select>
+            </label>
+
+            <label>
+              Output length
+              <select id="contentStudioEditOutputLength">
+                <option value="">Not specified</option>
+                <option value="short">Short</option>
+                <option value="medium">Medium</option>
+                <option value="long">Long</option>
+              </select>
+            </label>
+
+          </div>
+
+          <label>
+            Call to action
+            <input
+              id="contentStudioEditCta"
+              type="text"
+              maxlength="500"
+            >
+          </label>
 
           <label>
             Content
@@ -1083,6 +1227,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=3.9-phase-f1-ai" defer></script>
+  <script src="admin.js?v=3.9-phase-f2-ui" defer></script>
 </body>
 </html>

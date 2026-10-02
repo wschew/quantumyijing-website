@@ -1630,6 +1630,24 @@ async function loadWhatsAppConversation(phone) {
     $('contentStudioEditSourceReference').value =
       draft.source_reference || '';
 
+    $('contentStudioEditAudience').value =
+      draft.audience || '';
+
+    $('contentStudioEditObjective').value =
+      draft.objective || '';
+
+    $('contentStudioEditTone').value =
+      draft.tone || '';
+
+    $('contentStudioEditPlatform').value =
+      draft.platform || '';
+
+    $('contentStudioEditOutputLength').value =
+      draft.output_length || '';
+
+    $('contentStudioEditCta').value =
+      draft.cta || '';
+
     $('contentStudioEditPrompt').value =
       draft.prompt || '';
 
@@ -1721,6 +1739,28 @@ async function loadWhatsAppConversation(phone) {
                   .value
                   .trim(),
 
+              audience:
+                $('contentStudioCreateAudience')
+                  .value
+                  .trim(),
+
+              objective:
+                $('contentStudioCreateObjective').value,
+
+              tone:
+                $('contentStudioCreateTone').value,
+
+              platform:
+                $('contentStudioCreatePlatform').value,
+
+              output_length:
+                $('contentStudioCreateOutputLength').value,
+
+              cta:
+                $('contentStudioCreateCta')
+                  .value
+                  .trim(),
+
               prompt
             })
           }
@@ -1801,6 +1841,28 @@ async function loadWhatsAppConversation(phone) {
 
             source_reference:
               $('contentStudioCreateSourceReference')
+                .value
+                .trim(),
+
+            audience:
+              $('contentStudioCreateAudience')
+                .value
+                .trim(),
+
+            objective:
+              $('contentStudioCreateObjective').value,
+
+            tone:
+              $('contentStudioCreateTone').value,
+
+            platform:
+              $('contentStudioCreatePlatform').value,
+
+            output_length:
+              $('contentStudioCreateOutputLength').value,
+
+            cta:
+              $('contentStudioCreateCta')
                 .value
                 .trim(),
 
@@ -1887,6 +1949,28 @@ async function loadWhatsAppConversation(phone) {
 
           source_reference:
             $('contentStudioEditSourceReference')
+              .value
+              .trim(),
+
+          audience:
+            $('contentStudioEditAudience')
+              .value
+              .trim(),
+
+          objective:
+            $('contentStudioEditObjective').value,
+
+          tone:
+            $('contentStudioEditTone').value,
+
+          platform:
+            $('contentStudioEditPlatform').value,
+
+          output_length:
+            $('contentStudioEditOutputLength').value,
+
+          cta:
+            $('contentStudioEditCta')
               .value
               .trim(),
 
