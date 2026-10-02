@@ -379,3 +379,179 @@ export async function onRequestGet(context) {
     }, 500);
   }
 }
+export async function onRequestPatch(context) {
+  const { request, env } = context;
+
+  if (!authorized(request, env)) {
+    return json({
+      ok: false,
+      error: "Unauthorized"
+    }, 401);
+  }
+
+  if (!env.ENQUIRIES_DB) {
+    return json({
+      ok: false,
+      error: "Database unavailable"
+    }, 503);
+  }
+
+  let body;
+
+  try {
+    body = await request.json();
+  }
+  catch {
+    return json({
+      ok: false,
+      error: "Invalid JSON body"
+    }, 400);
+  }
+
+  const id =
+    Number(body?.id || 0);
+
+  const action =
+    clean(body?.action, 30)
+      .toLowerCase();
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return json({
+      ok: false,
+      error: "Valid content item id required"
+    }, 400);
+  }
+
+  if (!["archive", "restore"].includes(action)) {
+    return json({
+      ok: false,
+      error: "Action must be archive or restore"
+    }, 400);
+  }
+
+  try {
+
+    const current =
+      await getLibraryItem(
+        env.ENQUIRIES_DB,
+        id
+      );
+
+    if (!current) {
+      return json({
+        ok: false,
+        error: "Content Library item not found"
+      }, 404);
+    }
+
+
+    // --------------------------------------------------------
+    // ARCHIVE
+    // approved -> archived
+    // --------------------------------------------------------
+
+    if (action === "archive") {
+
+      if (current.status !== "approved") {
+        return json({
+          ok: false,
+          error: "Only approved Content Library items can be archived"
+        }, 409);
+      }
+
+      await env.ENQUIRIES_DB.batch([
+        env.ENQUIRIES_DB.prepare(`
+          UPDATE ai_content_drafts
+          SET
+            status = 'archived',
+            updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+            AND status = 'approved'
+        `).bind(id),
+
+        env.ENQUIRIES_DB.prepare(`
+          INSERT INTO ai_content_events (
+            content_draft_id,
+            event_type,
+            notes
+          )
+          VALUES (?, 'archived', 'Content Library item archived')
+        `).bind(id)
+      ]);
+
+      const item =
+        await getLibraryItem(
+          env.ENQUIRIES_DB,
+          id
+        );
+
+      return json({
+        ok: true,
+        action: "archive",
+        item
+      });
+    }
+
+
+    // --------------------------------------------------------
+    // RESTORE
+    // archived -> approved
+    //
+    // approved_at is deliberately preserved.
+    // Existing event schema has no "restored" event type,
+    // so restoration is recorded as an edited lifecycle event.
+    // --------------------------------------------------------
+
+    if (current.status !== "archived") {
+      return json({
+        ok: false,
+        error: "Only archived Content Library items can be restored"
+      }, 409);
+    }
+
+    await env.ENQUIRIES_DB.batch([
+      env.ENQUIRIES_DB.prepare(`
+        UPDATE ai_content_drafts
+        SET
+          status = 'approved',
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+          AND status = 'archived'
+      `).bind(id),
+
+      env.ENQUIRIES_DB.prepare(`
+        INSERT INTO ai_content_events (
+          content_draft_id,
+          event_type,
+          notes
+        )
+        VALUES (?, 'edited', 'Content Library item restored')
+      `).bind(id)
+    ]);
+
+    const item =
+      await getLibraryItem(
+        env.ENQUIRIES_DB,
+        id
+      );
+
+    return json({
+      ok: true,
+      action: "restore",
+      item
+    });
+
+  }
+  catch (error) {
+
+    console.error(
+      "CONTENT LIBRARY PATCH ERROR",
+      error
+    );
+
+    return json({
+      ok: false,
+      error: "Content Library update failed"
+    }, 500);
+  }
+}
