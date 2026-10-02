@@ -3,6 +3,47 @@ import { generateGeminiResponse } from "../ai/gemini.js";
 const MAX_PROMPT_LENGTH = 10000;
 const MAX_TITLE_LENGTH = 500;
 const MAX_SOURCE_REFERENCE_LENGTH = 1000;
+const MAX_AUDIENCE_LENGTH = 500;
+const MAX_CTA_LENGTH = 500;
+
+const ALLOWED_OBJECTIVES = new Set([
+  "",
+  "educate",
+  "awareness",
+  "engagement",
+  "enquiry",
+  "registration",
+  "download",
+  "affiliate_promotion"
+]);
+
+const ALLOWED_TONES = new Set([
+  "",
+  "professional",
+  "educational",
+  "warm",
+  "conversational",
+  "inspirational",
+  "concise"
+]);
+
+const ALLOWED_PLATFORMS = new Set([
+  "",
+  "general",
+  "facebook",
+  "instagram",
+  "whatsapp",
+  "email",
+  "website",
+  "affiliate"
+]);
+
+const ALLOWED_OUTPUT_LENGTHS = new Set([
+  "",
+  "short",
+  "medium",
+  "long"
+]);
 
 const ALLOWED_CONTENT_TYPES = new Set([
   "social_post",
@@ -75,6 +116,104 @@ function languageName(language) {
 }
 
 
+function objectiveGuidance(objective) {
+  switch (objective) {
+    case "educate":
+      return "Educate the audience clearly without unnecessary promotion.";
+
+    case "awareness":
+      return "Build awareness and understanding of the subject.";
+
+    case "engagement":
+      return "Encourage thoughtful audience engagement without making unsupported claims.";
+
+    case "enquiry":
+      return "Encourage interested readers to make an enquiry. Do not claim that an enquiry has already occurred.";
+
+    case "registration":
+      return "Encourage registration only when the administrator has supplied sufficient factual registration information.";
+
+    case "download":
+      return "Encourage the reader to access or download the referenced resource without inventing availability or results.";
+
+    case "affiliate_promotion":
+      return "Create reusable affiliate-oriented promotional copy without inventing commissions, incentives or affiliate terms.";
+
+    default:
+      return "Follow the administrator's stated objective without inventing one.";
+  }
+}
+
+
+function toneGuidance(tone) {
+  switch (tone) {
+    case "professional":
+      return "Use a polished and professional tone.";
+
+    case "educational":
+      return "Use a clear, informative and teaching-oriented tone.";
+
+    case "warm":
+      return "Use a warm and approachable tone.";
+
+    case "conversational":
+      return "Use natural, conversational language.";
+
+    case "inspirational":
+      return "Use an encouraging and reflective tone without exaggeration.";
+
+    case "concise":
+      return "Use direct, economical wording with minimal unnecessary detail.";
+
+    default:
+      return "Use an appropriate neutral professional tone.";
+  }
+}
+
+
+function platformGuidance(platform) {
+  switch (platform) {
+    case "facebook":
+      return "Format the draft for Facebook readability with short paragraphs and natural spacing.";
+
+    case "instagram":
+      return "Format the draft for Instagram-style readability. Keep the opening engaging and avoid excessive formatting.";
+
+    case "whatsapp":
+      return "Format the draft as concise WhatsApp copy. Do not imply that it has been sent.";
+
+    case "email":
+      return "Format the draft as email-ready body copy. Do not invent recipient details or send status.";
+
+    case "website":
+      return "Format the draft as polished website copy.";
+
+    case "affiliate":
+      return "Format the draft as reusable affiliate marketing material for later human distribution.";
+
+    default:
+      return "Use platform-neutral formatting suitable for later adaptation.";
+  }
+}
+
+
+function lengthGuidance(outputLength) {
+  switch (outputLength) {
+    case "short":
+      return "Keep the output short and focused.";
+
+    case "medium":
+      return "Use moderate detail while remaining easy to scan.";
+
+    case "long":
+      return "Provide a fuller treatment while avoiding repetition.";
+
+    default:
+      return "Use an appropriate practical length for the requested content type.";
+  }
+}
+
+
 function contentTypeGuidance(contentType) {
   switch (contentType) {
 
@@ -124,7 +263,11 @@ function contentTypeGuidance(contentType) {
 
 function buildSystemInstruction({
   contentType,
-  language
+  language,
+  objective,
+  tone,
+  platform,
+  outputLength
 }) {
 
   return `
@@ -138,19 +281,31 @@ IMPORTANT WORKFLOW BOUNDARIES:
 - Every output will be reviewed by a human before any external use.
 
 FACTUAL ACCURACY:
-- Use only facts explicitly supplied in the administrator's prompt.
+- Use only facts explicitly supplied in the administrator's prompt or structured brief.
 - Do not invent course dates, prices, deadlines, availability, credentials, policies, statistics, testimonials, guarantees, payment status, affiliate terms or business claims.
 - If a requested factual detail is not supplied, omit it rather than inventing it.
 - Do not claim that any campaign, registration, payment, booking, enquiry or transaction has occurred.
 
 STYLE:
 - Produce polished text ready for human editing.
-- Keep the requested purpose and audience in mind.
+- Follow the requested audience, objective, tone, platform and output length.
 - Do not include meta-commentary such as "Here is your draft".
 - Return only the draft content itself.
 
 CONTENT TYPE:
 ${contentTypeGuidance(contentType)}
+
+OBJECTIVE:
+${objectiveGuidance(objective)}
+
+TONE:
+${toneGuidance(tone)}
+
+PLATFORM:
+${platformGuidance(platform)}
+
+OUTPUT LENGTH:
+${lengthGuidance(outputLength)}
 
 REQUIRED OUTPUT LANGUAGE:
 ${languageName(language)}
@@ -249,6 +404,42 @@ export async function onRequestPost(context) {
       MAX_SOURCE_REFERENCE_LENGTH
     );
 
+  const audience =
+    cleanText(
+      body?.audience,
+      MAX_AUDIENCE_LENGTH
+    );
+
+  const objective =
+    cleanText(
+      body?.objective,
+      100
+    ).toLowerCase();
+
+  const tone =
+    cleanText(
+      body?.tone,
+      100
+    ).toLowerCase();
+
+  const platform =
+    cleanText(
+      body?.platform,
+      100
+    ).toLowerCase();
+
+  const outputLength =
+    cleanText(
+      body?.output_length,
+      100
+    ).toLowerCase();
+
+  const cta =
+    cleanText(
+      body?.cta,
+      MAX_CTA_LENGTH
+    );
+
 
   if (!ALLOWED_CONTENT_TYPES.has(contentType)) {
     return json(
@@ -271,6 +462,46 @@ export async function onRequestPost(context) {
     );
   }
 
+
+  if (!ALLOWED_OBJECTIVES.has(objective)) {
+    return json(
+      {
+        ok: false,
+        error: "Unsupported marketing objective."
+      },
+      400
+    );
+  }
+
+  if (!ALLOWED_TONES.has(tone)) {
+    return json(
+      {
+        ok: false,
+        error: "Unsupported tone."
+      },
+      400
+    );
+  }
+
+  if (!ALLOWED_PLATFORMS.has(platform)) {
+    return json(
+      {
+        ok: false,
+        error: "Unsupported platform."
+      },
+      400
+    );
+  }
+
+  if (!ALLOWED_OUTPUT_LENGTHS.has(outputLength)) {
+    return json(
+      {
+        ok: false,
+        error: "Unsupported output length."
+      },
+      400
+    );
+  }
 
   if (!prompt) {
     return json(
@@ -296,7 +527,11 @@ export async function onRequestPost(context) {
         systemInstruction:
           buildSystemInstruction({
             contentType,
-            language
+            language,
+            objective,
+            tone,
+            platform,
+            outputLength
           }),
 
         messages: [
@@ -304,6 +539,12 @@ export async function onRequestPost(context) {
             role: "user",
             content:
               `CONTENT TITLE:\n${title || "Untitled draft"}\n\n` +
+              `TARGET AUDIENCE:\n${audience || "Not specified"}\n\n` +
+              `MARKETING OBJECTIVE:\n${objective || "Not specified"}\n\n` +
+              `TONE:\n${tone || "Not specified"}\n\n` +
+              `PLATFORM:\n${platform || "general"}\n\n` +
+              `OUTPUT LENGTH:\n${outputLength || "Not specified"}\n\n` +
+              `CALL TO ACTION:\n${cta || "No specific CTA requested"}\n\n` +
               `ADMINISTRATOR BRIEF:\n${prompt}`
           }
         ],
@@ -329,9 +570,15 @@ export async function onRequestPost(context) {
           prompt,
           model,
           status,
-          created_by
+          created_by,
+          audience,
+          objective,
+          tone,
+          platform,
+          output_length,
+          cta
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', 'admin')
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', 'admin', ?, ?, ?, ?, ?, ?)
       `)
       .bind(
         contentType,
@@ -341,7 +588,13 @@ export async function onRequestPost(context) {
         "ai",
         sourceReference,
         prompt,
-        result.model
+        result.model,
+        audience,
+        objective,
+        tone,
+        platform,
+        outputLength,
+        cta
       )
       .run();
 
@@ -389,6 +642,12 @@ export async function onRequestPost(context) {
           model,
           status,
           created_by,
+          audience,
+          objective,
+          tone,
+          platform,
+          output_length,
+          cta,
           created_at,
           updated_at,
           approved_at
