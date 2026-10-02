@@ -41,6 +41,7 @@
   <button id="studentsTab" class="module-tab" type="button">Students</button>
   <button id="marketingTab" class="module-tab" type="button">Marketing</button>
   <button id="contentStudioTab" class="module-tab" type="button">Content Studio</button>
+    <button id="affiliateAssetsTab" class="module-tab" type="button">Affiliate Assets</button>
   <button id="contentLibraryTab" class="module-tab" type="button">Content Library</button>
   <button id="commerceTab" class="module-tab" type="button">Sales & Commerce</button>
 
@@ -1037,6 +1038,143 @@
       </div>
 
 
+      <div id="affiliateAssetsModule" hidden>
+
+        <section class="page-heading">
+          <div>
+            <p class="eyebrow">QY-AOS · AFFILIATE MARKETING ASSETS</p>
+            <h1>Affiliate Asset Generator</h1>
+            <p>Generate reusable affiliate marketing drafts from verified product information. Generated assets remain drafts until reviewed and approved in Content Studio.</p>
+          </div>
+
+          <div class="topbar-actions">
+            <button id="affiliateAssetsRefreshProductsButton" class="secondary-button" type="button">Refresh Products</button>
+          </div>
+        </section>
+
+        <section style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:20px;margin-bottom:20px;">
+          <div class="section-title">
+            <h3>Generate Affiliate Marketing Asset</h3>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+
+            <label>
+              Product
+              <select id="affiliateAssetProduct">
+                <option value="">Loading affiliate-enabled products...</option>
+              </select>
+            </label>
+
+            <label>
+              Language
+              <select id="affiliateAssetLanguage">
+                <option value="en">English</option>
+                <option value="zh">中文</option>
+              </select>
+            </label>
+
+            <label>
+              Asset Format
+              <select id="affiliateAssetFormat">
+                <option value="social_post">Social Post</option>
+                <option value="whatsapp_copy">WhatsApp Copy</option>
+                <option value="short_promo">Short Promotion</option>
+                <option value="long_promo">Long Promotion</option>
+                <option value="headline_cta">Headline + CTA</option>
+                <option value="affiliate_caption">Affiliate Caption</option>
+              </select>
+            </label>
+
+            <label>
+              Platform
+              <select id="affiliateAssetPlatform">
+                <option value="general">General</option>
+                <option value="facebook">Facebook</option>
+                <option value="instagram">Instagram</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="email">Email</option>
+                <option value="website">Website</option>
+                <option value="affiliate">Affiliate</option>
+              </select>
+            </label>
+
+            <label>
+              Tone
+              <select id="affiliateAssetTone">
+                <option value="professional">Professional</option>
+                <option value="educational">Educational</option>
+                <option value="warm">Warm</option>
+                <option value="conversational">Conversational</option>
+                <option value="inspirational">Inspirational</option>
+                <option value="concise">Concise</option>
+              </select>
+            </label>
+
+            <label>
+              Objective
+              <select id="affiliateAssetObjective">
+                <option value="affiliate_promotion">Affiliate Promotion</option>
+              </select>
+            </label>
+
+            <label>
+              Output Length
+              <select id="affiliateAssetOutputLength">
+                <option value="short">Short</option>
+                <option value="medium" selected>Medium</option>
+                <option value="long">Long</option>
+              </select>
+            </label>
+
+            <label>
+              Call to Action
+              <input id="affiliateAssetCta" type="text" maxlength="500" value="Learn more" placeholder="e.g. Learn more" />
+            </label>
+
+          </div>
+
+          <label style="display:block;margin-top:16px;">
+            Additional Instructions
+            <textarea id="affiliateAssetInstructions" rows="4" maxlength="2000" placeholder="Optional guidance. Do not add unverified offers, guarantees or commission information."></textarea>
+          </label>
+
+          <p id="affiliateAssetsMessage" class="form-message" aria-live="polite"></p>
+
+          <div class="topbar-actions" style="margin-top:16px;">
+            <button id="affiliateAssetGenerateButton" class="primary-button" type="button">Generate Affiliate Asset</button>
+          </div>
+        </section>
+
+        <section id="affiliateAssetResultPanel" hidden style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:20px;margin-bottom:20px;">
+          <div class="section-title">
+            <h3>Generated Draft</h3>
+          </div>
+
+          <p id="affiliateAssetResultMeta"></p>
+
+          <label>
+            Title
+            <input id="affiliateAssetResultTitle" type="text" readonly />
+          </label>
+
+          <label style="display:block;margin-top:16px;">
+            Content
+            <textarea id="affiliateAssetResultContent" rows="14" readonly></textarea>
+          </label>
+
+          <p id="affiliateAssetResultMessage" class="form-message" aria-live="polite"></p>
+
+          <div class="topbar-actions" style="margin-top:16px;">
+            <button id="affiliateAssetCopyButton" class="secondary-button" type="button">Copy Content</button>
+            <button id="affiliateAssetOpenStudioButton" class="primary-button" type="button">Open in Content Studio</button>
+          </div>
+
+          <p style="margin-top:14px;">This asset is still a draft. Review and approve it in Content Studio before external distribution.</p>
+        </section>
+
+      </div>
+
       <div id="contentLibraryModule" hidden>
 
         <section class="page-heading">
@@ -1397,6 +1535,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=3.9-phase-f3-library" defer></script>
+  <script src="admin.js?v=3.9-phase-f4-affiliate-assets" defer></script>
 </body>
 </html>

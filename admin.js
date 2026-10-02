@@ -206,6 +206,7 @@
     const marketingMode = module === 'marketing';
 
     const contentStudioMode = module === 'contentStudio';
+    const affiliateAssetsMode = module === 'affiliateAssets';
     const contentLibraryMode = module === 'contentLibrary';
     const commerceMode = module === 'commerce';
     $('crmModule').hidden = !crmMode;
@@ -214,6 +215,7 @@
     $('marketingModule').hidden = !marketingMode;
 
     contentStudioModule.hidden = !contentStudioMode;
+    $('affiliateAssetsModule').hidden = !affiliateAssetsMode;
     contentLibraryModule.hidden = !contentLibraryMode;
     $('commerceModule').hidden = !commerceMode;
     $('crmTab').classList.toggle('active', crmMode);
@@ -222,6 +224,7 @@
     $('marketingTab').classList.toggle('active', marketingMode);
 
     contentStudioTab.classList.toggle('active', contentStudioMode);
+    $('affiliateAssetsTab').classList.toggle('active', affiliateAssetsMode);
     contentLibraryTab.classList.toggle('active', contentLibraryMode);
     $('commerceTab').classList.toggle('active', commerceMode);
     if (whatsappMode) loadWhatsAppInbox().catch(error =>
@@ -230,6 +233,9 @@
     if (studentMode) loadStudentAll().catch(handleStudentError);
     if (contentStudioMode) {
       loadContentStudio().catch(handleContentStudioError);
+    }
+    if (affiliateAssetsMode) {
+      loadAffiliateAssetProducts().catch(handleAffiliateAssetError);
     }
     if (contentLibraryMode) {
       loadContentLibrary().catch(handleContentLibraryError);
@@ -2046,6 +2052,223 @@ async function loadWhatsAppConversation(phone) {
   }
 
 
+  let affiliateAssetProducts = [];
+  let affiliateAssetLastDraftId = 0;
+
+  function affiliateAssetProductLabel(product) {
+    const english = String(product.name_en || "").trim();
+    const chinese = String(product.name_zh || "").trim();
+    const sku = String(product.sku || "").trim();
+    const name = english || chinese || `Product ${product.id}`;
+
+    return [
+      sku ? `[${sku}]` : "",
+      name,
+      chinese && chinese !== english ? ` / ${chinese}` : ""
+    ].join("");
+  }
+
+  async function loadAffiliateAssetProducts() {
+    setMessage(
+      "affiliateAssetsMessage",
+      "Loading affiliate-enabled products...",
+      true
+    );
+
+    const response =
+      await api("/api/admin/affiliate-assets/products");
+
+    const data =
+      await response.json();
+
+    affiliateAssetProducts =
+      Array.isArray(data.products)
+        ? data.products
+        : [];
+
+    const select =
+      $("affiliateAssetProduct");
+
+    select.innerHTML =
+      '<option value="">Select an affiliate-enabled product</option>';
+
+    affiliateAssetProducts.forEach(product => {
+      const option =
+        document.createElement("option");
+
+      option.value =
+        String(product.id);
+
+      option.textContent =
+        affiliateAssetProductLabel(product);
+
+      select.appendChild(option);
+    });
+
+    if (!affiliateAssetProducts.length) {
+      setMessage(
+        "affiliateAssetsMessage",
+        "No active affiliate-enabled products with a public affiliate path are available."
+      );
+      return;
+    }
+
+    setMessage(
+      "affiliateAssetsMessage",
+      `${affiliateAssetProducts.length} affiliate-enabled product${affiliateAssetProducts.length === 1 ? "" : "s"} available.`,
+      true
+    );
+  }
+
+  async function generateAffiliateAsset() {
+    const productId =
+      Number($("affiliateAssetProduct").value || 0);
+
+    if (!productId) {
+      setMessage(
+        "affiliateAssetsMessage",
+        "Select an affiliate-enabled product first."
+      );
+      return;
+    }
+
+    const button =
+      $("affiliateAssetGenerateButton");
+
+    button.disabled = true;
+
+    setMessage(
+      "affiliateAssetsMessage",
+      "Generating affiliate marketing draft...",
+      true
+    );
+
+    try {
+      const payload = {
+        product_id: productId,
+        language: $("affiliateAssetLanguage").value,
+        asset_format: $("affiliateAssetFormat").value,
+        platform: $("affiliateAssetPlatform").value,
+        tone: $("affiliateAssetTone").value,
+        objective: $("affiliateAssetObjective").value,
+        output_length: $("affiliateAssetOutputLength").value,
+        cta: $("affiliateAssetCta").value.trim(),
+        additional_instructions: $("affiliateAssetInstructions").value.trim()
+      };
+
+      const response =
+        await api(
+          "/api/admin/affiliate-assets/generate",
+          {
+            method: "POST",
+            body: JSON.stringify(payload)
+          }
+        );
+
+      const data =
+        await response.json();
+
+      const draft =
+        data.draft || {};
+
+      affiliateAssetLastDraftId =
+        Number(draft.id || 0);
+
+      if (!affiliateAssetLastDraftId) {
+        throw new Error("Generated draft ID was not returned.");
+      }
+
+      $("affiliateAssetResultTitle").value =
+        draft.title || "";
+
+      $("affiliateAssetResultContent").value =
+        draft.content || "";
+
+      $("affiliateAssetResultMeta").textContent =
+        [
+          `Draft #${affiliateAssetLastDraftId}`,
+          draft.language || "",
+          draft.platform || "",
+          draft.output_length || "",
+          draft.status || "draft"
+        ].filter(Boolean).join(" · ");
+
+      $("affiliateAssetResultPanel").hidden = false;
+
+      setMessage(
+        "affiliateAssetResultMessage",
+        "Draft generated successfully. Review it in Content Studio before approval.",
+        true
+      );
+
+      setMessage(
+        "affiliateAssetsMessage",
+        `Affiliate asset draft #${affiliateAssetLastDraftId} generated.`,
+        true
+      );
+    }
+    finally {
+      button.disabled = false;
+    }
+  }
+
+  async function openGeneratedAffiliateAsset() {
+    if (!affiliateAssetLastDraftId) {
+      setMessage(
+        "affiliateAssetResultMessage",
+        "Generate an affiliate asset first."
+      );
+      return;
+    }
+
+    const id =
+      affiliateAssetLastDraftId;
+
+    switchModule("contentStudio");
+
+    await loadContentStudio();
+    await openContentStudioDraft(id);
+  }
+
+  async function copyGeneratedAffiliateAsset() {
+    const content =
+      $("affiliateAssetResultContent").value || "";
+
+    if (!content) {
+      setMessage(
+        "affiliateAssetResultMessage",
+        "There is no generated content to copy."
+      );
+      return;
+    }
+
+    await navigator.clipboard.writeText(content);
+
+    setMessage(
+      "affiliateAssetResultMessage",
+      "Affiliate asset content copied.",
+      true
+    );
+  }
+
+  function handleAffiliateAssetError(error) {
+    if (error.status === 401) {
+      sessionStorage.removeItem("qyAdminToken");
+      state.token = "";
+      showLogin();
+      setMessage(
+        "loginMessage",
+        "Your session is not authorized. Please log in again."
+      );
+      return;
+    }
+
+    setMessage(
+      "affiliateAssetsMessage",
+      error.message || "Affiliate Asset Generator request failed."
+    );
+  }
+
   async function loadContentStudio() {
 
     setMessage(
@@ -3133,6 +3356,31 @@ async function loadWhatsAppConversation(phone) {
   $('contentStudioTab').addEventListener(
     'click',
     () => switchModule('contentStudio')
+  );
+
+  $('affiliateAssetsTab').addEventListener(
+    'click',
+    () => switchModule('affiliateAssets')
+  );
+
+  $('affiliateAssetsRefreshProductsButton').addEventListener(
+    'click',
+    () => loadAffiliateAssetProducts().catch(handleAffiliateAssetError)
+  );
+
+  $('affiliateAssetGenerateButton').addEventListener(
+    'click',
+    () => generateAffiliateAsset().catch(handleAffiliateAssetError)
+  );
+
+  $('affiliateAssetOpenStudioButton').addEventListener(
+    'click',
+    () => openGeneratedAffiliateAsset().catch(handleAffiliateAssetError)
+  );
+
+  $('affiliateAssetCopyButton').addEventListener(
+    'click',
+    () => copyGeneratedAffiliateAsset().catch(handleAffiliateAssetError)
   );
 
   $('contentStudioRefreshButton').addEventListener(
