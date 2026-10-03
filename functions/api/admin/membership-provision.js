@@ -753,6 +753,124 @@ async function provision(
   };
 }
 
+export async function provisionMembershipForVerifiedOrder(
+  db,
+  orderId
+) {
+  try {
+    const id =
+      Number(orderId);
+
+    if (
+      !Number.isInteger(id) ||
+      id < 1
+    ) {
+      return {
+        hook_ok: false,
+        skipped: true,
+        response_status: 400,
+        reason: "Invalid order ID."
+      };
+    }
+
+    const result =
+      await provision(
+        db,
+        id
+      );
+
+    const response =
+      result?.response;
+
+    if (!response) {
+      return {
+        hook_ok: false,
+        skipped: false,
+        response_status: 500,
+        reason:
+          "Provisioning returned no response."
+      };
+    }
+
+    let data = {};
+
+    try {
+      data =
+        await response.clone().json();
+    }
+    catch {}
+
+    /*
+     * 409 is normally an expected "not eligible" result:
+     * - not a membership product
+     * - insufficient verified payment
+     * - unresolved canonical customer
+     * - conflicting/terminal membership
+     *
+     * Payment verification must remain successful.
+     */
+    if (response.status === 409) {
+      return {
+        hook_ok: true,
+        skipped: true,
+        response_status:
+          response.status,
+        reason:
+          data?.error ||
+          "Order is not eligible for membership provisioning.",
+        result:
+          data
+      };
+    }
+
+    if (!response.ok) {
+      return {
+        hook_ok: false,
+        skipped: false,
+        response_status:
+          response.status,
+        reason:
+          data?.error ||
+          "Membership provisioning failed.",
+        result:
+          data
+      };
+    }
+
+    return {
+      hook_ok: true,
+      skipped: false,
+      response_status:
+        response.status,
+      result:
+        data
+    };
+  }
+  catch (error) {
+    console.error(
+      "MEMBERSHIP VERIFIED-PAYMENT HOOK FAILED",
+      error
+    );
+
+    /*
+     * Deliberately never throw back into the payment verifier.
+     * A valid payment must not be rolled back because an
+     * entitlement post-processing step failed.
+     */
+    return {
+      hook_ok: false,
+      skipped: false,
+      response_status: 500,
+      reason:
+        clean(
+          error?.message ||
+          "Membership provisioning failed.",
+          1000
+        )
+    };
+  }
+}
+
 export async function onRequestGet(
   context
 ) {

@@ -1,3 +1,4 @@
+import { provisionMembershipForVerifiedOrder } from '../../admin/membership-provision.js';
 const enc=new TextEncoder();
 
 export const DOKU_API_VERSION='arabica.2025-12-01';
@@ -140,7 +141,19 @@ export async function markPaid(db,{orderRef,checkoutId='',statusMessage='SUCCESS
     payment_provider='DOKU',payment_status='Paid',external_order_id=?,
     updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(checkoutId||'',o.id).run();
 
-  return {ok:true,total:Number(o.total||0),currency:o.currency||'MYR'};
+  const membershipProvisioning=
+    await provisionMembershipForVerifiedOrder(
+      db,
+      o.id
+    );
+
+  return {
+    ok:true,
+    total:Number(o.total||0),
+    currency:o.currency||'MYR',
+    membership_provisioning:
+      membershipProvisioning
+  };
 }
 export async function markTerminal(db,{orderRef,checkoutId='',status='Failed',statusMessage='',mode=''}) {
   const normalized=String(status).toLowerCase()==='expired'?'Expired':'Failed';
