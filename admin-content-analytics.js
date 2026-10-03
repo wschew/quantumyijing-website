@@ -79,7 +79,7 @@
       document.createElement("span");
 
     span.className =
-      "badge";
+      "analytics-badge";
 
     span.textContent =
       String(value ?? "");
@@ -144,13 +144,13 @@
         document.createElement("div");
 
       card.className =
-        "card";
+        "analytics-card";
 
       const small =
         document.createElement("div");
 
       small.className =
-        "small";
+        "analytics-small";
 
       small.textContent =
         label;
@@ -420,7 +420,7 @@
       renderBreakdown(
         "#statusBreakdown",
         data.breakdowns?.status || [],
-        "status"
+        "analytics-status"
       );
 
       renderBreakdown(
