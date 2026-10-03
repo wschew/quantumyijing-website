@@ -226,6 +226,12 @@ function renderMarketingAssets(payload){
     actions.append(copyAsset,copyLink,copyCombined);
     card.appendChild(actions);
 
+    const copyStatus=document.createElement('div');
+    copyStatus.className='marketing-asset-copy-status';
+    copyStatus.setAttribute('role','status');
+    copyStatus.setAttribute('aria-live','polite');
+    card.appendChild(copyStatus);
+
     if(asset.approved_at){
       const date=document.createElement('div');
       date.className='marketing-asset-date';
@@ -370,20 +376,27 @@ $('#marketingAssets').addEventListener('click',async e=>{
 
   if(b.classList.contains('copy-asset')){
     value=assetText;
-    message='Marketing asset copied.';
+    message='✓ Copied. You can now paste this into Facebook, WhatsApp, email, or another app.';
   }else if(b.classList.contains('copy-asset-link')){
     value=affiliateUrl;
-    message='Affiliate link copied.';
+    message='✓ Affiliate link copied. Paste it wherever you want to share it.';
   }else{
     value=assetText;
     if(affiliateUrl && !value.includes(affiliateUrl)){
       value=value ? `${value}\n\n${affiliateUrl}` : affiliateUrl;
     }
-    message='Marketing asset and affiliate link copied.';
+    message='✓ Asset and affiliate link copied. Ready to paste and share.';
   }
 
   if(value){
     await navigator.clipboard?.writeText(value);
+    const inlineStatus=card.querySelector('.marketing-asset-copy-status');
+    if(inlineStatus){
+      inlineStatus.textContent=message;
+      setTimeout(()=>{
+        if(inlineStatus.textContent===message)inlineStatus.textContent='';
+      },3500);
+    }
     copied(message);
   }
 });
