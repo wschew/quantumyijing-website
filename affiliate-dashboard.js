@@ -202,6 +202,30 @@ function renderMarketingAssets(payload){
       card.appendChild(linkBox);
     }
 
+    const actions=document.createElement('div');
+    actions.className='marketing-asset-actions';
+
+    const copyAsset=document.createElement('button');
+    copyAsset.type='button';
+    copyAsset.className='copy-asset';
+    copyAsset.textContent='Copy Asset';
+    copyAsset.disabled=!content.textContent.trim();
+
+    const copyLink=document.createElement('button');
+    copyLink.type='button';
+    copyLink.className='copy-asset-link';
+    copyLink.textContent='Copy Link';
+    copyLink.disabled=!asset.personalized_url;
+
+    const copyCombined=document.createElement('button');
+    copyCombined.type='button';
+    copyCombined.className='copy-asset-combined';
+    copyCombined.textContent='Copy Asset + Link';
+    copyCombined.disabled=!content.textContent.trim() && !asset.personalized_url;
+
+    actions.append(copyAsset,copyLink,copyCombined);
+    card.appendChild(actions);
+
     if(asset.approved_at){
       const date=document.createElement('div');
       date.className='marketing-asset-date';
@@ -331,5 +355,38 @@ function copied(message){
 
 $('#copyGeneral').addEventListener('click',async()=>{const v=$('#generalLink').value;if(v){await navigator.clipboard?.writeText(v);copied('General referral link copied.')}});
 $('#productLinks').addEventListener('click',async e=>{const b=e.target.closest('.copy-product');if(!b)return;const inp=document.getElementById(b.dataset.target);if(inp){await navigator.clipboard?.writeText(inp.value);copied('Product referral link copied.')}});
+$('#marketingAssets').addEventListener('click',async e=>{
+  const b=e.target.closest('.copy-asset,.copy-asset-link,.copy-asset-combined');
+  if(!b||b.disabled)return;
+
+  const card=b.closest('.marketing-asset-card');
+  if(!card)return;
+
+  const assetText=card.querySelector('.marketing-asset-content')?.textContent?.trim()||'';
+  const affiliateUrl=card.querySelector('.marketing-asset-link a')?.href||'';
+
+  let value='';
+  let message='';
+
+  if(b.classList.contains('copy-asset')){
+    value=assetText;
+    message='Marketing asset copied.';
+  }else if(b.classList.contains('copy-asset-link')){
+    value=affiliateUrl;
+    message='Affiliate link copied.';
+  }else{
+    value=assetText;
+    if(affiliateUrl && !value.includes(affiliateUrl)){
+      value=value ? `${value}\n\n${affiliateUrl}` : affiliateUrl;
+    }
+    message='Marketing asset and affiliate link copied.';
+  }
+
+  if(value){
+    await navigator.clipboard?.writeText(value);
+    copied(message);
+  }
+});
+
 $('#logout').addEventListener('click',async()=>{await fetch('/api/affiliate/auth/logout',{method:'POST'});location.href='/affiliate-login.html'});
 load();
