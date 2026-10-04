@@ -1,3 +1,4 @@
+import { processVerifiedSubscriptionRenewal } from './subscription-renewal.js';
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -756,7 +757,27 @@ async function provision(
 export async function provisionMembershipForVerifiedOrder(
   db,
   orderId
-) {
+){
+  // Phase B3B:
+  // An explicitly linked subscription Renewal order is handled
+  // by the renewal engine before normal initial-membership
+  // provisioning. All non-renewal orders continue through the
+  // original Phase A provisioning path unchanged.
+  const subscriptionRenewal =
+    await processVerifiedSubscriptionRenewal(
+      db,
+      orderId
+    );
+
+  if(subscriptionRenewal?.handled){
+    return {
+      ok:true,
+      provisioning_type:"subscription_renewal",
+      subscription_renewal:
+        subscriptionRenewal
+    };
+  }
+
   try {
     const id =
       Number(orderId);
