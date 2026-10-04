@@ -1,3 +1,4 @@
+import { provisionCourseEntitlementsForVerifiedOrder } from "./course-entitlement-provision.js";
 import { processVerifiedSubscriptionRenewal } from './subscription-renewal.js';
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -933,7 +934,16 @@ export async function onRequestGet(
   }
 
   try {
-    const state =
+      const courseProvisioning =
+    await provisionCourseEntitlementsForVerifiedOrder(
+      db,
+      orderId
+    );
+
+  if (courseProvisioning?.handled) {
+    return courseProvisioning;
+  }
+const state =
       await loadEligibility(
         env.ENQUIRIES_DB,
         orderId
