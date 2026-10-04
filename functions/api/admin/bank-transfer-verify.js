@@ -2,6 +2,10 @@ import {
   provisionMembershipForVerifiedOrder
 } from "./membership-provision.js";
 
+import {
+  ensureFullyPaidBankTransferAffiliate
+} from "./bank-transfer-affiliate.js";
+
 
 function json(data,status=200){
   return new Response(
@@ -1058,15 +1062,27 @@ async function verifyTransfer(
       );
 
     let provisioning=null;
+    let affiliateProcessing=null;
 
     /*
      * Access is never granted for a merely partial payment.
      * Once cumulative verified payment reaches the order total,
      * use the established Phase B/C provisioning orchestrator.
+     *
+     * Affiliate commission also waits until the entire order
+     * is cumulatively paid. Its gross basis is the full order
+     * total, never merely the final installment.
      */
     if(fullyPaid){
+
       provisioning=
         await provisionMembershipForVerifiedOrder(
+          db,
+          submission.order_id
+        );
+
+      affiliateProcessing=
+        await ensureFullyPaidBankTransferAffiliate(
           db,
           submission.order_id
         );
@@ -1104,7 +1120,10 @@ async function verifyTransfer(
       fully_paid:
         fullyPaid,
 
-      provisioning
+      provisioning,
+
+      affiliate_processing:
+        affiliateProcessing
     });
 
   }
