@@ -55,6 +55,31 @@ async function loadState(db, orderId) {
     .bind(orderId)
     .first();
 
+  const verifiedPayments = await db.prepare(`
+    SELECT
+      COUNT(*) AS verified_payment_count,
+      COALESCE(
+        SUM(
+          CASE
+            WHEN status='Paid'
+             AND verification_status='Verified'
+            THEN
+              CASE
+                WHEN COALESCE(gross_amount,0)>0
+                THEN gross_amount
+                ELSE amount
+              END
+            ELSE 0
+          END
+        ),
+        0
+      ) AS verified_paid_total
+    FROM payments
+    WHERE order_id=?
+  `)
+    .bind(orderId)
+    .first();
+
   const items = await db.prepare(`
     SELECT
       oi.id AS order_item_id,
@@ -82,6 +107,14 @@ async function loadState(db, orderId) {
   return {
     order,
     payment: payment || null,
+    verified_paid_total:
+      Number(
+        verifiedPayments?.verified_paid_total || 0
+      ),
+    verified_payment_count:
+      Number(
+        verifiedPayments?.verified_payment_count || 0
+      ),
     items: items.results || []
   };
 }
@@ -332,10 +365,9 @@ export async function provisionCourseEntitlementsForVerifiedOrder(
   }
 
   if (
-    !state.payment ||
-    state.payment.status !== "Paid" ||
-    state.payment.verification_status !==
-      "Verified"
+    Number(
+      state.verified_payment_count || 0
+    ) < 1
   ) {
     return {
       ok: false,
@@ -350,15 +382,13 @@ export async function provisionCourseEntitlementsForVerifiedOrder(
     );
 
   const verifiedAmount =
-    paymentAmount(
-      state.payment
+    Number(
+      state.verified_paid_total || 0
     );
 
   if (
-    Math.abs(
-      verifiedAmount -
-      expectedAmount
-    ) > 0.01
+    verifiedAmount + 0.01 <
+    expectedAmount
   ) {
     return {
       ok: false,
