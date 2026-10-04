@@ -581,7 +581,7 @@ function validTransition(from,to){
 function eventForTransition(from,to){
   if(to==="Active" && from==="Pending") return "activated";
   if(to==="Active" && from==="Paused") return "resumed";
-  if(to==="Active" && from==="PastDue") return "renewed";
+  if(to==="Active" && from==="PastDue") return "updated";
   if(to==="PastDue") return "past_due";
   if(to==="Paused") return "paused";
   if(to==="Cancelled") return "cancelled";

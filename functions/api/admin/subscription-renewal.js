@@ -280,6 +280,113 @@ async function alreadyProcessed(db,state){
   return !!row;
 }
 
+async function loadOrderCanonicalCustomer(
+  db,
+  orderId
+){
+  return await db.prepare(`
+    SELECT
+      o.id AS order_id,
+      o.enquiry_id,
+      cel.customer_id AS order_customer_id,
+      c.status AS order_customer_status
+    FROM orders o
+    LEFT JOIN customer_enquiry_links cel
+      ON cel.enquiry_id=o.enquiry_id
+    LEFT JOIN customers c
+      ON c.id=cel.customer_id
+    WHERE o.id=?
+    LIMIT 1
+  `).bind(
+    orderId
+  ).first();
+}
+
+
+async function renewalExecution(
+  db,
+  orderId
+){
+  return await db.prepare(`
+    SELECT
+      order_id,
+      subscription_id,
+      membership_id,
+      order_reference,
+      previous_membership_end,
+      period_start,
+      new_membership_end,
+      completed_at
+    FROM subscription_renewal_executions
+    WHERE order_id=?
+    LIMIT 1
+  `).bind(
+    orderId
+  ).first();
+}
+
+
+function addSeconds(
+  value,
+  seconds
+){
+  const d=new Date(value);
+
+  if(Number.isNaN(d.getTime())){
+    throw new Error(
+      "VALIDATION: Invalid renewal period boundary."
+    );
+  }
+
+  d.setUTCSeconds(
+    d.getUTCSeconds()+Number(seconds || 0)
+  );
+
+  return d.toISOString();
+}
+
+
+function idempotentRenewalResult(
+  state,
+  orderId,
+  execution=null
+){
+  return {
+    ok:true,
+    handled:true,
+    renewed:true,
+    idempotent:true,
+
+    order_id:
+      Number(orderId),
+
+    subscription_id:
+      Number(
+        execution?.subscription_id ||
+        state.subscription_id
+      ),
+
+    membership_id:
+      Number(
+        execution?.membership_id ||
+        state.membership_id
+      ),
+
+    previous_membership_end:
+      execution?.previous_membership_end || "",
+
+    period_start:
+      execution?.period_start || "",
+
+    new_membership_end:
+      execution?.new_membership_end || "",
+
+    renewal_execution:
+      Boolean(execution)
+  };
+}
+
+
 export async function processVerifiedSubscriptionRenewal(
   db,
   orderId
@@ -314,18 +421,31 @@ export async function processVerifiedSubscriptionRenewal(
     };
   }
 
+  /*
+   * Backward compatibility:
+   * orders renewed before B3E are recognised from the
+   * existing renewal event audit and must never renew again.
+   */
   if(await alreadyProcessed(db,state)){
-    return {
-      ok:true,
-      handled:true,
-      renewed:true,
-      idempotent:true,
-      subscription_id:
-        Number(state.subscription_id),
-      membership_id:
-        Number(state.membership_id),
-      order_id:id
-    };
+    const existingExecution=
+      await renewalExecution(db,id);
+
+    return idempotentRenewalResult(
+      state,
+      id,
+      existingExecution
+    );
+  }
+
+  const priorExecution=
+    await renewalExecution(db,id);
+
+  if(priorExecution){
+    return idempotentRenewalResult(
+      state,
+      id,
+      priorExecution
+    );
   }
 
   if(state.plan_status!=="Active"){
@@ -340,15 +460,26 @@ export async function processVerifiedSubscriptionRenewal(
     );
   }
 
-  if(!["Active","PastDue"].includes(state.subscription_status)){
+  if(
+    !["Active","PastDue"].includes(
+      state.subscription_status
+    )
+  ){
     throw new Error(
-      `VALIDATION: Subscription status ${state.subscription_status} cannot be renewed automatically.`
+      `VALIDATION: Subscription status ${state.subscription_status} cannot be renewed.`
     );
   }
 
-  if(!["Active","Expired"].includes(state.membership_status)){
+  /*
+   * B3E policy:
+   * only a currently Active membership may be extended.
+   *
+   * Expired membership reactivation is a separate lifecycle
+   * decision and must not happen implicitly through payment.
+   */
+  if(state.membership_status!=="Active"){
     throw new Error(
-      `VALIDATION: Membership status ${state.membership_status} cannot be renewed.`
+      `VALIDATION: Membership status ${state.membership_status} cannot be renewed. Active membership required.`
     );
   }
 
@@ -370,20 +501,69 @@ export async function processVerifiedSubscriptionRenewal(
     );
   }
 
+  /*
+   * Canonical ownership:
+   *
+   * order -> enquiry -> customer_enquiry_links -> customer
+   *
+   * The paid renewal order must belong to the same canonical
+   * customer as both subscription and membership.
+   */
+  const orderOwner=
+    await loadOrderCanonicalCustomer(
+      db,
+      id
+    );
+
+  if(
+    !orderOwner ||
+    !orderOwner.enquiry_id
+  ){
+    throw new Error(
+      "VALIDATION: Renewal order is not linked to a CRM enquiry."
+    );
+  }
+
+  if(!orderOwner.order_customer_id){
+    throw new Error(
+      "VALIDATION: Renewal order enquiry is not linked to a canonical customer."
+    );
+  }
+
+  if(orderOwner.order_customer_status!=="Active"){
+    throw new Error(
+      "VALIDATION: Renewal order canonical customer is not Active."
+    );
+  }
+
+  if(
+    Number(orderOwner.order_customer_id)!==
+    Number(state.customer_id)
+  ){
+    throw new Error(
+      "VALIDATION: Renewal order customer does not match subscription customer."
+    );
+  }
+
   if(state.payment_status!=="Paid"){
     throw new Error(
       "VALIDATION: Renewal order is not Paid."
     );
   }
 
-  await validateOrderItems(db,state);
-
-  const paid=await verifiedPaidAmount(
+  await validateOrderItems(
     db,
-    id
+    state
   );
 
-  const required=Number(state.total || 0);
+  const paid=
+    await verifiedPaidAmount(
+      db,
+      id
+    );
+
+  const required=
+    Number(state.total || 0);
 
   if(paid + 0.005 < required){
     throw new Error(
@@ -401,11 +581,32 @@ export async function processVerifiedSubscriptionRenewal(
     );
   }
 
-  const newEnd=addInterval(
-    baseEnd,
-    clean(state.membership_duration_unit,20),
-    Number(state.membership_duration_count)
-  );
+  /*
+   * Membership end timestamps are treated as inclusive.
+   *
+   * Example:
+   * old end          2026-12-31T23:59:59Z
+   * new period start 2027-01-01T00:00:00Z
+   *
+   * This removes the previous one-second overlap ambiguity.
+   */
+  const periodStart=
+    addSeconds(
+      baseEnd,
+      1
+    );
+
+  const newEnd=
+    addInterval(
+      baseEnd,
+      clean(
+        state.membership_duration_unit,
+        20
+      ),
+      Number(
+        state.membership_duration_count
+      )
+    );
 
   const graceEnds=
     Number(state.grace_period_days || 0)>0
@@ -419,115 +620,189 @@ export async function processVerifiedSubscriptionRenewal(
     `RenewalOrder:${id}`;
 
   const membershipFrom=
-    clean(state.membership_status,30);
+    clean(
+      state.membership_status,
+      30
+    );
 
   const subscriptionFrom=
-    clean(state.subscription_status,30);
+    clean(
+      state.subscription_status,
+      30
+    );
 
-  await db.batch([
+  try{
+    /*
+     * Atomic renewal batch.
+     *
+     * order_id is the PRIMARY KEY of
+     * subscription_renewal_executions.
+     *
+     * Therefore two concurrent callbacks for the same renewal
+     * order cannot both commit an extension.
+     */
+    await db.batch([
 
-    db.prepare(`
-      UPDATE memberships
-      SET
-        status='Active',
-        ends_at=?,
-        expired_at='',
-        updated_at=CURRENT_TIMESTAMP
-      WHERE id=?
-    `).bind(
-      newEnd,
-      state.membership_id
-    ),
+      db.prepare(`
+        INSERT INTO subscription_renewal_executions(
+          order_id,
+          subscription_id,
+          membership_id,
+          order_reference,
+          previous_membership_end,
+          period_start,
+          new_membership_end,
+          completed_at
+        )
+        VALUES(
+          ?,?,?,?,?,?,?,CURRENT_TIMESTAMP
+        )
+      `).bind(
+        id,
+        state.subscription_id,
+        state.membership_id,
+        state.order_reference,
+        baseEnd,
+        periodStart,
+        newEnd
+      ),
 
-    db.prepare(`
-      UPDATE subscriptions
-      SET
-        status='Active',
-        current_period_start=?,
-        current_period_end=?,
-        next_renewal_at=?,
-        grace_ends_at=?,
-        cancel_at_period_end=0,
-        cancelled_at='',
-        expired_at='',
-        updated_at=CURRENT_TIMESTAMP
-      WHERE id=?
-    `).bind(
-      baseEnd,
-      newEnd,
-      newEnd,
-      graceEnds,
-      state.subscription_id
-    ),
+      db.prepare(`
+        UPDATE memberships
+        SET
+          status='Active',
+          ends_at=?,
+          expired_at='',
+          updated_at=CURRENT_TIMESTAMP
+        WHERE id=?
+          AND status='Active'
+      `).bind(
+        newEnd,
+        state.membership_id
+      ),
 
-    db.prepare(`
-      UPDATE subscription_orders
-      SET
-        period_start=?,
-        period_end=?
-      WHERE id=?
-    `).bind(
-      baseEnd,
-      newEnd,
-      state.subscription_order_id
-    ),
+      db.prepare(`
+        UPDATE subscriptions
+        SET
+          status='Active',
+          current_period_start=?,
+          current_period_end=?,
+          next_renewal_at=?,
+          grace_ends_at=?,
 
-    db.prepare(`
-      INSERT INTO membership_events(
-        membership_id,
-        event_type,
-        from_status,
-        to_status,
-        source,
-        source_reference,
-        notes,
-        event_at
+          /*
+           * Policy:
+           * a fully verified MANUAL renewal payment is explicit
+           * continuation intent and supersedes an earlier
+           * cancel-at-period-end request.
+           */
+          cancel_at_period_end=0,
+
+          cancelled_at='',
+          expired_at='',
+          updated_at=CURRENT_TIMESTAMP
+        WHERE id=?
+          AND status IN ('Active','PastDue')
+      `).bind(
+        periodStart,
+        newEnd,
+        newEnd,
+        graceEnds,
+        state.subscription_id
+      ),
+
+      db.prepare(`
+        UPDATE subscription_orders
+        SET
+          period_start=?,
+          period_end=?
+        WHERE id=?
+      `).bind(
+        periodStart,
+        newEnd,
+        state.subscription_order_id
+      ),
+
+      db.prepare(`
+        INSERT INTO membership_events(
+          membership_id,
+          event_type,
+          from_status,
+          to_status,
+          source,
+          source_reference,
+          notes,
+          event_at
+        )
+        VALUES(
+          ?,
+          'renewed',
+          ?,
+          'Active',
+          'SubscriptionRenewal',
+          ?,
+          ?,
+          CURRENT_TIMESTAMP
+        )
+      `).bind(
+        state.membership_id,
+        membershipFrom,
+        renewalRef,
+        `Verified paid renewal order ${state.order_reference}`
+      ),
+
+      db.prepare(`
+        INSERT INTO subscription_events(
+          subscription_id,
+          event_type,
+          from_status,
+          to_status,
+          source,
+          source_reference,
+          notes,
+          event_at
+        )
+        VALUES(
+          ?,
+          'renewed',
+          ?,
+          'Active',
+          'SubscriptionRenewal',
+          ?,
+          ?,
+          CURRENT_TIMESTAMP
+        )
+      `).bind(
+        state.subscription_id,
+        subscriptionFrom,
+        renewalRef,
+        `Verified paid renewal order ${state.order_reference}`
       )
-      VALUES(
-        ?,
-        'renewed',
-        ?,
-        'Active',
-        'SubscriptionRenewal',
-        ?,
-        ?,
-        CURRENT_TIMESTAMP
-      )
-    `).bind(
-      state.membership_id,
-      membershipFrom,
-      renewalRef,
-      `Verified renewal order ${state.order_reference}`
-    ),
+    ]);
+  }
+  catch(e){
+    /*
+     * Concurrent retry:
+     * if another request committed the same order while this
+     * request was executing, return the committed execution as
+     * an idempotent success.
+     */
+    const after=
+      await renewalExecution(
+        db,
+        id
+      );
 
-    db.prepare(`
-      INSERT INTO subscription_events(
-        subscription_id,
-        event_type,
-        from_status,
-        to_status,
-        source,
-        source_reference,
-        notes,
-        event_at
-      )
-      VALUES(
-        ?,
-        'renewed',
-        ?,
-        'Active',
-        'SubscriptionRenewal',
-        ?,
-        ?,
-        CURRENT_TIMESTAMP
-      )
-    `).bind(
-      state.subscription_id,
-      subscriptionFrom,
-      renewalRef,
-      `Verified renewal order ${state.order_reference}`
-    )
-  ]);
+    if(after){
+      return idempotentRenewalResult(
+        state,
+        id,
+        after
+      );
+    }
+
+    throw e;
+  }
 
   return {
     ok:true,
@@ -546,6 +821,9 @@ export async function processVerifiedSubscriptionRenewal(
     previous_membership_end:
       baseEnd,
 
+    period_start:
+      periodStart,
+
     new_membership_end:
       newEnd,
 
@@ -553,7 +831,10 @@ export async function processVerifiedSubscriptionRenewal(
       newEnd,
 
     grace_ends_at:
-      graceEnds
+      graceEnds,
+
+    cancellation_policy:
+      "verified_manual_renewal_supersedes_cancel_at_period_end"
   };
 }
 
