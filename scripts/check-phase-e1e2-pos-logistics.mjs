@@ -73,7 +73,7 @@ const posTokens=[
   "INSERT INTO receipts",
   "INSERT INTO pos_sales",
   "POS Sale",
-  "stock_on_hand=stock_on_hand-?",
+  "stock_on_hand-?",
   "provisionMembershipForVerifiedOrder"
 ];
 

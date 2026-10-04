@@ -69,6 +69,399 @@ function nowReference(prefix){
 }
 
 
+async function sha256Text(value){
+
+  const bytes=
+    new TextEncoder()
+      .encode(
+        String(value ?? "")
+      );
+
+  const digest=
+    await crypto.subtle.digest(
+      "SHA-256",
+      bytes
+    );
+
+  return [...new Uint8Array(digest)]
+    .map(
+      value=>
+        value
+          .toString(16)
+          .padStart(2,"0")
+    )
+    .join("");
+}
+
+
+async function loadExecution(db,requestKey){
+
+  return await db.prepare(`
+    SELECT *
+    FROM pos_sale_executions
+    WHERE request_key=?
+    LIMIT 1
+  `)
+    .bind(requestKey)
+    .first();
+}
+
+
+async function completedExecutionResult(
+  db,
+  execution
+){
+
+  const order=
+    execution.order_id
+      ? await db.prepare(`
+          SELECT
+            id,
+            order_reference,
+            total,
+            currency
+          FROM orders
+          WHERE id=?
+          LIMIT 1
+        `)
+          .bind(execution.order_id)
+          .first()
+      : null;
+
+  const fulfilment=
+    execution.fulfilment_id
+      ? await db.prepare(`
+          SELECT
+            id,
+            fulfilment_reference,
+            method,
+            status
+          FROM order_fulfilments
+          WHERE id=?
+          LIMIT 1
+        `)
+          .bind(
+            execution.fulfilment_id
+          )
+          .first()
+      : null;
+
+  return {
+    ok:true,
+    idempotent:true,
+    request_id:
+      execution.request_key,
+    order_id:
+      execution.order_id
+        ? Number(execution.order_id)
+        : null,
+    order_reference:
+      order?.order_reference || "",
+    payment_id:
+      execution.payment_id
+        ? Number(execution.payment_id)
+        : null,
+    invoice_id:
+      execution.invoice_id
+        ? Number(execution.invoice_id)
+        : null,
+    receipt_id:
+      execution.receipt_id
+        ? Number(execution.receipt_id)
+        : null,
+    fulfilment_id:
+      execution.fulfilment_id
+        ? Number(execution.fulfilment_id)
+        : null,
+    fulfilment:
+      fulfilment || null,
+    total:
+      money(order?.total || 0),
+    currency:
+      order?.currency || "MYR"
+  };
+}
+
+
+async function cleanupFailedOrder(
+  db,
+  orderId
+){
+
+  if(!orderId){
+    return;
+  }
+
+  const stock=
+    await db.prepare(`
+      SELECT
+        product_id,
+        SUM(-quantity_delta) AS restore_quantity
+      FROM inventory_movements
+      WHERE
+        order_id=?
+        AND movement_type='POS Sale'
+        AND quantity_delta<0
+      GROUP BY product_id
+    `)
+      .bind(orderId)
+      .all();
+
+  for(
+    const row of
+    stock.results || []
+  ){
+
+    const restore=
+      Number(
+        row.restore_quantity || 0
+      );
+
+    if(restore>0){
+
+      await db.prepare(`
+        UPDATE inventory_balances
+        SET
+          stock_on_hand=
+            stock_on_hand+?,
+          updated_at=CURRENT_TIMESTAMP
+        WHERE product_id=?
+      `)
+        .bind(
+          restore,
+          row.product_id
+        )
+        .run();
+    }
+  }
+
+  const fulfilments=
+    await db.prepare(`
+      SELECT id
+      FROM order_fulfilments
+      WHERE order_id=?
+    `)
+      .bind(orderId)
+      .all();
+
+  for(
+    const row of
+    fulfilments.results || []
+  ){
+
+    await db.batch([
+      db.prepare(`
+        DELETE FROM fulfilment_events
+        WHERE fulfilment_id=?
+      `).bind(row.id),
+
+      db.prepare(`
+        DELETE FROM fulfilment_items
+        WHERE fulfilment_id=?
+      `).bind(row.id)
+    ]);
+  }
+
+  const receipts=
+    await db.prepare(`
+      SELECT id
+      FROM receipts
+      WHERE order_id=?
+    `)
+      .bind(orderId)
+      .all();
+
+  for(
+    const row of
+    receipts.results || []
+  ){
+
+    await db.prepare(`
+      DELETE FROM receipt_items
+      WHERE receipt_id=?
+    `)
+      .bind(row.id)
+      .run();
+  }
+
+  const invoices=
+    await db.prepare(`
+      SELECT id
+      FROM invoices
+      WHERE order_id=?
+    `)
+      .bind(orderId)
+      .all();
+
+  for(
+    const row of
+    invoices.results || []
+  ){
+
+    await db.prepare(`
+      DELETE FROM invoice_items
+      WHERE invoice_id=?
+    `)
+      .bind(row.id)
+      .run();
+  }
+
+  await db.batch([
+    db.prepare(`
+      DELETE FROM order_fulfilments
+      WHERE order_id=?
+    `).bind(orderId),
+
+    db.prepare(`
+      DELETE FROM pos_sales
+      WHERE order_id=?
+    `).bind(orderId),
+
+    db.prepare(`
+      DELETE FROM receipts
+      WHERE order_id=?
+    `).bind(orderId),
+
+    db.prepare(`
+      DELETE FROM payment_verification_events
+      WHERE order_id=?
+    `).bind(orderId),
+
+    db.prepare(`
+      DELETE FROM payments
+      WHERE order_id=?
+    `).bind(orderId),
+
+    db.prepare(`
+      DELETE FROM invoices
+      WHERE order_id=?
+    `).bind(orderId),
+
+    db.prepare(`
+      DELETE FROM inventory_movements
+      WHERE order_id=?
+    `).bind(orderId),
+
+    db.prepare(`
+      DELETE FROM order_items
+      WHERE order_id=?
+    `).bind(orderId),
+
+    db.prepare(`
+      DELETE FROM orders
+      WHERE id=?
+    `).bind(orderId)
+  ]);
+}
+
+
+async function voidSale(
+  db,
+  body
+){
+
+  const orderId=
+    Number(
+      body.order_id || 0
+    );
+
+  if(
+    !Number.isInteger(orderId) ||
+    orderId<=0
+  ){
+    return json({
+      error:"Valid order_id required."
+    },400);
+  }
+
+  const sale=
+    await db.prepare(`
+      SELECT
+        ps.id AS pos_sale_id,
+        ps.status AS pos_status,
+
+        o.id AS order_id,
+        o.order_reference,
+        o.payment_status,
+
+        p.id AS payment_id,
+        p.status AS payment_record_status,
+        p.verification_status,
+
+        f.id AS fulfilment_id,
+        f.status AS fulfilment_status
+
+      FROM pos_sales ps
+
+      JOIN orders o
+        ON o.id=ps.order_id
+
+      LEFT JOIN payments p
+        ON p.id=(
+          SELECT p2.id
+          FROM payments p2
+          WHERE p2.order_id=o.id
+          ORDER BY p2.id DESC
+          LIMIT 1
+        )
+
+      LEFT JOIN order_fulfilments f
+        ON f.order_id=o.id
+
+      WHERE ps.order_id=?
+      LIMIT 1
+    `)
+      .bind(orderId)
+      .first();
+
+  if(!sale){
+    return json({
+      error:"POS sale not found."
+    },404);
+  }
+
+  if(sale.pos_status==="Voided"){
+    return json({
+      ok:true,
+      voided:true,
+      idempotent:true
+    });
+  }
+
+  /*
+   * A completed cash payment is financial truth.
+   * Phase E must not silently undo it or return stock.
+   * Refund/credit handling belongs to an explicit
+   * financial refund workflow.
+   */
+  if(
+    sale.payment_record_status==="Paid" ||
+    sale.payment_status==="Paid" ||
+    sale.verification_status==="Verified"
+  ){
+    return json({
+      error:
+        "Paid POS sale cannot be voided directly. Complete the financial refund workflow first; inventory remains unchanged."
+    },409);
+  }
+
+  if(
+    sale.fulfilment_status==="Shipped" ||
+    sale.fulfilment_status==="Delivered"
+  ){
+    return json({
+      error:
+        "Shipped or delivered fulfilment cannot be voided as an unsent POS sale."
+    },409);
+  }
+
+  return json({
+    error:
+      "POS void is blocked until the related financial state is explicitly cancelled or refunded."
+  },409);
+}
+
+
 async function loadProduct(db,id){
 
   return db.prepare(`
@@ -123,20 +516,102 @@ export async function onRequestPost({request,env}){
     return json({error:"Valid JSON required."},400);
   }
 
-  const action=clean(body.action || "sale",40).toLowerCase();
+  const action=
+    clean(
+      body.action || "sale",
+      40
+    ).toLowerCase();
 
-  if(action!=="sale"){
-    return json({error:"Unsupported action."},400);
+  if(action==="void"){
+    return await voidSale(
+      db,
+      body
+    );
   }
 
-  const suppliedItems=
+  if(action!=="sale"){
+    return json({
+      error:"Unsupported action.",
+      supported:[
+        "sale",
+        "void"
+      ]
+    },400);
+  }
+
+  const requestKey=
+    clean(
+      body.request_id || "",
+      200
+    );
+
+  if(!requestKey){
+    return json({
+      error:
+        "request_id is required for POS sale idempotency."
+    },400);
+  }
+
+  const rawItems=
     Array.isArray(body.items)
       ? body.items
       : [];
 
-  if(!suppliedItems.length){
-    return json({error:"At least one POS item is required."},400);
+  if(!rawItems.length){
+    return json({
+      error:
+        "At least one POS item is required."
+    },400);
   }
+
+  /*
+   * Normalize duplicate product rows so stock validation
+   * always evaluates the true requested quantity.
+   */
+  const grouped=
+    new Map();
+
+  for(const input of rawItems){
+
+    const productId=
+      Number(
+        input.product_id || 0
+      );
+
+    const quantity=
+      Number(
+        input.quantity || 0
+      );
+
+    if(
+      !Number.isInteger(productId) ||
+      productId<=0 ||
+      !Number.isInteger(quantity) ||
+      quantity<=0
+    ){
+      return json({
+        error:
+          "Each POS item requires valid product_id and positive integer quantity."
+      },400);
+    }
+
+    grouped.set(
+      productId,
+      (
+        grouped.get(productId) ||
+        0
+      ) + quantity
+    );
+  }
+
+  const suppliedItems=
+    [...grouped.entries()]
+      .map(
+        ([product_id,quantity])=>({
+          product_id,
+          quantity
+        })
+      );
 
   const items=[];
 
@@ -161,7 +636,29 @@ export async function onRequestPost({request,env}){
     }
 
     if(p.status!=="Active"){
-      return json({error:`Product ${p.sku || productId} is not Active.`},409);
+      return json({
+        error:
+          `Product ${p.sku || productId} is not Active.`
+      },409);
+    }
+
+    /*
+     * Course and membership payments trigger the frozen
+     * entitlement engines, which require canonical customer
+     * identity. Anonymous walk-in POS must not bypass that.
+     */
+    if(
+      ["course","membership"]
+        .includes(
+          String(
+            p.product_type || ""
+          ).toLowerCase()
+        )
+    ){
+      return json({
+        error:
+          "Course and membership POS sales require canonical customer identity and are not enabled in Phase E."
+      },409);
     }
 
     if(
@@ -217,8 +714,227 @@ export async function onRequestPost({request,env}){
    */
   if(paymentMethod!=="Cash"){
     return json({
-      error:"Phase E POS currently supports immediate Cash payment only."
+      error:
+        "Phase E POS currently supports immediate Cash payment only."
     },409);
+  }
+
+  const fingerprint=
+    await sha256Text(
+      JSON.stringify({
+        items:
+          items
+            .map(item=>({
+              product_id:
+                Number(item.id),
+              quantity:
+                Number(item.quantity)
+            }))
+            .sort(
+              (a,b)=>
+                a.product_id-b.product_id
+            ),
+
+        customer_name:
+          clean(
+            body.customer_name || "",
+            300
+          ),
+
+        customer_email:
+          clean(
+            body.customer_email || "",
+            500
+          ).toLowerCase(),
+
+        customer_phone:
+          clean(
+            body.customer_phone || "",
+            100
+          ),
+
+        payment_method:
+          paymentMethod,
+
+        fulfilment_method:
+          clean(
+            body.fulfilment_method || "",
+            30
+          ),
+
+        recipient_name:
+          clean(
+            body.recipient_name || "",
+            300
+          ),
+
+        recipient_phone:
+          clean(
+            body.recipient_phone || "",
+            100
+          ),
+
+        address_line1:
+          clean(
+            body.address_line1 || "",
+            500
+          ),
+
+        postcode:
+          clean(
+            body.postcode || "",
+            50
+          )
+      })
+    );
+
+  let existingExecution=
+    await loadExecution(
+      db,
+      requestKey
+    );
+
+  if(existingExecution){
+
+    if(
+      existingExecution.request_fingerprint !==
+      fingerprint
+    ){
+      return json({
+        error:
+          "request_id was already used for a different POS sale."
+      },409);
+    }
+
+    if(
+      existingExecution.execution_status ===
+      "Completed"
+    ){
+      return json(
+        await completedExecutionResult(
+          db,
+          existingExecution
+        ),
+        200
+      );
+    }
+
+    if(
+      existingExecution.execution_status ===
+      "Processing"
+    ){
+      const started=
+        new Date(
+          existingExecution.started_at ||
+          0
+        );
+
+      const age=
+        Date.now() -
+        started.getTime();
+
+      /*
+       * Fresh Processing means another identical request may
+       * still be executing. Do not race it.
+       */
+      if(
+        !Number.isNaN(age) &&
+        age < 300000
+      ){
+        return json({
+          error:
+            "This POS request is already being processed."
+        },409);
+      }
+
+      /*
+       * Stale Processing is recoverable. Any partial order
+       * attached to the execution is cleaned before reclaim.
+       */
+      await cleanupFailedOrder(
+        db,
+        Number(
+          existingExecution.order_id || 0
+        )
+      );
+    }
+
+    if(
+      existingExecution.execution_status ===
+      "Failed" ||
+      existingExecution.execution_status ===
+      "Processing"
+    ){
+      await db.prepare(`
+        UPDATE pos_sale_executions
+        SET
+          execution_status='Processing',
+          order_id=NULL,
+          payment_id=NULL,
+          invoice_id=NULL,
+          receipt_id=NULL,
+          fulfilment_id=NULL,
+          error_message='',
+          started_at=CURRENT_TIMESTAMP,
+          completed_at='',
+          updated_at=CURRENT_TIMESTAMP
+        WHERE request_key=?
+      `)
+        .bind(requestKey)
+        .run();
+    }
+  }
+  else {
+
+    try{
+
+      await db.prepare(`
+        INSERT INTO pos_sale_executions(
+          request_key,
+          request_fingerprint,
+          execution_status
+        )
+        VALUES(
+          ?,?,
+          'Processing'
+        )
+      `)
+        .bind(
+          requestKey,
+          fingerprint
+        )
+        .run();
+
+    }
+    catch(error){
+
+      existingExecution=
+        await loadExecution(
+          db,
+          requestKey
+        );
+
+      if(
+        existingExecution &&
+        existingExecution.request_fingerprint ===
+          fingerprint &&
+        existingExecution.execution_status ===
+          "Completed"
+      ){
+        return json(
+          await completedExecutionResult(
+            db,
+            existingExecution
+          ),
+          200
+        );
+      }
+
+      return json({
+        error:
+          "This POS request is already being processed."
+      },409);
+    }
   }
 
   const orderReference=
@@ -230,53 +946,86 @@ export async function onRequestPost({request,env}){
   const now=
     new Date().toISOString();
 
-  const orderInsert=
-    await db.prepare(`
-      INSERT INTO orders(
-        order_reference,
-        enquiry_id,
-        customer_name,
-        customer_email,
-        customer_phone,
-        currency,
-        subtotal,
-        total,
-        sales_channel,
-        payment_provider,
-        payment_status,
-        customer_country
-      )
-      VALUES(
-        ?,
-        NULL,
-        ?,?,?,?,
-        ?,?,
-        'POS',
-        'POS',
-        'Paid',
-        ?
-      )
-      RETURNING id
-    `).bind(
-      orderReference,
-      clean(body.customer_name || "Walk-in Customer",300),
-      clean(body.customer_email || "",500),
-      clean(body.customer_phone || "",100),
-      currency,
-      subtotal,
-      total,
-      clean(body.customer_country || "",100)
-    ).first();
-
-  const orderId=Number(orderInsert?.id || 0);
-
-  if(!orderId){
-    return json({error:"Unable to create POS order."},500);
-  }
+  let orderId=0;
 
   const orderItemIds=[];
 
   try{
+
+    const orderInsert=
+      await db.prepare(`
+        INSERT INTO orders(
+          order_reference,
+          enquiry_id,
+          customer_name,
+          customer_email,
+          customer_phone,
+          currency,
+          subtotal,
+          total,
+          sales_channel,
+          payment_provider,
+          payment_status,
+          customer_country
+        )
+        VALUES(
+          ?,
+          NULL,
+          ?,?,?,?,
+          ?,?,
+          'POS',
+          'POS',
+          'Paid',
+          ?
+        )
+        RETURNING id
+      `).bind(
+        orderReference,
+        clean(
+          body.customer_name ||
+          "Walk-in Customer",
+          300
+        ),
+        clean(
+          body.customer_email || "",
+          500
+        ),
+        clean(
+          body.customer_phone || "",
+          100
+        ),
+        currency,
+        subtotal,
+        total,
+        clean(
+          body.customer_country || "",
+          100
+        )
+      ).first();
+
+    orderId=
+      Number(
+        orderInsert?.id || 0
+      );
+
+    if(!orderId){
+      throw new Error(
+        "Unable to create POS order."
+      );
+    }
+
+    await db.prepare(`
+      UPDATE pos_sale_executions
+      SET
+        order_id=?,
+        updated_at=CURRENT_TIMESTAMP
+      WHERE request_key=?
+    `)
+      .bind(
+        orderId,
+        requestKey
+      )
+      .run();
 
     for(const item of items){
 
@@ -328,57 +1077,75 @@ export async function onRequestPost({request,env}){
         continue;
       }
 
-      const updated=
-        await db.prepare(`
+      /*
+       * D1 batch is transactional. The second statement uses
+       * SQLite changes() from the immediately preceding UPDATE.
+       * If the conditional stock UPDATE did not affect exactly
+       * one row, stock_after becomes NULL and the NOT NULL
+       * constraint aborts and rolls back the whole batch.
+       *
+       * Therefore a committed stock deduction always has its
+       * corresponding POS Sale inventory movement.
+       */
+      await db.batch([
+        db.prepare(`
           UPDATE inventory_balances
           SET
-            stock_on_hand=stock_on_hand-?,
+            stock_on_hand=
+              stock_on_hand-?,
             updated_at=CURRENT_TIMESTAMP
           WHERE
             product_id=?
             AND stock_on_hand>=?
-          RETURNING stock_on_hand
         `).bind(
           item.quantity,
           item.id,
           item.quantity
-        ).first();
+        ),
 
-      if(!updated){
-        throw new Error(
-          `Insufficient stock during POS commit for ${item.sku || item.id}.`
-        );
-      }
-
-      await db.prepare(`
-        INSERT INTO inventory_movements(
-          product_id,
-          order_id,
-          order_item_id,
-          movement_type,
-          quantity_delta,
-          stock_after,
-          reference,
-          notes,
-          created_by
+        db.prepare(`
+          INSERT INTO inventory_movements(
+            product_id,
+            order_id,
+            order_item_id,
+            movement_type,
+            quantity_delta,
+            stock_after,
+            reference,
+            notes,
+            created_by
+          )
+          VALUES(
+            ?,?,?,
+            'POS Sale',
+            ?,
+            CASE
+              WHEN changes()=1
+              THEN (
+                SELECT stock_on_hand
+                FROM inventory_balances
+                WHERE product_id=?
+              )
+              ELSE NULL
+            END,
+            ?,
+            'Stock deducted by completed POS sale.',
+            ?
+          )
+        `).bind(
+          item.id,
+          orderId,
+          orderItemIds[i],
+          -item.quantity,
+          item.id,
+          posReference,
+          clean(
+            body.staff_name ||
+            "Admin",
+            200
+          )
         )
-        VALUES(
-          ?,?,?,
-          'POS Sale',
-          ?,?,
-          ?,
-          'Stock deducted by completed POS sale.',
-          ?
-        )
-      `).bind(
-        item.id,
-        orderId,
-        orderItemIds[i],
-        -item.quantity,
-        Number(updated.stock_on_hand),
-        posReference,
-        clean(body.staff_name || "Admin",200)
-      ).run();
+      ]);
     }
 
 
@@ -808,9 +1575,31 @@ export async function onRequestPost({request,env}){
         orderId
       );
 
+    await db.prepare(`
+      UPDATE pos_sale_executions
+      SET
+        execution_status='Completed',
+        payment_id=?,
+        invoice_id=?,
+        receipt_id=?,
+        fulfilment_id=?,
+        completed_at=CURRENT_TIMESTAMP,
+        updated_at=CURRENT_TIMESTAMP
+      WHERE request_key=?
+    `)
+      .bind(
+        paymentId,
+        invoiceId,
+        receiptId,
+        fulfilment?.id || null,
+        requestKey
+      )
+      .run();
 
     return json({
       ok:true,
+      idempotent:false,
+      request_id:requestKey,
       pos_reference:posReference,
       order_id:orderId,
       order_reference:orderReference,
@@ -831,20 +1620,85 @@ export async function onRequestPost({request,env}){
       error
     );
 
-    /*
-     * Financially safe response:
-     * do not silently report success if any downstream
-     * POS operation failed. E3 will add explicit execution
-     * recovery/concurrency hardening before freeze.
-     */
-    return json({
-      error:
+    const errorMessage=
+      clean(
+        error?.message ||
+        "POS sale failed.",
+        1000
+      );
+
+    let cleanupError="";
+
+    try{
+
+      await cleanupFailedOrder(
+        db,
+        orderId
+      );
+
+    }
+    catch(cleanupFailure){
+
+      cleanupError=
         clean(
-          error?.message ||
-          "POS sale failed.",
+          cleanupFailure?.message ||
+          "POS failed-sale cleanup failed.",
           1000
-        ),
-      order_id:orderId
+        );
+
+      console.error(
+        "POS FAILED-SALE CLEANUP FAILED",
+        cleanupError
+      );
+    }
+
+    if(cleanupError){
+
+      await db.prepare(`
+        UPDATE pos_sale_executions
+        SET
+          execution_status='Failed',
+          error_message=?,
+          updated_at=CURRENT_TIMESTAMP
+        WHERE request_key=?
+      `)
+        .bind(
+          `${errorMessage}; cleanup: ${cleanupError}`,
+          requestKey
+        )
+        .run();
+
+    }
+    else {
+
+      await db.prepare(`
+        UPDATE pos_sale_executions
+        SET
+          execution_status='Failed',
+          order_id=NULL,
+          payment_id=NULL,
+          invoice_id=NULL,
+          receipt_id=NULL,
+          fulfilment_id=NULL,
+          error_message=?,
+          updated_at=CURRENT_TIMESTAMP
+        WHERE request_key=?
+      `)
+        .bind(
+          errorMessage,
+          requestKey
+        )
+        .run();
+    }
+
+    return json({
+      error:errorMessage,
+      cleanup_ok:
+        !cleanupError,
+      cleanup_error:
+        cleanupError,
+      order_id:
+        orderId || null
     },500);
   }
 }
