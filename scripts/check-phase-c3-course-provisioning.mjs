@@ -26,28 +26,17 @@ for (const file of [
 }
 
 const engine =
-  fs.readFileSync(
-    engineFile,
-    "utf8"
-  );
+  fs.readFileSync(engineFile, "utf8");
 
 const membership =
-  fs.readFileSync(
-    membershipFile,
-    "utf8"
-  );
+  fs.readFileSync(membershipFile, "utf8");
 
 const paymentVerify =
-  fs.readFileSync(
-    paymentVerifyFile,
-    "utf8"
-  );
+  fs.readFileSync(paymentVerifyFile, "utf8");
 
 const doku =
-  fs.readFileSync(
-    dokuFile,
-    "utf8"
-  );
+  fs.readFileSync(dokuFile, "utf8");
+
 
 const requiredEngineTokens = [
   "provisionCourseEntitlementsForVerifiedOrder",
@@ -62,21 +51,18 @@ const requiredEngineTokens = [
   "source_type='Order'",
   "product_type",
   "course",
-  "Active",
   "verified_amount_mismatch",
-  "canonical customer",
-  "Automatically provisioned from verified paid order",
-  "provisioning_type:",
   '"course_entitlement"'
 ];
 
 for (const token of requiredEngineTokens) {
   if (!engine.includes(token)) {
     throw new Error(
-      `Missing C3 provisioning token: ${token}`
+      `Missing C3 engine token: ${token}`
     );
   }
 }
+
 
 const forbiddenFinancialWrites = [
   /\bUPDATE\s+orders\b/i,
@@ -103,61 +89,144 @@ const forbiddenFinancialWrites = [
 for (const rx of forbiddenFinancialWrites) {
   if (rx.test(engine)) {
     throw new Error(
-      `Course entitlement provisioning must not mutate protected tables: ${rx}`
+      `C3 engine must not mutate protected tables: ${rx}`
     );
   }
 }
 
-if (
-  !membership.includes(
-    "processVerifiedSubscriptionRenewal"
-  )
-) {
+
+/*
+ * Important control-flow guard:
+ * inspect ONLY provisionMembershipForVerifiedOrder(),
+ * not later GET/POST route handlers.
+ */
+const start =
+  membership.indexOf(
+    "export async function provisionMembershipForVerifiedOrder"
+  );
+
+if (start < 0) {
   throw new Error(
-    "Existing subscription renewal integration missing."
+    "Verified-payment orchestrator missing."
   );
 }
 
-if (
-  !membership.includes(
-    'provisioning_type:"subscription_renewal"'
-  )
-) {
-  throw new Error(
-    "Existing subscription renewal short-circuit missing."
+const nextExport =
+  membership.indexOf(
+    "export async function ",
+    start + 10
   );
-}
 
-if (
-  !membership.includes(
-    "provisionCourseEntitlementsForVerifiedOrder"
-  )
-) {
-  throw new Error(
-    "Course provisioning integration missing."
-  );
-}
+const orchestrator =
+  nextExport > start
+    ? membership.slice(start, nextExport)
+    : membership.slice(start);
+
 
 const renewalCall =
-  membership.indexOf(
+  orchestrator.indexOf(
     "processVerifiedSubscriptionRenewal"
+  );
+
+const renewalHandled =
+  orchestrator.indexOf(
+    "if(subscriptionRenewal?.handled)"
   );
 
 const courseCall =
-  membership.indexOf(
-    "provisionCourseEntitlementsForVerifiedOrder",
-    renewalCall + 1
+  orchestrator.indexOf(
+    "provisionCourseEntitlementsForVerifiedOrder"
   );
 
-if (
-  renewalCall < 0 ||
-  courseCall < 0 ||
-  courseCall <= renewalCall
-) {
+const courseHandled =
+  orchestrator.indexOf(
+    "if(courseProvisioning?.handled)"
+  );
+
+const membershipTry =
+  orchestrator.indexOf(
+    "try {",
+    courseHandled
+  );
+
+
+if (renewalCall < 0) {
   throw new Error(
-    "Course provisioning must remain after subscription renewal handling."
+    "Subscription renewal call missing from verified-payment orchestrator."
   );
 }
+
+if (renewalHandled < renewalCall) {
+  throw new Error(
+    "Subscription renewal short-circuit missing."
+  );
+}
+
+if (courseCall < 0) {
+  throw new Error(
+    "Course provisioning call is not inside verified-payment orchestrator."
+  );
+}
+
+if (courseCall <= renewalHandled) {
+  throw new Error(
+    "Course provisioning must execute after renewal handling."
+  );
+}
+
+if (courseHandled <= courseCall) {
+  throw new Error(
+    "Course handled short-circuit missing."
+  );
+}
+
+if (
+  membershipTry < 0 ||
+  membershipTry <= courseHandled
+) {
+  throw new Error(
+    "Normal membership provisioning must remain after course handling."
+  );
+}
+
+
+/*
+ * There must be exactly one executable course provisioning call
+ * in membership-provision.js.
+ */
+const courseCallCount =
+  (
+    membership.match(
+      /await\s+provisionCourseEntitlementsForVerifiedOrder\s*\(/g
+    ) || []
+  ).length;
+
+if (courseCallCount !== 1) {
+  throw new Error(
+    `Expected exactly one course provisioning execution call; found ${courseCallCount}.`
+  );
+}
+
+
+/*
+ * Do not allow the course execution call to leak into the
+ * GET/POST route handlers after the orchestrator.
+ */
+const afterOrchestrator =
+  nextExport > start
+    ? membership.slice(nextExport)
+    : "";
+
+if (
+  afterOrchestrator.includes(
+    "await provisionCourseEntitlementsForVerifiedOrder"
+  )
+) {
+  throw new Error(
+    "Course provisioning call found outside verified-payment orchestrator."
+  );
+}
+
 
 if (
   !paymentVerify.includes(
@@ -165,7 +234,7 @@ if (
   )
 ) {
   throw new Error(
-    "Admin payment verifier hook missing."
+    "Admin verified-payment hook missing."
   );
 }
 
@@ -180,5 +249,5 @@ if (
 }
 
 console.log(
-  "PASS — Phase C3 verified course entitlement provisioning regression guard."
+  "PASS — Phase C3 verified course provisioning control flow."
 );

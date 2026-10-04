@@ -779,6 +779,16 @@ export async function provisionMembershipForVerifiedOrder(
     };
   }
 
+  const courseProvisioning =
+    await provisionCourseEntitlementsForVerifiedOrder(
+      db,
+      orderId
+    );
+
+  if(courseProvisioning?.handled){
+    return courseProvisioning;
+  }
+
   try {
     const id =
       Number(orderId);
@@ -934,15 +944,6 @@ export async function onRequestGet(
   }
 
   try {
-      const courseProvisioning =
-    await provisionCourseEntitlementsForVerifiedOrder(
-      db,
-      orderId
-    );
-
-  if (courseProvisioning?.handled) {
-    return courseProvisioning;
-  }
 const state =
       await loadEligibility(
         env.ENQUIRIES_DB,
