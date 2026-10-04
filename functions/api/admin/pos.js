@@ -730,7 +730,7 @@ export async function onRequestPost({request,env}){
           VALUES(
             ?,?,?,
             'Pending',
-            ?,?,?,?,?,?,?,?,?,?,?
+            ?,?,?,?,?,?,?,?,?,?
           )
           RETURNING id
         `).bind(
