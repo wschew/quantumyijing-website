@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+<meta charset="utf-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1">
+
+<title>My Course | Quantum YiJing®</title>
+
+<style>
+:root{
+  --blue:#0b56a5;
+  --deep:#082d55;
+  --light:#f4f8fd;
+  --line:#d7e3ef;
+  --text:#172033;
+  --muted:#68788c;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:var(--light);
+  color:var(--text);
+}
+.shell{
+  max-width:1000px;
+  margin:auto;
+  padding:20px;
+}
+header{
+  background:white;
+  border-bottom:1px solid var(--line);
+}
+header .shell{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:20px;
+}
+a{
+  color:var(--blue);
+}
+.card{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:22px;
+  margin:18px 0;
+}
+.module h2{
+  color:var(--deep);
+}
+.lesson{
+  margin-top:16px;
+  padding:16px;
+  border:1px solid var(--line);
+  border-radius:10px;
+}
+.resource{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:14px;
+  padding:12px 0;
+  border-top:1px solid #edf2f7;
+}
+button{
+  border:0;
+  border-radius:8px;
+  padding:9px 14px;
+  background:var(--blue);
+  color:white;
+  font-weight:700;
+  cursor:pointer;
+}
+.muted{
+  color:var(--muted);
+}
+.hidden{
+  display:none;
+}
+pre{
+  white-space:pre-wrap;
+  font-family:inherit;
+  line-height:1.6;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="shell">
+    <strong>Quantum YiJing® International Academy</strong>
+
+    <div>
+      <a href="/portal.html">Academy Portal</a>
+      &nbsp;·&nbsp;
+      <button id="langBtn"
+              type="button">
+        中文
+      </button>
+    </div>
+  </div>
+</header>
+
+
+<main class="shell">
+
+  <div id="message"
+       class="card">
+    Loading protected course content…
+  </div>
+
+
+  <section id="courseView"
+           class="hidden">
+
+    <div class="card">
+
+      <h1 id="courseTitle"></h1>
+
+      <div id="courseMeta"
+           class="muted"></div>
+
+    </div>
+
+    <div id="modules"></div>
+
+  </section>
+
+
+  <section id="resourceView"
+           class="card hidden">
+
+    <button id="closeResource"
+            type="button">
+      ← Back to course
+    </button>
+
+    <h2 id="resourceTitle"></h2>
+
+    <div id="resourceBody"></div>
+
+  </section>
+
+</main>
+
+
+<script>
+const $=s=>document.querySelector(s);
+
+let lang=
+  localStorage.getItem("qyPortalLang") ||
+  "en";
+
+let courseData=null;
+
+
+function esc(v){
+  return String(v ?? "")
+    .replace(
+      /[&<>"']/g,
+      c=>({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#39;"
+      }[c])
+    );
+}
+
+
+function text(en,zh){
+  return lang==="zh"
+    ? zh || en
+    : en;
+}
+
+
+function updateLang(){
+  $("#langBtn").textContent=
+    lang==="zh"
+      ? "English"
+      : "中文";
+
+  if(courseData){
+    renderCourse(courseData);
+  }
+}
+
+
+$("#langBtn")
+  .addEventListener(
+    "click",
+    ()=>{
+      lang=
+        lang==="en"
+          ? "zh"
+          : "en";
+
+      localStorage.setItem(
+        "qyPortalLang",
+        lang
+      );
+
+      updateLang();
+    }
+  );
+
+
+function renderCourse(data){
+
+  courseData=data;
+
+  $("#message")
+    .classList
+    .add("hidden");
+
+  $("#resourceView")
+    .classList
+    .add("hidden");
+
+  $("#courseView")
+    .classList
+    .remove("hidden");
+
+
+  $("#courseTitle").textContent=
+    text(
+      data.course.name_en,
+      data.course.name_zh
+    );
+
+
+  $("#courseMeta").textContent=
+    `${
+      data.course.sku || ""
+    } · ${
+      data.entitlement.status
+    }`;
+
+
+  const modules=
+    data.modules || [];
+
+
+  if(!modules.length){
+
+    $("#modules").innerHTML=
+      `<div class="card muted">${
+        lang==="zh"
+          ? "课程内容正在准备中。"
+          : "Course content is being prepared."
+      }</div>`;
+
+    return;
+  }
+
+
+  $("#modules").innerHTML=
+    modules.map(module=>`
+
+      <section class="card module">
+
+        <h2>
+          ${esc(
+            text(
+              module.title_en,
+              module.title_zh
+            )
+          )}
+        </h2>
+
+        <p class="muted">
+          ${esc(
+            text(
+              module.description_en,
+              module.description_zh
+            )
+          )}
+        </p>
+
+        ${
+          (module.lessons || [])
+            .map(lesson=>`
+
+              <div class="lesson">
+
+                <h3>
+                  ${esc(
+                    text(
+                      lesson.title_en,
+                      lesson.title_zh
+                    )
+                  )}
+                </h3>
+
+                <p class="muted">
+                  ${esc(
+                    text(
+                      lesson.summary_en,
+                      lesson.summary_zh
+                    )
+                  )}
+                </p>
+
+                ${
+                  (lesson.resources || [])
+                    .map(resource=>`
+
+                      <div class="resource">
+
+                        <div>
+                          <strong>
+                            ${esc(
+                              text(
+                                resource.title_en,
+                                resource.title_zh
+                              )
+                            )}
+                          </strong>
+
+                          <div class="muted">
+                            ${esc(resource.resource_type)}
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          data-resource-id="${resource.id}">
+                          ${
+                            lang==="zh"
+                              ? "打开"
+                              : "Open"
+                          }
+                        </button>
+
+                      </div>
+
+                    `)
+                    .join("")
+                }
+
+              </div>
+
+            `)
+            .join("")
+        }
+
+      </section>
+
+    `).join("");
+
+
+  document
+    .querySelectorAll(
+      "[data-resource-id]"
+    )
+    .forEach(
+      button=>{
+        button.addEventListener(
+          "click",
+          ()=>openResource(
+            button.dataset.resourceId
+          )
+        );
+      }
+    );
+}
+
+
+async function openResource(id){
+
+  const response=
+    await fetch(
+      `/api/portal/resource?id=${encodeURIComponent(id)}`,
+      {
+        cache:"no-store"
+      }
+    );
+
+
+  if(response.status===401){
+    location.href="/portal.html";
+    return;
+  }
+
+
+  const data=
+    await response.json();
+
+
+  if(!response.ok){
+
+    alert(
+      data.error ||
+      "Unable to open resource."
+    );
+
+    return;
+  }
+
+
+  const resource=
+    data.resource;
+
+
+  $("#courseView")
+    .classList
+    .add("hidden");
+
+  $("#resourceView")
+    .classList
+    .remove("hidden");
+
+
+  $("#resourceTitle").textContent=
+    text(
+      resource.title_en,
+      resource.title_zh
+    );
+
+
+  if(resource.resource_type==="text"){
+
+    $("#resourceBody").innerHTML=
+      `<pre>${esc(
+        resource.content_text || ""
+      )}</pre>`;
+
+    return;
+  }
+
+
+  if(resource.resource_url){
+
+    $("#resourceBody").innerHTML=
+      `<p>
+         <a target="_blank"
+            rel="noopener noreferrer"
+            href="${esc(resource.resource_url)}">
+           ${
+             lang==="zh"
+               ? "打开资源"
+               : "Open resource"
+           }
+         </a>
+       </p>`;
+
+    return;
+  }
+
+
+  $("#resourceBody").innerHTML=
+    `<p class="muted">${
+      lang==="zh"
+        ? "此资源目前没有可显示的内容。"
+        : "This resource currently has no displayable content."
+    }</p>`;
+}
+
+
+$("#closeResource")
+  .addEventListener(
+    "click",
+    ()=>{
+      if(courseData){
+        renderCourse(courseData);
+      }
+    }
+  );
+
+
+async function start(){
+
+  updateLang();
+
+  const url=
+    new URL(location.href);
+
+  const productId=
+    Number(
+      url.searchParams.get(
+        "product_id"
+      )
+    );
+
+
+  if(!productId){
+
+    $("#message").textContent=
+      "Invalid course.";
+
+    return;
+  }
+
+
+  const response=
+    await fetch(
+      `/api/portal/course-content?product_id=${encodeURIComponent(productId)}`,
+      {
+        cache:"no-store"
+      }
+    );
+
+
+  if(response.status===401){
+
+    location.href="/portal.html";
+    return;
+  }
+
+
+  const data=
+    await response.json();
+
+
+  if(!response.ok){
+
+    $("#message").textContent=
+      data.error ||
+      "Course access unavailable.";
+
+    return;
+  }
+
+
+  renderCourse(data);
+}
+
+
+start();
+</script>
+
+</body>
+</html>

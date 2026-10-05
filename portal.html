@@ -612,6 +612,16 @@ function renderCourses(rows){
           )}
         </p>
 
+        ${
+          row.status==="Active"
+            ? `<p>
+                 <a href="/course.html?product_id=${encodeURIComponent(row.product_id)}">
+                   ${t("Open Course","进入课程")}
+                 </a>
+               </p>`
+            : ""
+        }
+
       </div>
     `).join("");
 }
