@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>Subscription Lifecycle Administration | Quantum YiJing</title>
+
+<link rel="stylesheet" href="/admin.css">
+
+<style>
+.lifecycle-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+}
+.lifecycle-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:16px;
+}
+.lifecycle-actions button{
+  min-width:140px;
+}
+.lifecycle-danger{
+  border-top:1px solid rgba(0,0,0,.08);
+  margin-top:22px;
+  padding-top:18px;
+}
+.lifecycle-status{
+  font-weight:700;
+}
+.lifecycle-message{
+  margin-top:14px;
+  white-space:pre-wrap;
+}
+.lifecycle-events{
+  width:100%;
+  border-collapse:collapse;
+}
+.lifecycle-events th,
+.lifecycle-events td{
+  padding:9px 8px;
+  border-bottom:1px solid rgba(0,0,0,.08);
+  text-align:left;
+  vertical-align:top;
+}
+.lifecycle-events th{
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+@media(max-width:760px){
+  .lifecycle-grid{
+    grid-template-columns:1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header class="topbar">
+  <div class="brand-lockup">
+    <img
+      src="images/quantum-yijing-logo.png"
+      alt=""
+      class="topbar-logo"
+    >
+    <div>
+      <strong>Quantum YiJing</strong>
+      <span>Academy Operating System · v4.1</span>
+    </div>
+  </div>
+
+  <div class="topbar-actions">
+    <a href="/admin.html" class="text-link">Back to Admin</a>
+  </div>
+</header>
+
+<main class="crm-shell">
+
+<section class="page-heading">
+  <div>
+    <p class="eyebrow">
+      QY-AOS · SUBSCRIPTION MANAGEMENT
+    </p>
+
+    <h1>
+      Subscription Lifecycle Administration
+    </h1>
+
+    <p>
+      Review and administer subscription lifecycle status without changing
+      orders, payments, accounting or membership entitlement dates.
+    </p>
+  </div>
+</section>
+
+
+<section class="panel">
+
+<h2>1. Subscription Lookup</h2>
+
+<div class="form-grid">
+
+  <label>
+    Admin Token
+    <input
+      id="adminToken"
+      type="password"
+      autocomplete="off"
+      placeholder="Preview ADMIN_TOKEN"
+    >
+  </label>
+
+  <label>
+    Subscription ID
+    <input
+      id="subscriptionId"
+      type="number"
+      min="1"
+      step="1"
+      placeholder="e.g. 4"
+    >
+  </label>
+
+</div>
+
+<div class="button-row">
+  <button id="loadBtn" type="button">
+    Load Subscription
+  </button>
+
+  <button id="resetBtn" type="button" class="secondary">
+    Reset
+  </button>
+</div>
+
+<div
+  id="lookupMessage"
+  class="lifecycle-message"
+  aria-live="polite"
+></div>
+
+</section>
+
+
+<section
+  id="statePanel"
+  class="panel"
+  hidden
+>
+
+<h2>2. Current Lifecycle State</h2>
+
+<div class="lifecycle-grid">
+
+  <div>
+    <strong>Reference</strong>
+    <div id="subscriptionReference">—</div>
+  </div>
+
+  <div>
+    <strong>Status</strong>
+    <div id="subscriptionStatus" class="lifecycle-status">—</div>
+  </div>
+
+  <div>
+    <strong>Customer ID</strong>
+    <div id="customerId">—</div>
+  </div>
+
+  <div>
+    <strong>Plan ID</strong>
+    <div id="planId">—</div>
+  </div>
+
+  <div>
+    <strong>Membership ID</strong>
+    <div id="membershipId">—</div>
+  </div>
+
+  <div>
+    <strong>Cancel at Period End</strong>
+    <div id="cancelAtPeriodEnd">—</div>
+  </div>
+
+  <div>
+    <strong>Current Period Start</strong>
+    <div id="periodStart">—</div>
+  </div>
+
+  <div>
+    <strong>Current Period End</strong>
+    <div id="periodEnd">—</div>
+  </div>
+
+  <div>
+    <strong>Next Renewal</strong>
+    <div id="nextRenewal">—</div>
+  </div>
+
+  <div>
+    <strong>Grace Ends</strong>
+    <div id="graceEnds">—</div>
+  </div>
+
+  <div>
+    <strong>Paused At</strong>
+    <div id="pausedAt">—</div>
+  </div>
+
+  <div>
+    <strong>Cancelled At</strong>
+    <div id="cancelledAt">—</div>
+  </div>
+
+  <div>
+    <strong>Expired At</strong>
+    <div id="expiredAt">—</div>
+  </div>
+
+</div>
+
+</section>
+
+
+<section
+  id="actionPanel"
+  class="panel"
+  hidden
+>
+
+<h2>3. Lifecycle Actions</h2>
+
+<p>
+  Only transitions allowed by the existing subscription lifecycle engine
+  are enabled.
+</p>
+
+<div class="lifecycle-actions">
+
+  <button id="pauseBtn" type="button">
+    Pause Subscription
+  </button>
+
+  <button id="resumeBtn" type="button">
+    Resume Subscription
+  </button>
+
+  <button id="scheduleCancelBtn" type="button">
+    Cancel at Period End
+  </button>
+
+</div>
+
+<div class="lifecycle-danger">
+
+  <p>
+    <strong>Terminal actions</strong>
+  </p>
+
+  <p>
+    Cancelled and Expired subscriptions cannot be reactivated by the
+    existing lifecycle engine.
+  </p>
+
+  <div class="lifecycle-actions">
+
+    <button id="cancelNowBtn" type="button">
+      Cancel Now
+    </button>
+
+    <button id="expireBtn" type="button">
+      Mark Expired
+    </button>
+
+  </div>
+
+</div>
+
+<div
+  id="actionMessage"
+  class="lifecycle-message"
+  aria-live="polite"
+></div>
+
+</section>
+
+
+<section
+  id="eventsPanel"
+  class="panel"
+  hidden
+>
+
+<h2>4. Lifecycle History</h2>
+
+<div style="overflow:auto">
+
+<table class="lifecycle-events">
+
+<thead>
+<tr>
+  <th>Time</th>
+  <th>Event</th>
+  <th>From</th>
+  <th>To</th>
+  <th>Source</th>
+  <th>Reference</th>
+  <th>Notes</th>
+</tr>
+</thead>
+
+<tbody id="eventsBody">
+</tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<section class="panel">
+
+<h2>Lifecycle Boundary</h2>
+
+<p>
+  This administration page changes subscription lifecycle state only.
+  It does not create orders, collect payments, mark orders Paid,
+  alter accounting records or change membership entitlement dates.
+</p>
+
+</section>
+
+</main>
+
+
+<script>
+const $ = id => document.getElementById(id);
+
+const state = {
+  subscription: null,
+  events: []
+};
+
+function token(){
+  return $("adminToken").value.trim();
+}
+
+function subscriptionId(){
+  const n = Number($("subscriptionId").value);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+function authHeaders(){
+  return {
+    "Authorization": "Bearer " + token(),
+    "Content-Type": "application/json"
+  };
+}
+
+function text(value){
+  if(value === null || value === undefined || value === ""){
+    return "—";
+  }
+  return String(value);
+}
+
+function setMessage(id,message,isError=false){
+  const el=$(id);
+  el.textContent=message || "";
+  el.style.color=isError ? "#a00000" : "";
+}
+
+function validTargets(status){
+  const map = {
+    Pending:["Active","Cancelled"],
+    Active:["PastDue","Paused","Cancelled","Expired"],
+    PastDue:["Active","Paused","Cancelled","Expired"],
+    Paused:["Active","Cancelled","Expired"],
+    Cancelled:[],
+    Expired:[]
+  };
+  return map[status] || [];
+}
+
+function renderSubscription(){
+  const s=state.subscription;
+
+  if(!s){
+    $("statePanel").hidden=true;
+    $("actionPanel").hidden=true;
+    $("eventsPanel").hidden=true;
+    return;
+  }
+
+  $("statePanel").hidden=false;
+  $("actionPanel").hidden=false;
+  $("eventsPanel").hidden=false;
+
+  $("subscriptionReference").textContent=text(s.subscription_reference);
+  $("subscriptionStatus").textContent=text(s.status);
+  $("customerId").textContent=text(s.customer_id);
+  $("planId").textContent=text(s.plan_id);
+  $("membershipId").textContent=text(s.membership_id);
+  $("cancelAtPeriodEnd").textContent=
+    Number(s.cancel_at_period_end)===1 ? "Yes" : "No";
+
+  $("periodStart").textContent=text(s.current_period_start);
+  $("periodEnd").textContent=text(s.current_period_end);
+  $("nextRenewal").textContent=text(s.next_renewal_at);
+  $("graceEnds").textContent=text(s.grace_ends_at);
+  $("pausedAt").textContent=text(s.paused_at);
+  $("cancelledAt").textContent=text(s.cancelled_at);
+  $("expiredAt").textContent=text(s.expired_at);
+
+  const targets=validTargets(String(s.status));
+
+  $("pauseBtn").disabled=!targets.includes("Paused");
+  $("resumeBtn").disabled=!targets.includes("Active");
+
+  $("cancelNowBtn").disabled=!targets.includes("Cancelled");
+  $("expireBtn").disabled=!targets.includes("Expired");
+
+  const terminal=
+    ["Cancelled","Expired"].includes(String(s.status));
+
+  $("scheduleCancelBtn").disabled=
+    terminal || Number(s.cancel_at_period_end)===1;
+
+  renderEvents();
+}
+
+function renderEvents(){
+  const body=$("eventsBody");
+  body.innerHTML="";
+
+  if(!state.events.length){
+    const tr=document.createElement("tr");
+    const td=document.createElement("td");
+    td.colSpan=7;
+    td.textContent="No lifecycle events recorded.";
+    tr.appendChild(td);
+    body.appendChild(tr);
+    return;
+  }
+
+  for(const e of state.events){
+    const tr=document.createElement("tr");
+
+    const values=[
+      e.event_at,
+      e.event_type,
+      e.from_status,
+      e.to_status,
+      e.source,
+      e.source_reference,
+      e.notes
+    ];
+
+    for(const value of values){
+      const td=document.createElement("td");
+      td.textContent=text(value);
+      tr.appendChild(td);
+    }
+
+    body.appendChild(tr);
+  }
+}
+
+async function loadSubscription(){
+  setMessage("lookupMessage","");
+  setMessage("actionMessage","");
+
+  const id=subscriptionId();
+
+  if(!token()){
+    setMessage(
+      "lookupMessage",
+      "Admin token is required.",
+      true
+    );
+    return;
+  }
+
+  if(!id){
+    setMessage(
+      "lookupMessage",
+      "Valid subscription ID is required.",
+      true
+    );
+    return;
+  }
+
+  sessionStorage.setItem(
+    "qyAdminToken",
+    token()
+  );
+
+  try{
+    const res=await fetch(
+      "/api/admin/subscriptions?action=detail&id="+encodeURIComponent(id),
+      {
+        headers:{
+          "Authorization":"Bearer "+token()
+        }
+      }
+    );
+
+    const data=await res.json();
+
+    if(!res.ok){
+      throw new Error(
+        data.error || "Unable to load subscription."
+      );
+    }
+
+    state.subscription=data.subscription || null;
+    state.events=Array.isArray(data.events) ? data.events : [];
+
+    renderSubscription();
+
+    setMessage(
+      "lookupMessage",
+      "Subscription loaded."
+    );
+
+  }catch(err){
+    state.subscription=null;
+    state.events=[];
+    renderSubscription();
+
+    setMessage(
+      "lookupMessage",
+      err.message || String(err),
+      true
+    );
+  }
+}
+
+async function changeStatus(target,label){
+  const s=state.subscription;
+
+  if(!s){
+    return;
+  }
+
+  const message =
+    label +
+    "\n\nSubscription: " +
+    text(s.subscription_reference) +
+    " (ID " + s.id + ")" +
+    "\nCurrent status: " +
+    text(s.status) +
+    "\nNew status: " +
+    target +
+    "\n\nThis does not change orders, payments, accounting or membership entitlement dates.";
+
+  if(!window.confirm(message)){
+    return;
+  }
+
+  setMessage(
+    "actionMessage",
+    "Processing..."
+  );
+
+  try{
+    const res=await fetch(
+      "/api/admin/subscriptions",
+      {
+        method:"POST",
+        headers:authHeaders(),
+        body:JSON.stringify({
+          action:"status",
+          id:s.id,
+          status:target,
+          source:"A6F Subscription Lifecycle Administration",
+          sourceReference:"AdminLifecycle:"+target,
+          notes:"Subscription lifecycle action completed through v4.1 A6F administration UI."
+        })
+      }
+    );
+
+    const data=await res.json();
+
+    if(!res.ok){
+      throw new Error(
+        data.error || "Lifecycle status change failed."
+      );
+    }
+
+    setMessage(
+      "actionMessage",
+      data.idempotent
+        ? "No change required — subscription already has this status."
+        : "Lifecycle status updated successfully."
+    );
+
+    await loadSubscription();
+
+  }catch(err){
+    setMessage(
+      "actionMessage",
+      err.message || String(err),
+      true
+    );
+  }
+}
+
+async function scheduleCancellation(){
+  const s=state.subscription;
+
+  if(!s){
+    return;
+  }
+
+  const message =
+    "Schedule cancellation at period end?" +
+    "\n\nSubscription: " +
+    text(s.subscription_reference) +
+    " (ID " + s.id + ")" +
+    "\nCurrent period end: " +
+    text(s.current_period_end) +
+    "\n\nThis action does not immediately cancel the subscription.";
+
+  if(!window.confirm(message)){
+    return;
+  }
+
+  setMessage(
+    "actionMessage",
+    "Processing..."
+  );
+
+  try{
+    const res=await fetch(
+      "/api/admin/subscriptions",
+      {
+        method:"POST",
+        headers:authHeaders(),
+        body:JSON.stringify({
+          action:"cancel-at-period-end",
+          id:s.id,
+          source:"A6F Subscription Lifecycle Administration",
+          sourceReference:"AdminLifecycle:CancelAtPeriodEnd",
+          notes:"Cancellation at period end scheduled through v4.1 A6F administration UI."
+        })
+      }
+    );
+
+    const data=await res.json();
+
+    if(!res.ok){
+      throw new Error(
+        data.error || "Unable to schedule cancellation."
+      );
+    }
+
+    setMessage(
+      "actionMessage",
+      data.idempotent
+        ? "Cancellation at period end was already scheduled."
+        : "Cancellation at period end scheduled successfully."
+    );
+
+    await loadSubscription();
+
+  }catch(err){
+    setMessage(
+      "actionMessage",
+      err.message || String(err),
+      true
+    );
+  }
+}
+
+function resetPage(){
+  $("subscriptionId").value="";
+  state.subscription=null;
+  state.events=[];
+
+  renderSubscription();
+
+  setMessage("lookupMessage","");
+  setMessage("actionMessage","");
+}
+
+$("loadBtn").addEventListener(
+  "click",
+  loadSubscription
+);
+
+$("resetBtn").addEventListener(
+  "click",
+  resetPage
+);
+
+$("pauseBtn").addEventListener(
+  "click",
+  ()=>changeStatus("Paused","Pause this subscription?")
+);
+
+$("resumeBtn").addEventListener(
+  "click",
+  ()=>changeStatus("Active","Resume this subscription?")
+);
+
+$("cancelNowBtn").addEventListener(
+  "click",
+  ()=>changeStatus("Cancelled","Cancel this subscription immediately?")
+);
+
+$("expireBtn").addEventListener(
+  "click",
+  ()=>changeStatus("Expired","Mark this subscription expired?")
+);
+
+$("scheduleCancelBtn").addEventListener(
+  "click",
+  scheduleCancellation
+);
+
+const savedToken=
+  sessionStorage.getItem("qyAdminToken");
+
+if(savedToken){
+  $("adminToken").value=savedToken;
+}
+
+const params=
+  new URLSearchParams(location.search);
+
+const initialId=
+  params.get("subscriptionId") ||
+  params.get("id");
+
+if(initialId){
+  $("subscriptionId").value=initialId;
+}
+</script>
+
+</body>
+</html>
