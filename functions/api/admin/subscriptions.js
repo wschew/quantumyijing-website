@@ -1402,6 +1402,426 @@ async function scheduleCancel(db,b){
   });
 }
 
+/* =========================================================
+   v4.1 A6E RENEWAL PREVIEW
+   READ ONLY — NO SUBSCRIPTION / ORDER / PAYMENT MUTATION
+   ========================================================= */
+
+async function previewRenewalA6E(db,url){
+  const subscriptionId=intId(
+    url.searchParams.get("id") ||
+    url.searchParams.get("subscriptionId")
+  );
+
+  const orderId=intId(
+    url.searchParams.get("orderId")
+  );
+
+  if(!subscriptionId){
+    return json({
+      error:"Valid subscription id required."
+    },400);
+  }
+
+  if(!orderId){
+    return json({
+      error:"Valid renewal order id required."
+    },400);
+  }
+
+  const subscription=
+    await getSubscription(
+      db,
+      subscriptionId
+    );
+
+  if(!subscription){
+    return json({
+      error:"Subscription not found."
+    },404);
+  }
+
+  const planState=
+    await db.prepare(`
+      SELECT
+        id,
+        status,
+        renewal_mode,
+        product_id
+      FROM subscription_plans
+      WHERE id=?
+      LIMIT 1
+    `).bind(
+      subscription.plan_id
+    ).first();
+
+  const customerState=
+    await db.prepare(`
+      SELECT
+        id,
+        customer_reference,
+        display_name,
+        email,
+        status
+      FROM customers
+      WHERE id=?
+      LIMIT 1
+    `).bind(
+      subscription.customer_id
+    ).first();
+
+  const membership=
+    await db.prepare(`
+      SELECT
+        id,
+        membership_reference,
+        customer_id,
+        product_id,
+        status,
+        starts_at,
+        ends_at
+      FROM memberships
+      WHERE id=?
+      LIMIT 1
+    `).bind(
+      subscription.membership_id
+    ).first();
+
+  const order=
+    await db.prepare(`
+      SELECT
+        id,
+        order_reference,
+        payment_status,
+        customer_name,
+        customer_email,
+        customer_phone,
+        currency,
+        total,
+        created_at
+      FROM orders
+      WHERE id=?
+      LIMIT 1
+    `).bind(
+      orderId
+    ).first();
+
+  if(!order){
+    return json({
+      error:"Renewal order not found."
+    },404);
+  }
+
+  const matchingItem=
+    await db.prepare(`
+      SELECT
+        id,
+        order_id,
+        product_id,
+        quantity,
+        unit_price,
+        line_total
+      FROM order_items
+      WHERE order_id=?
+        AND product_id=?
+        AND quantity>0
+      ORDER BY id
+      LIMIT 1
+    `).bind(
+      orderId,
+      subscription.product_id
+    ).first();
+
+  const existingLink=
+    await db.prepare(`
+      SELECT
+        id,
+        subscription_id,
+        order_id,
+        order_type,
+        period_start,
+        period_end,
+        linked_at
+      FROM subscription_orders
+      WHERE order_id=?
+      ORDER BY id
+      LIMIT 1
+    `).bind(
+      orderId
+    ).first();
+
+  const result={
+    ok:true,
+    eligible:false,
+    alreadyApplied:false,
+    reason:"",
+    subscription,
+    customer:customerState || null,
+    plan:planState || null,
+    membership:membership || null,
+    order,
+    matchingOrderItem:matchingItem || null,
+    existingOrderLink:existingLink || null,
+    preview:null
+  };
+
+  if(subscription.status!=="Active"){
+    result.reason=
+      "Only an Active subscription can be renewed.";
+    return json(result);
+  }
+
+  if(
+    !planState ||
+    planState.status!=="Active"
+  ){
+    result.reason=
+      "Subscription plan must be Active.";
+    return json(result);
+  }
+
+  if(planState.renewal_mode!=="Manual"){
+    result.reason=
+      "Only Manual subscription plans can be renewed.";
+    return json(result);
+  }
+
+  if(
+    !customerState ||
+    customerState.status!=="Active"
+  ){
+    result.reason=
+      "Customer must be Active for renewal.";
+    return json(result);
+  }
+
+  if(!membership){
+    result.reason=
+      "Subscription membership not found.";
+    return json(result);
+  }
+
+  if(
+    Number(membership.customer_id)!==
+    Number(subscription.customer_id)
+  ){
+    result.reason=
+      "Membership customer does not match subscription.";
+    return json(result);
+  }
+
+  if(
+    Number(membership.product_id)!==
+    Number(subscription.product_id)
+  ){
+    result.reason=
+      "Membership product does not match subscription plan.";
+    return json(result);
+  }
+
+  if(membership.status!=="Active"){
+    result.reason=
+      "Membership must be Active for renewal.";
+    return json(result);
+  }
+
+  if(existingLink){
+    if(
+      Number(existingLink.subscription_id)===
+        Number(subscriptionId) &&
+      existingLink.order_type==="Renewal"
+    ){
+      result.alreadyApplied=true;
+      result.reason=
+        "This Paid order has already been applied to this subscription renewal.";
+      return json(result);
+    }
+
+    result.reason=
+      "Order is already linked to another subscription operation.";
+    return json(result);
+  }
+
+  if(order.payment_status!=="Paid"){
+    result.reason=
+      "Renewal order must be Paid.";
+    return json(result);
+  }
+
+  if(!matchingItem){
+    result.reason=
+      "Renewal order does not contain the subscription plan product.";
+    return json(result);
+  }
+
+  const currentEnd=
+    parseIsoDateA6D(
+      subscription.current_period_end
+    );
+
+  if(!currentEnd){
+    result.reason=
+      "Subscription current period end is invalid.";
+    return json(result);
+  }
+
+  const billingUnit=
+    cleanText(
+      subscription.billing_interval_unit,
+      20
+    );
+
+  const billingCount=
+    Number(
+      subscription.billing_interval_count
+    );
+
+  const membershipUnit=
+    cleanText(
+      subscription.membership_duration_unit,
+      20
+    );
+
+  const membershipCount=
+    Number(
+      subscription.membership_duration_count
+    );
+
+  const graceDays=
+    Number(
+      subscription.grace_period_days || 0
+    );
+
+  if(
+    !billingUnit ||
+    !Number.isInteger(billingCount) ||
+    billingCount<1
+  ){
+    result.reason=
+      "Subscription plan billing interval is invalid.";
+    return json(result);
+  }
+
+  if(
+    !membershipUnit ||
+    !Number.isInteger(membershipCount) ||
+    membershipCount<1
+  ){
+    result.reason=
+      "Subscription plan membership duration is invalid.";
+    return json(result);
+  }
+
+  if(
+    !Number.isInteger(graceDays) ||
+    graceDays<0
+  ){
+    result.reason=
+      "Subscription plan grace period is invalid.";
+    return json(result);
+  }
+
+  let newPeriodEnd;
+
+  try{
+    newPeriodEnd=
+      addUtcIntervalA6D(
+        currentEnd,
+        billingUnit,
+        billingCount
+      );
+  }
+  catch{
+    result.reason=
+      "Subscription billing interval cannot be calculated.";
+    return json(result);
+  }
+
+  const membershipEnd=
+    parseIsoDateA6D(
+      membership.ends_at
+    );
+
+  let membershipBase=
+    currentEnd;
+
+  if(
+    membershipEnd &&
+    membershipEnd.getTime() >
+      membershipBase.getTime()
+  ){
+    membershipBase=
+      membershipEnd;
+  }
+
+  let newMembershipEnd;
+
+  try{
+    newMembershipEnd=
+      addUtcIntervalA6D(
+        membershipBase,
+        membershipUnit,
+        membershipCount
+      );
+  }
+  catch{
+    result.reason=
+      "Membership duration cannot be calculated.";
+    return json(result);
+  }
+
+  const graceEnd=
+    addUtcDaysA6D(
+      newPeriodEnd,
+      graceDays
+    );
+
+  result.eligible=true;
+  result.reason="Eligible for manual renewal.";
+
+  result.preview={
+    currentPeriodEnd:
+      currentEnd.toISOString(),
+
+    newPeriodStart:
+      currentEnd.toISOString(),
+
+    newPeriodEnd:
+      newPeriodEnd.toISOString(),
+
+    currentMembershipEnd:
+      membershipEnd
+        ? membershipEnd.toISOString()
+        : "",
+
+    membershipExtensionBase:
+      membershipBase.toISOString(),
+
+    newMembershipEnd:
+      newMembershipEnd.toISOString(),
+
+    graceEndsAt:
+      graceEnd.toISOString(),
+
+    billingIntervalUnit:
+      billingUnit,
+
+    billingIntervalCount:
+      billingCount,
+
+    membershipDurationUnit:
+      membershipUnit,
+
+    membershipDurationCount:
+      membershipCount,
+
+    gracePeriodDays:
+      graceDays
+  };
+
+  return json(result);
+}
+
 export async function onRequestGet(context){
   if(!authorized(context.request,context.env)){
     return json({error:"Unauthorized."},401);
@@ -1412,9 +1832,26 @@ export async function onRequestGet(context){
 
   try{
     await ensureFoundation(db);
+
+    const url=
+      new URL(context.request.url);
+
+    const action=
+      cleanText(
+        url.searchParams.get("action"),
+        50
+      ).toLowerCase();
+
+    if(action==="renewal-preview"){
+      return await previewRenewalA6E(
+        db,
+        url
+      );
+    }
+
     return await handleSubscriptionsGet(
       db,
-      new URL(context.request.url)
+      url
     );
   }catch(e){
     console.error("subscriptions GET",e);
