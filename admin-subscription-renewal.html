@@ -29,16 +29,8 @@
   *{
     box-sizing:border-box;
   }
-  .a6e-shell{
-    max-width:1200px;
-    margin:0 auto;
-    padding:24px;
-  }
 .header{
     margin-bottom:24px;
-  }
-  .a6e-muted{
-    opacity:.72;
   }
 .card{
     background:var(--qy-white);
@@ -256,20 +248,47 @@
 
 <body>
 
-<div class="a6e-shell">
+<main class="crm-shell">
 
-  <header>
+  <header class="topbar">
+    <div class="brand-lockup">
+      <img
+        src="images/quantum-yijing-logo.png"
+        alt=""
+        class="topbar-logo"
+      >
+      <div>
+        <strong>Quantum YiJing</strong>
+        <span>Academy Operating System · v4.1</span>
+      </div>
+    </div>
 
-    <h1>
-      Subscription Renewal Administration
-    </h1>
-
-    <p class="a6e-muted">
-      v4.1 A6E — Validate an existing Paid order before manually renewing an Active subscription.
-      Orders and payments remain the financial source of truth.
-    </p>
-
+    <div class="topbar-actions">
+      <a
+        href="/admin.html"
+        class="text-link"
+      >
+        Back to Admin
+      </a>
+    </div>
   </header>
+
+  <section class="page-heading">
+    <div>
+      <p class="eyebrow">
+        QY-AOS · SUBSCRIPTION MANAGEMENT
+      </p>
+
+      <h1>
+        Subscription Renewal Administration
+      </h1>
+
+      <p>
+        Validate an existing Paid order before manually renewing an Active subscription.
+        Orders and payments remain the financial source of truth.
+      </p>
+    </div>
+  </section>
 
 
   <section class="card">
@@ -520,7 +539,7 @@
 
   </section>
 
-</div>
+</main>
 
 
 <script>
