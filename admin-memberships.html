@@ -1,0 +1,1113 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1">
+
+<title>
+  Membership Directory | Quantum YiJing Admin
+</title>
+
+
+<style>
+
+:root{
+  --bg:#f4f7fb;
+  --panel:#ffffff;
+  --line:#dce4ee;
+  --text:#172033;
+  --muted:#667085;
+  --blue:#1358c8;
+  --blue2:#0f4dae;
+  --green:#087443;
+  --amber:#a15c00;
+  --red:#b42318;
+  --shadow:0 10px 28px rgba(16,24,40,.07);
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Inter,Arial,sans-serif;
+}
+
+header{
+  background:#0c1b33;
+  color:#fff;
+  padding:18px 28px;
+}
+
+.qy-admin-header{
+  max-width:1380px;
+  margin:auto;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:20px;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:13px;
+  color:#fff;
+  text-decoration:none;
+}
+
+.brand img{
+  width:48px;
+  height:48px;
+  object-fit:contain;
+}
+
+.brand div{
+  display:flex;
+  flex-direction:column;
+}
+
+.brand strong{
+  font-size:20px;
+}
+
+.brand span{
+  margin-top:4px;
+  color:#cbd5e1;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.06em;
+}
+
+.toplinks{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.toplinks a{
+  color:#fff;
+  text-decoration:none;
+  border:1px solid rgba(255,255,255,.32);
+  border-radius:9px;
+  padding:9px 13px;
+  font-weight:700;
+}
+
+main{
+  max-width:1380px;
+  margin:24px auto;
+  padding:0 20px 50px;
+}
+
+.page-heading{
+  margin-bottom:24px;
+}
+
+.eyebrow{
+  color:var(--blue);
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  margin-bottom:8px;
+}
+
+.page-heading h1{
+  margin:0;
+  font-size:38px;
+}
+
+.lead{
+  margin:9px 0 0;
+  color:var(--muted);
+  font-size:17px;
+}
+
+.panel{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:14px;
+  box-shadow:var(--shadow);
+  padding:20px;
+  margin-bottom:18px;
+}
+
+.controls{
+  display:grid;
+  grid-template-columns:minmax(220px,1fr) minmax(260px,2fr) 180px 130px auto;
+  gap:12px;
+  align-items:end;
+}
+
+label{
+  display:block;
+  font-size:13px;
+  font-weight:700;
+  margin-bottom:6px;
+}
+
+input,
+select{
+  width:100%;
+  border:1px solid #cbd5e1;
+  border-radius:8px;
+  padding:10px 11px;
+  background:#fff;
+  font-size:14px;
+}
+
+button{
+  border:0;
+  border-radius:8px;
+  padding:11px 16px;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.primary{
+  background:var(--blue);
+  color:#fff;
+}
+
+.message{
+  margin-top:12px;
+  min-height:20px;
+}
+
+.message.ok{
+  color:var(--green);
+}
+
+.message.bad{
+  color:var(--red);
+}
+
+.table-wrap{
+  overflow:auto;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:1180px;
+}
+
+th,
+td{
+  padding:12px 10px;
+  border-bottom:1px solid #e5e7eb;
+  text-align:left;
+  vertical-align:top;
+  font-size:14px;
+}
+
+th{
+  background:#f8fafc;
+  color:#475467;
+  font-size:12px;
+  text-transform:uppercase;
+}
+
+.ref{
+  font-family:Consolas,monospace;
+  font-weight:700;
+}
+
+.muted{
+  color:var(--muted);
+  font-size:12px;
+  margin-top:3px;
+}
+
+.badge{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+  background:#eef2ff;
+  color:#3448a3;
+}
+
+.badge.Active{
+  background:#e7f6ee;
+  color:#087443;
+}
+
+.badge.Pending{
+  background:#fff4e5;
+  color:#a15c00;
+}
+
+.badge.Paused{
+  background:#eef2ff;
+  color:#3448a3;
+}
+
+.badge.Expired,
+.badge.Cancelled,
+.badge.Refunded{
+  background:#f2f4f7;
+  color:#475467;
+}
+
+.action{
+  color:var(--blue);
+  font-weight:700;
+  text-decoration:none;
+}
+
+.pager{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-top:16px;
+}
+
+.pager-actions{
+  display:flex;
+  gap:8px;
+}
+
+.secondary{
+  background:#eef2f7;
+  color:#1d2939;
+}
+
+button:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+.empty{
+  text-align:center;
+  color:var(--muted);
+  padding:30px;
+}
+
+@media(max-width:900px){
+
+  .qy-admin-header{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .controls{
+    grid-template-columns:1fr;
+  }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+  <div class="qy-admin-header">
+
+    <a
+      class="brand"
+      href="/admin">
+
+      <img
+        src="/images/quantum-yijing-3d-logo.png"
+        alt="Quantum YiJing®">
+
+      <div>
+
+        <strong>
+          Quantum YiJing®
+        </strong>
+
+        <span>
+          ACADEMY OPERATING SYSTEM · v4.1
+        </span>
+
+      </div>
+
+    </a>
+
+
+    <div class="toplinks">
+
+      <a href="/admin-customers">
+        Customers
+      </a>
+
+      <a href="/admin">
+        Main Admin
+      </a>
+
+    </div>
+
+  </div>
+
+</header>
+
+
+<main>
+
+
+<div class="page-heading">
+
+  <div class="eyebrow">
+    QY-AOS · CUSTOMER MANAGEMENT
+  </div>
+
+  <h1>
+    Membership Directory
+  </h1>
+
+  <p class="lead">
+    Search membership records and open the audited lifecycle view for each membership.
+  </p>
+
+</div>
+
+
+<section class="panel">
+
+  <div class="controls">
+
+    <div>
+
+      <label for="token">
+        Admin Token
+      </label>
+
+      <input
+        id="token"
+        type="password"
+        autocomplete="off">
+
+    </div>
+
+
+    <div>
+
+      <label for="search">
+        Search
+      </label>
+
+      <input
+        id="search"
+        type="search"
+        placeholder="Membership, customer, email or product">
+
+    </div>
+
+
+    <div>
+
+      <label for="status">
+        Status
+      </label>
+
+      <select id="status">
+
+        <option value="">
+          All statuses
+        </option>
+
+        <option>Pending</option>
+        <option>Active</option>
+        <option>Paused</option>
+        <option>Expired</option>
+        <option>Cancelled</option>
+        <option>Refunded</option>
+
+      </select>
+
+    </div>
+
+
+    <div>
+
+      <label for="pageSize">
+        Rows
+      </label>
+
+      <select id="pageSize">
+
+        <option value="10">
+          10
+        </option>
+
+        <option
+          value="25"
+          selected>
+          25
+        </option>
+
+        <option value="50">
+          50
+        </option>
+
+        <option value="100">
+          100
+        </option>
+
+      </select>
+
+    </div>
+
+
+    <button
+      id="load"
+      class="primary"
+      type="button">
+      Load
+    </button>
+
+  </div>
+
+
+  <div
+    id="message"
+    class="message">
+  </div>
+
+</section>
+
+
+<section class="panel">
+
+  <div class="table-wrap">
+
+    <table>
+
+      <thead>
+
+        <tr>
+          <th>Membership</th>
+          <th>Customer</th>
+          <th>Product</th>
+          <th>Status</th>
+          <th>Starts</th>
+          <th>Ends</th>
+          <th>Source</th>
+          <th>Updated</th>
+          <th>Action</th>
+        </tr>
+
+      </thead>
+
+
+      <tbody id="rows">
+
+        <tr>
+          <td
+            colspan="9"
+            class="empty">
+            Load memberships to begin.
+          </td>
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+
+  <div class="pager">
+
+    <div
+      id="pageInfo"
+      class="muted">
+      Page —
+    </div>
+
+
+    <div class="pager-actions">
+
+      <button
+        id="previous"
+        class="secondary"
+        type="button"
+        disabled>
+        Previous
+      </button>
+
+      <button
+        id="next"
+        class="secondary"
+        type="button"
+        disabled>
+        Next
+      </button>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+</main>
+
+
+<script>
+
+(() => {
+
+  const $ =
+    selector =>
+      document.querySelector(selector);
+
+
+  const state = {
+    page:1,
+    pageSize:25,
+    total:0,
+    rows:[],
+    loading:false
+  };
+
+
+  function esc(value){
+
+    return String(
+      value ?? ""
+    ).replace(
+      /[&<>"']/g,
+      char => ({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#39;"
+      })[char]
+    );
+
+  }
+
+
+  function message(
+    text,
+    bad = false
+  ){
+
+    const element =
+      $("#message");
+
+    element.textContent =
+      text || "";
+
+    element.className =
+      bad
+        ? "message bad"
+        : "message ok";
+
+  }
+
+
+  function token(){
+
+    return $("#token")
+      .value
+      .trim();
+
+  }
+
+
+  function rowsFrom(data){
+
+    if(Array.isArray(data.memberships)){
+      return data.memberships;
+    }
+
+    if(Array.isArray(data.results)){
+      return data.results;
+    }
+
+    if(Array.isArray(data.rows)){
+      return data.rows;
+    }
+
+    return [];
+
+  }
+
+
+  function render(){
+
+    const tbody =
+      $("#rows");
+
+
+    if(!state.rows.length){
+
+      tbody.innerHTML =
+        '<tr><td colspan="9" class="empty">No memberships found.</td></tr>';
+
+    }
+    else{
+
+      tbody.innerHTML =
+        state.rows.map(
+          row => {
+
+            const id =
+              Number(row.id || 0);
+
+            const customer =
+              row.customer_name ||
+              row.display_name ||
+              "—";
+
+            const product =
+              row.product_name ||
+              row.name_en ||
+              row.product_name_zh ||
+              row.name_zh ||
+              row.sku ||
+              "—";
+
+            return `
+              <tr>
+
+                <td>
+
+                  <div class="ref">
+                    ${esc(row.membership_reference || "—")}
+                  </div>
+
+                  <div class="muted">
+                    ID ${esc(id || "—")}
+                  </div>
+
+                </td>
+
+                <td>
+
+                  <strong>
+                    ${esc(customer)}
+                  </strong>
+
+                  <div class="muted">
+                    ${esc(row.customer_reference || "")}
+                  </div>
+
+                  <div class="muted">
+                    ${esc(row.customer_email || "")}
+                  </div>
+
+                </td>
+
+                <td>
+
+                  <strong>
+                    ${esc(product)}
+                  </strong>
+
+                  <div class="muted">
+                    ${esc(row.sku || "")}
+                  </div>
+
+                </td>
+
+                <td>
+
+                  <span class="badge ${esc(row.status || "")}">
+                    ${esc(row.status || "—")}
+                  </span>
+
+                </td>
+
+                <td>
+                  ${esc(row.starts_at || "—")}
+                </td>
+
+                <td>
+                  ${esc(row.ends_at || "—")}
+                </td>
+
+                <td>
+                  ${esc(row.source || "—")}
+                </td>
+
+                <td>
+                  ${esc(row.updated_at || "—")}
+                </td>
+
+                <td>
+
+                  ${
+                    id > 0
+                      ? `<a class="action"
+                           href="/admin-membership?id=${encodeURIComponent(id)}">
+                           Manage
+                         </a>`
+                      : "—"
+                  }
+
+                </td>
+
+              </tr>
+            `;
+
+          }
+        ).join("");
+
+    }
+
+
+    const pages =
+      Math.max(
+        1,
+        Math.ceil(
+          state.total /
+          state.pageSize
+        )
+      );
+
+
+    $("#pageInfo").textContent =
+      `Page ${state.page} of ${pages} · ${state.total} membership(s)`;
+
+
+    $("#previous").disabled =
+      state.loading ||
+      state.page <= 1;
+
+
+    $("#next").disabled =
+      state.loading ||
+      state.page >= pages;
+
+  }
+
+
+  async function loadMemberships(){
+
+    if(state.loading){
+      return;
+    }
+
+
+    const adminToken =
+      token();
+
+
+    if(!adminToken){
+
+      message(
+        "Please enter the Admin Token.",
+        true
+      );
+
+      return;
+
+    }
+
+
+    sessionStorage.setItem(
+      "qyAdminToken",
+      adminToken
+    );
+
+
+    state.loading =
+      true;
+
+
+    $("#load").disabled =
+      true;
+
+
+    message(
+      "Loading memberships…"
+    );
+
+
+    try{
+
+      state.pageSize =
+        Number(
+          $("#pageSize").value
+        ) || 25;
+
+
+      const params =
+        new URLSearchParams();
+
+
+      params.set(
+        "action",
+        "list"
+      );
+
+
+      params.set(
+        "page",
+        String(state.page)
+      );
+
+
+      params.set(
+        "pageSize",
+        String(state.pageSize)
+      );
+
+
+      const search =
+        $("#search")
+          .value
+          .trim();
+
+
+      const status =
+        $("#status")
+          .value
+          .trim();
+
+
+      if(search){
+
+        params.set(
+          "q",
+          search
+        );
+
+      }
+
+
+      if(status){
+
+        params.set(
+          "status",
+          status
+        );
+
+      }
+
+
+      const response =
+        await fetch(
+          "/api/admin/memberships?" +
+          params.toString(),
+          {
+            headers:{
+              authorization:
+                "Bearer " +
+                adminToken
+            },
+            cache:"no-store"
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
+      if(!response.ok){
+
+        if(response.status === 401){
+
+          sessionStorage.removeItem(
+            "qyAdminToken"
+          );
+
+        }
+
+        throw new Error(
+          data.error ||
+          `Membership request failed (${response.status}).`
+        );
+
+      }
+
+
+      state.rows =
+        rowsFrom(
+          data
+        );
+
+
+      state.total =
+        Number(
+          data.total ??
+          state.rows.length
+        ) || 0;
+
+
+      state.page =
+        Number(
+          data.page ??
+          state.page
+        ) || state.page;
+
+
+      state.pageSize =
+        Number(
+          data.pageSize ??
+          state.pageSize
+        ) || state.pageSize;
+
+
+      render();
+
+
+      message(
+        `${state.rows.length} membership(s) loaded.`
+      );
+
+    }
+    catch(error){
+
+      state.rows = [];
+      state.total = 0;
+
+      render();
+
+      message(
+        error.message ||
+        "Unable to load memberships.",
+        true
+      );
+
+    }
+    finally{
+
+      state.loading =
+        false;
+
+      $("#load").disabled =
+        false;
+
+      render();
+
+    }
+
+  }
+
+
+  $("#load")
+    .addEventListener(
+      "click",
+      () => {
+
+        state.page = 1;
+
+        loadMemberships();
+
+      }
+    );
+
+
+  $("#search")
+    .addEventListener(
+      "keydown",
+      event => {
+
+        if(event.key === "Enter"){
+
+          state.page = 1;
+
+          loadMemberships();
+
+        }
+
+      }
+    );
+
+
+  $("#status")
+    .addEventListener(
+      "change",
+      () => {
+
+        state.page = 1;
+
+        if(token()){
+          loadMemberships();
+        }
+
+      }
+    );
+
+
+  $("#pageSize")
+    .addEventListener(
+      "change",
+      () => {
+
+        state.page = 1;
+
+        if(token()){
+          loadMemberships();
+        }
+
+      }
+    );
+
+
+  $("#previous")
+    .addEventListener(
+      "click",
+      () => {
+
+        if(state.page > 1){
+
+          state.page -= 1;
+
+          loadMemberships();
+
+        }
+
+      }
+    );
+
+
+  $("#next")
+    .addEventListener(
+      "click",
+      () => {
+
+        state.page += 1;
+
+        loadMemberships();
+
+      }
+    );
+
+
+  const savedToken =
+    sessionStorage.getItem(
+      "qyAdminToken"
+    );
+
+
+  if(savedToken){
+
+    $("#token").value =
+      savedToken;
+
+  }
+
+
+})();
+
+</script>
+
+
+</body>
+
+</html>

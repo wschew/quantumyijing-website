@@ -750,6 +750,7 @@ header{
           <th>Ends</th>
           <th>Activated</th>
           <th>Source Order</th>
+          <th>Action</th>
         </tr>
 
       </thead>
@@ -1118,7 +1119,7 @@ header{
     if(!rows.length){
 
       $("#membershipRows").innerHTML =
-        '<tr><td colspan="7" class="empty">No memberships.</td></tr>';
+        '<tr><td colspan="8" class="empty">No memberships.</td></tr>';
 
       return;
 
@@ -1174,6 +1175,19 @@ header{
 
               <td>
                 ${esc(valueOrDash(row.source_order_id))}
+              </td>
+
+              <td>
+
+                ${
+                  Number(row.id || 0) > 0
+                    ? `<a class="action-link"
+                           href="/admin-membership?id=${encodeURIComponent(row.id)}">
+                           Manage
+                       </a>`
+                    : "—"
+                }
+
               </td>
 
             </tr>

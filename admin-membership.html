@@ -1,0 +1,1207 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1">
+
+<title>
+  Membership Detail | Quantum YiJing Admin
+</title>
+
+
+<style>
+
+:root{
+  --bg:#f4f7fb;
+  --panel:#ffffff;
+  --line:#dce4ee;
+  --text:#172033;
+  --muted:#667085;
+  --blue:#1358c8;
+  --green:#087443;
+  --amber:#a15c00;
+  --red:#b42318;
+  --shadow:0 10px 28px rgba(16,24,40,.07);
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Inter,Arial,sans-serif;
+}
+
+header{
+  background:#0c1b33;
+  color:#fff;
+  padding:18px 28px;
+}
+
+.qy-admin-header{
+  max-width:1380px;
+  margin:auto;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:20px;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:13px;
+  color:#fff;
+  text-decoration:none;
+}
+
+.brand img{
+  width:48px;
+  height:48px;
+}
+
+.brand div{
+  display:flex;
+  flex-direction:column;
+}
+
+.brand strong{
+  font-size:20px;
+}
+
+.brand span{
+  margin-top:4px;
+  color:#cbd5e1;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.06em;
+}
+
+.toplinks{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.toplinks a{
+  color:#fff;
+  text-decoration:none;
+  border:1px solid rgba(255,255,255,.32);
+  border-radius:9px;
+  padding:9px 13px;
+  font-weight:700;
+}
+
+main{
+  max-width:1380px;
+  margin:24px auto;
+  padding:0 20px 50px;
+}
+
+.page-heading{
+  margin-bottom:24px;
+}
+
+.eyebrow{
+  color:var(--blue);
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  margin-bottom:8px;
+}
+
+.page-heading h1{
+  margin:0;
+  font-size:38px;
+}
+
+.lead{
+  margin:9px 0 0;
+  color:var(--muted);
+  font-size:17px;
+}
+
+.panel{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:14px;
+  box-shadow:var(--shadow);
+  padding:20px;
+  margin-bottom:18px;
+}
+
+.panel h2{
+  margin:0 0 16px;
+}
+
+.auth{
+  display:grid;
+  grid-template-columns:minmax(280px,520px) auto;
+  gap:12px;
+  align-items:end;
+}
+
+label{
+  display:block;
+  margin-bottom:6px;
+  font-size:13px;
+  font-weight:700;
+}
+
+input,
+textarea{
+  width:100%;
+  border:1px solid #cbd5e1;
+  border-radius:8px;
+  padding:10px 11px;
+  font-size:14px;
+}
+
+textarea{
+  min-height:90px;
+  resize:vertical;
+}
+
+button{
+  border:0;
+  border-radius:8px;
+  padding:11px 16px;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.primary{
+  background:var(--blue);
+  color:#fff;
+}
+
+.secondary{
+  background:#eef2f7;
+  color:#1d2939;
+}
+
+.danger{
+  background:#fee4e2;
+  color:#b42318;
+}
+
+button:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+.message{
+  margin-top:12px;
+  min-height:20px;
+}
+
+.message.ok{
+  color:var(--green);
+}
+
+.message.bad{
+  color:var(--red);
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:14px;
+}
+
+.field{
+  border:1px solid var(--line);
+  background:#f8fafc;
+  border-radius:10px;
+  padding:14px;
+}
+
+.field .label{
+  color:var(--muted);
+  font-size:12px;
+  text-transform:uppercase;
+  font-weight:700;
+}
+
+.field .value{
+  margin-top:6px;
+  font-weight:700;
+  word-break:break-word;
+}
+
+.ref{
+  font-family:Consolas,monospace;
+}
+
+.badge{
+  display:inline-block;
+  padding:5px 9px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+  background:#eef2ff;
+  color:#3448a3;
+}
+
+.badge.Active{
+  background:#e7f6ee;
+  color:#087443;
+}
+
+.badge.Pending{
+  background:#fff4e5;
+  color:#a15c00;
+}
+
+.badge.Expired,
+.badge.Cancelled,
+.badge.Refunded{
+  background:#f2f4f7;
+  color:#475467;
+}
+
+.operations{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+.notes-wrap{
+  margin-top:16px;
+}
+
+.notice{
+  border:1px solid #f4d7a1;
+  background:#fff8e8;
+  border-radius:10px;
+  padding:12px 14px;
+  color:#7a4a00;
+  margin-bottom:16px;
+}
+
+.table-wrap{
+  overflow:auto;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:900px;
+}
+
+th,
+td{
+  padding:12px 10px;
+  border-bottom:1px solid #e5e7eb;
+  text-align:left;
+  vertical-align:top;
+  font-size:14px;
+}
+
+th{
+  background:#f8fafc;
+  color:#475467;
+  font-size:12px;
+  text-transform:uppercase;
+}
+
+.empty{
+  text-align:center;
+  color:var(--muted);
+  padding:28px;
+}
+
+@media(max-width:900px){
+
+  .qy-admin-header{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .grid{
+    grid-template-columns:1fr;
+  }
+
+  .auth{
+    grid-template-columns:1fr;
+  }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+  <div class="qy-admin-header">
+
+    <a
+      class="brand"
+      href="/admin">
+
+      <img
+        src="/images/quantum-yijing-3d-logo.png"
+        alt="Quantum YiJing®">
+
+      <div>
+
+        <strong>
+          Quantum YiJing®
+        </strong>
+
+        <span>
+          ACADEMY OPERATING SYSTEM · v4.1
+        </span>
+
+      </div>
+
+    </a>
+
+
+    <div class="toplinks">
+
+      <a href="/admin-memberships">
+        Membership Directory
+      </a>
+
+      <a href="/admin-customers">
+        Customers
+      </a>
+
+      <a href="/admin">
+        Main Admin
+      </a>
+
+    </div>
+
+  </div>
+
+</header>
+
+
+<main>
+
+
+<div class="page-heading">
+
+  <div class="eyebrow">
+    QY-AOS · CUSTOMER MANAGEMENT
+  </div>
+
+  <h1>
+    Membership Detail
+  </h1>
+
+  <p class="lead">
+    View membership lifecycle, customer relationship and audit history.
+  </p>
+
+</div>
+
+
+<section class="panel">
+
+  <div class="auth">
+
+    <div>
+
+      <label for="token">
+        Admin Token
+      </label>
+
+      <input
+        id="token"
+        type="password"
+        autocomplete="off">
+
+    </div>
+
+
+    <button
+      id="load"
+      class="primary"
+      type="button">
+      Load Membership
+    </button>
+
+  </div>
+
+
+  <div
+    id="message"
+    class="message">
+  </div>
+
+</section>
+
+
+<section class="panel">
+
+  <h2>
+    Membership
+  </h2>
+
+  <div
+    id="membership"
+    class="grid">
+
+    <div class="empty">
+      Membership not loaded.
+    </div>
+
+  </div>
+
+</section>
+
+
+<section class="panel">
+
+  <h2>
+    Lifecycle Operations
+  </h2>
+
+  <div class="notice">
+    Status changes are audited. Terminal states cannot be reopened by the existing membership API.
+  </div>
+
+
+  <div
+    id="operations"
+    class="operations">
+  </div>
+
+
+  <div class="notes-wrap">
+
+    <label for="notes">
+      Admin notes for this status change
+    </label>
+
+    <textarea
+      id="notes"
+      placeholder="Reason or operational note">
+    </textarea>
+
+  </div>
+
+</section>
+
+
+<section class="panel">
+
+  <h2>
+    Membership Event History
+  </h2>
+
+  <div class="table-wrap">
+
+    <table>
+
+      <thead>
+
+        <tr>
+          <th>Event</th>
+          <th>From</th>
+          <th>To</th>
+          <th>Source</th>
+          <th>Reference</th>
+          <th>Notes</th>
+          <th>Date</th>
+        </tr>
+
+      </thead>
+
+      <tbody id="eventRows">
+
+        <tr>
+
+          <td
+            colspan="7"
+            class="empty">
+            Membership not loaded.
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</section>
+
+
+</main>
+
+
+<script>
+
+(() => {
+
+  const $ =
+    selector =>
+      document.querySelector(selector);
+
+
+  const membershipId =
+    Number(
+      new URLSearchParams(
+        location.search
+      ).get("id")
+    );
+
+
+  const transitions = {
+
+    Pending:[
+      "Active",
+      "Cancelled",
+      "Refunded"
+    ],
+
+    Active:[
+      "Paused",
+      "Expired",
+      "Cancelled",
+      "Refunded"
+    ],
+
+    Paused:[
+      "Active",
+      "Expired",
+      "Cancelled",
+      "Refunded"
+    ],
+
+    Expired:[],
+    Cancelled:[],
+    Refunded:[]
+
+  };
+
+
+  let currentMembership =
+    null;
+
+
+  function esc(value){
+
+    return String(
+      value ?? ""
+    ).replace(
+      /[&<>"']/g,
+      char => ({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#39;"
+      })[char]
+    );
+
+  }
+
+
+  function showMessage(
+    text,
+    bad = false
+  ){
+
+    const element =
+      $("#message");
+
+    element.textContent =
+      text || "";
+
+    element.className =
+      bad
+        ? "message bad"
+        : "message ok";
+
+  }
+
+
+  function token(){
+
+    return $("#token")
+      .value
+      .trim();
+
+  }
+
+
+  function field(
+    label,
+    value,
+    extra = ""
+  ){
+
+    const shown =
+      String(
+        value ?? ""
+      ).trim() || "—";
+
+
+    return `
+      <div class="field">
+
+        <div class="label">
+          ${esc(label)}
+        </div>
+
+        <div class="value ${esc(extra)}">
+          ${esc(shown)}
+        </div>
+
+      </div>
+    `;
+
+  }
+
+
+  function renderMembership(
+    membership
+  ){
+
+    currentMembership =
+      membership;
+
+
+    const status =
+      membership.status ||
+      "—";
+
+
+    $("#membership").innerHTML = [
+
+      field(
+        "Membership Reference",
+        membership.membership_reference,
+        "ref"
+      ),
+
+      field(
+        "Status",
+        status
+      ),
+
+      field(
+        "Customer",
+        membership.customer_name
+      ),
+
+      field(
+        "Customer Reference",
+        membership.customer_reference,
+        "ref"
+      ),
+
+      field(
+        "Customer Email",
+        membership.customer_email
+      ),
+
+      field(
+        "Customer Phone",
+        membership.customer_phone
+      ),
+
+      field(
+        "Product",
+        membership.product_name ||
+        membership.name_en ||
+        membership.product_name_zh ||
+        membership.name_zh
+      ),
+
+      field(
+        "SKU",
+        membership.sku,
+        "ref"
+      ),
+
+      field(
+        "Starts",
+        membership.starts_at
+      ),
+
+      field(
+        "Ends",
+        membership.ends_at
+      ),
+
+      field(
+        "Activated",
+        membership.activated_at
+      ),
+
+      field(
+        "Paused",
+        membership.paused_at
+      ),
+
+      field(
+        "Cancelled",
+        membership.cancelled_at
+      ),
+
+      field(
+        "Expired",
+        membership.expired_at
+      ),
+
+      field(
+        "Source",
+        membership.source
+      ),
+
+      field(
+        "Source Order ID",
+        membership.source_order_id
+      ),
+
+      field(
+        "Created",
+        membership.created_at
+      ),
+
+      field(
+        "Updated",
+        membership.updated_at
+      )
+
+    ].join("");
+
+
+    const allowed =
+      transitions[
+        membership.status
+      ] || [];
+
+
+    if(!allowed.length){
+
+      $("#operations").innerHTML =
+        '<span class="badge">Terminal state — no further lifecycle actions</span>';
+
+    }
+    else{
+
+      $("#operations").innerHTML =
+        allowed.map(
+          status => {
+
+            const dangerous =
+              [
+                "Expired",
+                "Cancelled",
+                "Refunded"
+              ].includes(status);
+
+            return `
+              <button
+                type="button"
+                class="${dangerous ? "danger" : "secondary"}"
+                data-status="${esc(status)}">
+                ${esc(status)}
+              </button>
+            `;
+
+          }
+        ).join("");
+
+
+      document
+        .querySelectorAll(
+          "[data-status]"
+        )
+        .forEach(
+          button => {
+
+            button.addEventListener(
+              "click",
+              () => {
+
+                updateStatus(
+                  button.dataset.status
+                );
+
+              }
+            );
+
+          }
+        );
+
+    }
+
+
+    const events =
+      Array.isArray(
+        membership.events
+      )
+        ? membership.events
+        : [];
+
+
+    if(!events.length){
+
+      $("#eventRows").innerHTML =
+        '<tr><td colspan="7" class="empty">No membership events.</td></tr>';
+
+    }
+    else{
+
+      $("#eventRows").innerHTML =
+        events.map(
+          event => `
+            <tr>
+
+              <td>
+                ${esc(event.event_type || "—")}
+              </td>
+
+              <td>
+                ${esc(event.from_status || "—")}
+              </td>
+
+              <td>
+                ${esc(event.to_status || "—")}
+              </td>
+
+              <td>
+                ${esc(event.source || "—")}
+              </td>
+
+              <td class="ref">
+                ${esc(event.source_reference || "—")}
+              </td>
+
+              <td>
+                ${esc(event.notes || "—")}
+              </td>
+
+              <td>
+                ${esc(event.event_at || "—")}
+              </td>
+
+            </tr>
+          `
+        ).join("");
+
+    }
+
+  }
+
+
+  async function loadMembership(){
+
+    if(
+      !Number.isInteger(
+        membershipId
+      ) ||
+      membershipId < 1
+    ){
+
+      showMessage(
+        "Invalid or missing membership ID.",
+        true
+      );
+
+      return;
+
+    }
+
+
+    const adminToken =
+      token();
+
+
+    if(!adminToken){
+
+      showMessage(
+        "Please enter the Admin Token.",
+        true
+      );
+
+      return;
+
+    }
+
+
+    sessionStorage.setItem(
+      "qyAdminToken",
+      adminToken
+    );
+
+
+    showMessage(
+      "Loading membership…"
+    );
+
+
+    try{
+
+      const response =
+        await fetch(
+          "/api/admin/memberships?action=detail&id=" +
+          encodeURIComponent(
+            membershipId
+          ),
+          {
+            headers:{
+              authorization:
+                "Bearer " +
+                adminToken
+            },
+            cache:"no-store"
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
+      if(!response.ok){
+
+        throw new Error(
+          data.error ||
+          `Membership request failed (${response.status}).`
+        );
+
+      }
+
+
+      if(
+        !data.membership ||
+        typeof data.membership !== "object"
+      ){
+
+        throw new Error(
+          "Membership detail was not returned."
+        );
+
+      }
+
+
+      renderMembership(
+        data.membership
+      );
+
+
+      showMessage(
+        `Membership ${data.membership.membership_reference || membershipId} loaded.`
+      );
+
+    }
+    catch(error){
+
+      showMessage(
+        error.message ||
+        "Unable to load membership.",
+        true
+      );
+
+    }
+
+  }
+
+
+  async function updateStatus(
+    nextStatus
+  ){
+
+    if(!currentMembership){
+      return;
+    }
+
+
+    const allowed =
+      transitions[
+        currentMembership.status
+      ] || [];
+
+
+    if(
+      !allowed.includes(
+        nextStatus
+      )
+    ){
+
+      showMessage(
+        "That lifecycle transition is not allowed.",
+        true
+      );
+
+      return;
+
+    }
+
+
+    const adminToken =
+      token();
+
+
+    if(!adminToken){
+
+      showMessage(
+        "Admin Token is required.",
+        true
+      );
+
+      return;
+
+    }
+
+
+    const notes =
+      $("#notes")
+        .value
+        .trim();
+
+
+    const confirmed =
+      window.confirm(
+        `Change membership ${currentMembership.membership_reference} from ${currentMembership.status} to ${nextStatus}?`
+      );
+
+
+    if(!confirmed){
+      return;
+    }
+
+
+    showMessage(
+      `Changing status to ${nextStatus}…`
+    );
+
+
+    try{
+
+      const response =
+        await fetch(
+          "/api/admin/memberships?action=status",
+          {
+            method:"POST",
+            headers:{
+              authorization:
+                "Bearer " +
+                adminToken,
+              "content-type":
+                "application/json"
+            },
+            body:JSON.stringify({
+              membershipId:
+                currentMembership.id,
+              status:
+                nextStatus,
+              source:
+                "AdminMembershipUI",
+              sourceReference:
+                "v4.1",
+              notes
+            })
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
+      if(!response.ok){
+
+        throw new Error(
+          data.error ||
+          `Membership update failed (${response.status}).`
+        );
+
+      }
+
+
+      $("#notes").value =
+        "";
+
+
+      renderMembership(
+        data.membership
+      );
+
+
+      showMessage(
+        data.changed === false
+          ? "Membership already had that status."
+          : `Membership changed to ${nextStatus}.`
+      );
+
+    }
+    catch(error){
+
+      showMessage(
+        error.message ||
+        "Unable to update membership.",
+        true
+      );
+
+    }
+
+  }
+
+
+  $("#load")
+    .addEventListener(
+      "click",
+      loadMembership
+    );
+
+
+  const savedToken =
+    sessionStorage.getItem(
+      "qyAdminToken"
+    );
+
+
+  if(savedToken){
+
+    $("#token").value =
+      savedToken;
+
+
+    if(
+      Number.isInteger(
+        membershipId
+      ) &&
+      membershipId > 0
+    ){
+
+      loadMembership();
+
+    }
+
+  }
+
+
+})();
+
+</script>
+
+
+</body>
+
+</html>
