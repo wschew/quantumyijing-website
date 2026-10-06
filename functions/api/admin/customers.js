@@ -327,6 +327,28 @@ async function getCustomer(
       ORDER BY m.id DESC
     `).bind(id).all();
 
+
+  const profileEvents =
+    await db.prepare(`
+      SELECT
+        id,
+        customer_id,
+        event_type,
+        field_name,
+        old_value,
+        new_value,
+        source,
+        source_reference,
+        notes,
+        event_at
+      FROM customer_profile_events
+      WHERE customer_id = ?
+      ORDER BY id DESC
+      LIMIT 100
+    `)
+      .bind(id)
+      .all();
+
   return {
     ...customer,
     identifiers:
@@ -334,7 +356,9 @@ async function getCustomer(
     enquiries:
       enquiries.results || [],
     memberships:
-      memberships.results || []
+      memberships.results || [],
+    profile_events:
+      profileEvents.results || []
   };
 }
 

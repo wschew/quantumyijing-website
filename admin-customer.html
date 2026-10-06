@@ -631,6 +631,243 @@ header{
 
 
 
+
+<!-- =========================================================
+     v4.1 A5A CUSTOMER PROFILE EDITOR
+     SAFE PROFILE FIELDS ONLY
+     ========================================================= -->
+
+<style>
+
+.a5a-form{
+  display:grid;
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(180px,1fr)
+    );
+  gap:16px;
+  margin-top:16px;
+}
+
+.a5a-field{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+
+.a5a-field label{
+  font-weight:700;
+  font-size:13px;
+}
+
+.a5a-field input,
+.a5a-field textarea{
+  width:100%;
+  box-sizing:border-box;
+  padding:10px 12px;
+  border:1px solid #d0d5dd;
+  border-radius:8px;
+  font:inherit;
+  background:#fff;
+}
+
+.a5a-field textarea{
+  min-height:82px;
+  resize:vertical;
+}
+
+.a5a-readonly{
+  background:#f8fafc !important;
+  color:#667085;
+}
+
+.a5a-actions{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  margin-top:16px;
+  flex-wrap:wrap;
+}
+
+.a5a-message{
+  font-size:13px;
+  font-weight:700;
+}
+
+.a5a-note{
+  margin-top:12px;
+  padding:12px 14px;
+  background:#f8fafc;
+  border-radius:8px;
+  color:#475467;
+  font-size:13px;
+}
+
+@media(max-width:850px){
+
+  .a5a-form{
+    grid-template-columns:1fr;
+  }
+
+}
+
+</style>
+
+
+<section class="panel">
+
+  <h2>
+    Edit Customer Profile
+  </h2>
+
+  <p class="muted">
+    Safe profile fields only. Customer reference, email, phone and status remain protected.
+  </p>
+
+
+  <div class="a5a-form">
+
+    <div class="a5a-field">
+      <label for="a5aReference">Customer Reference</label>
+      <input
+        id="a5aReference"
+        class="a5a-readonly"
+        readonly>
+    </div>
+
+    <div class="a5a-field">
+      <label for="a5aEmail">Email</label>
+      <input
+        id="a5aEmail"
+        class="a5a-readonly"
+        readonly>
+    </div>
+
+    <div class="a5a-field">
+      <label for="a5aPhone">Phone</label>
+      <input
+        id="a5aPhone"
+        class="a5a-readonly"
+        readonly>
+    </div>
+
+    <div class="a5a-field">
+      <label for="a5aDisplayName">Display Name</label>
+      <input
+        id="a5aDisplayName"
+        maxlength="160">
+    </div>
+
+    <div class="a5a-field">
+      <label for="a5aCountry">Country</label>
+      <input
+        id="a5aCountry"
+        maxlength="100">
+    </div>
+
+    <div class="a5a-field">
+      <label for="a5aLanguage">Language</label>
+      <input
+        id="a5aLanguage"
+        maxlength="10">
+    </div>
+
+  </div>
+
+
+  <div class="a5a-field" style="margin-top:16px;">
+
+    <label for="a5aNotes">
+      Admin Note
+    </label>
+
+    <textarea
+      id="a5aNotes"
+      maxlength="2000"
+      placeholder="Optional reason or context for this profile update."></textarea>
+
+  </div>
+
+
+  <div class="a5a-note">
+
+    Email and phone are not editable here because they are part of the canonical customer identity system.
+
+  </div>
+
+
+  <div class="a5a-actions">
+
+    <button
+      id="a5aSave"
+      type="button">
+      Save Profile
+    </button>
+
+    <button
+      id="a5aReset"
+      type="button"
+      class="secondary">
+      Reset
+    </button>
+
+    <span
+      id="a5aMessage"
+      class="a5a-message">
+    </span>
+
+  </div>
+
+</section>
+
+
+<section class="panel">
+
+  <h2>
+    Profile Audit History
+    <span
+      id="a5aAuditCount"
+      class="section-count">
+    </span>
+  </h2>
+
+  <p class="muted">
+    Field-level history of administrative customer-profile changes.
+  </p>
+
+  <div class="table-wrap">
+
+    <table>
+
+      <thead>
+        <tr>
+          <th>When</th>
+          <th>Field</th>
+          <th>Old Value</th>
+          <th>New Value</th>
+          <th>Source</th>
+          <th>Reference</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+
+      <tbody id="a5aAuditRows">
+
+        <tr>
+          <td colspan="7" class="empty">
+            Profile audit history not loaded.
+          </td>
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</section>
+
 <section class="panel">
 
   <h2>
@@ -2086,6 +2323,567 @@ header{
   setTimeout(
     loadAccessSummary,
     100
+  );
+
+
+})();
+
+</script>
+
+
+<script>
+
+/* =========================================================
+   v4.1 A5A CUSTOMER PROFILE EDITOR
+   ========================================================= */
+
+(() => {
+
+  const customerId =
+    Number(
+      new URLSearchParams(
+        location.search
+      ).get("id")
+    );
+
+
+  let loadedProfile =
+    null;
+
+
+  const byId =
+    id =>
+      document.getElementById(id);
+
+
+  function escA5A(value){
+
+    return String(
+      value ?? ""
+    ).replace(
+      /[&<>"']/g,
+      char => ({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#39;"
+      })[char]
+    );
+
+  }
+
+
+  function shownA5A(value){
+
+    const text =
+      String(
+        value ?? ""
+      ).trim();
+
+    return text || "—";
+
+  }
+
+
+  function tokenA5A(){
+
+    const field =
+      document.querySelector(
+        "#token"
+      );
+
+    return (
+      field?.value?.trim() ||
+      sessionStorage.getItem(
+        "qyAdminToken"
+      ) ||
+      ""
+    );
+
+  }
+
+
+  function messageA5A(
+    text,
+    isError = false
+  ){
+
+    const host =
+      byId("a5aMessage");
+
+
+    if(!host){
+      return;
+    }
+
+
+    host.textContent =
+      text || "";
+
+
+    host.style.color =
+      isError
+        ? "#b42318"
+        : "#087443";
+
+  }
+
+
+  function renderEditorA5A(customer){
+
+    loadedProfile = {
+      display_name:
+        String(
+          customer.display_name || ""
+        ),
+
+      country:
+        String(
+          customer.country || ""
+        ),
+
+      language:
+        String(
+          customer.language || ""
+        )
+    };
+
+
+    byId("a5aReference").value =
+      customer.customer_reference || "";
+
+    byId("a5aEmail").value =
+      customer.email || "";
+
+    byId("a5aPhone").value =
+      customer.phone || "";
+
+    byId("a5aDisplayName").value =
+      loadedProfile.display_name;
+
+    byId("a5aCountry").value =
+      loadedProfile.country;
+
+    byId("a5aLanguage").value =
+      loadedProfile.language;
+
+  }
+
+
+  function renderAuditA5A(rows){
+
+    const host =
+      byId("a5aAuditRows");
+
+
+    byId("a5aAuditCount").textContent =
+      `(${rows.length})`;
+
+
+    if(!rows.length){
+
+      host.innerHTML =
+        '<tr><td colspan="7" class="empty">No profile changes recorded.</td></tr>';
+
+      return;
+
+    }
+
+
+    host.innerHTML =
+      rows.map(
+        row => `
+          <tr>
+            <td>${escA5A(shownA5A(row.event_at))}</td>
+            <td>${escA5A(shownA5A(row.field_name))}</td>
+            <td>${escA5A(shownA5A(row.old_value))}</td>
+            <td>${escA5A(shownA5A(row.new_value))}</td>
+            <td>${escA5A(shownA5A(row.source))}</td>
+            <td>${escA5A(shownA5A(row.source_reference))}</td>
+            <td>${escA5A(shownA5A(row.notes))}</td>
+          </tr>
+        `
+      ).join("");
+
+  }
+
+
+  async function fetchDetailA5A(){
+
+    if(
+      !Number.isInteger(customerId) ||
+      customerId < 1
+    ){
+      return;
+    }
+
+
+    const token =
+      tokenA5A();
+
+
+    if(!token){
+      return;
+    }
+
+
+    const response =
+      await fetch(
+        "/api/admin/customers?action=detail&id=" +
+        encodeURIComponent(customerId),
+        {
+          headers:{
+            authorization:
+              "Bearer " + token
+          },
+          cache:"no-store"
+        }
+      );
+
+
+    let data = {};
+
+
+    try{
+      data =
+        await response.json();
+    }
+    catch{
+      throw new Error(
+        "Customer detail returned invalid JSON."
+      );
+    }
+
+
+    if(!response.ok){
+
+      throw new Error(
+        data.error ||
+        `Customer detail failed (${response.status}).`
+      );
+
+    }
+
+
+    const customer =
+      data.customer || {};
+
+
+    renderEditorA5A(
+      customer
+    );
+
+
+    renderAuditA5A(
+      Array.isArray(
+        customer.profile_events
+      )
+        ? customer.profile_events
+        : []
+    );
+
+  }
+
+
+  async function saveProfileA5A(){
+
+    if(!loadedProfile){
+
+      messageA5A(
+        "Load the customer before editing.",
+        true
+      );
+
+      return;
+
+    }
+
+
+    const displayName =
+      byId(
+        "a5aDisplayName"
+      ).value.trim();
+
+
+    const country =
+      byId(
+        "a5aCountry"
+      ).value.trim();
+
+
+    const language =
+      byId(
+        "a5aLanguage"
+      ).value.trim();
+
+
+    const notes =
+      byId(
+        "a5aNotes"
+      ).value.trim();
+
+
+    if(!displayName){
+
+      messageA5A(
+        "Display Name is required.",
+        true
+      );
+
+      return;
+
+    }
+
+
+    if(!language){
+
+      messageA5A(
+        "Language is required.",
+        true
+      );
+
+      return;
+
+    }
+
+
+    const changed =
+      displayName !==
+        loadedProfile.display_name ||
+
+      country !==
+        loadedProfile.country ||
+
+      language !==
+        loadedProfile.language;
+
+
+    if(!changed){
+
+      messageA5A(
+        "No profile changes to save."
+      );
+
+      return;
+
+    }
+
+
+    if(
+      !window.confirm(
+        "Save these customer profile changes?\n\n" +
+        "Only Display Name, Country and Language can be changed here."
+      )
+    ){
+      return;
+    }
+
+
+    const token =
+      tokenA5A();
+
+
+    if(!token){
+
+      messageA5A(
+        "Admin token is required.",
+        true
+      );
+
+      return;
+
+    }
+
+
+    byId("a5aSave").disabled =
+      true;
+
+
+    messageA5A(
+      "Saving..."
+    );
+
+
+    try{
+
+      const response =
+        await fetch(
+          "/api/admin/customers?action=profile",
+          {
+            method:"POST",
+
+            headers:{
+              authorization:
+                "Bearer " + token,
+
+              "content-type":
+                "application/json"
+            },
+
+            body:
+              JSON.stringify({
+                id:
+                  customerId,
+
+                display_name:
+                  displayName,
+
+                country:
+                  country,
+
+                language:
+                  language,
+
+                source:
+                  "AdminCustomerProfile",
+
+                source_reference:
+                  "v4.1-A5A-UI",
+
+                notes:
+                  notes
+              })
+          }
+        );
+
+
+      let data = {};
+
+
+      try{
+        data =
+          await response.json();
+      }
+      catch{
+        throw new Error(
+          "Profile update returned invalid JSON."
+        );
+      }
+
+
+      if(!response.ok){
+
+        throw new Error(
+          data.error ||
+          `Profile update failed (${response.status}).`
+        );
+
+      }
+
+
+      messageA5A(
+        data.changed
+          ? `Profile saved. ${data.event_count || 0} change(s) recorded.`
+          : "No profile values changed."
+      );
+
+
+      byId("a5aNotes").value =
+        "";
+
+
+      await fetchDetailA5A();
+
+    }
+    catch(error){
+
+      messageA5A(
+        error.message ||
+        "Unable to save profile.",
+        true
+      );
+
+    }
+    finally{
+
+      byId("a5aSave").disabled =
+        false;
+
+    }
+
+  }
+
+
+  function resetProfileA5A(){
+
+    if(!loadedProfile){
+      return;
+    }
+
+
+    byId("a5aDisplayName").value =
+      loadedProfile.display_name;
+
+    byId("a5aCountry").value =
+      loadedProfile.country;
+
+    byId("a5aLanguage").value =
+      loadedProfile.language;
+
+    byId("a5aNotes").value =
+      "";
+
+
+    messageA5A(
+      "Unsaved changes reset."
+    );
+
+  }
+
+
+  byId("a5aSave")?.addEventListener(
+    "click",
+    saveProfileA5A
+  );
+
+
+  byId("a5aReset")?.addEventListener(
+    "click",
+    resetProfileA5A
+  );
+
+
+  document.querySelector(
+    "#load"
+  )?.addEventListener(
+    "click",
+    () => {
+
+      setTimeout(
+        () => {
+
+          fetchDetailA5A()
+            .catch(
+              error =>
+                messageA5A(
+                  error.message,
+                  true
+                )
+            );
+
+        },
+        180
+      );
+
+    }
+  );
+
+
+  setTimeout(
+    () => {
+
+      fetchDetailA5A()
+        .catch(
+          error =>
+            messageA5A(
+              error.message,
+              true
+            )
+        );
+
+    },
+    150
   );
 
 
