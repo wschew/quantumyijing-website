@@ -319,6 +319,118 @@ th{
 
 }
 
+
+/* =========================================================
+   QY ADMIN STANDARD HEADER
+   ========================================================= */
+
+header{
+  background:#0c1b33;
+  color:#fff;
+  padding:18px 28px;
+}
+
+.qy-admin-header{
+  max-width:1380px;
+  margin:auto;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:20px;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:13px;
+  color:#fff;
+  text-decoration:none;
+}
+
+.brand img{
+  width:48px;
+  height:48px;
+  object-fit:contain;
+  flex:0 0 auto;
+}
+
+.brand div{
+  display:flex;
+  flex-direction:column;
+}
+
+.brand strong{
+  font-size:20px;
+  line-height:1.2;
+}
+
+.brand span{
+  margin-top:4px;
+  color:#cbd5e1;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.06em;
+}
+
+.toplinks{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.toplinks a{
+  color:#fff;
+  text-decoration:none;
+  border:1px solid rgba(255,255,255,.32);
+  border-radius:9px;
+  padding:9px 13px;
+  font-weight:700;
+}
+
+.toplinks a:hover{
+  background:rgba(255,255,255,.08);
+}
+
+.page-heading{
+  margin:0 0 24px;
+}
+
+.eyebrow{
+  color:#1358c8;
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  margin-bottom:8px;
+}
+
+.page-heading h1{
+  margin:0;
+  font-size:38px;
+  line-height:1.15;
+  color:#172033;
+}
+
+.page-heading .lead{
+  max-width:950px;
+  margin:9px 0 0;
+  color:#667085;
+  font-size:17px;
+  line-height:1.55;
+}
+
+@media(max-width:760px){
+
+  .qy-admin-header{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .page-heading h1{
+    font-size:31px;
+  }
+
+}
 </style>
 
 </head>
@@ -329,29 +441,39 @@ th{
 
 <header>
 
-  <div class="header-inner">
+  <div class="qy-admin-header">
 
-    <div>
+    <a
+      class="brand"
+      href="/admin">
 
-      <h1>
-        Customer Detail
-      </h1>
+      <img
+        src="/images/quantum-yijing-3d-logo.png"
+        alt="Quantum YiJing®">
 
-      <p>
-        Quantum YiJing Academy Operating System · v4.1
-      </p>
+      <div>
 
-    </div>
+        <strong>
+          Quantum YiJing®
+        </strong>
+
+        <span>
+          ACADEMY OPERATING SYSTEM · v4.1
+        </span>
+
+      </div>
+
+    </a>
 
 
-    <div class="top-links">
+    <div class="toplinks">
 
       <a href="/admin-customers">
-        ← Customer Directory
+        Customer Directory
       </a>
 
       <a href="/admin">
-        Admin Home
+        Main Admin
       </a>
 
     </div>
@@ -362,6 +484,22 @@ th{
 
 
 <main>
+
+<div class="page-heading">
+
+  <div class="eyebrow">
+    QY-AOS · CUSTOMER MANAGEMENT
+  </div>
+
+  <h1>
+    Customer Detail
+  </h1>
+
+  <p class="lead">
+    View the customer's canonical identity, linked enquiries and membership relationships.
+  </p>
+
+</div>
 
 
 <section class="panel">
