@@ -774,6 +774,92 @@ header{
 </section>
 
 
+
+<!-- =========================================================
+     v4.1 A4 CUSTOMER ACCESS SUMMARY
+     READ ONLY
+     ========================================================= -->
+
+<section class="panel">
+
+  <h2>Subscriptions</h2>
+
+  <p class="muted">
+    Read-only subscription summary. Orders and payments remain the financial source of truth.
+  </p>
+
+  <div class="table-wrap">
+
+    <table>
+
+      <thead>
+        <tr>
+          <th>Subscription</th>
+          <th>Plan / Membership</th>
+          <th>Status</th>
+          <th>Current Period</th>
+          <th>Next Renewal</th>
+          <th>Grace Ends</th>
+          <th>Auto Renew</th>
+          <th>Cancel at Period End</th>
+        </tr>
+      </thead>
+
+      <tbody id="subscriptionRows">
+        <tr>
+          <td colspan="8" class="empty">
+            Subscription summary not loaded.
+          </td>
+        </tr>
+      </tbody>
+
+    </table>
+
+  </div>
+
+</section>
+
+
+<section class="panel">
+
+  <h2>Course Access</h2>
+
+  <p class="muted">
+    Read-only course entitlement summary for this canonical customer.
+  </p>
+
+  <div class="table-wrap">
+
+    <table>
+
+      <thead>
+        <tr>
+          <th>Entitlement</th>
+          <th>Course</th>
+          <th>Status</th>
+          <th>Access</th>
+          <th>Starts</th>
+          <th>Ends</th>
+          <th>Granted</th>
+          <th>Student</th>
+          <th>Source</th>
+        </tr>
+      </thead>
+
+      <tbody id="courseAccessRows">
+        <tr>
+          <td colspan="9" class="empty">
+            Course access summary not loaded.
+          </td>
+        </tr>
+      </tbody>
+
+    </table>
+
+  </div>
+
+</section>
+
 </main>
 
 
@@ -1455,6 +1541,557 @@ header{
 
 </script>
 
+
+
+<script>
+
+/* =========================================================
+   v4.1 A4 CUSTOMER ACCESS SUMMARY
+   READ ONLY
+   ========================================================= */
+
+(() => {
+
+  const SUBSCRIPTION_CUSTOMER_PARAMETER =
+    "customerId";
+
+
+  const customerId =
+    Number(
+      new URLSearchParams(
+        location.search
+      ).get("id")
+    );
+
+
+  function escA4(value){
+
+    return String(
+      value ?? ""
+    ).replace(
+      /[&<>"']/g,
+      char => ({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#39;"
+      })[char]
+    );
+
+  }
+
+
+  function shown(value){
+
+    const text =
+      String(
+        value ?? ""
+      ).trim();
+
+    return text || "—";
+
+  }
+
+
+  function yesNo(value){
+
+    return Number(value || 0) === 1
+      ? "Yes"
+      : "No";
+
+  }
+
+
+  function adminTokenA4(){
+
+    const field =
+      document.querySelector("#token");
+
+    return (
+      field?.value?.trim() ||
+      sessionStorage.getItem(
+        "qyAdminToken"
+      ) ||
+      ""
+    );
+
+  }
+
+
+  async function fetchA4(url, token){
+
+    const response =
+      await fetch(
+        url,
+        {
+          method:"GET",
+          headers:{
+            authorization:
+              "Bearer " + token
+          },
+          cache:"no-store"
+        }
+      );
+
+
+    let data = {};
+
+
+    try {
+
+      data =
+        await response.json();
+
+    }
+    catch {
+
+      throw new Error(
+        "Access-summary API returned invalid JSON."
+      );
+
+    }
+
+
+    if(!response.ok){
+
+      throw new Error(
+        data.error ||
+        `Request failed (${response.status}).`
+      );
+
+    }
+
+
+    return data;
+
+  }
+
+
+  function subscriptionsFrom(data){
+
+    if(Array.isArray(data.subscriptions)){
+      return data.subscriptions;
+    }
+
+    if(Array.isArray(data.results)){
+      return data.results;
+    }
+
+    if(Array.isArray(data.rows)){
+      return data.rows;
+    }
+
+    return [];
+
+  }
+
+
+  function entitlementsFrom(data){
+
+    if(Array.isArray(data.entitlements)){
+      return data.entitlements;
+    }
+
+    if(Array.isArray(data.results)){
+      return data.results;
+    }
+
+    return [];
+
+  }
+
+
+  function renderSubscriptions(rows){
+
+    const host =
+      document.querySelector(
+        "#subscriptionRows"
+      );
+
+
+    if(!host){
+      return;
+    }
+
+
+    if(!rows.length){
+
+      host.innerHTML =
+        '<tr><td colspan="8" class="empty">No subscriptions.</td></tr>';
+
+      return;
+
+    }
+
+
+    host.innerHTML =
+      rows.map(
+        row => {
+
+          const plan =
+            row.plan_name ||
+            row.plan_name_en ||
+            row.product_name ||
+            row.name_en ||
+            row.plan_reference ||
+            (
+              row.plan_id
+                ? `Plan ID ${row.plan_id}`
+                : "—"
+            );
+
+
+          const membership =
+            row.membership_reference ||
+            (
+              row.membership_id
+                ? `Membership ID ${row.membership_id}`
+                : "—"
+            );
+
+
+          return `
+            <tr>
+
+              <td>
+                <div class="reference">
+                  ${escA4(shown(row.subscription_reference))}
+                </div>
+
+                <div class="muted">
+                  ID ${escA4(shown(row.id))}
+                </div>
+              </td>
+
+              <td>
+                <strong>
+                  ${escA4(plan)}
+                </strong>
+
+                <div class="muted">
+                  ${escA4(membership)}
+                </div>
+              </td>
+
+              <td>
+                <span class="badge ${escA4(row.status || "")}">
+                  ${escA4(shown(row.status))}
+                </span>
+              </td>
+
+              <td>
+                ${escA4(shown(row.current_period_start))}
+
+                <div class="muted">
+                  to ${escA4(shown(row.current_period_end))}
+                </div>
+              </td>
+
+              <td>
+                ${escA4(shown(row.next_renewal_at))}
+              </td>
+
+              <td>
+                ${escA4(shown(row.grace_ends_at))}
+              </td>
+
+              <td>
+                ${yesNo(row.auto_renew)}
+              </td>
+
+              <td>
+                ${yesNo(row.cancel_at_period_end)}
+              </td>
+
+            </tr>
+          `;
+
+        }
+      ).join("");
+
+  }
+
+
+  function renderCourseAccess(rows){
+
+    const host =
+      document.querySelector(
+        "#courseAccessRows"
+      );
+
+
+    if(!host){
+      return;
+    }
+
+
+    if(!rows.length){
+
+      host.innerHTML =
+        '<tr><td colspan="9" class="empty">No course access records.</td></tr>';
+
+      return;
+
+    }
+
+
+    host.innerHTML =
+      rows.map(
+        row => {
+
+          const course =
+            row.name_en ||
+            row.name_zh ||
+            row.slug ||
+            "—";
+
+
+          const student =
+            row.student_reference ||
+            (
+              row.student_id
+                ? `Student ID ${row.student_id}`
+                : "—"
+            );
+
+
+          const source =
+            row.source_type ||
+            row.source ||
+            "—";
+
+
+          return `
+            <tr>
+
+              <td>
+                <div class="reference">
+                  ${escA4(shown(row.entitlement_reference))}
+                </div>
+
+                <div class="muted">
+                  ID ${escA4(shown(row.id))}
+                </div>
+              </td>
+
+              <td>
+                <strong>
+                  ${escA4(course)}
+                </strong>
+
+                <div class="muted">
+                  ${escA4(shown(row.sku))}
+                </div>
+              </td>
+
+              <td>
+                <span class="badge ${escA4(row.status || "")}">
+                  ${escA4(shown(row.status))}
+                </span>
+              </td>
+
+              <td>
+                ${escA4(shown(row.access_scope))}
+              </td>
+
+              <td>
+                ${escA4(shown(row.starts_at))}
+              </td>
+
+              <td>
+                ${escA4(shown(row.ends_at))}
+              </td>
+
+              <td>
+                ${escA4(shown(row.granted_at))}
+              </td>
+
+              <td>
+                ${escA4(student)}
+              </td>
+
+              <td>
+                ${escA4(source)}
+
+                ${
+                  row.source_order_id
+                    ? `<div class="muted">
+                         Order ID ${escA4(row.source_order_id)}
+                       </div>`
+                    : ""
+                }
+
+                ${
+                  row.source_membership_id
+                    ? `<div class="muted">
+                         Membership ID ${escA4(row.source_membership_id)}
+                       </div>`
+                    : ""
+                }
+              </td>
+
+            </tr>
+          `;
+
+        }
+      ).join("");
+
+  }
+
+
+  async function loadAccessSummary(){
+
+    if(
+      !Number.isInteger(customerId) ||
+      customerId < 1
+    ){
+      return;
+    }
+
+
+    const token =
+      adminTokenA4();
+
+
+    if(!token){
+      return;
+    }
+
+
+    const subscriptionParams =
+      new URLSearchParams();
+
+
+    subscriptionParams.set(
+      SUBSCRIPTION_CUSTOMER_PARAMETER,
+      String(customerId)
+    );
+
+
+    const entitlementParams =
+      new URLSearchParams();
+
+
+    entitlementParams.set(
+      "customer_id",
+      String(customerId)
+    );
+
+
+    try {
+
+      const [
+        subscriptionData,
+        entitlementData
+      ] =
+        await Promise.all([
+          fetchA4(
+            "/api/admin/subscriptions?" +
+            subscriptionParams.toString(),
+            token
+          ),
+          fetchA4(
+            "/api/admin/course-entitlements?" +
+            entitlementParams.toString(),
+            token
+          )
+        ]);
+
+
+      renderSubscriptions(
+        subscriptionsFrom(
+          subscriptionData
+        )
+      );
+
+
+      renderCourseAccess(
+        entitlementsFrom(
+          entitlementData
+        )
+      );
+
+    }
+    catch(error){
+
+      const text =
+        escA4(
+          error.message ||
+          "Unable to load access summary."
+        );
+
+
+      const subscriptionHost =
+        document.querySelector(
+          "#subscriptionRows"
+        );
+
+
+      const entitlementHost =
+        document.querySelector(
+          "#courseAccessRows"
+        );
+
+
+      if(subscriptionHost){
+
+        subscriptionHost.innerHTML =
+          `<tr>
+             <td colspan="8" class="empty">
+               ${text}
+             </td>
+           </tr>`;
+
+      }
+
+
+      if(entitlementHost){
+
+        entitlementHost.innerHTML =
+          `<tr>
+             <td colspan="9" class="empty">
+               ${text}
+             </td>
+           </tr>`;
+
+      }
+
+    }
+
+  }
+
+
+  const loadButton =
+    document.querySelector("#load");
+
+
+  if(loadButton){
+
+    loadButton.addEventListener(
+      "click",
+      () => {
+
+        setTimeout(
+          loadAccessSummary,
+          150
+        );
+
+      }
+    );
+
+  }
+
+
+  setTimeout(
+    loadAccessSummary,
+    100
+  );
+
+
+})();
+
+</script>
 
 </body>
 
