@@ -2891,6 +2891,801 @@ header{
 
 </script>
 
+
+<script>
+
+/* =========================================================
+   v4.1 A6A CUSTOMER SUBSCRIPTION ADMINISTRATION
+   ADDITIVE UI — EXISTING A4 SUMMARY REMAINS SOURCE DISPLAY
+   ========================================================= */
+
+(() => {
+
+  const customerId =
+    Number(
+      new URLSearchParams(
+        location.search
+      ).get("id")
+    );
+
+  if(
+    !Number.isInteger(customerId) ||
+    customerId < 1
+  ){
+    return;
+  }
+
+
+  function escA6A(value){
+
+    return String(
+      value ?? ""
+    ).replace(
+      /[&<>"']/g,
+      char => ({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#39;"
+      })[char]
+    );
+
+  }
+
+
+  function shownA6A(value){
+
+    const text =
+      String(
+        value ?? ""
+      ).trim();
+
+    return text || "—";
+
+  }
+
+
+  function tokenA6A(){
+
+    const field =
+      document.querySelector(
+        "#token"
+      );
+
+    return (
+      field?.value?.trim() ||
+      sessionStorage.getItem(
+        "qyAdminToken"
+      ) ||
+      ""
+    );
+
+  }
+
+
+  function statusActionsA6A(status){
+
+    const map = {
+
+      Pending:[
+        ["Active","Activate"],
+        ["Cancelled","Cancel"]
+      ],
+
+      Active:[
+        ["PastDue","Mark Past Due"],
+        ["Paused","Pause"],
+        ["Cancelled","Cancel"],
+        ["Expired","Expire"]
+      ],
+
+      PastDue:[
+        ["Active","Restore Active"],
+        ["Paused","Pause"],
+        ["Cancelled","Cancel"],
+        ["Expired","Expire"]
+      ],
+
+      Paused:[
+        ["Active","Resume"],
+        ["Cancelled","Cancel"],
+        ["Expired","Expire"]
+      ],
+
+      Cancelled:[],
+
+      Expired:[]
+
+    };
+
+    return map[
+      String(status || "")
+    ] || [];
+
+  }
+
+
+  async function requestA6A(
+    url,
+    options = {}
+  ){
+
+    const token =
+      tokenA6A();
+
+    if(!token){
+      throw new Error(
+        "Admin token is required."
+      );
+    }
+
+    const response =
+      await fetch(
+        url,
+        {
+          ...options,
+
+          headers:{
+            authorization:
+              "Bearer " + token,
+
+            "content-type":
+              "application/json",
+
+            ...(options.headers || {})
+          },
+
+          cache:"no-store"
+        }
+      );
+
+    let data = {};
+
+    try{
+      data =
+        await response.json();
+    }
+    catch{
+      throw new Error(
+        `Subscription API returned invalid JSON (${response.status}).`
+      );
+    }
+
+    if(!response.ok){
+      throw new Error(
+        data.error ||
+        `Request failed (${response.status}).`
+      );
+    }
+
+    return data;
+
+  }
+
+
+  function createPanelA6A(){
+
+    if(
+      document.querySelector(
+        "#subscriptionAdministrationA6A"
+      )
+    ){
+      return;
+    }
+
+    const summaryRows =
+      document.querySelector(
+        "#subscriptionRows"
+      );
+
+    const summaryPanel =
+      summaryRows?.closest(
+        "section.panel"
+      );
+
+    if(!summaryPanel){
+      return;
+    }
+
+    const panel =
+      document.createElement(
+        "section"
+      );
+
+    panel.className =
+      "panel";
+
+    panel.id =
+      "subscriptionAdministrationA6A";
+
+    panel.innerHTML = `
+      <h2>Subscription Administration</h2>
+
+      <p class="muted">
+        Manage subscription lifecycle status for this customer.
+        Orders and payments remain the financial source of truth.
+        Automatic renewal is not enabled.
+      </p>
+
+      <div style="
+        display:flex;
+        gap:10px;
+        align-items:center;
+        flex-wrap:wrap;
+        margin:12px 0;
+      ">
+        <button
+          type="button"
+          id="refreshSubscriptionsA6A"
+        >
+          Refresh Subscription Controls
+        </button>
+
+        <span
+          id="subscriptionAdminMessageA6A"
+          class="muted"
+        ></span>
+      </div>
+
+      <div
+        id="subscriptionAdminRowsA6A"
+      >
+        <div class="empty">
+          Subscription controls not loaded.
+        </div>
+      </div>
+    `;
+
+    summaryPanel.insertAdjacentElement(
+      "afterend",
+      panel
+    );
+
+    document
+      .querySelector(
+        "#refreshSubscriptionsA6A"
+      )
+      ?.addEventListener(
+        "click",
+        loadA6A
+      );
+
+  }
+
+
+  function messageA6A(
+    text,
+    error = false
+  ){
+
+    const host =
+      document.querySelector(
+        "#subscriptionAdminMessageA6A"
+      );
+
+    if(!host){
+      return;
+    }
+
+    host.textContent =
+      String(text || "");
+
+    host.style.fontWeight =
+      error ? "700" : "";
+
+  }
+
+
+  function actionButtonsA6A(row){
+
+    const actions =
+      statusActionsA6A(
+        row.status
+      );
+
+    const statusButtons =
+      actions.map(
+        ([target,label]) => `
+          <button
+            type="button"
+            data-a6a-status="${escA6A(target)}"
+            data-a6a-id="${escA6A(row.id)}"
+          >
+            ${escA6A(label)}
+          </button>
+        `
+      ).join(" ");
+
+    const canScheduleCancel =
+      [
+        "Pending",
+        "Active",
+        "PastDue",
+        "Paused"
+      ].includes(
+        String(row.status || "")
+      ) &&
+      Number(
+        row.cancel_at_period_end || 0
+      ) !== 1;
+
+    const cancelAtEnd =
+      canScheduleCancel
+        ? `
+          <button
+            type="button"
+            data-a6a-cancel-end="${escA6A(row.id)}"
+          >
+            Cancel at Period End
+          </button>
+        `
+        : "";
+
+    if(
+      !statusButtons &&
+      !cancelAtEnd
+    ){
+      return `
+        <span class="muted">
+          No lifecycle actions available.
+        </span>
+      `;
+    }
+
+    return `
+      <div style="
+        display:flex;
+        gap:8px;
+        flex-wrap:wrap;
+      ">
+        ${statusButtons}
+        ${cancelAtEnd}
+      </div>
+    `;
+
+  }
+
+
+  function renderA6A(rows){
+
+    const host =
+      document.querySelector(
+        "#subscriptionAdminRowsA6A"
+      );
+
+    if(!host){
+      return;
+    }
+
+    if(!rows.length){
+
+      host.innerHTML = `
+        <div class="empty">
+          No subscriptions for this customer.
+        </div>
+      `;
+
+      return;
+    }
+
+    host.innerHTML =
+      rows.map(
+        row => {
+
+          const period =
+            `${shownA6A(row.current_period_start)} → ${shownA6A(row.current_period_end)}`;
+
+          const cancelState =
+            Number(
+              row.cancel_at_period_end || 0
+            ) === 1
+              ? "Scheduled"
+              : "No";
+
+          return `
+            <div
+              style="
+                border:1px solid rgba(127,127,127,.3);
+                border-radius:10px;
+                padding:14px;
+                margin:10px 0;
+              "
+            >
+
+              <div style="
+                display:flex;
+                justify-content:space-between;
+                gap:12px;
+                flex-wrap:wrap;
+              ">
+
+                <div>
+                  <strong>
+                    ${escA6A(
+                      shownA6A(
+                        row.subscription_reference
+                      )
+                    )}
+                  </strong>
+
+                  <div class="muted">
+                    Subscription ID
+                    ${escA6A(row.id)}
+                  </div>
+                </div>
+
+                <div>
+                  <span class="badge ${escA6A(row.status || "")}">
+                    ${escA6A(
+                      shownA6A(
+                        row.status
+                      )
+                    )}
+                  </span>
+                </div>
+
+              </div>
+
+              <div style="
+                display:grid;
+                grid-template-columns:
+                  repeat(auto-fit,minmax(180px,1fr));
+                gap:10px;
+                margin:14px 0;
+              ">
+
+                <div>
+                  <div class="muted">Plan</div>
+                  <strong>
+                    ${escA6A(
+                      shownA6A(
+                        row.plan_code ||
+                        row.plan_reference ||
+                        (
+                          row.plan_id
+                            ? "Plan ID " + row.plan_id
+                            : ""
+                        )
+                      )
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <div class="muted">Membership</div>
+                  <strong>
+                    ${escA6A(
+                      shownA6A(
+                        row.membership_reference ||
+                        (
+                          row.membership_id
+                            ? "Membership ID " +
+                              row.membership_id
+                            : ""
+                        )
+                      )
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <div class="muted">Current Period</div>
+                  <strong>
+                    ${escA6A(period)}
+                  </strong>
+                </div>
+
+                <div>
+                  <div class="muted">Next Renewal</div>
+                  <strong>
+                    ${escA6A(
+                      shownA6A(
+                        row.next_renewal_at
+                      )
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <div class="muted">Grace Ends</div>
+                  <strong>
+                    ${escA6A(
+                      shownA6A(
+                        row.grace_ends_at
+                      )
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <div class="muted">Cancel at Period End</div>
+                  <strong>
+                    ${escA6A(cancelState)}
+                  </strong>
+                </div>
+
+              </div>
+
+              ${actionButtonsA6A(row)}
+
+            </div>
+          `;
+
+        }
+      ).join("");
+
+    host
+      .querySelectorAll(
+        "[data-a6a-status]"
+      )
+      .forEach(
+        button => {
+
+          button.addEventListener(
+            "click",
+            () => changeStatusA6A(
+              Number(
+                button.dataset.a6aId
+              ),
+              button.dataset.a6aStatus
+            )
+          );
+
+        }
+      );
+
+    host
+      .querySelectorAll(
+        "[data-a6a-cancel-end]"
+      )
+      .forEach(
+        button => {
+
+          button.addEventListener(
+            "click",
+            () => scheduleCancelA6A(
+              Number(
+                button.dataset.a6aCancelEnd
+              )
+            )
+          );
+
+        }
+      );
+
+  }
+
+
+  async function loadA6A(){
+
+    const token =
+      tokenA6A();
+
+    if(!token){
+      messageA6A(
+        "Enter the admin token first.",
+        true
+      );
+
+      return;
+    }
+
+    messageA6A(
+      "Loading subscription controls..."
+    );
+
+    try{
+
+      const params =
+        new URLSearchParams();
+
+      params.set(
+        "customerId",
+        String(customerId)
+      );
+
+      const data =
+        await requestA6A(
+          "/api/admin/subscriptions?" +
+          params.toString(),
+          {
+            method:"GET"
+          }
+        );
+
+      const rows =
+        Array.isArray(
+          data.subscriptions
+        )
+          ? data.subscriptions
+          : [];
+
+      renderA6A(
+        rows
+      );
+
+      messageA6A(
+        `${rows.length} subscription(s) loaded.`
+      );
+
+    }
+    catch(error){
+
+      messageA6A(
+        error.message ||
+        "Unable to load subscription controls.",
+        true
+      );
+
+    }
+
+  }
+
+
+  async function changeStatusA6A(
+    subscriptionId,
+    targetStatus
+  ){
+
+    if(
+      !Number.isInteger(subscriptionId) ||
+      subscriptionId < 1
+    ){
+      return;
+    }
+
+    const approved =
+      window.confirm(
+        `Change subscription ${subscriptionId} to ${targetStatus}?`
+      );
+
+    if(!approved){
+      return;
+    }
+
+    messageA6A(
+      `Updating subscription ${subscriptionId}...`
+    );
+
+    try{
+
+      await requestA6A(
+        "/api/admin/subscriptions",
+        {
+          method:"POST",
+
+          body:JSON.stringify({
+            action:"status",
+            id:subscriptionId,
+            status:targetStatus,
+            source:"v4.1 A6A Admin",
+            sourceReference:
+              `customer:${customerId}`,
+            notes:
+              "Lifecycle status changed from customer administration UI."
+          })
+        }
+      );
+
+      sessionStorage.setItem(
+        "qyAdminToken",
+        tokenA6A()
+      );
+
+      location.reload();
+
+    }
+    catch(error){
+
+      messageA6A(
+        error.message ||
+        "Unable to update subscription.",
+        true
+      );
+
+    }
+
+  }
+
+
+  async function scheduleCancelA6A(
+    subscriptionId
+  ){
+
+    if(
+      !Number.isInteger(subscriptionId) ||
+      subscriptionId < 1
+    ){
+      return;
+    }
+
+    const approved =
+      window.confirm(
+        `Schedule subscription ${subscriptionId} to cancel at the end of its current period?`
+      );
+
+    if(!approved){
+      return;
+    }
+
+    messageA6A(
+      `Scheduling cancellation for subscription ${subscriptionId}...`
+    );
+
+    try{
+
+      await requestA6A(
+        "/api/admin/subscriptions",
+        {
+          method:"POST",
+
+          body:JSON.stringify({
+            action:
+              "cancel-at-period-end",
+
+            id:
+              subscriptionId,
+
+            source:
+              "v4.1 A6A Admin",
+
+            sourceReference:
+              `customer:${customerId}`,
+
+            notes:
+              "Cancellation at period end scheduled from customer administration UI."
+          })
+        }
+      );
+
+      sessionStorage.setItem(
+        "qyAdminToken",
+        tokenA6A()
+      );
+
+      location.reload();
+
+    }
+    catch(error){
+
+      messageA6A(
+        error.message ||
+        "Unable to schedule cancellation.",
+        true
+      );
+
+    }
+
+  }
+
+
+  createPanelA6A();
+
+
+  if(tokenA6A()){
+    loadA6A();
+  }
+
+
+  document
+    .querySelector("#load")
+    ?.addEventListener(
+      "click",
+      () => {
+
+        setTimeout(
+          loadA6A,
+          300
+        );
+
+      }
+    );
+
+})();
+
+</script>
+
 </body>
 
 </html>
