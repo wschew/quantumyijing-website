@@ -1,0 +1,1322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>Subscription Renewal Administration | Quantum YiJing</title>
+
+<style>
+  :root{
+    --qy-blue:#0f4c81;
+    --qy-blue-dark:#0a3154;
+    --qy-blue-soft:#eef6fc;
+    --qy-border:#d8e1e8;
+    --qy-text:#17212b;
+    --qy-muted:#647381;
+    --qy-success:#167447;
+    --qy-success-bg:#eef9f3;
+    --qy-danger:#b42318;
+    --qy-danger-bg:#fff2f0;
+    --qy-warning:#8a5a00;
+    --qy-warning-bg:#fff9e8;
+    --qy-white:#ffffff;
+    --qy-page:#f5f7f9;
+  }
+
+  *{
+    box-sizing:border-box;
+  }
+
+  body{
+    margin:0;
+    font-family:
+      Inter,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    background:var(--qy-page);
+    color:var(--qy-text);
+  }
+
+  .page{
+    max-width:1080px;
+    margin:0 auto;
+    padding:32px 20px 60px;
+  }
+
+  .header{
+    margin-bottom:24px;
+  }
+
+  .eyebrow{
+    color:var(--qy-blue);
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    margin-bottom:8px;
+  }
+
+  h1{
+    margin:0;
+    font-size:30px;
+    line-height:1.2;
+    color:var(--qy-blue-dark);
+  }
+
+  .subtitle{
+    margin-top:10px;
+    color:var(--qy-muted);
+    line-height:1.6;
+  }
+
+  .card{
+    background:var(--qy-white);
+    border:1px solid var(--qy-border);
+    border-radius:12px;
+    padding:22px;
+    margin-bottom:20px;
+    box-shadow:0 2px 8px rgba(15,76,129,.04);
+  }
+
+  .card h2{
+    margin:0 0 16px;
+    font-size:20px;
+    color:var(--qy-blue-dark);
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:
+      repeat(2,minmax(0,1fr));
+    gap:16px;
+  }
+
+  .field{
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+  }
+
+  label{
+    font-size:13px;
+    font-weight:700;
+    color:#33414d;
+  }
+
+  input{
+    width:100%;
+    padding:11px 12px;
+    border:1px solid #bcc8d2;
+    border-radius:8px;
+    font:inherit;
+    background:#fff;
+    color:var(--qy-text);
+  }
+
+  input:focus{
+    outline:2px solid rgba(15,76,129,.18);
+    border-color:var(--qy-blue);
+  }
+
+  .buttons{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:18px;
+  }
+
+  button{
+    border:0;
+    border-radius:8px;
+    padding:11px 17px;
+    font:inherit;
+    font-weight:700;
+    cursor:pointer;
+  }
+
+  button:disabled{
+    opacity:.45;
+    cursor:not-allowed;
+  }
+
+  .primary{
+    background:var(--qy-blue);
+    color:#fff;
+  }
+
+  .primary:hover:not(:disabled){
+    background:var(--qy-blue-dark);
+  }
+
+  .secondary{
+    background:#e9eef2;
+    color:#263746;
+  }
+
+  .danger{
+    background:#b42318;
+    color:#fff;
+  }
+
+  .message{
+    margin-top:16px;
+    padding:12px 14px;
+    border-radius:8px;
+    display:none;
+    line-height:1.5;
+    white-space:pre-wrap;
+  }
+
+  .message.info{
+    display:block;
+    background:var(--qy-blue-soft);
+    color:var(--qy-blue-dark);
+  }
+
+  .message.success{
+    display:block;
+    background:var(--qy-success-bg);
+    color:var(--qy-success);
+  }
+
+  .message.error{
+    display:block;
+    background:var(--qy-danger-bg);
+    color:var(--qy-danger);
+  }
+
+  .message.warning{
+    display:block;
+    background:var(--qy-warning-bg);
+    color:var(--qy-warning);
+  }
+
+  .summary{
+    display:none;
+  }
+
+  .summary.visible{
+    display:block;
+  }
+
+  .summary-grid{
+    display:grid;
+    grid-template-columns:
+      repeat(2,minmax(0,1fr));
+    gap:1px;
+    background:var(--qy-border);
+    border:1px solid var(--qy-border);
+    border-radius:8px;
+    overflow:hidden;
+  }
+
+  .datum{
+    background:#fff;
+    padding:13px 14px;
+    min-height:72px;
+  }
+
+  .datum .name{
+    display:block;
+    font-size:12px;
+    color:var(--qy-muted);
+    margin-bottom:5px;
+  }
+
+  .datum .value{
+    display:block;
+    font-weight:700;
+    overflow-wrap:anywhere;
+  }
+
+  .status{
+    display:inline-block;
+    padding:4px 8px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:700;
+  }
+
+  .status.good{
+    background:var(--qy-success-bg);
+    color:var(--qy-success);
+  }
+
+  .status.bad{
+    background:var(--qy-danger-bg);
+    color:var(--qy-danger);
+  }
+
+  .warning-box{
+    background:var(--qy-warning-bg);
+    border:1px solid #ead7a0;
+    border-radius:8px;
+    padding:14px;
+    color:#684500;
+    line-height:1.55;
+  }
+
+  .result{
+    display:none;
+  }
+
+  .result.visible{
+    display:block;
+  }
+
+  code{
+    background:#eef2f5;
+    border-radius:4px;
+    padding:2px 5px;
+  }
+
+  @media(max-width:720px){
+    .grid,
+    .summary-grid{
+      grid-template-columns:1fr;
+    }
+
+    .page{
+      padding:22px 14px 50px;
+    }
+  }
+</style>
+</head>
+
+<body>
+
+<main class="page">
+
+  <header class="header">
+    <div class="eyebrow">
+      Quantum YiJing Academy
+    </div>
+
+    <h1>
+      Manual Subscription Renewal
+    </h1>
+
+    <div class="subtitle">
+      Validate an existing Paid order before manually renewing an Active subscription.
+      Orders and payments remain the financial source of truth.
+    </div>
+  </header>
+
+
+  <section class="card">
+
+    <h2>1. Renewal Input</h2>
+
+    <div class="grid">
+
+      <div class="field">
+        <label for="token">
+          Admin Token
+        </label>
+
+        <input
+          id="token"
+          type="password"
+          autocomplete="current-password"
+          placeholder="Preview ADMIN_TOKEN"
+        >
+      </div>
+
+      <div class="field">
+        <label for="subscriptionId">
+          Subscription ID
+        </label>
+
+        <input
+          id="subscriptionId"
+          type="number"
+          min="1"
+          step="1"
+          placeholder="e.g. 4"
+        >
+      </div>
+
+      <div class="field">
+        <label for="orderId">
+          Paid Order ID
+        </label>
+
+        <input
+          id="orderId"
+          type="number"
+          min="1"
+          step="1"
+          placeholder="Existing Paid order ID"
+        >
+      </div>
+
+    </div>
+
+    <div class="buttons">
+
+      <button
+        id="previewBtn"
+        class="primary"
+        type="button"
+      >
+        Preview & Validate
+      </button>
+
+      <button
+        id="resetBtn"
+        class="secondary"
+        type="button"
+      >
+        Reset
+      </button>
+
+    </div>
+
+    <div
+      id="message"
+      class="message"
+      role="status"
+      aria-live="polite"
+    ></div>
+
+  </section>
+
+
+  <section
+    id="summary"
+    class="card summary"
+  >
+
+    <h2>2. Renewal Preview</h2>
+
+    <div class="summary-grid">
+
+      <div class="datum">
+        <span class="name">Subscription</span>
+        <span id="subscriptionRef" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">Subscription Status</span>
+        <span id="subscriptionStatus" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">Customer</span>
+        <span id="customerName" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">Customer Reference</span>
+        <span id="customerRef" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">Membership</span>
+        <span id="membershipRef" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">Membership Status</span>
+        <span id="membershipStatus" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">Order</span>
+        <span id="orderRef" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">Payment Status</span>
+        <span id="paymentStatus" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">Order Total</span>
+        <span id="orderTotal" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">Product Match</span>
+        <span id="productMatch" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">Current Period End</span>
+        <span id="currentPeriodEnd" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">New Period Start</span>
+        <span id="newPeriodStart" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">New Period End</span>
+        <span id="newPeriodEnd" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">Current Membership End</span>
+        <span id="currentMembershipEnd" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">New Membership End</span>
+        <span id="newMembershipEnd" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">New Grace End</span>
+        <span id="graceEndsAt" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">Renewal Eligibility</span>
+        <span id="eligibility" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">Validation Reason</span>
+        <span id="eligibilityReason" class="value">—</span>
+      </div>
+
+    </div>
+
+    <div
+      class="warning-box"
+      style="margin-top:18px"
+    >
+      This screen does not create an order, record a payment,
+      mark an order Paid, or perform automatic renewal.
+      The order must already exist and already be Paid.
+    </div>
+
+    <div class="buttons">
+
+      <button
+        id="renewBtn"
+        class="danger"
+        type="button"
+        disabled
+      >
+        Renew Subscription
+      </button>
+
+    </div>
+
+  </section>
+
+
+  <section
+    id="result"
+    class="card result"
+  >
+
+    <h2>3. Renewal Result</h2>
+
+    <div class="summary-grid">
+
+      <div class="datum">
+        <span class="name">Result</span>
+        <span id="resultStatus" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">Order</span>
+        <span id="resultOrder" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">New Period Start</span>
+        <span id="resultPeriodStart" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">New Period End</span>
+        <span id="resultPeriodEnd" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">New Membership End</span>
+        <span id="resultMembershipEnd" class="value">—</span>
+      </div>
+
+      <div class="datum">
+        <span class="name">Grace End</span>
+        <span id="resultGraceEnd" class="value">—</span>
+      </div>
+
+    </div>
+
+  </section>
+
+</main>
+
+
+<script>
+(() => {
+
+  "use strict";
+
+  /*
+   * =========================================================
+   * v4.1 A6E MANUAL SUBSCRIPTION RENEWAL ADMINISTRATION
+   *
+   * Preview:
+   *   GET /api/admin/subscriptions?action=renewal-preview
+   *
+   * Execution authority:
+   *   POST /api/admin/subscriptions
+   *   action = renew
+   *
+   * A6E never creates or marks payments/orders.
+   * =========================================================
+   */
+
+
+  const $ =
+    selector =>
+      document.querySelector(selector);
+
+
+  const state = {
+    preview:null,
+    subscriptionId:null,
+    orderId:null
+  };
+
+
+  function valueOrDash(value){
+
+    if(
+      value === null ||
+      value === undefined ||
+      value === ""
+    ){
+      return "—";
+    }
+
+    return String(value);
+  }
+
+
+  function formatMoney(currency,value){
+
+    if(
+      value === null ||
+      value === undefined ||
+      value === ""
+    ){
+      return "—";
+    }
+
+    const n =
+      Number(value);
+
+    if(!Number.isFinite(n)){
+      return `${valueOrDash(currency)} ${value}`;
+    }
+
+    return `${valueOrDash(currency)} ${n.toFixed(2)}`;
+  }
+
+
+  function showMessage(message,type="info"){
+
+    const el =
+      $("#message");
+
+    el.className =
+      `message ${type}`;
+
+    el.textContent =
+      message;
+  }
+
+
+  function clearMessage(){
+
+    const el =
+      $("#message");
+
+    el.className =
+      "message";
+
+    el.textContent =
+      "";
+  }
+
+
+  function token(){
+
+    return (
+      $("#token").value.trim() ||
+      sessionStorage.getItem("qyAdminToken") ||
+      ""
+    );
+  }
+
+
+  function saveToken(){
+
+    const t =
+      $("#token").value.trim();
+
+    if(t){
+      sessionStorage.setItem(
+        "qyAdminToken",
+        t
+      );
+    }
+  }
+
+
+  async function apiJson(url,options={}){
+
+    const t =
+      token();
+
+    if(!t){
+      throw new Error(
+        "Admin token is required."
+      );
+    }
+
+    saveToken();
+
+    const headers = {
+      ...(options.headers || {}),
+      Authorization:`Bearer ${t}`
+    };
+
+    if(
+      options.body &&
+      !headers["Content-Type"]
+    ){
+      headers["Content-Type"] =
+        "application/json";
+    }
+
+    const response =
+      await fetch(
+        url,
+        {
+          ...options,
+          headers
+        }
+      );
+
+    const text =
+      await response.text();
+
+    let data = {};
+
+    if(text){
+
+      try{
+        data =
+          JSON.parse(text);
+      }
+      catch{
+        throw new Error(
+          `Subscription API returned invalid JSON (${response.status}).`
+        );
+      }
+    }
+
+    if(!response.ok){
+
+      throw new Error(
+        data.error ||
+        `Subscription API failed (${response.status}).`
+      );
+    }
+
+    return data;
+  }
+
+
+  function inputIds(){
+
+    const subscriptionId =
+      Number(
+        $("#subscriptionId").value
+      );
+
+    const orderId =
+      Number(
+        $("#orderId").value
+      );
+
+    if(
+      !Number.isInteger(subscriptionId) ||
+      subscriptionId < 1
+    ){
+      throw new Error(
+        "Enter a valid Subscription ID."
+      );
+    }
+
+    if(
+      !Number.isInteger(orderId) ||
+      orderId < 1
+    ){
+      throw new Error(
+        "Enter a valid Paid Order ID."
+      );
+    }
+
+    return {
+      subscriptionId,
+      orderId
+    };
+  }
+
+
+  function setText(selector,value){
+
+    $(selector).textContent =
+      valueOrDash(value);
+  }
+
+
+  function renderPreview(data){
+
+    const subscription =
+      data.subscription || {};
+
+    const customer =
+      data.customer || {};
+
+    const membership =
+      data.membership || {};
+
+    const order =
+      data.order || {};
+
+    const preview =
+      data.preview || {};
+
+    setText(
+      "#subscriptionRef",
+      subscription.subscription_reference
+    );
+
+    setText(
+      "#subscriptionStatus",
+      subscription.status
+    );
+
+    setText(
+      "#customerName",
+      customer.display_name
+    );
+
+    setText(
+      "#customerRef",
+      customer.customer_reference
+    );
+
+    setText(
+      "#membershipRef",
+      membership.membership_reference
+    );
+
+    setText(
+      "#membershipStatus",
+      membership.status
+    );
+
+    setText(
+      "#orderRef",
+      order.order_reference
+    );
+
+    setText(
+      "#paymentStatus",
+      order.payment_status
+    );
+
+    setText(
+      "#orderTotal",
+      formatMoney(
+        order.currency,
+        order.total
+      )
+    );
+
+    setText(
+      "#productMatch",
+      data.matchingOrderItem
+        ? "Matched"
+        : "Not matched"
+    );
+
+    setText(
+      "#currentPeriodEnd",
+      preview.currentPeriodEnd ||
+      subscription.current_period_end
+    );
+
+    setText(
+      "#newPeriodStart",
+      preview.newPeriodStart
+    );
+
+    setText(
+      "#newPeriodEnd",
+      preview.newPeriodEnd
+    );
+
+    setText(
+      "#currentMembershipEnd",
+      preview.currentMembershipEnd ||
+      membership.ends_at
+    );
+
+    setText(
+      "#newMembershipEnd",
+      preview.newMembershipEnd
+    );
+
+    setText(
+      "#graceEndsAt",
+      preview.graceEndsAt
+    );
+
+    $("#eligibility").innerHTML =
+      data.eligible
+        ? '<span class="status good">Eligible</span>'
+        : '<span class="status bad">Not Eligible</span>';
+
+    setText(
+      "#eligibilityReason",
+      data.reason
+    );
+
+    $("#summary").classList.add(
+      "visible"
+    );
+
+    $("#renewBtn").disabled =
+      data.eligible !== true;
+
+    if(data.alreadyApplied){
+
+      showMessage(
+        data.reason ||
+        "This order has already been applied.",
+        "warning"
+      );
+
+    }
+    else if(data.eligible){
+
+      showMessage(
+        "Validation passed. Review the prospective dates carefully before renewing.",
+        "success"
+      );
+
+    }
+    else{
+
+      showMessage(
+        data.reason ||
+        "This renewal is not eligible.",
+        "error"
+      );
+
+    }
+  }
+
+
+  async function previewRenewal(){
+
+    clearMessage();
+
+    $("#renewBtn").disabled =
+      true;
+
+    $("#result").classList.remove(
+      "visible"
+    );
+
+    try{
+
+      const ids =
+        inputIds();
+
+      state.subscriptionId =
+        ids.subscriptionId;
+
+      state.orderId =
+        ids.orderId;
+
+      showMessage(
+        "Validating subscription and Paid order...",
+        "info"
+      );
+
+      const params =
+        new URLSearchParams({
+          action:"renewal-preview",
+          id:String(ids.subscriptionId),
+          orderId:String(ids.orderId)
+        });
+
+      const data =
+        await apiJson(
+          `/api/admin/subscriptions?${params.toString()}`
+        );
+
+      state.preview =
+        data;
+
+      renderPreview(
+        data
+      );
+
+    }
+    catch(error){
+
+      state.preview =
+        null;
+
+      $("#summary").classList.remove(
+        "visible"
+      );
+
+      $("#renewBtn").disabled =
+        true;
+
+      showMessage(
+        error.message ||
+        "Unable to validate renewal.",
+        "error"
+      );
+
+    }
+  }
+
+
+  function renewalConfirmationText(){
+
+    const data =
+      state.preview || {};
+
+    const subscription =
+      data.subscription || {};
+
+    const order =
+      data.order || {};
+
+    const preview =
+      data.preview || {};
+
+    return [
+      "Renew this subscription?",
+      "",
+      `Subscription: ${valueOrDash(subscription.subscription_reference)}`,
+      `Order: ${valueOrDash(order.order_reference)}`,
+      `Paid status: ${valueOrDash(order.payment_status)}`,
+      `New period end: ${valueOrDash(preview.newPeriodEnd)}`,
+      `New membership end: ${valueOrDash(preview.newMembershipEnd)}`,
+      `Grace end: ${valueOrDash(preview.graceEndsAt)}`,
+      "",
+      "This will apply the existing Paid order and update the subscription and membership entitlement."
+    ].join("\n");
+  }
+
+
+  function renderResult(data){
+
+    $("#result").classList.add(
+      "visible"
+    );
+
+    if(data.idempotent){
+
+      setText(
+        "#resultStatus",
+        "Already Applied / Idempotent"
+      );
+
+      setText(
+        "#resultOrder",
+        data.renewalOrder
+          ? data.renewalOrder.orderId
+          : state.orderId
+      );
+
+      setText(
+        "#resultPeriodStart",
+        data.renewalOrder
+          ? data.renewalOrder.periodStart
+          : ""
+      );
+
+      setText(
+        "#resultPeriodEnd",
+        data.renewalOrder
+          ? data.renewalOrder.periodEnd
+          : ""
+      );
+
+      setText(
+        "#resultMembershipEnd",
+        data.subscription
+          ? data.subscription.membership_ends_at
+          : ""
+      );
+
+      setText(
+        "#resultGraceEnd",
+        data.subscription
+          ? data.subscription.grace_ends_at
+          : ""
+      );
+
+      return;
+    }
+
+    setText(
+      "#resultStatus",
+      data.renewed
+        ? "Renewed"
+        : "Completed"
+    );
+
+    setText(
+      "#resultOrder",
+      data.order
+        ? data.order.orderReference
+        : state.orderId
+    );
+
+    setText(
+      "#resultPeriodStart",
+      data.period
+        ? data.period.start
+        : ""
+    );
+
+    setText(
+      "#resultPeriodEnd",
+      data.period
+        ? data.period.end
+        : ""
+    );
+
+    setText(
+      "#resultMembershipEnd",
+      data.membership
+        ? data.membership.endsAt
+        : ""
+    );
+
+    setText(
+      "#resultGraceEnd",
+      data.period
+        ? data.period.graceEndsAt
+        : ""
+    );
+  }
+
+
+  async function renewSubscription(){
+
+    if(
+      !state.preview ||
+      state.preview.eligible !== true
+    ){
+      showMessage(
+        "Run Preview & Validate before renewing.",
+        "error"
+      );
+
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        renewalConfirmationText()
+      );
+
+    if(!confirmed){
+      return;
+    }
+
+    $("#renewBtn").disabled =
+      true;
+
+    $("#previewBtn").disabled =
+      true;
+
+    showMessage(
+      "Applying Paid order to subscription renewal...",
+      "info"
+    );
+
+    try{
+
+      const data =
+        await apiJson(
+          "/api/admin/subscriptions",
+          {
+            method:"POST",
+            body:JSON.stringify({
+              action:"renew",
+              id:state.subscriptionId,
+              orderId:state.orderId,
+              source:"A6E Manual Renewal Administration",
+              sourceReference:
+                `AdminRenewal:${state.orderId}`,
+              notes:
+                "Manual renewal completed through v4.1 A6E administration UI."
+            })
+          }
+        );
+
+      renderResult(
+        data
+      );
+
+      if(data.idempotent){
+
+        showMessage(
+          "This Paid order had already been applied. No duplicate renewal was performed.",
+          "warning"
+        );
+
+      }
+      else{
+
+        showMessage(
+          "Subscription renewed successfully.",
+          "success"
+        );
+
+      }
+
+      /*
+       * Require a fresh preview before any further execution.
+       */
+      state.preview =
+        null;
+
+    }
+    catch(error){
+
+      showMessage(
+        error.message ||
+        "Unable to renew subscription.",
+        "error"
+      );
+
+      $("#renewBtn").disabled =
+        false;
+
+    }
+    finally{
+
+      $("#previewBtn").disabled =
+        false;
+
+    }
+  }
+
+
+  function resetPage(){
+
+    $("#subscriptionId").value =
+      "";
+
+    $("#orderId").value =
+      "";
+
+    state.preview =
+      null;
+
+    state.subscriptionId =
+      null;
+
+    state.orderId =
+      null;
+
+    $("#summary").classList.remove(
+      "visible"
+    );
+
+    $("#result").classList.remove(
+      "visible"
+    );
+
+    $("#renewBtn").disabled =
+      true;
+
+    $("#previewBtn").disabled =
+      false;
+
+    clearMessage();
+
+    $("#subscriptionId").focus();
+  }
+
+
+  $("#previewBtn").addEventListener(
+    "click",
+    previewRenewal
+  );
+
+
+  $("#renewBtn").addEventListener(
+    "click",
+    renewSubscription
+  );
+
+
+  $("#resetBtn").addEventListener(
+    "click",
+    resetPage
+  );
+
+
+  const savedToken =
+    sessionStorage.getItem(
+      "qyAdminToken"
+    );
+
+  if(savedToken){
+    $("#token").value =
+      savedToken;
+  }
+
+
+  const params =
+    new URLSearchParams(
+      location.search
+    );
+
+  const initialSubscriptionId =
+    Number(
+      params.get("subscriptionId")
+    );
+
+  if(
+    Number.isInteger(initialSubscriptionId) &&
+    initialSubscriptionId > 0
+  ){
+    $("#subscriptionId").value =
+      String(initialSubscriptionId);
+  }
+
+})();
+</script>
+
+</body>
+</html>
