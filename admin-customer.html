@@ -1,0 +1,1310 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1">
+
+<title>
+  Customer Detail | Quantum YiJing Admin
+</title>
+
+
+<style>
+
+:root{
+  --bg:#f4f7fb;
+  --panel:#ffffff;
+  --line:#dce4ee;
+  --text:#172033;
+  --muted:#667085;
+  --blue:#1358c8;
+  --blue2:#0f4dae;
+  --good:#087443;
+  --warn:#a15c00;
+  --bad:#b42318;
+  --soft:#f8fafc;
+  --shadow:0 10px 28px rgba(16,24,40,.07);
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Inter,Arial,sans-serif;
+}
+
+header{
+  background:#0c1b33;
+  color:#fff;
+  padding:22px 28px;
+}
+
+.header-inner{
+  max-width:1380px;
+  margin:auto;
+  display:flex;
+  justify-content:space-between;
+  gap:18px;
+  align-items:center;
+}
+
+header h1{
+  margin:0;
+  font-size:24px;
+}
+
+header p{
+  margin:5px 0 0;
+  color:#cbd5e1;
+}
+
+.top-links{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+.top-links a{
+  color:#fff;
+  text-decoration:none;
+  padding:8px 12px;
+  border:1px solid rgba(255,255,255,.35);
+  border-radius:8px;
+}
+
+main{
+  max-width:1380px;
+  margin:24px auto;
+  padding:0 20px 50px;
+}
+
+.panel{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:14px;
+  box-shadow:var(--shadow);
+  padding:20px;
+  margin-bottom:18px;
+}
+
+.panel h2{
+  margin:0 0 16px;
+  font-size:19px;
+}
+
+.controls{
+  display:grid;
+  grid-template-columns:minmax(280px,520px) auto;
+  gap:12px;
+  align-items:end;
+}
+
+label{
+  display:block;
+  margin-bottom:6px;
+  font-size:13px;
+  font-weight:700;
+}
+
+input{
+  width:100%;
+  padding:10px 11px;
+  border:1px solid #cbd5e1;
+  border-radius:8px;
+  font-size:14px;
+}
+
+button{
+  border:0;
+  border-radius:8px;
+  padding:11px 16px;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+button.primary{
+  background:var(--blue);
+  color:#fff;
+}
+
+button.primary:hover{
+  background:var(--blue2);
+}
+
+button:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+.message{
+  min-height:20px;
+  margin-top:12px;
+  font-size:14px;
+}
+
+.message.ok{
+  color:var(--good);
+}
+
+.message.bad{
+  color:var(--bad);
+}
+
+.hero{
+  display:grid;
+  grid-template-columns:2fr 1fr;
+  gap:18px;
+}
+
+.profile{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:14px;
+}
+
+.field{
+  border:1px solid var(--line);
+  background:var(--soft);
+  padding:14px;
+  border-radius:10px;
+}
+
+.field .label{
+  color:var(--muted);
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  font-weight:700;
+}
+
+.field .value{
+  margin-top:6px;
+  font-size:15px;
+  font-weight:700;
+  word-break:break-word;
+}
+
+.reference{
+  font-family:Consolas,monospace;
+}
+
+.status{
+  display:inline-block;
+  padding:5px 9px;
+  border-radius:999px;
+  font-weight:700;
+  font-size:12px;
+  background:#eef2ff;
+  color:#3448a3;
+}
+
+.status.Active{
+  background:#e7f6ee;
+  color:#087443;
+}
+
+.status.Inactive{
+  background:#fff4e5;
+  color:#a15c00;
+}
+
+.status.Archived{
+  background:#f2f4f7;
+  color:#475467;
+}
+
+.metrics{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.metric{
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:16px;
+  background:#fff;
+}
+
+.metric strong{
+  display:block;
+  font-size:28px;
+}
+
+.metric span{
+  display:block;
+  color:var(--muted);
+  font-size:12px;
+  margin-top:4px;
+}
+
+.table-wrap{
+  overflow:auto;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:900px;
+}
+
+th,
+td{
+  padding:12px 10px;
+  border-bottom:1px solid #e5e7eb;
+  text-align:left;
+  vertical-align:top;
+  font-size:14px;
+}
+
+th{
+  background:#f8fafc;
+  color:#475467;
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+
+.muted{
+  color:var(--muted);
+  font-size:12px;
+  margin-top:3px;
+}
+
+.empty{
+  text-align:center;
+  padding:28px;
+  color:var(--muted);
+}
+
+.badge{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:999px;
+  background:#eef2ff;
+  color:#3448a3;
+  font-size:12px;
+  font-weight:700;
+}
+
+.section-count{
+  color:var(--muted);
+  font-size:13px;
+  margin-left:6px;
+}
+
+@media(max-width:900px){
+
+  .hero{
+    grid-template-columns:1fr;
+  }
+
+  .profile{
+    grid-template-columns:1fr;
+  }
+
+  .controls{
+    grid-template-columns:1fr;
+  }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+  <div class="header-inner">
+
+    <div>
+
+      <h1>
+        Customer Detail
+      </h1>
+
+      <p>
+        Quantum YiJing Academy Operating System · v4.1
+      </p>
+
+    </div>
+
+
+    <div class="top-links">
+
+      <a href="/admin-customers">
+        ← Customer Directory
+      </a>
+
+      <a href="/admin">
+        Admin Home
+      </a>
+
+    </div>
+
+  </div>
+
+</header>
+
+
+<main>
+
+
+<section class="panel">
+
+  <div class="controls">
+
+    <div>
+
+      <label for="token">
+        Admin Token
+      </label>
+
+      <input
+        id="token"
+        type="password"
+        autocomplete="off"
+        placeholder="Admin Token">
+
+    </div>
+
+
+    <div>
+
+      <button
+        id="load"
+        type="button"
+        class="primary">
+        Load Customer
+      </button>
+
+    </div>
+
+  </div>
+
+  <div
+    id="message"
+    class="message">
+  </div>
+
+</section>
+
+
+
+<section class="hero">
+
+  <div class="panel">
+
+    <h2>
+      Customer Profile
+    </h2>
+
+    <div
+      id="profile"
+      class="profile">
+
+      <div class="empty">
+        Customer data not loaded.
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <div class="panel">
+
+    <h2>
+      Relationship Summary
+    </h2>
+
+    <div class="metrics">
+
+      <div class="metric">
+
+        <strong id="metricIdentifiers">
+          —
+        </strong>
+
+        <span>
+          Identifiers
+        </span>
+
+      </div>
+
+
+      <div class="metric">
+
+        <strong id="metricEnquiries">
+          —
+        </strong>
+
+        <span>
+          Linked enquiries
+        </span>
+
+      </div>
+
+
+      <div class="metric">
+
+        <strong id="metricMemberships">
+          —
+        </strong>
+
+        <span>
+          Memberships
+        </span>
+
+      </div>
+
+
+      <div class="metric">
+
+        <strong id="metricCustomerId">
+          —
+        </strong>
+
+        <span>
+          Customer ID
+        </span>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<section class="panel">
+
+  <h2>
+    Customer Identifiers
+    <span
+      id="identifierCount"
+      class="section-count">
+    </span>
+  </h2>
+
+  <div class="table-wrap">
+
+    <table>
+
+      <thead>
+
+        <tr>
+          <th>Type</th>
+          <th>Display Value</th>
+          <th>Normalized Value</th>
+          <th>Primary</th>
+          <th>Verified</th>
+          <th>Created</th>
+        </tr>
+
+      </thead>
+
+      <tbody id="identifierRows">
+
+        <tr>
+          <td
+            colspan="6"
+            class="empty">
+            Customer data not loaded.
+          </td>
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</section>
+
+
+
+<section class="panel">
+
+  <h2>
+    Linked Enquiries
+    <span
+      id="enquiryCount"
+      class="section-count">
+    </span>
+  </h2>
+
+  <div class="table-wrap">
+
+    <table>
+
+      <thead>
+
+        <tr>
+          <th>Reference</th>
+          <th>Name / Contact</th>
+          <th>Interest</th>
+          <th>Status</th>
+          <th>Lifecycle</th>
+          <th>Link</th>
+          <th>Submitted</th>
+        </tr>
+
+      </thead>
+
+      <tbody id="enquiryRows">
+
+        <tr>
+          <td
+            colspan="7"
+            class="empty">
+            Customer data not loaded.
+          </td>
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</section>
+
+
+
+<section class="panel">
+
+  <h2>
+    Memberships
+    <span
+      id="membershipCount"
+      class="section-count">
+    </span>
+  </h2>
+
+  <div class="table-wrap">
+
+    <table>
+
+      <thead>
+
+        <tr>
+          <th>Membership</th>
+          <th>Product</th>
+          <th>Status</th>
+          <th>Starts</th>
+          <th>Ends</th>
+          <th>Activated</th>
+          <th>Source Order</th>
+        </tr>
+
+      </thead>
+
+      <tbody id="membershipRows">
+
+        <tr>
+          <td
+            colspan="7"
+            class="empty">
+            Customer data not loaded.
+          </td>
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</section>
+
+
+</main>
+
+
+
+<script>
+
+(() => {
+
+  const DETAIL_ACTION =
+    "list";
+
+  const ID_PARAMETER =
+    "id";
+
+
+  const $ =
+    selector =>
+      document.querySelector(selector);
+
+
+  const customerId =
+    Number(
+      new URLSearchParams(
+        window.location.search
+      ).get("id")
+    );
+
+
+  let loading =
+    false;
+
+
+  function esc(value){
+
+    return String(
+      value ?? ""
+    ).replace(
+      /[&<>"']/g,
+      char => ({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#39;"
+      })[char]
+    );
+
+  }
+
+
+  function showMessage(
+    text,
+    bad = false
+  ){
+
+    const element =
+      $("#message");
+
+    element.textContent =
+      text || "";
+
+    element.className =
+      bad
+        ? "message bad"
+        : "message ok";
+
+  }
+
+
+  function valueOrDash(value){
+
+    const text =
+      String(
+        value ?? ""
+      ).trim();
+
+    return text || "—";
+
+  }
+
+
+  function renderProfile(customer){
+
+    const fields = [
+
+      [
+        "Customer Reference",
+        customer.customer_reference,
+        "reference"
+      ],
+
+      [
+        "Display Name",
+        customer.display_name
+      ],
+
+      [
+        "Status",
+        customer.status,
+        "status"
+      ],
+
+      [
+        "Email",
+        customer.email
+      ],
+
+      [
+        "Phone",
+        customer.phone
+      ],
+
+      [
+        "Country",
+        customer.country
+      ],
+
+      [
+        "Language",
+        customer.language
+      ],
+
+      [
+        "Created Source",
+        customer.created_source
+      ],
+
+      [
+        "Created",
+        customer.created_at
+      ],
+
+      [
+        "Updated",
+        customer.updated_at
+      ]
+
+    ];
+
+
+    $("#profile").innerHTML =
+      fields.map(
+        field => {
+
+          const label =
+            field[0];
+
+          const value =
+            valueOrDash(
+              field[1]
+            );
+
+          const type =
+            field[2] || "";
+
+          if(type === "status"){
+
+            return `
+              <div class="field">
+
+                <div class="label">
+                  ${esc(label)}
+                </div>
+
+                <div class="value">
+
+                  <span class="status ${esc(value)}">
+                    ${esc(value)}
+                  </span>
+
+                </div>
+
+              </div>
+            `;
+
+          }
+
+
+          return `
+            <div class="field">
+
+              <div class="label">
+                ${esc(label)}
+              </div>
+
+              <div class="value ${esc(type)}">
+                ${esc(value)}
+              </div>
+
+            </div>
+          `;
+
+        }
+      ).join("");
+
+  }
+
+
+  function renderIdentifiers(rows){
+
+    $("#identifierCount").textContent =
+      `(${rows.length})`;
+
+    $("#metricIdentifiers").textContent =
+      rows.length;
+
+
+    if(!rows.length){
+
+      $("#identifierRows").innerHTML =
+        '<tr><td colspan="6" class="empty">No identifiers.</td></tr>';
+
+      return;
+
+    }
+
+
+    $("#identifierRows").innerHTML =
+      rows.map(
+        row => `
+          <tr>
+
+            <td>
+              <span class="badge">
+                ${esc(valueOrDash(row.identifier_type))}
+              </span>
+            </td>
+
+            <td>
+              ${esc(valueOrDash(row.display_value))}
+            </td>
+
+            <td class="reference">
+              ${esc(valueOrDash(row.normalized_value))}
+            </td>
+
+            <td>
+              ${Number(row.is_primary) === 1 ? "Yes" : "No"}
+            </td>
+
+            <td>
+              ${esc(valueOrDash(row.verified_at))}
+            </td>
+
+            <td>
+              ${esc(valueOrDash(row.created_at))}
+            </td>
+
+          </tr>
+        `
+      ).join("");
+
+  }
+
+
+  function renderEnquiries(rows){
+
+    $("#enquiryCount").textContent =
+      `(${rows.length})`;
+
+    $("#metricEnquiries").textContent =
+      rows.length;
+
+
+    if(!rows.length){
+
+      $("#enquiryRows").innerHTML =
+        '<tr><td colspan="7" class="empty">No linked enquiries.</td></tr>';
+
+      return;
+
+    }
+
+
+    $("#enquiryRows").innerHTML =
+      rows.map(
+        row => `
+          <tr>
+
+            <td class="reference">
+              ${esc(valueOrDash(row.reference))}
+            </td>
+
+            <td>
+
+              <strong>
+                ${esc(valueOrDash(row.name))}
+              </strong>
+
+              <div class="muted">
+                ${esc(valueOrDash(row.email))}
+              </div>
+
+              <div class="muted">
+                ${esc(valueOrDash(row.phone))}
+              </div>
+
+            </td>
+
+            <td>
+              ${esc(valueOrDash(row.interest))}
+            </td>
+
+            <td>
+              ${esc(valueOrDash(row.enquiry_status))}
+            </td>
+
+            <td>
+              ${esc(valueOrDash(row.lifecycle_stage))}
+            </td>
+
+            <td>
+
+              <div>
+                ${esc(valueOrDash(row.link_type))}
+              </div>
+
+              <div class="muted">
+                ${esc(valueOrDash(row.link_source))}
+              </div>
+
+            </td>
+
+            <td>
+              ${esc(valueOrDash(row.submitted_date))}
+            </td>
+
+          </tr>
+        `
+      ).join("");
+
+  }
+
+
+  function renderMemberships(rows){
+
+    $("#membershipCount").textContent =
+      `(${rows.length})`;
+
+    $("#metricMemberships").textContent =
+      rows.length;
+
+
+    if(!rows.length){
+
+      $("#membershipRows").innerHTML =
+        '<tr><td colspan="7" class="empty">No memberships.</td></tr>';
+
+      return;
+
+    }
+
+
+    $("#membershipRows").innerHTML =
+      rows.map(
+        row => {
+
+          const productName =
+            row.name_en ||
+            row.name_zh ||
+            row.sku ||
+            "—";
+
+          return `
+            <tr>
+
+              <td class="reference">
+                ${esc(valueOrDash(row.membership_reference))}
+              </td>
+
+              <td>
+
+                <strong>
+                  ${esc(productName)}
+                </strong>
+
+                <div class="muted">
+                  ${esc(valueOrDash(row.sku))}
+                </div>
+
+              </td>
+
+              <td>
+                <span class="badge">
+                  ${esc(valueOrDash(row.status))}
+                </span>
+              </td>
+
+              <td>
+                ${esc(valueOrDash(row.starts_at))}
+              </td>
+
+              <td>
+                ${esc(valueOrDash(row.ends_at))}
+              </td>
+
+              <td>
+                ${esc(valueOrDash(row.activated_at))}
+              </td>
+
+              <td>
+                ${esc(valueOrDash(row.source_order_id))}
+              </td>
+
+            </tr>
+          `;
+
+        }
+      ).join("");
+
+  }
+
+
+  function renderCustomer(customer){
+
+    const identifiers =
+      Array.isArray(customer.identifiers)
+        ? customer.identifiers
+        : [];
+
+    const enquiries =
+      Array.isArray(customer.enquiries)
+        ? customer.enquiries
+        : [];
+
+    const memberships =
+      Array.isArray(customer.memberships)
+        ? customer.memberships
+        : [];
+
+
+    renderProfile(
+      customer
+    );
+
+    renderIdentifiers(
+      identifiers
+    );
+
+    renderEnquiries(
+      enquiries
+    );
+
+    renderMemberships(
+      memberships
+    );
+
+
+    $("#metricCustomerId").textContent =
+      customer.id ?? customerId;
+
+  }
+
+
+  async function loadCustomer(){
+
+    if(loading){
+      return;
+    }
+
+
+    if(
+      !Number.isInteger(customerId) ||
+      customerId < 1
+    ){
+
+      showMessage(
+        "Invalid or missing customer ID.",
+        true
+      );
+
+      return;
+
+    }
+
+
+    const token =
+      $("#token").value.trim();
+
+
+    if(!token){
+
+      showMessage(
+        "Please enter the Admin Token.",
+        true
+      );
+
+      return;
+
+    }
+
+
+    sessionStorage.setItem(
+      "qyAdminToken",
+      token
+    );
+
+
+    loading =
+      true;
+
+    $("#load").disabled =
+      true;
+
+    showMessage(
+      "Loading customer…"
+    );
+
+
+    try{
+
+      const params =
+        new URLSearchParams();
+
+      params.set(
+        "action",
+        DETAIL_ACTION
+      );
+
+      params.set(
+        ID_PARAMETER,
+        String(customerId)
+      );
+
+
+      const response =
+        await fetch(
+          "/api/admin/customers?" +
+          params.toString(),
+          {
+            method:"GET",
+            headers:{
+              authorization:
+                "Bearer " + token
+            },
+            cache:"no-store"
+          }
+        );
+
+
+      let data = {};
+
+      try{
+
+        data =
+          await response.json();
+
+      }
+      catch{
+
+        throw new Error(
+          "Customer API returned an invalid response."
+        );
+
+      }
+
+
+      if(!response.ok){
+
+        if(response.status === 401){
+
+          sessionStorage.removeItem(
+            "qyAdminToken"
+          );
+
+        }
+
+
+        throw new Error(
+          data.error ||
+          `Customer request failed (${response.status}).`
+        );
+
+      }
+
+
+      if(
+        !data.customer ||
+        typeof data.customer !== "object"
+      ){
+
+        throw new Error(
+          "Customer detail was not returned."
+        );
+
+      }
+
+
+      renderCustomer(
+        data.customer
+      );
+
+
+      showMessage(
+        `Customer ${valueOrDash(data.customer.customer_reference)} loaded.`
+      );
+
+    }
+    catch(error){
+
+      showMessage(
+        error.message ||
+        "Unable to load customer.",
+        true
+      );
+
+    }
+    finally{
+
+      loading =
+        false;
+
+      $("#load").disabled =
+        false;
+
+    }
+
+  }
+
+
+  $("#load")
+    .addEventListener(
+      "click",
+      loadCustomer
+    );
+
+
+  const savedToken =
+    sessionStorage.getItem(
+      "qyAdminToken"
+    );
+
+
+  if(savedToken){
+
+    $("#token").value =
+      savedToken;
+
+    if(
+      Number.isInteger(customerId) &&
+      customerId > 0
+    ){
+
+      loadCustomer();
+
+    }
+
+  }
+  else{
+
+    if(
+      !Number.isInteger(customerId) ||
+      customerId < 1
+    ){
+
+      showMessage(
+        "Invalid or missing customer ID.",
+        true
+      );
+
+    }
+
+  }
+
+
+})();
+
+</script>
+
+
+</body>
+
+</html>
