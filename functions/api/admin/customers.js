@@ -669,6 +669,395 @@ async function createCustomer(
   }, 201);
 }
 
+async function updateCustomerProfile(
+  context
+) {
+  let body;
+
+  try {
+    body =
+      await context.request.json();
+  }
+  catch {
+    return json({
+      ok: false,
+      error: "Invalid request."
+    }, 400);
+  }
+
+
+  if (
+    !body ||
+    typeof body !== "object" ||
+    Array.isArray(body)
+  ) {
+    return json({
+      ok: false,
+      error: "Valid profile object required."
+    }, 400);
+  }
+
+
+  const allowedFields =
+    new Set([
+      "id",
+      "display_name",
+      "country",
+      "language",
+      "source",
+      "source_reference",
+      "notes"
+    ]);
+
+
+  const unsupported =
+    Object.keys(body).filter(
+      key =>
+        !allowedFields.has(key)
+    );
+
+
+  if (unsupported.length) {
+    return json({
+      ok: false,
+      error:
+        "Unsupported profile field(s): " +
+        unsupported.join(", ") +
+        "."
+    }, 400);
+  }
+
+
+  const id =
+    Number(body.id);
+
+
+  if (
+    !Number.isInteger(id) ||
+    id < 1
+  ) {
+    return json({
+      ok: false,
+      error: "Valid customer id is required."
+    }, 400);
+  }
+
+
+  const hasDisplayName =
+    Object.prototype.hasOwnProperty.call(
+      body,
+      "display_name"
+    );
+
+  const hasCountry =
+    Object.prototype.hasOwnProperty.call(
+      body,
+      "country"
+    );
+
+  const hasLanguage =
+    Object.prototype.hasOwnProperty.call(
+      body,
+      "language"
+    );
+
+
+  if (
+    !hasDisplayName &&
+    !hasCountry &&
+    !hasLanguage
+  ) {
+    return json({
+      ok: false,
+      error:
+        "At least one profile field is required."
+    }, 400);
+  }
+
+
+  const requestedDisplayName =
+    hasDisplayName
+      ? clean(
+          body.display_name,
+          160
+        )
+      : null;
+
+
+  const requestedCountry =
+    hasCountry
+      ? clean(
+          body.country,
+          100
+        )
+      : null;
+
+
+  const requestedLanguage =
+    hasLanguage
+      ? clean(
+          body.language,
+          10
+        )
+      : null;
+
+
+  if (
+    hasDisplayName &&
+    !requestedDisplayName
+  ) {
+    return json({
+      ok: false,
+      error:
+        "Customer display name is required."
+    }, 400);
+  }
+
+
+  if (
+    hasLanguage &&
+    !requestedLanguage
+  ) {
+    return json({
+      ok: false,
+      error:
+        "Customer language is required."
+    }, 400);
+  }
+
+
+  const source =
+    clean(
+      body.source ||
+      "AdminCustomerProfile",
+      120
+    );
+
+
+  const sourceReference =
+    clean(
+      body.source_reference ||
+      "v4.1",
+      240
+    );
+
+
+  const notes =
+    clean(
+      body.notes,
+      2000
+    );
+
+
+  const db =
+    context.env.ENQUIRIES_DB;
+
+
+  const current =
+    await db.prepare(`
+      SELECT
+        id,
+        customer_reference,
+        display_name,
+        email,
+        phone,
+        country,
+        language,
+        status,
+        updated_at
+      FROM customers
+      WHERE id=?
+      LIMIT 1
+    `)
+      .bind(id)
+      .first();
+
+
+  if (!current) {
+    return json({
+      ok: false,
+      error: "Customer not found."
+    }, 404);
+  }
+
+
+  const nextDisplayName =
+    hasDisplayName
+      ? requestedDisplayName
+      : String(
+          current.display_name || ""
+        );
+
+
+  const nextCountry =
+    hasCountry
+      ? requestedCountry
+      : String(
+          current.country || ""
+        );
+
+
+  const nextLanguage =
+    hasLanguage
+      ? requestedLanguage
+      : String(
+          current.language || ""
+        );
+
+
+  const changes = [];
+
+
+  if (
+    nextDisplayName !==
+    String(
+      current.display_name || ""
+    )
+  ) {
+    changes.push({
+      field: "display_name",
+      oldValue:
+        String(
+          current.display_name || ""
+        ),
+      newValue:
+        nextDisplayName
+    });
+  }
+
+
+  if (
+    nextCountry !==
+    String(
+      current.country || ""
+    )
+  ) {
+    changes.push({
+      field: "country",
+      oldValue:
+        String(
+          current.country || ""
+        ),
+      newValue:
+        nextCountry
+    });
+  }
+
+
+  if (
+    nextLanguage !==
+    String(
+      current.language || ""
+    )
+  ) {
+    changes.push({
+      field: "language",
+      oldValue:
+        String(
+          current.language || ""
+        ),
+      newValue:
+        nextLanguage
+    });
+  }
+
+
+  if (!changes.length) {
+    return json({
+      ok: true,
+      changed: false,
+      event_count: 0,
+      customer:
+        await getCustomer(
+          db,
+          id
+        )
+    });
+  }
+
+
+  const statements = [];
+
+
+  statements.push(
+    db.prepare(`
+      UPDATE customers
+      SET
+        display_name=?,
+        country=?,
+        language=?,
+        updated_at=CURRENT_TIMESTAMP
+      WHERE id=?
+    `).bind(
+      nextDisplayName,
+      nextCountry,
+      nextLanguage,
+      id
+    )
+  );
+
+
+  for (
+    const change of changes
+  ) {
+    statements.push(
+      db.prepare(`
+        INSERT INTO customer_profile_events (
+          customer_id,
+          event_type,
+          field_name,
+          old_value,
+          new_value,
+          source,
+          source_reference,
+          notes
+        )
+        VALUES (
+          ?,
+          'profile_updated',
+          ?,
+          ?,
+          ?,
+          ?,
+          ?,
+          ?
+        )
+      `).bind(
+        id,
+        change.field,
+        change.oldValue,
+        change.newValue,
+        source,
+        sourceReference,
+        notes
+      )
+    );
+  }
+
+
+  await db.batch(
+    statements
+  );
+
+
+  return json({
+    ok: true,
+    changed: true,
+    event_count:
+      changes.length,
+    changed_fields:
+      changes.map(
+        change =>
+          change.field
+      ),
+    customer:
+      await getCustomer(
+        db,
+        id
+      )
+  });
+}
+
 async function resolveEnquiry(
   context
 ) {
@@ -1021,6 +1410,12 @@ export async function onRequestPost(
     );
 
   try {
+    if (action === "profile") {
+      return await updateCustomerProfile(
+        context
+      );
+    }
+
     if (action === "create") {
       return await createCustomer(
         context
