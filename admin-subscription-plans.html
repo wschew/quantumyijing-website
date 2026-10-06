@@ -1,0 +1,1248 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1"
+>
+
+<title>
+  Subscription Plans — Quantum YiJing Admin
+</title>
+
+<link
+  rel="stylesheet"
+  href="/admin.css"
+>
+
+<style>
+
+.a6b-shell{
+  max-width:1200px;
+  margin:0 auto;
+  padding:24px;
+}
+
+.a6b-toolbar{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.a6b-grid{
+  display:grid;
+  grid-template-columns:
+    repeat(auto-fit,minmax(220px,1fr));
+  gap:14px;
+}
+
+.a6b-field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.a6b-field label{
+  font-weight:600;
+}
+
+.a6b-field input,
+.a6b-field select{
+  width:100%;
+  box-sizing:border-box;
+}
+
+.a6b-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:16px;
+}
+
+.a6b-message{
+  margin-top:12px;
+  min-height:22px;
+}
+
+.a6b-table-wrap{
+  overflow-x:auto;
+}
+
+.a6b-table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+.a6b-table th,
+.a6b-table td{
+  padding:10px;
+  text-align:left;
+  vertical-align:top;
+  border-bottom:
+    1px solid rgba(127,127,127,.25);
+}
+
+.a6b-reference{
+  font-weight:700;
+}
+
+.a6b-muted{
+  opacity:.72;
+}
+
+.a6b-badge{
+  display:inline-block;
+  padding:3px 8px;
+  border-radius:999px;
+  font-size:.85rem;
+  font-weight:700;
+  border:1px solid rgba(127,127,127,.35);
+}
+
+.a6b-warning{
+  padding:12px;
+  border:1px solid rgba(127,127,127,.3);
+  border-radius:8px;
+  margin-top:12px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="a6b-shell">
+
+  <header>
+
+    <h1>
+      Subscription Plan Administration
+    </h1>
+
+    <p class="a6b-muted">
+      v4.1 A6B — Create and review subscription plans.
+      Subscription execution, orders and payments remain separate.
+    </p>
+
+  </header>
+
+
+  <section class="panel">
+
+    <h2>
+      Admin Authentication
+    </h2>
+
+    <div class="a6b-toolbar">
+
+      <input
+        id="token"
+        type="password"
+        autocomplete="off"
+        placeholder="ADMIN_TOKEN"
+        style="min-width:320px"
+      >
+
+      <button
+        type="button"
+        id="saveToken"
+      >
+        Save Token
+      </button>
+
+      <button
+        type="button"
+        id="clearToken"
+      >
+        Clear Token
+      </button>
+
+    </div>
+
+    <div
+      id="authMessage"
+      class="a6b-message a6b-muted"
+    ></div>
+
+  </section>
+
+
+  <section class="panel">
+
+    <h2>
+      Create Subscription Plan
+    </h2>
+
+    <p class="a6b-muted">
+      The selected product must be an Active membership product.
+      Automatic renewal is not enabled; renewal mode remains Manual.
+    </p>
+
+    <div class="a6b-grid">
+
+      <div class="a6b-field">
+
+        <label for="productId">
+          Membership Product ID
+        </label>
+
+        <input
+          id="productId"
+          type="number"
+          min="1"
+          step="1"
+          placeholder="e.g. 3"
+        >
+
+      </div>
+
+
+      <div class="a6b-field">
+
+        <label for="planCode">
+          Plan Code
+        </label>
+
+        <input
+          id="planCode"
+          type="text"
+          maxlength="64"
+          placeholder="e.g. QY-MEM-ANNUAL"
+        >
+
+      </div>
+
+
+      <div class="a6b-field">
+
+        <label for="planStatus">
+          Initial Status
+        </label>
+
+        <select id="planStatus">
+          <option value="Draft">Draft</option>
+          <option value="Active">Active</option>
+        </select>
+
+      </div>
+
+
+      <div class="a6b-field">
+
+        <label for="billingUnit">
+          Billing Interval Unit
+        </label>
+
+        <select id="billingUnit">
+          <option value="Day">Day</option>
+          <option value="Month">Month</option>
+          <option value="Year" selected>Year</option>
+        </select>
+
+      </div>
+
+
+      <div class="a6b-field">
+
+        <label for="billingCount">
+          Billing Interval Count
+        </label>
+
+        <input
+          id="billingCount"
+          type="number"
+          min="1"
+          step="1"
+          value="1"
+        >
+
+      </div>
+
+
+      <div class="a6b-field">
+
+        <label for="durationUnit">
+          Membership Duration Unit
+        </label>
+
+        <select id="durationUnit">
+          <option value="Day">Day</option>
+          <option value="Month">Month</option>
+          <option value="Year" selected>Year</option>
+        </select>
+
+      </div>
+
+
+      <div class="a6b-field">
+
+        <label for="durationCount">
+          Membership Duration Count
+        </label>
+
+        <input
+          id="durationCount"
+          type="number"
+          min="1"
+          step="1"
+          value="1"
+        >
+
+      </div>
+
+
+      <div class="a6b-field">
+
+        <label for="graceDays">
+          Grace Period Days
+        </label>
+
+        <input
+          id="graceDays"
+          type="number"
+          min="0"
+          step="1"
+          value="0"
+        >
+
+      </div>
+
+
+      <div class="a6b-field">
+
+        <label for="renewalMode">
+          Renewal Mode
+        </label>
+
+        <input
+          id="renewalMode"
+          type="text"
+          value="Manual"
+          readonly
+        >
+
+      </div>
+
+    </div>
+
+
+    <div class="a6b-field" style="margin-top:14px">
+
+      <label for="notes">
+        Notes
+      </label>
+
+      <input
+        id="notes"
+        type="text"
+        maxlength="1000"
+        placeholder="Optional internal notes"
+      >
+
+    </div>
+
+
+    <div class="a6b-actions">
+
+      <button
+        type="button"
+        id="createPlan"
+      >
+        Create Subscription Plan
+      </button>
+
+      <button
+        type="button"
+        id="resetForm"
+      >
+        Reset
+      </button>
+
+    </div>
+
+    <div
+      id="createMessage"
+      class="a6b-message"
+    ></div>
+
+  </section>
+
+
+  <section class="panel">
+
+    <h2>
+      Existing Subscription Plans
+    </h2>
+
+    <div class="a6b-toolbar">
+
+      <select id="statusFilter">
+        <option value="">
+          All Statuses
+        </option>
+
+        <option value="Draft">
+          Draft
+        </option>
+
+        <option value="Active">
+          Active
+        </option>
+      </select>
+
+      <button
+        type="button"
+        id="refreshPlans"
+      >
+        Refresh Plans
+      </button>
+
+      <span
+        id="planCount"
+        class="a6b-muted"
+      ></span>
+
+    </div>
+
+
+    <div class="a6b-warning a6b-muted">
+
+      A6B currently exposes creation and review only.
+      Plan editing, deletion and automatic renewal are intentionally
+      not available because the existing subscription API does not
+      provide those operations.
+
+    </div>
+
+
+    <div
+      class="a6b-table-wrap"
+      style="margin-top:14px"
+    >
+
+      <table class="a6b-table">
+
+        <thead>
+
+          <tr>
+
+            <th>
+              Plan
+            </th>
+
+            <th>
+              Product
+            </th>
+
+            <th>
+              Status
+            </th>
+
+            <th>
+              Billing
+            </th>
+
+            <th>
+              Membership Duration
+            </th>
+
+            <th>
+              Grace
+            </th>
+
+            <th>
+              Renewal
+            </th>
+
+            <th>
+              Created
+            </th>
+
+          </tr>
+
+        </thead>
+
+        <tbody id="planRows">
+
+          <tr>
+
+            <td
+              colspan="8"
+              class="a6b-muted"
+            >
+              Plans not loaded.
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </section>
+
+</div>
+
+
+<script>
+
+/* =========================================================
+   v4.1 A6B SUBSCRIPTION PLAN ADMINISTRATION
+   ========================================================= */
+
+(() => {
+
+  const $ =
+    selector =>
+      document.querySelector(
+        selector
+      );
+
+
+  function esc(value){
+
+    return String(
+      value ?? ""
+    ).replace(
+      /[&<>"']/g,
+      char => ({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#39;"
+      })[char]
+    );
+
+  }
+
+
+  function shown(value){
+
+    const text =
+      String(
+        value ?? ""
+      ).trim();
+
+    return text || "—";
+
+  }
+
+
+  function token(){
+
+    return (
+      $("#token")?.value?.trim() ||
+      sessionStorage.getItem(
+        "qyAdminToken"
+      ) ||
+      ""
+    );
+
+  }
+
+
+  function message(
+    selector,
+    text,
+    error = false
+  ){
+
+    const host =
+      $(selector);
+
+    if(!host){
+      return;
+    }
+
+    host.textContent =
+      String(text || "");
+
+    host.style.fontWeight =
+      error ? "700" : "";
+
+  }
+
+
+  async function api(
+    url,
+    options = {}
+  ){
+
+    const adminToken =
+      token();
+
+    if(!adminToken){
+      throw new Error(
+        "Admin token is required."
+      );
+    }
+
+    const headers = {
+      authorization:
+        "Bearer " + adminToken,
+
+      ...(options.headers || {})
+    };
+
+    if(options.body){
+      headers["content-type"] =
+        "application/json";
+    }
+
+    const response =
+      await fetch(
+        url,
+        {
+          ...options,
+          headers,
+          cache:"no-store"
+        }
+      );
+
+    let data = {};
+
+    try{
+      data =
+        await response.json();
+    }
+    catch{
+      throw new Error(
+        `Subscription API returned invalid JSON (${response.status}).`
+      );
+    }
+
+    if(!response.ok){
+      throw new Error(
+        data.error ||
+        `Request failed (${response.status}).`
+      );
+    }
+
+    return data;
+
+  }
+
+
+  function plansFrom(data){
+
+    if(
+      Array.isArray(
+        data.plans
+      )
+    ){
+      return data.plans;
+    }
+
+    if(
+      Array.isArray(
+        data.results
+      )
+    ){
+      return data.results;
+    }
+
+    return [];
+
+  }
+
+
+  function renderPlans(rows){
+
+    const host =
+      $("#planRows");
+
+    if(!host){
+      return;
+    }
+
+    $("#planCount").textContent =
+      `${rows.length} plan(s)`;
+
+    if(!rows.length){
+
+      host.innerHTML = `
+        <tr>
+          <td
+            colspan="8"
+            class="a6b-muted"
+          >
+            No subscription plans.
+          </td>
+        </tr>
+      `;
+
+      return;
+    }
+
+    host.innerHTML =
+      rows.map(
+        row => {
+
+          const productName =
+            row.name_en ||
+            row.name_zh ||
+            row.sku ||
+            (
+              row.product_id
+                ? `Product ID ${row.product_id}`
+                : "—"
+            );
+
+          const billing =
+            `${shown(row.billing_interval_count)} ${shown(row.billing_interval_unit)}`;
+
+          const duration =
+            `${shown(row.membership_duration_count)} ${shown(row.membership_duration_unit)}`;
+
+          return `
+            <tr>
+
+              <td>
+
+                <div class="a6b-reference">
+                  ${esc(
+                    shown(
+                      row.plan_code
+                    )
+                  )}
+                </div>
+
+                <div class="a6b-muted">
+                  ${esc(
+                    shown(
+                      row.plan_reference
+                    )
+                  )}
+                </div>
+
+                <div class="a6b-muted">
+                  ID ${esc(
+                    shown(
+                      row.id
+                    )
+                  )}
+                </div>
+
+              </td>
+
+
+              <td>
+
+                <strong>
+                  ${esc(productName)}
+                </strong>
+
+                <div class="a6b-muted">
+                  ${esc(
+                    shown(
+                      row.sku
+                    )
+                  )}
+                </div>
+
+              </td>
+
+
+              <td>
+
+                <span class="a6b-badge">
+                  ${esc(
+                    shown(
+                      row.status
+                    )
+                  )}
+                </span>
+
+              </td>
+
+
+              <td>
+                ${esc(billing)}
+              </td>
+
+
+              <td>
+                ${esc(duration)}
+              </td>
+
+
+              <td>
+                ${esc(
+                  shown(
+                    row.grace_period_days
+                  )
+                )}
+                day(s)
+              </td>
+
+
+              <td>
+                ${esc(
+                  shown(
+                    row.renewal_mode
+                  )
+                )}
+              </td>
+
+
+              <td>
+                ${esc(
+                  shown(
+                    row.created_at
+                  )
+                )}
+              </td>
+
+            </tr>
+          `;
+
+        }
+      ).join("");
+
+  }
+
+
+  async function loadPlans(){
+
+    message(
+      "#createMessage",
+      ""
+    );
+
+    const status =
+      $("#statusFilter")
+        ?.value
+        ?.trim() || "";
+
+    const params =
+      new URLSearchParams();
+
+    params.set(
+      "action",
+      "plans"
+    );
+
+    if(status){
+      params.set(
+        "status",
+        status
+      );
+    }
+
+    try{
+
+      const data =
+        await api(
+          "/api/admin/subscriptions?" +
+          params.toString(),
+          {
+            method:"GET"
+          }
+        );
+
+      renderPlans(
+        plansFrom(
+          data
+        )
+      );
+
+    }
+    catch(error){
+
+      $("#planRows").innerHTML = `
+        <tr>
+          <td
+            colspan="8"
+            class="a6b-muted"
+          >
+            ${esc(
+              error.message ||
+              "Unable to load subscription plans."
+            )}
+          </td>
+        </tr>
+      `;
+
+      $("#planCount").textContent =
+        "";
+
+    }
+
+  }
+
+
+  function positiveInteger(
+    selector,
+    label
+  ){
+
+    const value =
+      Number(
+        $(selector).value
+      );
+
+    if(
+      !Number.isInteger(value) ||
+      value < 1
+    ){
+      throw new Error(
+        `${label} must be a positive integer.`
+      );
+    }
+
+    return value;
+
+  }
+
+
+  function nonNegativeInteger(
+    selector,
+    label
+  ){
+
+    const value =
+      Number(
+        $(selector).value
+      );
+
+    if(
+      !Number.isInteger(value) ||
+      value < 0
+    ){
+      throw new Error(
+        `${label} must be zero or greater.`
+      );
+    }
+
+    return value;
+
+  }
+
+
+  async function createPlan(){
+
+    message(
+      "#createMessage",
+      ""
+    );
+
+    let payload;
+
+    try{
+
+      const productId =
+        positiveInteger(
+          "#productId",
+          "Membership Product ID"
+        );
+
+      const planCode =
+        String(
+          $("#planCode").value ||
+          ""
+        )
+          .trim()
+          .toUpperCase();
+
+      if(
+        !/^[A-Z0-9_-]{2,64}$/.test(
+          planCode
+        )
+      ){
+        throw new Error(
+          "Plan Code must contain only A-Z, 0-9, underscore or hyphen."
+        );
+      }
+
+      payload = {
+
+        action:
+          "create-plan",
+
+        productId,
+
+        planCode,
+
+        status:
+          $("#planStatus").value,
+
+        billingIntervalUnit:
+          $("#billingUnit").value,
+
+        billingIntervalCount:
+          positiveInteger(
+            "#billingCount",
+            "Billing Interval Count"
+          ),
+
+        membershipDurationUnit:
+          $("#durationUnit").value,
+
+        membershipDurationCount:
+          positiveInteger(
+            "#durationCount",
+            "Membership Duration Count"
+          ),
+
+        gracePeriodDays:
+          nonNegativeInteger(
+            "#graceDays",
+            "Grace Period Days"
+          ),
+
+        renewalMode:
+          "Manual",
+
+        notes:
+          String(
+            $("#notes").value ||
+            ""
+          ).trim()
+
+      };
+
+    }
+    catch(error){
+
+      message(
+        "#createMessage",
+        error.message,
+        true
+      );
+
+      return;
+
+    }
+
+
+    const approved =
+      window.confirm(
+        `Create subscription plan ${payload.planCode}?`
+      );
+
+    if(!approved){
+      return;
+    }
+
+
+    $("#createPlan").disabled =
+      true;
+
+    message(
+      "#createMessage",
+      "Creating subscription plan..."
+    );
+
+
+    try{
+
+      const data =
+        await api(
+          "/api/admin/subscriptions",
+          {
+            method:"POST",
+
+            body:
+              JSON.stringify(
+                payload
+              )
+          }
+        );
+
+      const plan =
+        data.plan || {};
+
+      message(
+        "#createMessage",
+        `Created ${shown(plan.plan_code || payload.planCode)} successfully.`
+      );
+
+      $("#planCode").value =
+        "";
+
+      $("#notes").value =
+        "";
+
+      await loadPlans();
+
+    }
+    catch(error){
+
+      message(
+        "#createMessage",
+        error.message ||
+        "Unable to create subscription plan.",
+        true
+      );
+
+    }
+    finally{
+
+      $("#createPlan").disabled =
+        false;
+
+    }
+
+  }
+
+
+  function resetForm(){
+
+    $("#productId").value =
+      "";
+
+    $("#planCode").value =
+      "";
+
+    $("#planStatus").value =
+      "Draft";
+
+    $("#billingUnit").value =
+      "Year";
+
+    $("#billingCount").value =
+      "1";
+
+    $("#durationUnit").value =
+      "Year";
+
+    $("#durationCount").value =
+      "1";
+
+    $("#graceDays").value =
+      "0";
+
+    $("#notes").value =
+      "";
+
+    message(
+      "#createMessage",
+      ""
+    );
+
+  }
+
+
+  $("#saveToken")
+    .addEventListener(
+      "click",
+      () => {
+
+        const value =
+          $("#token")
+            .value
+            .trim();
+
+        if(!value){
+
+          message(
+            "#authMessage",
+            "Enter an admin token first.",
+            true
+          );
+
+          return;
+
+        }
+
+        sessionStorage.setItem(
+          "qyAdminToken",
+          value
+        );
+
+        message(
+          "#authMessage",
+          "Admin token saved for this browser session."
+        );
+
+        loadPlans();
+
+      }
+    );
+
+
+  $("#clearToken")
+    .addEventListener(
+      "click",
+      () => {
+
+        sessionStorage.removeItem(
+          "qyAdminToken"
+        );
+
+        $("#token").value =
+          "";
+
+        message(
+          "#authMessage",
+          "Admin token cleared."
+        );
+
+      }
+    );
+
+
+  $("#createPlan")
+    .addEventListener(
+      "click",
+      createPlan
+    );
+
+
+  $("#resetForm")
+    .addEventListener(
+      "click",
+      resetForm
+    );
+
+
+  $("#refreshPlans")
+    .addEventListener(
+      "click",
+      loadPlans
+    );
+
+
+  $("#statusFilter")
+    .addEventListener(
+      "change",
+      loadPlans
+    );
+
+
+  const savedToken =
+    sessionStorage.getItem(
+      "qyAdminToken"
+    );
+
+  if(savedToken){
+
+    $("#token").value =
+      savedToken;
+
+    message(
+      "#authMessage",
+      "Admin token loaded from this browser session."
+    );
+
+    loadPlans();
+
+  }
+
+})();
+
+</script>
+
+</body>
+
+</html>
