@@ -1,0 +1,818 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1"
+>
+
+<title>
+  Subscription Enrollment — Quantum YiJing Admin
+</title>
+
+<link
+  rel="stylesheet"
+  href="/admin.css"
+>
+
+<style>
+
+.a6c-shell{
+  max-width:1100px;
+  margin:0 auto;
+  padding:24px;
+}
+
+.a6c-grid{
+  display:grid;
+  grid-template-columns:
+    repeat(auto-fit,minmax(220px,1fr));
+  gap:14px;
+}
+
+.a6c-field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.a6c-field label{
+  font-weight:600;
+}
+
+.a6c-field input,
+.a6c-field select{
+  width:100%;
+  box-sizing:border-box;
+}
+
+.a6c-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:16px;
+}
+
+.a6c-muted{
+  opacity:.72;
+}
+
+.a6c-message{
+  min-height:22px;
+  margin-top:12px;
+}
+
+.a6c-summary{
+  margin-top:14px;
+  padding:14px;
+  border:1px solid rgba(127,127,127,.3);
+  border-radius:8px;
+}
+
+.a6c-warning{
+  margin-top:12px;
+  padding:12px;
+  border:1px solid rgba(127,127,127,.3);
+  border-radius:8px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="a6c-shell">
+
+<header>
+
+<h1>
+Subscription Enrollment Administration
+</h1>
+
+<p class="a6c-muted">
+v4.1 A6C — Create a subscription for an eligible customer
+using an existing membership and Active subscription plan.
+</p>
+
+</header>
+
+
+<section class="panel">
+
+<h2>
+Admin Authentication
+</h2>
+
+<div class="a6c-grid">
+
+<div class="a6c-field">
+
+<label for="token">
+ADMIN_TOKEN
+</label>
+
+<input
+  id="token"
+  type="password"
+  autocomplete="off"
+>
+
+</div>
+
+</div>
+
+<div class="a6c-actions">
+
+<button
+  type="button"
+  id="saveToken"
+>
+Save Token
+</button>
+
+<button
+  type="button"
+  id="clearToken"
+>
+Clear Token
+</button>
+
+</div>
+
+<div
+  id="authMessage"
+  class="a6c-message a6c-muted"
+></div>
+
+</section>
+
+
+<section class="panel">
+
+<h2>
+Create Subscription Enrollment
+</h2>
+
+<p class="a6c-muted">
+The customer must be Active. The membership must belong to the
+customer and correspond to the subscription plan product.
+Only Active plans should be used.
+</p>
+
+
+<div class="a6c-grid">
+
+<div class="a6c-field">
+
+<label for="customerId">
+Customer ID
+</label>
+
+<input
+  id="customerId"
+  type="number"
+  min="1"
+  step="1"
+  placeholder="Customer ID"
+>
+
+</div>
+
+
+<div class="a6c-field">
+
+<label for="membershipId">
+Membership ID
+</label>
+
+<input
+  id="membershipId"
+  type="number"
+  min="1"
+  step="1"
+  placeholder="Membership ID"
+>
+
+</div>
+
+
+<div class="a6c-field">
+
+<label for="planId">
+Subscription Plan
+</label>
+
+<select id="planId">
+
+<option value="">
+Load Active Plans
+</option>
+
+</select>
+
+</div>
+
+</div>
+
+
+<div class="a6c-actions">
+
+<button
+  type="button"
+  id="loadPlans"
+>
+Load Active Plans
+</button>
+
+<button
+  type="button"
+  id="createSubscription"
+>
+Create Pending Subscription
+</button>
+
+<button
+  type="button"
+  id="resetForm"
+>
+Reset
+</button>
+
+</div>
+
+
+<div
+  id="message"
+  class="a6c-message"
+></div>
+
+
+<div
+  id="result"
+  class="a6c-summary"
+  hidden
+></div>
+
+
+<div class="a6c-warning a6c-muted">
+
+This page does not create payments or orders and does not activate
+automatic renewal. Orders and payments remain the financial source of truth.
+
+</div>
+
+</section>
+
+</div>
+
+
+<script>
+
+/* =========================================================
+   v4.1 A6C SUBSCRIPTION ENROLLMENT ADMINISTRATION
+   ========================================================= */
+
+(() => {
+
+  const $ =
+    selector =>
+      document.querySelector(selector);
+
+
+  function esc(value){
+
+    return String(
+      value ?? ""
+    ).replace(
+      /[&<>"']/g,
+      char => ({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#39;"
+      })[char]
+    );
+
+  }
+
+
+  function shown(value){
+
+    const text =
+      String(value ?? "").trim();
+
+    return text || "—";
+
+  }
+
+
+  function token(){
+
+    return (
+      $("#token")?.value?.trim() ||
+      sessionStorage.getItem("qyAdminToken") ||
+      ""
+    );
+
+  }
+
+
+  function setMessage(
+    text,
+    error = false
+  ){
+
+    const host =
+      $("#message");
+
+    host.textContent =
+      String(text || "");
+
+    host.style.fontWeight =
+      error ? "700" : "";
+
+  }
+
+
+  function positiveInteger(
+    selector,
+    label
+  ){
+
+    const value =
+      Number(
+        $(selector).value
+      );
+
+    if(
+      !Number.isInteger(value) ||
+      value < 1
+    ){
+      throw new Error(
+        `${label} must be a positive integer.`
+      );
+    }
+
+    return value;
+
+  }
+
+
+  async function api(
+    url,
+    options = {}
+  ){
+
+    const adminToken =
+      token();
+
+    if(!adminToken){
+      throw new Error(
+        "Admin token is required."
+      );
+    }
+
+    const headers = {
+      authorization:
+        "Bearer " + adminToken,
+
+      ...(options.headers || {})
+    };
+
+    if(options.body){
+      headers["content-type"] =
+        "application/json";
+    }
+
+    const response =
+      await fetch(
+        url,
+        {
+          ...options,
+          headers,
+          cache:"no-store"
+        }
+      );
+
+    let data = {};
+
+    try{
+      data =
+        await response.json();
+    }
+    catch{
+      throw new Error(
+        `Subscription API returned invalid JSON (${response.status}).`
+      );
+    }
+
+    if(!response.ok){
+      throw new Error(
+        data.error ||
+        `Request failed (${response.status}).`
+      );
+    }
+
+    return data;
+
+  }
+
+
+  async function loadPlans(){
+
+    setMessage(
+      "Loading Active subscription plans..."
+    );
+
+    try{
+
+      const data =
+        await api(
+          "/api/admin/subscriptions?action=plans&status=Active",
+          {
+            method:"GET"
+          }
+        );
+
+      const plans =
+        Array.isArray(data.plans)
+          ? data.plans
+          : [];
+
+      const select =
+        $("#planId");
+
+      select.innerHTML =
+        '<option value="">Select Active Plan</option>';
+
+      for(const plan of plans){
+
+        const option =
+          document.createElement(
+            "option"
+          );
+
+        option.value =
+          String(plan.id);
+
+        option.textContent =
+          `${shown(plan.plan_code)} — Product ${shown(plan.product_id)}`;
+
+        option.dataset.productId =
+          String(plan.product_id || "");
+
+        select.appendChild(
+          option
+        );
+
+      }
+
+      setMessage(
+        `${plans.length} Active plan(s) loaded.`
+      );
+
+    }
+    catch(error){
+
+      setMessage(
+        error.message ||
+        "Unable to load plans.",
+        true
+      );
+
+    }
+
+  }
+
+
+  function renderResult(subscription){
+
+    const host =
+      $("#result");
+
+    host.hidden =
+      false;
+
+    host.innerHTML = `
+      <strong>
+        Subscription created
+      </strong>
+
+      <div>
+        Reference:
+        ${esc(
+          shown(
+            subscription.subscription_reference
+          )
+        )}
+      </div>
+
+      <div>
+        ID:
+        ${esc(
+          shown(
+            subscription.id
+          )
+        )}
+      </div>
+
+      <div>
+        Status:
+        ${esc(
+          shown(
+            subscription.status
+          )
+        )}
+      </div>
+
+      <div>
+        Current period:
+        ${esc(
+          shown(
+            subscription.current_period_start
+          )
+        )}
+        →
+        ${esc(
+          shown(
+            subscription.current_period_end
+          )
+        )}
+      </div>
+
+      <div>
+        Next renewal:
+        ${esc(
+          shown(
+            subscription.next_renewal_at
+          )
+        )}
+      </div>
+
+      <div>
+        Grace ends:
+        ${esc(
+          shown(
+            subscription.grace_ends_at
+          )
+        )}
+      </div>
+    `;
+
+  }
+
+
+  async function createSubscription(){
+
+    $("#result").hidden =
+      true;
+
+    setMessage("");
+
+    let customerId;
+    let membershipId;
+    let planId;
+
+    try{
+
+      customerId =
+        positiveInteger(
+          "#customerId",
+          "Customer ID"
+        );
+
+      membershipId =
+        positiveInteger(
+          "#membershipId",
+          "Membership ID"
+        );
+
+      planId =
+        positiveInteger(
+          "#planId",
+          "Subscription Plan"
+        );
+
+    }
+    catch(error){
+
+      setMessage(
+        error.message,
+        true
+      );
+
+      return;
+
+    }
+
+
+    const approved =
+      window.confirm(
+        `Create a Pending subscription for customer ${customerId}?`
+      );
+
+    if(!approved){
+      return;
+    }
+
+
+    $("#createSubscription").disabled =
+      true;
+
+    setMessage(
+      "Creating subscription..."
+    );
+
+
+    try{
+
+      const data =
+        await api(
+          "/api/admin/subscriptions",
+          {
+            method:"POST",
+
+            body:
+              JSON.stringify({
+                action:
+                  "create",
+
+                customerId,
+
+                planId,
+
+                membershipId,
+
+                source:
+                  "v4.1 A6C Admin",
+
+                notes:
+                  "Subscription enrollment created from A6C administration UI."
+              })
+          }
+        );
+
+      if(!data.subscription){
+        throw new Error(
+          "Subscription API returned no subscription."
+        );
+      }
+
+      if(
+        data.subscription.status !==
+        "Pending"
+      ){
+        throw new Error(
+          "New subscription was not created in Pending status."
+        );
+      }
+
+      renderResult(
+        data.subscription
+      );
+
+      setMessage(
+        "Pending subscription created successfully."
+      );
+
+    }
+    catch(error){
+
+      setMessage(
+        error.message ||
+        "Unable to create subscription.",
+        true
+      );
+
+    }
+    finally{
+
+      $("#createSubscription").disabled =
+        false;
+
+    }
+
+  }
+
+
+  function resetForm(){
+
+    $("#customerId").value =
+      "";
+
+    $("#membershipId").value =
+      "";
+
+    $("#planId").value =
+      "";
+
+    $("#result").hidden =
+      true;
+
+    setMessage("");
+
+  }
+
+
+  $("#saveToken")
+    .addEventListener(
+      "click",
+      () => {
+
+        const value =
+          $("#token").value.trim();
+
+        if(!value){
+
+          $("#authMessage").textContent =
+            "Enter an admin token first.";
+
+          return;
+
+        }
+
+        sessionStorage.setItem(
+          "qyAdminToken",
+          value
+        );
+
+        $("#authMessage").textContent =
+          "Admin token saved for this browser session.";
+
+        loadPlans();
+
+      }
+    );
+
+
+  $("#clearToken")
+    .addEventListener(
+      "click",
+      () => {
+
+        sessionStorage.removeItem(
+          "qyAdminToken"
+        );
+
+        $("#token").value =
+          "";
+
+        $("#authMessage").textContent =
+          "Admin token cleared.";
+
+      }
+    );
+
+
+  $("#loadPlans")
+    .addEventListener(
+      "click",
+      loadPlans
+    );
+
+
+  $("#createSubscription")
+    .addEventListener(
+      "click",
+      createSubscription
+    );
+
+
+  $("#resetForm")
+    .addEventListener(
+      "click",
+      resetForm
+    );
+
+
+  const savedToken =
+    sessionStorage.getItem(
+      "qyAdminToken"
+    );
+
+  if(savedToken){
+
+    $("#token").value =
+      savedToken;
+
+    $("#authMessage").textContent =
+      "Admin token loaded from this browser session.";
+
+    loadPlans();
+
+  }
+
+})();
+
+</script>
+
+</body>
+
+</html>
