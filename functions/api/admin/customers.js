@@ -1082,6 +1082,313 @@ async function updateCustomerProfile(
   });
 }
 
+async function updateCustomerStatus(
+  context
+) {
+  let body;
+
+  try {
+    body =
+      await context.request.json();
+  }
+  catch {
+    return json({
+      ok: false,
+      error: "Invalid request."
+    }, 400);
+  }
+
+
+  if (
+    !body ||
+    typeof body !== "object" ||
+    Array.isArray(body)
+  ) {
+    return json({
+      ok: false,
+      error: "Valid status request is required."
+    }, 400);
+  }
+
+
+  const allowedFields =
+    new Set([
+      "id",
+      "status",
+      "source",
+      "source_reference",
+      "notes"
+    ]);
+
+
+  const unsupported =
+    Object.keys(body).filter(
+      key =>
+        !allowedFields.has(key)
+    );
+
+
+  if (unsupported.length) {
+    return json({
+      ok: false,
+      error:
+        "Unsupported status field(s): " +
+        unsupported.join(", ") +
+        "."
+    }, 400);
+  }
+
+
+  const id =
+    Number(body.id);
+
+
+  if (
+    !Number.isInteger(id) ||
+    id < 1
+  ) {
+    return json({
+      ok: false,
+      error: "Valid customer id is required."
+    }, 400);
+  }
+
+
+  const nextStatus =
+    clean(
+      body.status,
+      20
+    );
+
+
+  const allowedStatuses =
+    new Set([
+      "Active",
+      "Inactive",
+      "Archived"
+    ]);
+
+
+  if(
+    !allowedStatuses.has(
+      nextStatus
+    )
+  ){
+    return json({
+      ok: false,
+      error:
+        "Customer status must be Active, Inactive or Archived."
+    }, 400);
+  }
+
+
+  const source =
+    clean(
+      body.source ||
+      "AdminCustomerStatus",
+      120
+    );
+
+
+  const sourceReference =
+    clean(
+      body.source_reference ||
+      "v4.1-A5B",
+      240
+    );
+
+
+  const notes =
+    clean(
+      body.notes,
+      2000
+    );
+
+
+  const db =
+    context.env.ENQUIRIES_DB;
+
+
+  const customer =
+    await db.prepare(`
+      SELECT
+        id,
+        customer_reference,
+        display_name,
+        email,
+        phone,
+        status,
+        updated_at
+      FROM customers
+      WHERE id=?
+      LIMIT 1
+    `)
+      .bind(id)
+      .first();
+
+
+  if(!customer){
+    return json({
+      ok: false,
+      error: "Customer not found."
+    }, 404);
+  }
+
+
+  const currentStatus =
+    String(
+      customer.status || ""
+    );
+
+
+  if(
+    currentStatus ===
+    nextStatus
+  ){
+    return json({
+      ok: true,
+      changed: false,
+      from_status:
+        currentStatus,
+      to_status:
+        nextStatus,
+      customer:
+        await getCustomer(
+          db,
+          id
+        )
+    });
+  }
+
+
+  const transitions = {
+    Active:
+      new Set([
+        "Inactive"
+      ]),
+
+    Inactive:
+      new Set([
+        "Active",
+        "Archived"
+      ]),
+
+    Archived:
+      new Set([
+        "Inactive"
+      ])
+  };
+
+
+  if(
+    !transitions[
+      currentStatus
+    ] ||
+    !transitions[
+      currentStatus
+    ].has(
+      nextStatus
+    )
+  ){
+    return json({
+      ok: false,
+      error:
+        "Invalid customer status transition: " +
+        currentStatus +
+        " -> " +
+        nextStatus +
+        ".",
+      from_status:
+        currentStatus,
+      to_status:
+        nextStatus
+    }, 409);
+  }
+
+
+  await db.batch([
+    db.prepare(`
+      UPDATE customers
+      SET
+        status=?,
+        updated_at=CURRENT_TIMESTAMP
+      WHERE id=?
+        AND status=?
+    `).bind(
+      nextStatus,
+      id,
+      currentStatus
+    ),
+
+    db.prepare(`
+      INSERT INTO customer_profile_events (
+        customer_id,
+        event_type,
+        field_name,
+        old_value,
+        new_value,
+        source,
+        source_reference,
+        notes
+      )
+      VALUES (
+        ?,
+        'status_changed',
+        'status',
+        ?,
+        ?,
+        ?,
+        ?,
+        ?
+      )
+    `).bind(
+      id,
+      currentStatus,
+      nextStatus,
+      source,
+      sourceReference,
+      notes
+    )
+  ]);
+
+
+  const updated =
+    await db.prepare(`
+      SELECT status
+      FROM customers
+      WHERE id=?
+      LIMIT 1
+    `)
+      .bind(id)
+      .first();
+
+
+  if(
+    !updated ||
+    String(updated.status || "") !==
+      nextStatus
+  ){
+    throw new Error(
+      "Customer status update verification failed."
+    );
+  }
+
+
+  return json({
+    ok: true,
+    changed: true,
+    from_status:
+      currentStatus,
+    to_status:
+      nextStatus,
+    customer:
+      await getCustomer(
+        db,
+        id
+      )
+  });
+}
+
 async function resolveEnquiry(
   context
 ) {
@@ -1434,6 +1741,12 @@ export async function onRequestPost(
     );
 
   try {
+    if (action === "status") {
+      return await updateCustomerStatus(
+        context
+      );
+    }
+
     if (action === "profile") {
       return await updateCustomerProfile(
         context
