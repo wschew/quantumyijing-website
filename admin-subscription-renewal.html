@@ -6,6 +6,8 @@
 
 <title>Subscription Renewal Administration | Quantum YiJing</title>
 
+<link rel="stylesheet" href="/admin.css">
+
 <style>
   :root{
     --qy-blue:#0f4c81;
@@ -27,45 +29,18 @@
   *{
     box-sizing:border-box;
   }
-
-  body{
-    margin:0;
-    font-family:
-      Inter,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
-    background:var(--qy-page);
-    color:var(--qy-text);
-  }
-
-  .page{
-    max-width:1080px;
+  .a6e-shell{
+    max-width:1200px;
     margin:0 auto;
-    padding:32px 20px 60px;
+    padding:24px;
   }
-
-  .header{
+.header{
     margin-bottom:24px;
   }
-
-
-  header h1{
-    margin:0;
-    font-size:32px;
-    line-height:1.2;
-    color:var(--qy-blue-dark);
-  }
-
   .a6e-muted{
-    margin:8px 0 0;
-    color:var(--qy-muted);
-    line-height:1.55;
+    opacity:.72;
   }
-
-  .card{
+.card{
     background:var(--qy-white);
     border:1px solid var(--qy-border);
     border-radius:12px;
@@ -281,7 +256,7 @@
 
 <body>
 
-<main class="page">
+<div class="a6e-shell">
 
   <header>
 
@@ -545,7 +520,7 @@
 
   </section>
 
-</main>
+</div>
 
 
 <script>
