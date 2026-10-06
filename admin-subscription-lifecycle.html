@@ -9,6 +9,100 @@
 <link rel="stylesheet" href="/admin.css">
 
 <style>
+  :root{
+    --qy-blue:#0f4c81;
+    --qy-blue-dark:#0a3154;
+    --qy-blue-soft:#eef6fc;
+    --qy-border:#d8e1e8;
+    --qy-text:#17212b;
+    --qy-muted:#647381;
+    --qy-success:#167447;
+    --qy-success-bg:#eef9f3;
+    --qy-danger:#b42318;
+    --qy-danger-bg:#fff2f0;
+    --qy-warning:#8a5a00;
+    --qy-warning-bg:#fff9e8;
+    --qy-white:#ffffff;
+    --qy-page:#f5f7f9;
+  }
+
+  *{
+    box-sizing:border-box;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:16px;
+  }
+
+  .field{
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+  }
+
+  label{
+    font-size:13px;
+    font-weight:700;
+    color:#33414d;
+  }
+
+  input{
+    width:100%;
+    padding:11px 12px;
+    border:1px solid #bcc8d2;
+    border-radius:8px;
+    font:inherit;
+    background:#fff;
+    color:var(--qy-text);
+  }
+
+  input:focus{
+    outline:2px solid rgba(15,76,129,.18);
+    border-color:var(--qy-blue);
+  }
+
+  .buttons{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:18px;
+  }
+
+  button{
+    border:0;
+    border-radius:8px;
+    padding:11px 17px;
+    font:inherit;
+    font-weight:700;
+    cursor:pointer;
+  }
+
+  button:disabled{
+    opacity:.45;
+    cursor:not-allowed;
+  }
+
+  .primary{
+    background:var(--qy-blue);
+    color:#fff;
+  }
+
+  .primary:hover:not(:disabled){
+    background:var(--qy-blue-dark);
+  }
+
+  .secondary{
+    background:#e9eef2;
+    color:#263746;
+  }
+
+  .danger{
+    background:#b42318;
+    color:#fff;
+  }
+
 .lifecycle-grid{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
@@ -52,6 +146,7 @@
   letter-spacing:.04em;
 }
 @media(max-width:760px){
+  .grid,
   .lifecycle-grid{
     grid-template-columns:1fr;
   }
@@ -103,20 +198,26 @@
 
 <h2>1. Subscription Lookup</h2>
 
-<div class="form-grid">
+<div class="grid">
 
-  <label>
-    Admin Token
+  <div class="field">
+    <label for="adminToken">
+      Admin Token
+    </label>
+
     <input
       id="adminToken"
       type="password"
-      autocomplete="off"
+      autocomplete="current-password"
       placeholder="Preview ADMIN_TOKEN"
     >
-  </label>
+  </div>
 
-  <label>
-    Subscription ID
+  <div class="field">
+    <label for="subscriptionId">
+      Subscription ID
+    </label>
+
     <input
       id="subscriptionId"
       type="number"
@@ -124,18 +225,28 @@
       step="1"
       placeholder="e.g. 4"
     >
-  </label>
+  </div>
 
 </div>
 
-<div class="button-row">
-  <button id="loadBtn" type="button">
+<div class="buttons">
+
+  <button
+    id="loadBtn"
+    class="primary"
+    type="button"
+  >
     Load Subscription
   </button>
 
-  <button id="resetBtn" type="button" class="secondary">
+  <button
+    id="resetBtn"
+    class="secondary"
+    type="button"
+  >
     Reset
   </button>
+
 </div>
 
 <div
@@ -242,15 +353,15 @@
 
 <div class="lifecycle-actions">
 
-  <button id="pauseBtn" type="button">
+  <button id="pauseBtn" class="primary" type="button">
     Pause Subscription
   </button>
 
-  <button id="resumeBtn" type="button">
+  <button id="resumeBtn" class="primary" type="button">
     Resume Subscription
   </button>
 
-  <button id="scheduleCancelBtn" type="button">
+  <button id="scheduleCancelBtn" class="secondary" type="button">
     Cancel at Period End
   </button>
 
@@ -269,11 +380,11 @@
 
   <div class="lifecycle-actions">
 
-    <button id="cancelNowBtn" type="button">
+    <button id="cancelNowBtn" class="danger" type="button">
       Cancel Now
     </button>
 
-    <button id="expireBtn" type="button">
+    <button id="expireBtn" class="danger" type="button">
       Mark Expired
     </button>
 
