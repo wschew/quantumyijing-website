@@ -120,6 +120,23 @@ async function sendEmail(apiKey,payload){
   return data || {};
 }
 
+function normalizeEventNotBefore(value){
+  const raw=String(value || "").trim();
+
+  if(!raw){
+    return "";
+  }
+
+  const ms=isoMs(raw);
+
+  if(!Number.isFinite(ms)){
+    return null;
+  }
+
+  return new Date(ms).toISOString();
+}
+
+
 async function loadReminderCandidates(db,runAt){
   const result=await db.prepare(`
     SELECT
@@ -215,7 +232,7 @@ async function loadReminderCandidates(db,runAt){
     : [];
 }
 
-async function loadEventCandidates(db,runAt){
+async function loadEventCandidates(db,runAt,eventNotBefore){
   const result=await db.prepare(`
     SELECT
       e.id AS source_event_id,
@@ -281,6 +298,21 @@ async function loadEventCandidates(db,runAt){
       )
 
       /*
+       * A6K Production rollout protection:
+       *
+       * Historical lifecycle events created before the configured
+       * notification rollout boundary are not eligible for
+       * event-based transactional notices.
+       *
+       * An empty cutoff is allowed only for Preview inspection.
+       * run mode requires a validated cutoff before buildItems().
+       */
+      AND (
+        ?=''
+        OR datetime(e.event_at)>=datetime(?)
+      )
+
+      /*
        * A6K hardening:
        *
        * Exclude terminal or not-yet-retryable notification logs
@@ -319,6 +351,8 @@ async function loadEventCandidates(db,runAt){
     ORDER BY e.id
     LIMIT 500
   `).bind(
+    eventNotBefore,
+    eventNotBefore,
     runAt,
     runAt
   ).all();
@@ -794,11 +828,11 @@ function emailContent(item){
   };
 }
 
-async function buildItems(db,runAt){
+async function buildItems(db,runAt,eventNotBefore){
   const runAtMs=isoMs(runAt);
 
   const reminders=await loadReminderCandidates(db,runAt);
-  const events=await loadEventCandidates(db,runAt);
+  const events=await loadEventCandidates(db,runAt,eventNotBefore);
 
   const items=[];
 
@@ -826,8 +860,10 @@ async function execute(request,env){
     return json({error:"Database binding unavailable"},503);
   }
 
+  const url=new URL(request.url);
+
   const action=
-    new URL(request.url).searchParams.get("action") || "preview";
+    url.searchParams.get("action") || "preview";
 
   if(!["preview","run"].includes(action)){
     return json({
@@ -841,15 +877,71 @@ async function execute(request,env){
     },503);
   }
 
+  /*
+   * Preview may override the rollout boundary using
+   * ?event_not_before=... so historical-cutoff behavior can
+   * be tested without changing environment configuration.
+   *
+   * run mode never accepts the query-string override.
+   */
+  const previewEventNotBefore =
+    action==="preview"
+      ? String(
+          url.searchParams.get("event_not_before") || ""
+        ).trim()
+      : "";
+
+  const configuredEventNotBefore =
+    String(
+      env.SUBSCRIPTION_NOTIFICATION_EVENT_NOT_BEFORE || ""
+    ).trim();
+
+  const rawEventNotBefore =
+    previewEventNotBefore ||
+    configuredEventNotBefore;
+
+  const eventNotBefore =
+    normalizeEventNotBefore(rawEventNotBefore);
+
+  if(
+    rawEventNotBefore &&
+    eventNotBefore===null
+  ){
+    return json({
+      error:
+        action==="run"
+          ? "SUBSCRIPTION_NOTIFICATION_EVENT_NOT_BEFORE is invalid."
+          : "event_not_before is invalid."
+    },action==="run" ? 503 : 400);
+  }
+
+  /*
+   * Production/run mode is fail-closed.
+   *
+   * This prevents first rollout from accidentally emailing
+   * historical PastDue / Expired / Cancellation events when
+   * subscription_notification_logs is initially empty.
+   */
+  if(
+    action==="run" &&
+    !eventNotBefore
+  ){
+    return json({
+      error:
+        "SUBSCRIPTION_NOTIFICATION_EVENT_NOT_BEFORE is required for run mode."
+    },503);
+  }
+
   const runAt=new Date().toISOString();
   const runAtMs=Date.parse(runAt);
 
-  const candidates=await buildItems(db,runAt);
+  const candidates=await buildItems(db,runAt,eventNotBefore || "");
 
   const summary={
     ok:true,
     mode:action,
     runAt,
+    event_not_before:eventNotBefore || null,
     checked:candidates.length,
     planned:0,
     sent:0,
