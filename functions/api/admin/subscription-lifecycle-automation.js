@@ -178,7 +178,7 @@ function plannedTransitions(row,nowMs){
 }
 
 async function loadCandidates(db,nowIso){
-  return await db.prepare(`
+  const result=await db.prepare(`
     SELECT
       id,
       subscription_reference,
@@ -222,6 +222,10 @@ async function loadCandidates(db,nowIso){
     ORDER BY id ASC
     LIMIT 500
   `).bind(nowIso,nowIso,nowIso).all();
+
+  return Array.isArray(result?.results)
+    ? result.results
+    : [];
 }
 
 async function transition(db,row,action,runAt){
