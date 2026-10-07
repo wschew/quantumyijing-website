@@ -175,8 +175,8 @@ async function loadReminderCandidates(db,runAt){
       AND p.renewal_mode='Manual'
       AND s.cancel_at_period_end=0
       AND s.current_period_end<>''
-      AND datetime(s.current_period_end)>datetime(?)
-      AND datetime(s.current_period_end)<=datetime(?,'+30 days')
+      AND julianday(s.current_period_end)>julianday(?)
+      AND julianday(s.current_period_end)<=julianday(?)+30.0
 
       /*
        * A6K hardening:
@@ -197,7 +197,7 @@ async function loadReminderCandidates(db,runAt){
           n.subscription_id=s.id
           AND n.notification_type=(
             CASE
-              WHEN datetime(s.current_period_end)<=datetime(?,'+7 days')
+              WHEN julianday(s.current_period_end)<=julianday(?)+7.0
                 THEN 'RenewalReminder7d'
               ELSE 'RenewalReminder30d'
             END
@@ -217,7 +217,7 @@ async function loadReminderCandidates(db,runAt){
           )
       )
 
-    ORDER BY datetime(s.current_period_end),s.id
+    ORDER BY julianday(s.current_period_end),s.id
     LIMIT 500
   `).bind(
     runAt,
