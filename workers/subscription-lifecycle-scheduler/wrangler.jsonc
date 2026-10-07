@@ -1,0 +1,14 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "qy-subscription-lifecycle-scheduler-preview",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-07",
+  "triggers": {
+    "crons": [
+      "0 * * * *"
+    ]
+  },
+  "vars": {
+    "A6H_ENDPOINT_BASE_URL": "https://d30500dd.quantumyijing-website.pages.dev"
+  }
+}
