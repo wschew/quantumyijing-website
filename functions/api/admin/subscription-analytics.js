@@ -30,6 +30,14 @@ function clean(value,max=200){
 }
 
 function integer(value,fallback,min,max){
+  if(
+    value===null ||
+    value===undefined ||
+    String(value).trim()===""
+  ){
+    return fallback;
+  }
+
   const n=Number(value);
 
   if(!Number.isInteger(n)){
