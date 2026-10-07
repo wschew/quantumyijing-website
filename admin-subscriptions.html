@@ -599,6 +599,15 @@ button,
       Reset Analytics Filters
     </button>
 
+    <button
+      id="exportAnalyticsBtn"
+      type="button"
+      class="secondary"
+      disabled
+    >
+      Export CSV
+    </button>
+
   </div>
 
   <div
@@ -1149,6 +1158,9 @@ button,
     state.analytics =
       data;
 
+    $("exportAnalyticsBtn").disabled =
+      false;
+
     const summary =
       data.summary || {};
 
@@ -1410,6 +1422,636 @@ button,
   }
 
 
+  function csvCell(value){
+
+    const text =
+      value === null ||
+      value === undefined
+        ? ""
+        : String(value);
+
+    return (
+      '"' +
+      text.replaceAll('"','""') +
+      '"'
+    );
+
+  }
+
+
+  function csvRow(values){
+
+    return values
+      .map(csvCell)
+      .join(",");
+
+  }
+
+
+  function addCsvSection(
+    lines,
+    title,
+    headers,
+    rows
+  ){
+
+    lines.push(
+      csvRow([title])
+    );
+
+    lines.push(
+      csvRow(headers)
+    );
+
+    if(
+      Array.isArray(rows) &&
+      rows.length
+    ){
+
+      rows.forEach(
+        row => {
+          lines.push(
+            csvRow(row)
+          );
+        }
+      );
+
+    }
+    else{
+
+      lines.push(
+        csvRow(["No data"])
+      );
+
+    }
+
+    lines.push("");
+
+  }
+
+
+  function exportAnalyticsCsv(){
+
+    const data =
+      state.analytics;
+
+    if(!data){
+
+      setAnalyticsMessage(
+        "Load analytics before exporting.",
+        true
+      );
+
+      return;
+
+    }
+
+    const lines = [];
+
+    const filters =
+      data.filters || {};
+
+    const summary =
+      data.summary || {};
+
+    const customers =
+      data.customers || {};
+
+    const renewals =
+      data.renewals || {};
+
+
+    lines.push(
+      csvRow([
+        "Quantum YiJing Subscription Analytics Report"
+      ])
+    );
+
+    lines.push(
+      csvRow([
+        "Generated At",
+        data.generated_at || ""
+      ])
+    );
+
+    lines.push(
+      csvRow([
+        "From",
+        filters.from || ""
+      ])
+    );
+
+    lines.push(
+      csvRow([
+        "To",
+        filters.to || ""
+      ])
+    );
+
+    lines.push(
+      csvRow([
+        "Upcoming Renewal Window (Days)",
+        filters.upcoming_days || ""
+      ])
+    );
+
+    lines.push("");
+
+
+    addCsvSection(
+      lines,
+      "Subscription Summary",
+      [
+        "Metric",
+        "Count"
+      ],
+      [
+        [
+          "Total Subscriptions",
+          summary.total
+        ],
+        [
+          "Pending",
+          summary.pending
+        ],
+        [
+          "Active",
+          summary.active
+        ],
+        [
+          "Past Due",
+          summary.past_due
+        ],
+        [
+          "Paused",
+          summary.paused
+        ],
+        [
+          "Cancelled",
+          summary.cancelled
+        ],
+        [
+          "Expired",
+          summary.expired
+        ],
+        [
+          "Cancellation Scheduled",
+          summary.cancellation_scheduled
+        ],
+        [
+          "In Grace Period",
+          summary.in_grace_period
+        ],
+        [
+          "Upcoming Renewals",
+          summary.upcoming_renewals
+        ]
+      ]
+    );
+
+
+    addCsvSection(
+      lines,
+      "Customer Summary",
+      [
+        "Metric",
+        "Count"
+      ],
+      [
+        [
+          "Customers with Subscriptions",
+          customers.with_subscriptions
+        ],
+        [
+          "Customers with Active Subscriptions",
+          customers.with_active_subscriptions
+        ],
+        [
+          "Customers with Past Due Subscriptions",
+          customers.with_past_due_subscriptions
+        ]
+      ]
+    );
+
+
+    addCsvSection(
+      lines,
+      "Renewal Summary",
+      [
+        "Metric",
+        "Count"
+      ],
+      [
+        [
+          "Renewed Events",
+          renewals.renewed_events
+        ],
+        [
+          "Renewal Executions",
+          renewals.executions
+        ],
+        [
+          "Linked Subscription Orders",
+          renewals.linked_orders
+        ],
+        [
+          "Initial Orders",
+          renewals.initial_orders
+        ],
+        [
+          "Renewal Orders",
+          renewals.renewal_orders
+        ]
+      ]
+    );
+
+
+    addCsvSection(
+      lines,
+      "Status Distribution",
+      [
+        "Status",
+        "Count"
+      ],
+      (
+        Array.isArray(data.status_counts)
+          ? data.status_counts
+          : []
+      ).map(
+        row => [
+          row.status,
+          row.count
+        ]
+      )
+    );
+
+
+    addCsvSection(
+      lines,
+      "Plan Breakdown",
+      [
+        "Plan ID",
+        "Plan Reference",
+        "Plan Code",
+        "Plan Status",
+        "Renewal Mode",
+        "Product ID",
+        "SKU",
+        "Product EN",
+        "Product ZH",
+        "Currency",
+        "Price",
+        "Total Subscriptions",
+        "Active",
+        "Past Due",
+        "Paused",
+        "Cancelled",
+        "Expired"
+      ],
+      (
+        Array.isArray(data.plan_breakdown)
+          ? data.plan_breakdown
+          : []
+      ).map(
+        row => [
+          row.plan_id,
+          row.plan_reference,
+          row.plan_code,
+          row.plan_status,
+          row.renewal_mode,
+          row.product_id,
+          row.sku,
+          row.name_en,
+          row.name_zh,
+          row.currency,
+          row.price,
+          row.total_subscriptions,
+          row.active,
+          row.past_due,
+          row.paused,
+          row.cancelled,
+          row.expired
+        ]
+      )
+    );
+
+
+    addCsvSection(
+      lines,
+      "Top Customers",
+      [
+        "Customer ID",
+        "Customer Reference",
+        "Display Name",
+        "Email",
+        "Customer Status",
+        "Subscriptions",
+        "Active",
+        "Past Due"
+      ],
+      (
+        Array.isArray(data.top_customers)
+          ? data.top_customers
+          : []
+      ).map(
+        row => [
+          row.customer_id,
+          row.customer_reference,
+          row.display_name,
+          row.email,
+          row.customer_status,
+          row.subscriptions,
+          row.active,
+          row.past_due
+        ]
+      )
+    );
+
+
+    const lifecycle =
+      data.lifecycle || {};
+
+    addCsvSection(
+      lines,
+      "Lifecycle Event Counts",
+      [
+        "Event Type",
+        "Count"
+      ],
+      (
+        Array.isArray(lifecycle.event_counts)
+          ? lifecycle.event_counts
+          : []
+      ).map(
+        row => [
+          row.event_type,
+          row.count
+        ]
+      )
+    );
+
+
+    addCsvSection(
+      lines,
+      "Recent Lifecycle Events",
+      [
+        "Event ID",
+        "Subscription ID",
+        "Subscription Reference",
+        "Event Type",
+        "From Status",
+        "To Status",
+        "Source",
+        "Source Reference",
+        "Event At"
+      ],
+      (
+        Array.isArray(lifecycle.recent_events)
+          ? lifecycle.recent_events
+          : []
+      ).map(
+        row => [
+          row.id,
+          row.subscription_id,
+          row.subscription_reference,
+          row.event_type,
+          row.from_status,
+          row.to_status,
+          row.source,
+          row.source_reference,
+          row.event_at
+        ]
+      )
+    );
+
+
+    addCsvSection(
+      lines,
+      "Renewal Executions",
+      [
+        "Order ID",
+        "Subscription ID",
+        "Subscription Reference",
+        "Membership ID",
+        "Order Reference",
+        "Previous Membership End",
+        "Period Start",
+        "New Membership End",
+        "Completed At"
+      ],
+      (
+        Array.isArray(data.renewal_executions)
+          ? data.renewal_executions
+          : []
+      ).map(
+        row => [
+          row.order_id,
+          row.subscription_id,
+          row.subscription_reference,
+          row.membership_id,
+          row.order_reference,
+          row.previous_membership_end,
+          row.period_start,
+          row.new_membership_end,
+          row.completed_at
+        ]
+      )
+    );
+
+
+    const notifications =
+      data.notifications || {};
+
+    addCsvSection(
+      lines,
+      "Notification Status Counts",
+      [
+        "Status",
+        "Count"
+      ],
+      (
+        Array.isArray(notifications.status_counts)
+          ? notifications.status_counts
+          : []
+      ).map(
+        row => [
+          row.status,
+          row.count
+        ]
+      )
+    );
+
+
+    addCsvSection(
+      lines,
+      "Notification Type Breakdown",
+      [
+        "Notification Type",
+        "Status",
+        "Count"
+      ],
+      (
+        Array.isArray(
+          notifications.type_status_counts
+        )
+          ? notifications.type_status_counts
+          : []
+      ).map(
+        row => [
+          row.notification_type,
+          row.status,
+          row.count
+        ]
+      )
+    );
+
+
+    addCsvSection(
+      lines,
+      "Recent Notifications",
+      [
+        "Log ID",
+        "Subscription ID",
+        "Subscription Reference",
+        "Notification Type",
+        "Channel",
+        "Recipient",
+        "Status",
+        "Provider Message ID",
+        "Last Error",
+        "Scheduled For",
+        "Sent At",
+        "Created At",
+        "Updated At"
+      ],
+      (
+        Array.isArray(notifications.recent)
+          ? notifications.recent
+          : []
+      ).map(
+        row => [
+          row.id,
+          row.subscription_id,
+          row.subscription_reference,
+          row.notification_type,
+          row.channel,
+          row.recipient,
+          row.status,
+          row.provider_message_id,
+          row.last_error,
+          row.scheduled_for,
+          row.sent_at,
+          row.created_at,
+          row.updated_at
+        ]
+      )
+    );
+
+
+    addCsvSection(
+      lines,
+      "Upcoming Renewals",
+      [
+        "Subscription ID",
+        "Subscription Reference",
+        "Status",
+        "Current Period End",
+        "Next Renewal",
+        "Grace Ends",
+        "Cancel at Period End",
+        "Customer ID",
+        "Customer Reference",
+        "Display Name",
+        "Email",
+        "Plan ID",
+        "Plan Code",
+        "Plan Reference",
+        "SKU",
+        "Product EN",
+        "Product ZH"
+      ],
+      (
+        Array.isArray(data.upcoming_renewals)
+          ? data.upcoming_renewals
+          : []
+      ).map(
+        row => [
+          row.subscription_id,
+          row.subscription_reference,
+          row.status,
+          row.current_period_end,
+          row.next_renewal_at,
+          row.grace_ends_at,
+          row.cancel_at_period_end,
+          row.customer_id,
+          row.customer_reference,
+          row.display_name,
+          row.email,
+          row.plan_id,
+          row.plan_code,
+          row.plan_reference,
+          row.sku,
+          row.name_en,
+          row.name_zh
+        ]
+      )
+    );
+
+
+    const csv =
+      "\uFEFF" +
+      lines.join("\r\n");
+
+    const blob =
+      new Blob(
+        [csv],
+        {
+          type:
+            "text/csv;charset=utf-8"
+        }
+      );
+
+    const objectUrl =
+      URL.createObjectURL(blob);
+
+    const link =
+      document.createElement("a");
+
+    const date =
+      new Date()
+        .toISOString()
+        .slice(0,10);
+
+    link.href =
+      objectUrl;
+
+    link.download =
+      `qy-subscription-analytics-${date}.csv`;
+
+    document.body.appendChild(
+      link
+    );
+
+    link.click();
+
+    link.remove();
+
+    setTimeout(
+      () => {
+        URL.revokeObjectURL(
+          objectUrl
+        );
+      },
+      0
+    );
+
+    setAnalyticsMessage(
+      "Subscription analytics CSV exported."
+    );
+
+  }
+
+
   async function loadAnalytics(){
 
     setAnalyticsMessage("");
@@ -1547,6 +2189,9 @@ button,
       state.analytics =
         null;
 
+      $("exportAnalyticsBtn").disabled =
+        true;
+
       $("analyticsGeneratedAt").textContent =
         "Load failed";
 
@@ -1579,6 +2224,9 @@ button,
 
     state.analytics =
       null;
+
+    $("exportAnalyticsBtn").disabled =
+      true;
 
     [
       "analyticsTotal",
@@ -1893,6 +2541,12 @@ button,
   $("resetAnalyticsBtn").addEventListener(
     "click",
     resetAnalytics
+  );
+
+
+  $("exportAnalyticsBtn").addEventListener(
+    "click",
+    exportAnalyticsCsv
   );
 
 
