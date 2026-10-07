@@ -1,0 +1,24 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+
+  // Quantum YiJing v4.1 Production subscription scheduler.
+  //
+  // STAGED / DISABLED CONFIGURATION.
+  //
+  // Safety:
+  // - No cron trigger is configured yet.
+  // - ADMIN_TOKEN will be added as a Worker secret before deployment.
+  // - SUBSCRIPTION_NOTIFICATION_EVENT_NOT_BEFORE will be generated fresh
+  //   immediately before controlled Production activation.
+  //
+  // Do not copy the Preview cutoff into this configuration.
+
+  "name": "qy-subscription-lifecycle-scheduler",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-07",
+
+  "vars": {
+    "A6H_ENDPOINT_BASE_URL": "https://quantumyijing.com",
+    "A6I_ENDPOINT_BASE_URL": "https://quantumyijing.com"
+  }
+}
