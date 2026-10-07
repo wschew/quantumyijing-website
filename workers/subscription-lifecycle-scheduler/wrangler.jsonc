@@ -9,6 +9,7 @@
     ]
   },
   "vars": {
-    "A6H_ENDPOINT_BASE_URL": "https://9ba2b9c4.quantumyijing-website.pages.dev"
+    "A6H_ENDPOINT_BASE_URL": "https://9ba2b9c4.quantumyijing-website.pages.dev",
+    "A6I_ENDPOINT_BASE_URL": "https://2795c4d4.quantumyijing-website.pages.dev"
   }
 }
