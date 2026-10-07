@@ -177,8 +177,8 @@ function plannedTransitions(row,nowMs){
   return [];
 }
 
-async function loadCandidates(db){
-  const result=await db.prepare(`
+async function loadCandidates(db,nowIso){
+  return await db.prepare(`
     SELECT
       id,
       subscription_reference,
@@ -190,17 +190,38 @@ async function loadCandidates(db){
       current_period_end,
       next_renewal_at,
       grace_ends_at,
+      auto_renew,
       cancel_at_period_end,
       cancelled_at,
       paused_at,
-      expired_at
+      expired_at,
+      source,
+      notes,
+      created_at,
+      updated_at
     FROM subscriptions
-    WHERE status IN ('Active','PastDue','Paused')
+    WHERE
+      (
+        cancel_at_period_end=1
+        AND status IN ('Active','PastDue','Paused')
+        AND current_period_end<>''
+        AND datetime(current_period_end)<=datetime(?)
+      )
+      OR
+      (
+        status='Active'
+        AND current_period_end<>''
+        AND datetime(current_period_end)<=datetime(?)
+      )
+      OR
+      (
+        status='PastDue'
+        AND grace_ends_at<>''
+        AND datetime(grace_ends_at)<=datetime(?)
+      )
     ORDER BY id ASC
     LIMIT 500
-  `).all();
-
-  return result.results || [];
+  `).bind(nowIso,nowIso,nowIso).all();
 }
 
 async function transition(db,row,action,runAt){
@@ -311,7 +332,7 @@ async function execute(context,mode){
   const nowMs=now.getTime();
   const runAt=now.toISOString();
 
-  const candidates=await loadCandidates(db);
+  const candidates=await loadCandidates(db,runAt);
 
   const summary={
     ok:true,
