@@ -1,0 +1,958 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>Subscription Register & Operations | Quantum YiJing</title>
+
+<link rel="stylesheet" href="/admin.css">
+
+<style>
+:root{
+  --qy-blue:#0f4c81;
+  --qy-blue-dark:#0a3154;
+  --qy-blue-soft:#eef6fc;
+  --qy-border:#d8e1e8;
+  --qy-text:#17212b;
+  --qy-muted:#647381;
+  --qy-success:#167447;
+  --qy-warning:#8a5a00;
+  --qy-danger:#b42318;
+  --qy-white:#ffffff;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+.filter-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:16px;
+}
+
+.field{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+
+label{
+  font-size:13px;
+  font-weight:700;
+  color:#33414d;
+}
+
+input,
+select{
+  width:100%;
+  padding:11px 12px;
+  border:1px solid #bcc8d2;
+  border-radius:8px;
+  font:inherit;
+  background:#fff;
+  color:var(--qy-text);
+}
+
+input:focus,
+select:focus{
+  outline:2px solid rgba(15,76,129,.18);
+  border-color:var(--qy-blue);
+}
+
+.buttons{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:18px;
+}
+
+button,
+.action-link{
+  border:0;
+  border-radius:8px;
+  padding:9px 13px;
+  font:inherit;
+  font-weight:700;
+  cursor:pointer;
+  text-decoration:none;
+  display:inline-block;
+}
+
+.primary{
+  background:var(--qy-blue);
+  color:#fff;
+}
+
+.primary:hover{
+  background:var(--qy-blue-dark);
+}
+
+.secondary{
+  background:#e9eef2;
+  color:#263746;
+}
+
+.register-summary{
+  display:flex;
+  flex-wrap:wrap;
+  gap:16px;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:14px;
+}
+
+.register-count{
+  font-weight:700;
+}
+
+.register-message{
+  margin-top:14px;
+  white-space:pre-wrap;
+}
+
+.table-wrap{
+  overflow:auto;
+}
+
+.subscription-table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:1280px;
+}
+
+.subscription-table th,
+.subscription-table td{
+  padding:10px 9px;
+  border-bottom:1px solid rgba(0,0,0,.08);
+  text-align:left;
+  vertical-align:top;
+}
+
+.subscription-table th{
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  white-space:nowrap;
+}
+
+.reference{
+  font-weight:700;
+}
+
+.muted-small{
+  color:var(--qy-muted);
+  font-size:12px;
+  margin-top:3px;
+}
+
+.status-pill{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+  background:#e9eef2;
+}
+
+.status-pill.Active{
+  background:#eef9f3;
+  color:#167447;
+}
+
+.status-pill.Pending{
+  background:#eef6fc;
+  color:#0f4c81;
+}
+
+.status-pill.PastDue{
+  background:#fff9e8;
+  color:#8a5a00;
+}
+
+.status-pill.Paused{
+  background:#f3f0ff;
+  color:#6042a6;
+}
+
+.status-pill.Cancelled,
+.status-pill.Expired{
+  background:#fff2f0;
+  color:#b42318;
+}
+
+.row-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+
+.row-actions .action-link{
+  padding:7px 10px;
+  font-size:12px;
+}
+
+.empty{
+  text-align:center;
+  color:var(--qy-muted);
+  padding:28px !important;
+}
+
+.boundary-list{
+  margin:0;
+  padding-left:20px;
+}
+
+.boundary-list li{
+  margin:6px 0;
+}
+
+@media(max-width:980px){
+  .filter-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+@media(max-width:620px){
+  .filter-grid{
+    grid-template-columns:1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header class="topbar">
+  <div class="brand-lockup">
+    <img
+      src="images/quantum-yijing-logo.png"
+      alt=""
+      class="topbar-logo"
+    >
+    <div>
+      <strong>Quantum YiJing</strong>
+      <span>Academy Operating System · v4.1</span>
+    </div>
+  </div>
+
+  <div class="topbar-actions">
+    <a href="/admin.html" class="text-link">Back to Admin</a>
+  </div>
+</header>
+
+<main class="crm-shell">
+
+<section class="page-heading">
+  <div>
+    <p class="eyebrow">
+      QY-AOS · SUBSCRIPTION MANAGEMENT
+    </p>
+
+    <h1>
+      Subscription Register & Operations Administration
+    </h1>
+
+    <p>
+      Review subscriptions across all customers and route individual
+      subscriptions to the existing lifecycle and renewal administration tools.
+    </p>
+  </div>
+</section>
+
+
+<section class="panel">
+
+  <h2>1. Register Filters</h2>
+
+  <p class="muted">
+    Filters use the existing subscription register API.
+    Leaving all filters blank loads the latest subscriptions globally.
+  </p>
+
+  <div class="filter-grid">
+
+    <div class="field">
+      <label for="adminToken">
+        Admin Token
+      </label>
+      <input
+        id="adminToken"
+        type="password"
+        autocomplete="current-password"
+        placeholder="Preview ADMIN_TOKEN"
+      >
+    </div>
+
+    <div class="field">
+      <label for="customerId">
+        Customer ID
+      </label>
+      <input
+        id="customerId"
+        type="number"
+        min="1"
+        step="1"
+        placeholder="Optional"
+      >
+    </div>
+
+    <div class="field">
+      <label for="membershipId">
+        Membership ID
+      </label>
+      <input
+        id="membershipId"
+        type="number"
+        min="1"
+        step="1"
+        placeholder="Optional"
+      >
+    </div>
+
+    <div class="field">
+      <label for="status">
+        Subscription Status
+      </label>
+      <select id="status">
+        <option value="">All statuses</option>
+        <option value="Pending">Pending</option>
+        <option value="Active">Active</option>
+        <option value="PastDue">PastDue</option>
+        <option value="Paused">Paused</option>
+        <option value="Cancelled">Cancelled</option>
+        <option value="Expired">Expired</option>
+      </select>
+    </div>
+
+  </div>
+
+  <div class="buttons">
+    <button
+      id="loadBtn"
+      type="button"
+      class="primary"
+    >
+      Load Subscriptions
+    </button>
+
+    <button
+      id="resetBtn"
+      type="button"
+      class="secondary"
+    >
+      Reset Filters
+    </button>
+  </div>
+
+  <div
+    id="message"
+    class="register-message muted"
+  ></div>
+
+</section>
+
+
+<section class="panel">
+
+  <div class="register-summary">
+
+    <div>
+      <h2>2. Subscription Register</h2>
+      <p class="muted">
+        Global subscription records returned by the existing v4.1 subscription API.
+      </p>
+    </div>
+
+    <div
+      id="resultCount"
+      class="register-count"
+    >
+      Not loaded
+    </div>
+
+  </div>
+
+  <div class="table-wrap">
+
+    <table class="subscription-table">
+
+      <thead>
+        <tr>
+          <th>Subscription</th>
+          <th>Customer</th>
+          <th>Plan</th>
+          <th>Membership</th>
+          <th>Status</th>
+          <th>Current Period</th>
+          <th>Next Renewal</th>
+          <th>Grace Ends</th>
+          <th>Cancel at Period End</th>
+          <th>Operations</th>
+        </tr>
+      </thead>
+
+      <tbody id="subscriptionRows">
+        <tr>
+          <td colspan="10" class="empty">
+            Subscription register not loaded.
+          </td>
+        </tr>
+      </tbody>
+
+    </table>
+
+  </div>
+
+</section>
+
+
+<section class="panel">
+
+  <h2>Operations Boundary</h2>
+
+  <ul class="boundary-list">
+    <li>
+      This page is a global subscription register and routing console.
+    </li>
+    <li>
+      It does not directly change subscription lifecycle state.
+    </li>
+    <li>
+      Lifecycle changes remain in Subscription Lifecycle Administration.
+    </li>
+    <li>
+      Manual renewals remain in Subscription Renewal Administration.
+    </li>
+    <li>
+      Orders, payments and accounting remain the financial source of truth.
+    </li>
+    <li>
+      No automatic renewal capability is introduced by A6G.
+    </li>
+  </ul>
+
+</section>
+
+</main>
+
+
+<script>
+(() => {
+
+  "use strict";
+
+  const $ =
+    id => document.getElementById(id);
+
+  const state = {
+    subscriptions:[]
+  };
+
+
+  function token(){
+
+    return (
+      $("adminToken").value.trim() ||
+      sessionStorage.getItem("qyAdminToken") ||
+      ""
+    );
+
+  }
+
+
+  function esc(value){
+
+    return String(
+      value === null ||
+      value === undefined
+        ? ""
+        : value
+    )
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+
+  }
+
+
+  function shown(value){
+
+    if(
+      value === null ||
+      value === undefined ||
+      value === ""
+    ){
+      return "—";
+    }
+
+    return String(value);
+
+  }
+
+
+  function positiveIntOrBlank(value,label){
+
+    const text =
+      String(value || "").trim();
+
+    if(!text){
+      return "";
+    }
+
+    const n =
+      Number(text);
+
+    if(
+      !Number.isInteger(n) ||
+      n < 1
+    ){
+      throw new Error(
+        `${label} must be a positive integer.`
+      );
+    }
+
+    return String(n);
+
+  }
+
+
+  function setMessage(
+    text = "",
+    isError = false
+  ){
+
+    const host =
+      $("message");
+
+    host.textContent =
+      text;
+
+    host.style.color =
+      isError
+        ? "#b42318"
+        : "";
+
+  }
+
+
+  function lifecycleUrl(id){
+
+    return (
+      "/admin-subscription-lifecycle.html" +
+      "?subscriptionId=" +
+      encodeURIComponent(id)
+    );
+
+  }
+
+
+  function renewalUrl(id){
+
+    return (
+      "/admin-subscription-renewal.html" +
+      "?subscriptionId=" +
+      encodeURIComponent(id)
+    );
+
+  }
+
+
+  function renderRows(rows){
+
+    const host =
+      $("subscriptionRows");
+
+    $("resultCount").textContent =
+      `${rows.length} subscription(s)`;
+
+    if(!rows.length){
+
+      host.innerHTML = `
+        <tr>
+          <td colspan="10" class="empty">
+            No subscriptions match the current filters.
+          </td>
+        </tr>
+      `;
+
+      return;
+    }
+
+    host.innerHTML =
+      rows.map(
+        row => {
+
+          const cancelAtPeriodEnd =
+            Number(
+              row.cancel_at_period_end
+            ) === 1
+              ? "Yes"
+              : "No";
+
+          return `
+            <tr>
+
+              <td>
+                <div class="reference">
+                  ${esc(shown(row.subscription_reference))}
+                </div>
+                <div class="muted-small">
+                  ID ${esc(shown(row.id))}
+                </div>
+              </td>
+
+              <td>
+                <strong>
+                  ${esc(shown(row.display_name))}
+                </strong>
+                <div class="muted-small">
+                  ${esc(shown(row.customer_reference))}
+                </div>
+                <div class="muted-small">
+                  Customer ID ${esc(shown(row.customer_id))}
+                </div>
+              </td>
+
+              <td>
+                <strong>
+                  ${esc(shown(row.plan_code))}
+                </strong>
+                <div class="muted-small">
+                  Plan ID ${esc(shown(row.plan_id))}
+                </div>
+                <div class="muted-small">
+                  Product ID ${esc(shown(row.product_id))}
+                </div>
+              </td>
+
+              <td>
+                <strong>
+                  ${esc(shown(row.membership_reference))}
+                </strong>
+                <div class="muted-small">
+                  ID ${esc(shown(row.membership_id))}
+                </div>
+                <div class="muted-small">
+                  ${esc(shown(row.membership_status))}
+                </div>
+              </td>
+
+              <td>
+                <span class="status-pill ${esc(shown(row.status))}">
+                  ${esc(shown(row.status))}
+                </span>
+              </td>
+
+              <td>
+                ${esc(shown(row.current_period_start))}
+                <div class="muted-small">
+                  to ${esc(shown(row.current_period_end))}
+                </div>
+              </td>
+
+              <td>
+                ${esc(shown(row.next_renewal_at))}
+              </td>
+
+              <td>
+                ${esc(shown(row.grace_ends_at))}
+              </td>
+
+              <td>
+                ${cancelAtPeriodEnd}
+              </td>
+
+              <td>
+                <div class="row-actions">
+
+                  <a
+                    class="action-link primary"
+                    href="${esc(lifecycleUrl(row.id))}"
+                  >
+                    Lifecycle
+                  </a>
+
+                  <a
+                    class="action-link secondary"
+                    href="${esc(renewalUrl(row.id))}"
+                  >
+                    Renewal
+                  </a>
+
+                </div>
+              </td>
+
+            </tr>
+          `;
+
+        }
+      ).join("");
+
+  }
+
+
+  async function loadSubscriptions(){
+
+    setMessage("");
+
+    const adminToken =
+      token();
+
+    if(!adminToken){
+
+      setMessage(
+        "Admin token is required.",
+        true
+      );
+
+      return;
+    }
+
+    let customerId;
+    let membershipId;
+
+    try{
+
+      customerId =
+        positiveIntOrBlank(
+          $("customerId").value,
+          "Customer ID"
+        );
+
+      membershipId =
+        positiveIntOrBlank(
+          $("membershipId").value,
+          "Membership ID"
+        );
+
+    }
+    catch(error){
+
+      setMessage(
+        error.message || String(error),
+        true
+      );
+
+      return;
+    }
+
+    sessionStorage.setItem(
+      "qyAdminToken",
+      adminToken
+    );
+
+    const params =
+      new URLSearchParams();
+
+    if(customerId){
+      params.set(
+        "customerId",
+        customerId
+      );
+    }
+
+    if(membershipId){
+      params.set(
+        "membershipId",
+        membershipId
+      );
+    }
+
+    if($("status").value){
+      params.set(
+        "status",
+        $("status").value
+      );
+    }
+
+    const url =
+      "/api/admin/subscriptions" +
+      (
+        params.toString()
+          ? "?" + params.toString()
+          : ""
+      );
+
+    $("loadBtn").disabled =
+      true;
+
+    $("resultCount").textContent =
+      "Loading...";
+
+    setMessage(
+      "Loading subscription register..."
+    );
+
+    try{
+
+      const response =
+        await fetch(
+          url,
+          {
+            headers:{
+              "Authorization":
+                "Bearer " + adminToken
+            },
+            cache:"no-store"
+          }
+        );
+
+      let data = {};
+
+      try{
+
+        data =
+          await response.json();
+
+      }
+      catch{
+
+        throw new Error(
+          `Subscription API returned invalid JSON (${response.status}).`
+        );
+
+      }
+
+      if(!response.ok){
+
+        throw new Error(
+          data.error ||
+          `Unable to load subscriptions (${response.status}).`
+        );
+
+      }
+
+      const rows =
+        Array.isArray(
+          data.subscriptions
+        )
+          ? data.subscriptions
+          : [];
+
+      state.subscriptions =
+        rows;
+
+      renderRows(
+        rows
+      );
+
+      setMessage(
+        "Subscription register loaded."
+      );
+
+    }
+    catch(error){
+
+      state.subscriptions =
+        [];
+
+      $("subscriptionRows").innerHTML = `
+        <tr>
+          <td colspan="10" class="empty">
+            Unable to load subscription register.
+          </td>
+        </tr>
+      `;
+
+      $("resultCount").textContent =
+        "Load failed";
+
+      setMessage(
+        error.message || String(error),
+        true
+      );
+
+    }
+    finally{
+
+      $("loadBtn").disabled =
+        false;
+
+    }
+
+  }
+
+
+  function resetFilters(){
+
+    $("customerId").value =
+      "";
+
+    $("membershipId").value =
+      "";
+
+    $("status").value =
+      "";
+
+    state.subscriptions =
+      [];
+
+    $("subscriptionRows").innerHTML = `
+      <tr>
+        <td colspan="10" class="empty">
+          Subscription register not loaded.
+        </td>
+      </tr>
+    `;
+
+    $("resultCount").textContent =
+      "Not loaded";
+
+    setMessage("");
+
+  }
+
+
+  const storedToken =
+    sessionStorage.getItem(
+      "qyAdminToken"
+    );
+
+  if(storedToken){
+
+    $("adminToken").value =
+      storedToken;
+
+  }
+
+
+  $("loadBtn").addEventListener(
+    "click",
+    loadSubscriptions
+  );
+
+  $("resetBtn").addEventListener(
+    "click",
+    resetFilters
+  );
+
+
+  [
+    "customerId",
+    "membershipId"
+  ].forEach(
+    id => {
+
+      $(id).addEventListener(
+        "keydown",
+        event => {
+
+          if(event.key === "Enter"){
+            loadSubscriptions();
+          }
+
+        }
+      );
+
+    }
+  );
+
+})();
+</script>
+
+</body>
+</html>
