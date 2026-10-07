@@ -17,7 +17,7 @@ function authorized(request,env){
   );
 }
 
-async function callAutomation(baseUrl,path,token,label){
+async function callAutomation(baseUrl,path,token,label,extraHeaders={}){
   const base=String(baseUrl || "")
     .trim()
     .replace(/\/+$/,"");
@@ -41,7 +41,8 @@ async function callAutomation(baseUrl,path,token,label){
       headers:{
         "Authorization":`Bearer ${token}`,
         "Accept":"application/json",
-        "Content-Type":"application/json"
+        "Content-Type":"application/json",
+        ...extraHeaders
       },
       body:"{}"
     }
@@ -115,17 +116,33 @@ async function executeLifecycle(env){
 async function executeNotifications(env){
   const token=String(env.ADMIN_TOKEN || "").trim();
 
+  const eventNotBefore=
+    String(
+      env.SUBSCRIPTION_NOTIFICATION_EVENT_NOT_BEFORE || ""
+    ).trim();
+
+  if(!eventNotBefore){
+    throw new Error(
+      "SUBSCRIPTION_NOTIFICATION_EVENT_NOT_BEFORE is not configured."
+    );
+  }
+
   const result=await callAutomation(
     env.A6I_ENDPOINT_BASE_URL,
     "/api/admin/subscription-notification-automation?action=run",
     token,
-    "A6I notification automation"
+    "A6I notification automation",
+    {
+      "X-QY-Subscription-Event-Not-Before":
+        eventNotBefore
+    }
   );
 
   console.log(
     "A6I subscription notifications completed",
     JSON.stringify({
       runAt:result.runAt,
+      eventNotBefore:result.event_not_before,
       checked:result.checked,
       planned:result.planned,
       sent:result.sent,

@@ -891,6 +891,22 @@ async function execute(request,env){
         ).trim()
       : "";
 
+  /*
+   * Authenticated scheduler calls may supply the rollout boundary
+   * using a dedicated request header.
+   *
+   * Because this endpoint has already passed ADMIN_TOKEN
+   * authorization, this remains a trusted internal control.
+   */
+  const schedulerEventNotBefore =
+    action==="run"
+      ? String(
+          request.headers.get(
+            "X-QY-Subscription-Event-Not-Before"
+          ) || ""
+        ).trim()
+      : "";
+
   const configuredEventNotBefore =
     String(
       env.SUBSCRIPTION_NOTIFICATION_EVENT_NOT_BEFORE || ""
@@ -898,6 +914,7 @@ async function execute(request,env){
 
   const rawEventNotBefore =
     previewEventNotBefore ||
+    schedulerEventNotBefore ||
     configuredEventNotBefore;
 
   const eventNotBefore =
