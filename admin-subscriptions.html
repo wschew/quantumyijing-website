@@ -208,14 +208,113 @@ button,
   margin:6px 0;
 }
 
+.analytics-filter-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:16px;
+  margin-top:16px;
+}
+
+.analytics-grid{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:12px;
+  margin-top:18px;
+}
+
+.analytics-card{
+  border:1px solid var(--qy-border);
+  border-radius:10px;
+  padding:14px;
+  background:var(--qy-white);
+}
+
+.analytics-card span{
+  display:block;
+  color:var(--qy-muted);
+  font-size:12px;
+  font-weight:700;
+  margin-bottom:6px;
+}
+
+.analytics-card strong{
+  display:block;
+  color:var(--qy-blue-dark);
+  font-size:24px;
+  line-height:1.1;
+}
+
+.analytics-section{
+  margin-top:24px;
+}
+
+.analytics-section h3{
+  margin:0 0 10px;
+  font-size:16px;
+}
+
+.analytics-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:14px;
+  align-items:center;
+  margin-top:12px;
+  color:var(--qy-muted);
+  font-size:13px;
+}
+
+.analytics-table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:760px;
+}
+
+.analytics-table th,
+.analytics-table td{
+  padding:9px 8px;
+  border-bottom:1px solid rgba(0,0,0,.08);
+  text-align:left;
+  vertical-align:top;
+}
+
+.analytics-table th{
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  white-space:nowrap;
+}
+
+.analytics-message{
+  margin-top:12px;
+  white-space:pre-wrap;
+}
+
+.analytics-empty{
+  text-align:center;
+  color:var(--qy-muted);
+  padding:22px !important;
+}
+
+@media(max-width:1180px){
+  .analytics-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+}
+
 @media(max-width:980px){
+  .analytics-filter-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
   .filter-grid{
     grid-template-columns:repeat(2,minmax(0,1fr));
   }
 }
 
 @media(max-width:620px){
-  .filter-grid{
+  .filter-grid,
+  .analytics-filter-grid,
+  .analytics-grid{
     grid-template-columns:1fr;
   }
 }
@@ -408,6 +507,324 @@ button,
 </section>
 
 
+<section class="panel" id="subscriptionAnalyticsPanel">
+
+  <div class="register-summary">
+
+    <div>
+      <h2>3. Subscription Analytics & Reporting</h2>
+
+      <p class="muted">
+        Read-only operational reporting across subscription lifecycle,
+        renewals, plans, customers and transactional notifications.
+      </p>
+    </div>
+
+    <div
+      id="analyticsGeneratedAt"
+      class="register-count"
+    >
+      Not loaded
+    </div>
+
+  </div>
+
+  <div class="analytics-filter-grid">
+
+    <div class="field">
+      <label for="analyticsFrom">
+        From
+      </label>
+
+      <input
+        id="analyticsFrom"
+        type="date"
+      >
+    </div>
+
+    <div class="field">
+      <label for="analyticsTo">
+        To
+      </label>
+
+      <input
+        id="analyticsTo"
+        type="date"
+      >
+    </div>
+
+    <div class="field">
+      <label for="analyticsUpcomingDays">
+        Upcoming Renewal Window
+      </label>
+
+      <input
+        id="analyticsUpcomingDays"
+        type="number"
+        min="1"
+        max="365"
+        step="1"
+        value="30"
+      >
+    </div>
+
+    <div class="field">
+      <label>
+        Report Mode
+      </label>
+
+      <input
+        value="Read-only analytics"
+        readonly
+      >
+    </div>
+
+  </div>
+
+  <div class="buttons">
+
+    <button
+      id="loadAnalyticsBtn"
+      type="button"
+      class="primary"
+    >
+      Load Analytics
+    </button>
+
+    <button
+      id="resetAnalyticsBtn"
+      type="button"
+      class="secondary"
+    >
+      Reset Analytics Filters
+    </button>
+
+  </div>
+
+  <div
+    id="analyticsMessage"
+    class="analytics-message muted"
+  ></div>
+
+
+  <div class="analytics-grid">
+
+    <article class="analytics-card">
+      <span>Total Subscriptions</span>
+      <strong id="analyticsTotal">0</strong>
+    </article>
+
+    <article class="analytics-card">
+      <span>Active</span>
+      <strong id="analyticsActive">0</strong>
+    </article>
+
+    <article class="analytics-card">
+      <span>Past Due</span>
+      <strong id="analyticsPastDue">0</strong>
+    </article>
+
+    <article class="analytics-card">
+      <span>Paused</span>
+      <strong id="analyticsPaused">0</strong>
+    </article>
+
+    <article class="analytics-card">
+      <span>Cancelled</span>
+      <strong id="analyticsCancelled">0</strong>
+    </article>
+
+    <article class="analytics-card">
+      <span>Expired</span>
+      <strong id="analyticsExpired">0</strong>
+    </article>
+
+    <article class="analytics-card">
+      <span>Upcoming Renewals</span>
+      <strong id="analyticsUpcoming">0</strong>
+    </article>
+
+    <article class="analytics-card">
+      <span>In Grace Period</span>
+      <strong id="analyticsGrace">0</strong>
+    </article>
+
+    <article class="analytics-card">
+      <span>Cancellation Scheduled</span>
+      <strong id="analyticsCancelScheduled">0</strong>
+    </article>
+
+    <article class="analytics-card">
+      <span>Customers with Subscriptions</span>
+      <strong id="analyticsCustomers">0</strong>
+    </article>
+
+  </div>
+
+
+  <div class="analytics-meta">
+
+    <span>
+      Renewed events:
+      <strong id="analyticsRenewedEvents">0</strong>
+    </span>
+
+    <span>
+      Renewal executions:
+      <strong id="analyticsRenewalExecutions">0</strong>
+    </span>
+
+    <span>
+      Linked subscription orders:
+      <strong id="analyticsLinkedOrders">0</strong>
+    </span>
+
+  </div>
+
+
+  <div class="analytics-section">
+
+    <h3>Status Distribution</h3>
+
+    <div class="table-wrap">
+      <table class="analytics-table">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Count</th>
+          </tr>
+        </thead>
+
+        <tbody id="analyticsStatusRows">
+          <tr>
+            <td colspan="2" class="analytics-empty">
+              Analytics not loaded.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+
+  <div class="analytics-section">
+
+    <h3>Plan Breakdown</h3>
+
+    <div class="table-wrap">
+      <table class="analytics-table">
+        <thead>
+          <tr>
+            <th>Plan</th>
+            <th>Product</th>
+            <th>Mode</th>
+            <th>Total</th>
+            <th>Active</th>
+            <th>Past Due</th>
+            <th>Paused</th>
+            <th>Cancelled</th>
+            <th>Expired</th>
+          </tr>
+        </thead>
+
+        <tbody id="analyticsPlanRows">
+          <tr>
+            <td colspan="9" class="analytics-empty">
+              Analytics not loaded.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+
+  <div class="analytics-section">
+
+    <h3>Lifecycle Events</h3>
+
+    <div class="table-wrap">
+      <table class="analytics-table">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Count</th>
+          </tr>
+        </thead>
+
+        <tbody id="analyticsEventRows">
+          <tr>
+            <td colspan="2" class="analytics-empty">
+              Analytics not loaded.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+
+  <div class="analytics-section">
+
+    <h3>Notification Analytics</h3>
+
+    <div class="table-wrap">
+      <table class="analytics-table">
+        <thead>
+          <tr>
+            <th>Notification Type</th>
+            <th>Status</th>
+            <th>Count</th>
+          </tr>
+        </thead>
+
+        <tbody id="analyticsNotificationRows">
+          <tr>
+            <td colspan="3" class="analytics-empty">
+              Analytics not loaded.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+
+  <div class="analytics-section">
+
+    <h3>Upcoming Renewals</h3>
+
+    <div class="table-wrap">
+      <table class="analytics-table">
+        <thead>
+          <tr>
+            <th>Subscription</th>
+            <th>Customer</th>
+            <th>Plan</th>
+            <th>Period End</th>
+            <th>Next Renewal</th>
+          </tr>
+        </thead>
+
+        <tbody id="analyticsUpcomingRows">
+          <tr>
+            <td colspan="5" class="analytics-empty">
+              Analytics not loaded.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</section>
+
+
 <section class="panel">
 
   <h2>Operations Boundary</h2>
@@ -447,7 +864,8 @@ button,
     id => document.getElementById(id);
 
   const state = {
-    subscriptions:[]
+    subscriptions:[],
+    analytics:null
   };
 
 
@@ -695,6 +1113,541 @@ button,
   }
 
 
+  function setAnalyticsMessage(
+    text = "",
+    isError = false
+  ){
+
+    const host =
+      $("analyticsMessage");
+
+    host.textContent =
+      text;
+
+    host.style.color =
+      isError
+        ? "#b42318"
+        : "";
+
+  }
+
+
+  function numberValue(value){
+
+    const n =
+      Number(value);
+
+    return Number.isFinite(n)
+      ? n
+      : 0;
+
+  }
+
+
+  function renderAnalytics(data){
+
+    state.analytics =
+      data;
+
+    const summary =
+      data.summary || {};
+
+    const customers =
+      data.customers || {};
+
+    const renewals =
+      data.renewals || {};
+
+    $("analyticsTotal").textContent =
+      numberValue(summary.total);
+
+    $("analyticsActive").textContent =
+      numberValue(summary.active);
+
+    $("analyticsPastDue").textContent =
+      numberValue(summary.past_due);
+
+    $("analyticsPaused").textContent =
+      numberValue(summary.paused);
+
+    $("analyticsCancelled").textContent =
+      numberValue(summary.cancelled);
+
+    $("analyticsExpired").textContent =
+      numberValue(summary.expired);
+
+    $("analyticsUpcoming").textContent =
+      numberValue(summary.upcoming_renewals);
+
+    $("analyticsGrace").textContent =
+      numberValue(summary.in_grace_period);
+
+    $("analyticsCancelScheduled").textContent =
+      numberValue(summary.cancellation_scheduled);
+
+    $("analyticsCustomers").textContent =
+      numberValue(customers.with_subscriptions);
+
+    $("analyticsRenewedEvents").textContent =
+      numberValue(renewals.renewed_events);
+
+    $("analyticsRenewalExecutions").textContent =
+      numberValue(renewals.executions);
+
+    $("analyticsLinkedOrders").textContent =
+      numberValue(renewals.linked_orders);
+
+    $("analyticsGeneratedAt").textContent =
+      data.generated_at
+        ? "Generated " + data.generated_at
+        : "Generated";
+
+    const statusRows =
+      Array.isArray(data.status_counts)
+        ? data.status_counts
+        : [];
+
+    $("analyticsStatusRows").innerHTML =
+      statusRows.length
+        ? statusRows.map(
+            row => `
+              <tr>
+                <td>${esc(shown(row.status))}</td>
+                <td>${esc(shown(row.count))}</td>
+              </tr>
+            `
+          ).join("")
+        : `
+            <tr>
+              <td colspan="2" class="analytics-empty">
+                No subscription status data.
+              </td>
+            </tr>
+          `;
+
+    const planRows =
+      Array.isArray(data.plan_breakdown)
+        ? data.plan_breakdown
+        : [];
+
+    $("analyticsPlanRows").innerHTML =
+      planRows.length
+        ? planRows.map(
+            row => `
+              <tr>
+
+                <td>
+                  <strong>
+                    ${esc(shown(row.plan_code))}
+                  </strong>
+                  <div class="muted-small">
+                    ${esc(shown(row.plan_reference))}
+                  </div>
+                </td>
+
+                <td>
+                  <strong>
+                    ${esc(shown(row.name_en))}
+                  </strong>
+                  <div class="muted-small">
+                    ${esc(shown(row.sku))}
+                  </div>
+                </td>
+
+                <td>
+                  ${esc(shown(row.renewal_mode))}
+                </td>
+
+                <td>
+                  ${esc(shown(row.total_subscriptions))}
+                </td>
+
+                <td>
+                  ${esc(shown(row.active))}
+                </td>
+
+                <td>
+                  ${esc(shown(row.past_due))}
+                </td>
+
+                <td>
+                  ${esc(shown(row.paused))}
+                </td>
+
+                <td>
+                  ${esc(shown(row.cancelled))}
+                </td>
+
+                <td>
+                  ${esc(shown(row.expired))}
+                </td>
+
+              </tr>
+            `
+          ).join("")
+        : `
+            <tr>
+              <td colspan="9" class="analytics-empty">
+                No plan analytics available.
+              </td>
+            </tr>
+          `;
+
+    const eventRows =
+      data.lifecycle &&
+      Array.isArray(data.lifecycle.event_counts)
+        ? data.lifecycle.event_counts
+        : [];
+
+    $("analyticsEventRows").innerHTML =
+      eventRows.length
+        ? eventRows.map(
+            row => `
+              <tr>
+                <td>${esc(shown(row.event_type))}</td>
+                <td>${esc(shown(row.count))}</td>
+              </tr>
+            `
+          ).join("")
+        : `
+            <tr>
+              <td colspan="2" class="analytics-empty">
+                No lifecycle events in this reporting period.
+              </td>
+            </tr>
+          `;
+
+    const notificationRows =
+      data.notifications &&
+      Array.isArray(
+        data.notifications.type_status_counts
+      )
+        ? data.notifications.type_status_counts
+        : [];
+
+    $("analyticsNotificationRows").innerHTML =
+      notificationRows.length
+        ? notificationRows.map(
+            row => `
+              <tr>
+                <td>
+                  ${esc(shown(row.notification_type))}
+                </td>
+                <td>
+                  ${esc(shown(row.status))}
+                </td>
+                <td>
+                  ${esc(shown(row.count))}
+                </td>
+              </tr>
+            `
+          ).join("")
+        : `
+            <tr>
+              <td colspan="3" class="analytics-empty">
+                No notification activity in this reporting period.
+              </td>
+            </tr>
+          `;
+
+    const upcomingRows =
+      Array.isArray(data.upcoming_renewals)
+        ? data.upcoming_renewals
+        : [];
+
+    $("analyticsUpcomingRows").innerHTML =
+      upcomingRows.length
+        ? upcomingRows.map(
+            row => `
+              <tr>
+
+                <td>
+                  <strong>
+                    ${esc(shown(row.subscription_reference))}
+                  </strong>
+                  <div class="muted-small">
+                    ID ${esc(shown(row.subscription_id))}
+                  </div>
+                </td>
+
+                <td>
+                  <strong>
+                    ${esc(shown(row.display_name))}
+                  </strong>
+                  <div class="muted-small">
+                    ${esc(shown(row.customer_reference))}
+                  </div>
+                </td>
+
+                <td>
+                  <strong>
+                    ${esc(shown(row.plan_code))}
+                  </strong>
+                  <div class="muted-small">
+                    ${esc(shown(row.sku))}
+                  </div>
+                </td>
+
+                <td>
+                  ${esc(shown(row.current_period_end))}
+                </td>
+
+                <td>
+                  ${esc(shown(row.next_renewal_at))}
+                </td>
+
+              </tr>
+            `
+          ).join("")
+        : `
+            <tr>
+              <td colspan="5" class="analytics-empty">
+                No renewals within the selected window.
+              </td>
+            </tr>
+          `;
+
+  }
+
+
+  async function loadAnalytics(){
+
+    setAnalyticsMessage("");
+
+    const adminToken =
+      token();
+
+    if(!adminToken){
+
+      setAnalyticsMessage(
+        "Admin token is required.",
+        true
+      );
+
+      return;
+
+    }
+
+    sessionStorage.setItem(
+      "qyAdminToken",
+      adminToken
+    );
+
+    const params =
+      new URLSearchParams();
+
+    const from =
+      $("analyticsFrom").value.trim();
+
+    const to =
+      $("analyticsTo").value.trim();
+
+    const upcomingDays =
+      $("analyticsUpcomingDays").value.trim();
+
+    if(from){
+      params.set(
+        "from",
+        from
+      );
+    }
+
+    if(to){
+      params.set(
+        "to",
+        to
+      );
+    }
+
+    if(upcomingDays){
+      params.set(
+        "upcoming_days",
+        upcomingDays
+      );
+    }
+
+    const url =
+      "/api/admin/subscription-analytics" +
+      (
+        params.toString()
+          ? "?" + params.toString()
+          : ""
+      );
+
+    $("loadAnalyticsBtn").disabled =
+      true;
+
+    $("analyticsGeneratedAt").textContent =
+      "Loading...";
+
+    setAnalyticsMessage(
+      "Loading subscription analytics..."
+    );
+
+    try{
+
+      const response =
+        await fetch(
+          url,
+          {
+            method:"GET",
+            headers:{
+              "Authorization":
+                "Bearer " + adminToken
+            },
+            cache:"no-store"
+          }
+        );
+
+      let data = {};
+
+      try{
+
+        data =
+          await response.json();
+
+      }
+      catch{
+
+        throw new Error(
+          `Analytics API returned invalid JSON (${response.status}).`
+        );
+
+      }
+
+      if(!response.ok){
+
+        throw new Error(
+          data.error ||
+          `Unable to load analytics (${response.status}).`
+        );
+
+      }
+
+      if(data.ok !== true){
+
+        throw new Error(
+          data.error ||
+          "Analytics API returned ok=false."
+        );
+
+      }
+
+      renderAnalytics(
+        data
+      );
+
+      setAnalyticsMessage(
+        "Subscription analytics loaded."
+      );
+
+    }
+    catch(error){
+
+      state.analytics =
+        null;
+
+      $("analyticsGeneratedAt").textContent =
+        "Load failed";
+
+      setAnalyticsMessage(
+        error.message || String(error),
+        true
+      );
+
+    }
+    finally{
+
+      $("loadAnalyticsBtn").disabled =
+        false;
+
+    }
+
+  }
+
+
+  function resetAnalytics(){
+
+    $("analyticsFrom").value =
+      "";
+
+    $("analyticsTo").value =
+      "";
+
+    $("analyticsUpcomingDays").value =
+      "30";
+
+    state.analytics =
+      null;
+
+    [
+      "analyticsTotal",
+      "analyticsActive",
+      "analyticsPastDue",
+      "analyticsPaused",
+      "analyticsCancelled",
+      "analyticsExpired",
+      "analyticsUpcoming",
+      "analyticsGrace",
+      "analyticsCancelScheduled",
+      "analyticsCustomers",
+      "analyticsRenewedEvents",
+      "analyticsRenewalExecutions",
+      "analyticsLinkedOrders"
+    ].forEach(
+      id => {
+        $(id).textContent = "0";
+      }
+    );
+
+    $("analyticsGeneratedAt").textContent =
+      "Not loaded";
+
+    $("analyticsStatusRows").innerHTML = `
+      <tr>
+        <td colspan="2" class="analytics-empty">
+          Analytics not loaded.
+        </td>
+      </tr>
+    `;
+
+    $("analyticsPlanRows").innerHTML = `
+      <tr>
+        <td colspan="9" class="analytics-empty">
+          Analytics not loaded.
+        </td>
+      </tr>
+    `;
+
+    $("analyticsEventRows").innerHTML = `
+      <tr>
+        <td colspan="2" class="analytics-empty">
+          Analytics not loaded.
+        </td>
+      </tr>
+    `;
+
+    $("analyticsNotificationRows").innerHTML = `
+      <tr>
+        <td colspan="3" class="analytics-empty">
+          Analytics not loaded.
+        </td>
+      </tr>
+    `;
+
+    $("analyticsUpcomingRows").innerHTML = `
+      <tr>
+        <td colspan="5" class="analytics-empty">
+          Analytics not loaded.
+        </td>
+      </tr>
+    `;
+
+    setAnalyticsMessage("");
+
+  }
+
+
   async function loadSubscriptions(){
 
     setMessage("");
@@ -928,6 +1881,18 @@ button,
   $("resetBtn").addEventListener(
     "click",
     resetFilters
+  );
+
+
+  $("loadAnalyticsBtn").addEventListener(
+    "click",
+    loadAnalytics
+  );
+
+
+  $("resetAnalyticsBtn").addEventListener(
+    "click",
+    resetAnalytics
   );
 
 
