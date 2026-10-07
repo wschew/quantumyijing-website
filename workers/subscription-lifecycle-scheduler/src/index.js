@@ -17,7 +17,7 @@ function authorized(request,env){
   );
 }
 
-async function callAutomation(baseUrl,path,token,label,extraHeaders={}){
+async function callAutomation(baseUrl,path,token,label){
   const base=String(baseUrl || "")
     .trim()
     .replace(/\/+$/,"");
@@ -41,8 +41,7 @@ async function callAutomation(baseUrl,path,token,label,extraHeaders={}){
       headers:{
         "Authorization":`Bearer ${token}`,
         "Accept":"application/json",
-        "Content-Type":"application/json",
-        ...extraHeaders
+        "Content-Type":"application/json"
       },
       body:"{}"
     }
@@ -129,13 +128,10 @@ async function executeNotifications(env){
 
   const result=await callAutomation(
     env.A6I_ENDPOINT_BASE_URL,
-    "/api/admin/subscription-notification-automation?action=run",
+    "/api/admin/subscription-notification-automation?action=run"+
+      `&event_not_before=${encodeURIComponent(eventNotBefore)}`,
     token,
-    "A6I notification automation",
-    {
-      "X-QY-Subscription-Event-Not-Before":
-        eventNotBefore
-    }
+    "A6I notification automation"
   );
 
   console.log(

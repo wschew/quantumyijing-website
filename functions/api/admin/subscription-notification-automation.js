@@ -884,28 +884,19 @@ async function execute(request,env){
    *
    * run mode never accepts the query-string override.
    */
-  const previewEventNotBefore =
-    action==="preview"
-      ? String(
-          url.searchParams.get("event_not_before") || ""
-        ).trim()
-      : "";
-
   /*
-   * Authenticated scheduler calls may supply the rollout boundary
-   * using a dedicated request header.
+   * The endpoint is already protected by ADMIN_TOKEN before
+   * this value is read.
    *
-   * Because this endpoint has already passed ADMIN_TOKEN
-   * authorization, this remains a trusted internal control.
+   * event_not_before may therefore be supplied by either the
+   * authenticated Preview caller or the authenticated shared
+   * scheduler.
    */
-  const schedulerEventNotBefore =
-    action==="run"
-      ? String(
-          request.headers.get(
-            "X-QY-Subscription-Event-Not-Before"
-          ) || ""
-        ).trim()
-      : "";
+  const requestEventNotBefore =
+    String(
+      url.searchParams.get("event_not_before") || ""
+    ).trim();
+
 
   const configuredEventNotBefore =
     String(
@@ -913,8 +904,7 @@ async function execute(request,env){
     ).trim();
 
   const rawEventNotBefore =
-    previewEventNotBefore ||
-    schedulerEventNotBefore ||
+    requestEventNotBefore ||
     configuredEventNotBefore;
 
   const eventNotBefore =
@@ -925,11 +915,8 @@ async function execute(request,env){
     eventNotBefore===null
   ){
     return json({
-      error:
-        action==="run"
-          ? "SUBSCRIPTION_NOTIFICATION_EVENT_NOT_BEFORE is invalid."
-          : "event_not_before is invalid."
-    },action==="run" ? 503 : 400);
+      error:"event_not_before rollout cutoff is invalid."
+    },400);
   }
 
   /*
