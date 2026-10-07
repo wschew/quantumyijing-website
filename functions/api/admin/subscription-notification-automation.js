@@ -161,16 +161,61 @@ async function loadReminderCandidates(db,runAt){
       AND datetime(s.current_period_end)>datetime(?)
       AND datetime(s.current_period_end)<=datetime(?,'+30 days')
 
+      /*
+       * A6K hardening:
+       *
+       * Exclude candidates whose matching notification log is
+       * terminal or is not yet retryable BEFORE LIMIT 500.
+       *
+       * This prevents Sent/Skipped/recent Failed/recent Pending
+       * records from occupying the candidate window repeatedly.
+       *
+       * Failed becomes retryable after 6 hours.
+       * Pending becomes retryable after 2 hours.
+       */
+      AND NOT EXISTS (
+        SELECT 1
+        FROM subscription_notification_logs n
+        WHERE
+          n.subscription_id=s.id
+          AND n.notification_type=(
+            CASE
+              WHEN datetime(s.current_period_end)<=datetime(?,'+7 days')
+                THEN 'RenewalReminder7d'
+              ELSE 'RenewalReminder30d'
+            END
+          )
+          AND n.channel='email'
+          AND n.scheduled_for=s.current_period_end
+          AND (
+            n.status IN ('Sent','Skipped')
+            OR (
+              n.status='Failed'
+              AND datetime(n.updated_at)>datetime(?,'-6 hours')
+            )
+            OR (
+              n.status='Pending'
+              AND datetime(n.updated_at)>datetime(?,'-2 hours')
+            )
+          )
+      )
+
     ORDER BY datetime(s.current_period_end),s.id
     LIMIT 500
-  `).bind(runAt,runAt).all();
+  `).bind(
+    runAt,
+    runAt,
+    runAt,
+    runAt,
+    runAt
+  ).all();
 
   return Array.isArray(result?.results)
     ? result.results
     : [];
 }
 
-async function loadEventCandidates(db){
+async function loadEventCandidates(db,runAt){
   const result=await db.prepare(`
     SELECT
       e.id AS source_event_id,
@@ -235,9 +280,48 @@ async function loadEventCandidates(db){
         )
       )
 
+      /*
+       * A6K hardening:
+       *
+       * Exclude terminal or not-yet-retryable notification logs
+       * before LIMIT 500.
+       */
+      AND NOT EXISTS (
+        SELECT 1
+        FROM subscription_notification_logs n
+        WHERE
+          n.subscription_id=s.id
+          AND n.notification_type=(
+            CASE e.event_type
+              WHEN 'past_due'
+                THEN 'PastDueNotice'
+              WHEN 'expired'
+                THEN 'ExpiredNotice'
+              WHEN 'cancel_scheduled'
+                THEN 'CancellationScheduledNotice'
+            END
+          )
+          AND n.channel='email'
+          AND n.scheduled_for=e.event_at
+          AND (
+            n.status IN ('Sent','Skipped')
+            OR (
+              n.status='Failed'
+              AND datetime(n.updated_at)>datetime(?,'-6 hours')
+            )
+            OR (
+              n.status='Pending'
+              AND datetime(n.updated_at)>datetime(?,'-2 hours')
+            )
+          )
+      )
+
     ORDER BY e.id
     LIMIT 500
-  `).all();
+  `).bind(
+    runAt,
+    runAt
+  ).all();
 
   return Array.isArray(result?.results)
     ? result.results
@@ -714,7 +798,7 @@ async function buildItems(db,runAt){
   const runAtMs=isoMs(runAt);
 
   const reminders=await loadReminderCandidates(db,runAt);
-  const events=await loadEventCandidates(db);
+  const events=await loadEventCandidates(db,runAt);
 
   const items=[];
 
