@@ -1,3 +1,6 @@
+import { validateRenewalOrder, renewalSnapshotGuard, isRenewalSnapshotConflict, RENEWAL_MAX_ATTEMPTS } from "../../lib/subscription-renewal-validation.js";
+import { findRenewalCompletion } from "../../lib/subscription-renewal-completion.js";
+
 function json(data,status=200){
   return new Response(JSON.stringify(data),{
     status,
@@ -157,6 +160,9 @@ async function loadRenewalState(db,orderId){
       s.grace_ends_at,
       s.auto_renew,
       s.cancel_at_period_end,
+      s.cancelled_at,
+      s.paused_at,
+      s.expired_at,
 
       sp.product_id,
       sp.status AS plan_status,
@@ -164,6 +170,8 @@ async function loadRenewalState(db,orderId){
       sp.membership_duration_count,
       sp.grace_period_days,
       sp.renewal_mode,
+      sp.billing_interval_unit,
+      sp.billing_interval_count,
 
       m.membership_reference,
       m.customer_id AS membership_customer_id,
@@ -172,6 +180,9 @@ async function loadRenewalState(db,orderId){
       m.starts_at AS membership_starts_at,
       m.ends_at AS membership_ends_at,
       m.source_order_id,
+      m.expired_at AS membership_expired_at,
+      m.paused_at AS membership_paused_at,
+      m.cancelled_at AS membership_cancelled_at,
 
       o.order_reference,
       o.payment_status,
@@ -195,31 +206,6 @@ async function loadRenewalState(db,orderId){
     WHERE so.order_id=?
     LIMIT 1
   `).bind(orderId).first();
-}
-
-async function verifiedPaidAmount(db,orderId){
-  const row=await db.prepare(`
-    SELECT
-      COALESCE(
-        SUM(
-          CASE
-            WHEN status IN ('Paid','External')
-             AND verification_status='Verified'
-            THEN COALESCE(
-              NULLIF(gross_amount,0),
-              amount,
-              0
-            )
-            ELSE 0
-          END
-        ),
-        0
-      ) AS verified_paid
-    FROM payments
-    WHERE order_id=?
-  `).bind(orderId).first();
-
-  return Number(row?.verified_paid || 0);
 }
 
 async function validateOrderItems(db,state){
@@ -261,70 +247,6 @@ async function validateOrderItems(db,state){
     );
   }
 }
-
-async function alreadyProcessed(db,state){
-  const ref=`RenewalOrder:${state.order_id}`;
-
-  const row=await db.prepare(`
-    SELECT id
-    FROM subscription_events
-    WHERE subscription_id=?
-      AND event_type='renewed'
-      AND source_reference=?
-    LIMIT 1
-  `).bind(
-    state.subscription_id,
-    ref
-  ).first();
-
-  return !!row;
-}
-
-async function loadOrderCanonicalCustomer(
-  db,
-  orderId
-){
-  return await db.prepare(`
-    SELECT
-      o.id AS order_id,
-      o.enquiry_id,
-      cel.customer_id AS order_customer_id,
-      c.status AS order_customer_status
-    FROM orders o
-    LEFT JOIN customer_enquiry_links cel
-      ON cel.enquiry_id=o.enquiry_id
-    LEFT JOIN customers c
-      ON c.id=cel.customer_id
-    WHERE o.id=?
-    LIMIT 1
-  `).bind(
-    orderId
-  ).first();
-}
-
-
-async function renewalExecution(
-  db,
-  orderId
-){
-  return await db.prepare(`
-    SELECT
-      order_id,
-      subscription_id,
-      membership_id,
-      order_reference,
-      previous_membership_end,
-      period_start,
-      new_membership_end,
-      completed_at
-    FROM subscription_renewal_executions
-    WHERE order_id=?
-    LIMIT 1
-  `).bind(
-    orderId
-  ).first();
-}
-
 
 function addSeconds(
   value,
@@ -387,10 +309,18 @@ function idempotentRenewalResult(
 }
 
 
-export async function processVerifiedSubscriptionRenewal(
-  db,
-  orderId
-){
+export async function processVerifiedSubscriptionRenewal(db,orderId){
+  for(let attempt=0;attempt<RENEWAL_MAX_ATTEMPTS;attempt++){
+    try{ return await processRenewalAttempt(db,orderId); }
+    catch(error){
+      // processRenewalAttempt rechecks completion before any retry.
+      if(!isRenewalSnapshotConflict(error)) throw error;
+    }
+  }
+  throw new Error("VALIDATION: Renewal state changed repeatedly. Retry this order.");
+}
+
+async function processRenewalAttempt(db,orderId){
   const id=intId(orderId);
 
   if(!id){
@@ -426,26 +356,9 @@ export async function processVerifiedSubscriptionRenewal(
    * orders renewed before B3E are recognised from the
    * existing renewal event audit and must never renew again.
    */
-  if(await alreadyProcessed(db,state)){
-    const existingExecution=
-      await renewalExecution(db,id);
-
-    return idempotentRenewalResult(
-      state,
-      id,
-      existingExecution
-    );
-  }
-
-  const priorExecution=
-    await renewalExecution(db,id);
-
-  if(priorExecution){
-    return idempotentRenewalResult(
-      state,
-      id,
-      priorExecution
-    );
+  const completion=await findRenewalCompletion(db,id,state.subscription_id,state.membership_id);
+  if(completion.completed){
+    return idempotentRenewalResult(state,id,completion.execution);
   }
 
   if(state.plan_status!=="Active"){
@@ -501,75 +414,9 @@ export async function processVerifiedSubscriptionRenewal(
     );
   }
 
-  /*
-   * Canonical ownership:
-   *
-   * order -> enquiry -> customer_enquiry_links -> customer
-   *
-   * The paid renewal order must belong to the same canonical
-   * customer as both subscription and membership.
-   */
-  const orderOwner=
-    await loadOrderCanonicalCustomer(
-      db,
-      id
-    );
-
-  if(
-    !orderOwner ||
-    !orderOwner.enquiry_id
-  ){
-    throw new Error(
-      "VALIDATION: Renewal order is not linked to a CRM enquiry."
-    );
-  }
-
-  if(!orderOwner.order_customer_id){
-    throw new Error(
-      "VALIDATION: Renewal order enquiry is not linked to a canonical customer."
-    );
-  }
-
-  if(orderOwner.order_customer_status!=="Active"){
-    throw new Error(
-      "VALIDATION: Renewal order canonical customer is not Active."
-    );
-  }
-
-  if(
-    Number(orderOwner.order_customer_id)!==
-    Number(state.customer_id)
-  ){
-    throw new Error(
-      "VALIDATION: Renewal order customer does not match subscription customer."
-    );
-  }
-
-  if(state.payment_status!=="Paid"){
-    throw new Error(
-      "VALIDATION: Renewal order is not Paid."
-    );
-  }
-
-  await validateOrderItems(
-    db,
-    state
-  );
-
-  const paid=
-    await verifiedPaidAmount(
-      db,
-      id
-    );
-
-  const required=
-    Number(state.total || 0);
-
-  if(paid + 0.005 < required){
-    throw new Error(
-      "VALIDATION: Renewal order is not fully verified paid."
-    );
-  }
+  const evidence=await validateRenewalOrder(db,{id,payment_status:state.payment_status,total:state.total},state.customer_id);
+  if(!evidence.eligible) throw new Error(`VALIDATION: ${evidence.reason}`);
+  await validateOrderItems(db,state);
 
   const baseEnd=
     clean(state.membership_ends_at,80) ||
@@ -631,6 +478,16 @@ export async function processVerifiedSubscriptionRenewal(
       30
     );
 
+  const guard=renewalSnapshotGuard(
+    {...state,id:state.subscription_id,status:state.subscription_status},
+    {id:state.membership_id,customer_id:state.membership_customer_id,
+      product_id:state.membership_product_id,status:state.membership_status,
+      starts_at:state.membership_starts_at,ends_at:state.membership_ends_at,
+      source_order_id:state.source_order_id,expired_at:state.membership_expired_at,
+      paused_at:state.membership_paused_at,cancelled_at:state.membership_cancelled_at},
+    {...state,id:state.plan_id,status:state.plan_status}
+  );
+
   try{
     /*
      * Atomic renewal batch.
@@ -655,13 +512,14 @@ export async function processVerifiedSubscriptionRenewal(
           completed_at
         )
         VALUES(
-          ?,?,?,?,?,?,?,CURRENT_TIMESTAMP
+          ?,?,?,?,CASE WHEN ${guard.sql} THEN ? ELSE NULL END,?,?,CURRENT_TIMESTAMP
         )
       `).bind(
         id,
         state.subscription_id,
         state.membership_id,
         state.order_reference,
+        ...guard.params,
         baseEnd,
         periodStart,
         newEnd
@@ -787,18 +645,9 @@ export async function processVerifiedSubscriptionRenewal(
      * request was executing, return the committed execution as
      * an idempotent success.
      */
-    const after=
-      await renewalExecution(
-        db,
-        id
-      );
-
-    if(after){
-      return idempotentRenewalResult(
-        state,
-        id,
-        after
-      );
+    const after=await findRenewalCompletion(db,id,state.subscription_id,state.membership_id);
+    if(after.completed){
+      return idempotentRenewalResult(state,id,after.execution);
     }
 
     throw e;

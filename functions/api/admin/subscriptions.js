@@ -1,3 +1,6 @@
+import { validateRenewalOrder, renewalSnapshotGuard, isRenewalSnapshotConflict, RENEWAL_MAX_ATTEMPTS } from "../../lib/subscription-renewal-validation.js";
+import { findRenewalCompletion } from "../../lib/subscription-renewal-completion.js";
+
 function json(data,status=200){
   return new Response(JSON.stringify(data),{
     status,
@@ -810,7 +813,26 @@ function addUtcDaysA6D(date,days){
   return result;
 }
 
+async function manualCompletionResponse(db,id,orderId){
+  const link=await db.prepare(`SELECT * FROM subscription_orders WHERE order_id=?`).bind(orderId).first();
+  return json({ok:true,changed:false,idempotent:true,
+    subscription:await getSubscription(db,id),
+    renewalOrder:{id:Number(link?.id || 0),orderId:Number(orderId),
+      periodStart:String(link?.period_start || ""),periodEnd:String(link?.period_end || "")}});
+}
+
 async function renewSubscription(db,b){
+  for(let attempt=0;attempt<RENEWAL_MAX_ATTEMPTS;attempt++){
+    try{ return await renewSubscriptionAttempt(db,b); }
+    catch(error){
+      // The attempt checks completion before propagating a conflict.
+      if(!isRenewalSnapshotConflict(error)) throw error;
+    }
+  }
+  return json({error:"Renewal state changed repeatedly. Retry this order."},409);
+}
+
+async function renewSubscriptionAttempt(db,b){
   const id=intId(b.id);
   const orderId=intId(b.orderId);
 
@@ -834,6 +856,9 @@ async function renewSubscription(db,b){
       error:"Subscription not found."
     },404);
   }
+
+  const completion=await findRenewalCompletion(db,orderId,id,subscription.membership_id);
+  if(completion.completed) return manualCompletionResponse(db,id,orderId);
 
   if(String(subscription.status)!=="Active"){
     return json({
@@ -1024,31 +1049,9 @@ async function renewSubscription(db,b){
     `).bind(orderId).first();
 
   if(existingLink){
-
-    if(
-      Number(existingLink.subscription_id)===id &&
-      String(existingLink.order_type)==="Renewal"
-    ){
-      return json({
-        ok:true,
-        changed:false,
-        idempotent:true,
-        subscription:
-          await getSubscription(db,id),
-        renewalOrder:{
-          id:Number(existingLink.id),
-          orderId:Number(existingLink.order_id),
-          periodStart:
-            String(existingLink.period_start || ""),
-          periodEnd:
-            String(existingLink.period_end || "")
-        }
-      });
-    }
-
-    return json({
-      error:"Order is already linked to another subscription operation."
-    },409);
+    return json({error:Number(existingLink.subscription_id)===id && existingLink.order_type==="Renewal"
+      ? "Renewal order is linked but has no recognized completion. Use the verified-order renewal engine."
+      : "Order is already linked to another subscription operation."},409);
   }
 
   const order=
@@ -1075,6 +1078,9 @@ async function renewSubscription(db,b){
       error:"Renewal order must be Paid."
     },409);
   }
+
+  const evidence=await validateRenewalOrder(db,order,subscription.customer_id);
+  if(!evidence.eligible) return json({error:evidence.reason},409);
 
   const matchingItem=
     await db.prepare(`
@@ -1188,7 +1194,17 @@ async function renewSubscription(db,b){
       1000
     );
 
+  const guard=renewalSnapshotGuard(subscription,membership,plan);
+
+  try{
   await db.batch([
+    db.prepare(`
+      INSERT INTO subscription_renewal_executions(
+        order_id,subscription_id,membership_id,order_reference,
+        previous_membership_end,period_start,new_membership_end,completed_at
+      ) VALUES(?,?,?,?,CASE WHEN ${guard.sql} THEN ? ELSE NULL END,?,?,CURRENT_TIMESTAMP)
+    `).bind(orderId,id,subscription.membership_id,order.order_reference,
+      ...guard.params,String(membership.ends_at || ""),periodStartIso,membershipEndIso),
 
     db.prepare(`
       INSERT INTO subscription_orders(
@@ -1297,6 +1313,13 @@ async function renewSubscription(db,b){
     )
 
   ]);
+
+  }catch(error){
+    // D1 rolls back the entire batch on a duplicate ledger/link collision.
+    const after=await findRenewalCompletion(db,orderId,id,subscription.membership_id);
+    if(after.completed) return manualCompletionResponse(db,id,orderId);
+    throw error;
+  }
 
   return json({
     ok:true,
@@ -1565,6 +1588,13 @@ async function previewRenewalA6E(db,url){
     preview:null
   };
 
+  const completion=await findRenewalCompletion(db,orderId,subscriptionId,subscription.membership_id);
+  if(completion.completed){
+    result.alreadyApplied=true;
+    result.reason="This Paid order has already been applied to this subscription renewal.";
+    return json(result);
+  }
+
   if(subscription.status!=="Active"){
     result.reason=
       "Only an Active subscription can be renewed.";
@@ -1626,19 +1656,9 @@ async function previewRenewalA6E(db,url){
   }
 
   if(existingLink){
-    if(
-      Number(existingLink.subscription_id)===
-        Number(subscriptionId) &&
-      existingLink.order_type==="Renewal"
-    ){
-      result.alreadyApplied=true;
-      result.reason=
-        "This Paid order has already been applied to this subscription renewal.";
-      return json(result);
-    }
-
-    result.reason=
-      "Order is already linked to another subscription operation.";
+    result.reason=Number(existingLink.subscription_id)===Number(subscriptionId) && existingLink.order_type==="Renewal"
+      ? "Renewal order is linked but has no recognized completion. Use the verified-order renewal engine."
+      : "Order is already linked to another subscription operation.";
     return json(result);
   }
 
@@ -1647,6 +1667,9 @@ async function previewRenewalA6E(db,url){
       "Renewal order must be Paid.";
     return json(result);
   }
+
+  const evidence=await validateRenewalOrder(db,order,subscription.customer_id);
+  if(!evidence.eligible){ result.reason=evidence.reason; return json(result); }
 
   if(!matchingItem){
     result.reason=
@@ -1854,6 +1877,7 @@ export async function onRequestGet(context){
       url
     );
   }catch(e){
+    if(String(e?.message || "").startsWith("VALIDATION:")) return json({error:e.message.replace(/^VALIDATION:\s*/,"")},409);
     console.error("subscriptions GET",e);
     return json({error:"Subscription service failed."},500);
   }
@@ -1916,6 +1940,7 @@ export async function onRequestPost(context){
     console.error("subscriptions POST",e);
 
     const msg=String(e?.message || "");
+    if(msg.startsWith("VALIDATION:")) return json({error:msg.replace(/^VALIDATION:\s*/,"")},409);
 
     if(
       msg.includes("UNIQUE constraint failed") ||

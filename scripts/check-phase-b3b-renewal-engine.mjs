@@ -33,14 +33,14 @@ const requiredRenewalTokens = [
   "subscription_orders",
   "order_type",
   '"Renewal"',
-  "verification_status='Verified'",
+  "validateRenewalOrder",
   "UPDATE memberships",
   "UPDATE subscriptions",
   "UPDATE subscription_orders",
   "INSERT INTO membership_events",
   "INSERT INTO subscription_events",
   "RenewalOrder:",
-  "alreadyProcessed",
+  "findRenewalCompletion",
   "new_membership_end"
 ];
 
@@ -52,6 +52,11 @@ for (const token of requiredRenewalTokens) {
   }
 }
 
+
+const validation=fs.readFileSync("functions/lib/subscription-renewal-validation.js","utf8");
+for(const token of ["verification_status='Verified'","customer_enquiry_links","NULLIF(gross_amount,0)","paid + 0.005"]){
+  if(!validation.includes(token)) throw new Error(`Shared payment/ownership check missing: ${token}`);
+}
 
 const forbiddenFinancialWrites = [
   /\bUPDATE\s+orders\b/i,
@@ -68,7 +73,7 @@ const forbiddenFinancialWrites = [
 ];
 
 for (const rx of forbiddenFinancialWrites) {
-  if (rx.test(renewal)) {
+  if (rx.test(renewal + fs.readFileSync("functions/lib/subscription-renewal-validation.js","utf8") + fs.readFileSync("functions/lib/subscription-renewal-completion.js","utf8"))) {
     throw new Error(
       `Renewal engine must not mutate financial tables: ${rx}`
     );
@@ -110,6 +115,24 @@ if (importCount !== 1) {
   );
 }
 
+
+// Both execution paths must assert the captured snapshot inside the ledger
+// transaction, and only the deliberate assertion may trigger bounded retries.
+for(const file of ['functions/api/admin/subscriptions.js','functions/api/admin/subscription-renewal.js']){
+ const code=fs.readFileSync(file,'utf8');
+ for(const token of ['renewalSnapshotGuard','CASE WHEN ${guard.sql} THEN ? ELSE NULL END',
+   '...guard.params','isRenewalSnapshotConflict','RENEWAL_MAX_ATTEMPTS','findRenewalCompletion']){
+   if(!code.includes(token)) throw new Error(`Concurrency guard missing in ${file}: ${token}`);
+ }
+}
+
+// Preserve financial/customer table protection, including destructive DDL and REPLACE.
+for(const file of ['functions/api/admin/subscriptions.js','functions/api/admin/subscription-renewal.js',
+ 'functions/lib/subscription-renewal-validation.js','functions/lib/subscription-renewal-completion.js']){
+ const code=fs.readFileSync(file,'utf8');
+ const financialMutation=/\b(?:INSERT(?: OR \w+)? INTO|REPLACE INTO|UPDATE|DELETE FROM|ALTER TABLE|DROP TABLE)\s+(?:orders|order_items|payments|receipts|payment_verification_events|customers|products)\b/i;
+ if(financialMutation.test(code)) throw new Error(`Frozen table mutation detected: ${file}`);
+}
 
 console.log(
   "PASS — Phase B3B verified renewal regression guard."
