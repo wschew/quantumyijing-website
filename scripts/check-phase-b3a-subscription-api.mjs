@@ -116,6 +116,40 @@ for(const file of ['functions/api/admin/subscriptions.js','functions/api/admin/s
  if(financialMutation.test(code)) throw new Error(`Frozen table mutation detected: ${file}`);
 }
 
+// Lifecycle decisions must use business snapshots and transaction-local row
+// counts. Entitlement mutation remains confined to renewal above.
+const automationFile='functions/api/admin/subscription-lifecycle-automation.js';
+const lifecycleHelper='functions/lib/subscription-lifecycle-concurrency.js';
+const lifecycleCode=fs.readFileSync(automationFile,'utf8');
+const helperCode=fs.readFileSync(lifecycleHelper,'utf8');
+for(const code of [src.slice(src.indexOf('async function changeStatus('),renewalStart),
+  src.slice(renewalEnd,src.indexOf('async function previewRenewalA6E(')),lifecycleCode]){
+  for(const token of ['lifecycleSnapshotGuard','WHERE ${guard.sql}','...guard.params','WHERE changes()=1','lifecycleUpdateChanged']){
+    if(!code.includes(token))throw new Error(`Lifecycle concurrency protection missing: ${token}`);
+  }
+}
+if(!src.includes('Subscription state changed. Refresh before retrying this lifecycle action.')){
+  throw new Error('Stale administrative operations must require explicit refresh.');
+}
+for(const token of ['current_period_end','grace_ends_at','cancel_at_period_end','cancelled_at','paused_at','expired_at',' IS ?']){
+  if(!helperCode.includes(token))throw new Error(`Lifecycle snapshot field/predicate missing: ${token}`);
+}
+if(/\b(?:INSERT(?: OR \w+)? INTO|REPLACE INTO|UPDATE|DELETE FROM|ALTER TABLE|DROP TABLE)\b/i.test(helperCode)){
+  throw new Error('Lifecycle helper must only build read-only predicates.');
+}
+for(const code of [lifecycleCode,helperCode]){
+  const frozenMutation=/\b(?:INSERT(?: OR \w+)? INTO|REPLACE INTO|UPDATE|DELETE FROM|ALTER TABLE|DROP TABLE)\s+(?:orders|order_items|payments|receipts|payment_verification_events|customers|products|memberships|membership_events)\b/i;
+  if(frozenMutation.test(code))throw new Error('Lifecycle implementation must not mutate financial or entitlement tables.');
+}
+
+// The automation endpoint may write only subscription lifecycle state/audit.
+// This also protects frozen tables beyond the named financial fixtures above.
+for(const match of lifecycleCode.matchAll(/\b(?:INSERT(?: OR \w+)? INTO|REPLACE INTO|UPDATE|DELETE FROM|ALTER TABLE|DROP TABLE)\s+(\w+)/gi)){
+  if(!['subscriptions','subscription_events'].includes(match[1].toLowerCase())){
+    throw new Error(`Unexpected lifecycle write target: ${match[1]}`);
+  }
+}
+
 console.log(
   "PASS — Phase B3A subscription API regression guard."
 );

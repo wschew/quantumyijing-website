@@ -1,3 +1,4 @@
+import { lifecycleSnapshotGuard, lifecycleUpdateChanged } from "../../lib/subscription-lifecycle-concurrency.js";
 import { validateRenewalOrder, renewalSnapshotGuard, isRenewalSnapshotConflict, RENEWAL_MAX_ATTEMPTS } from "../../lib/subscription-renewal-validation.js";
 import { findRenewalCompletion } from "../../lib/subscription-renewal-completion.js";
 
@@ -650,7 +651,8 @@ async function changeStatus(db,b){
   const expiredAt =
     target==="Expired" ? new Date().toISOString() : String(current.expired_at || "");
 
-  await db.batch([
+  const guard=lifecycleSnapshotGuard(current);
+  const results=await db.batch([
     db.prepare(`
       UPDATE subscriptions
       SET
@@ -659,13 +661,13 @@ async function changeStatus(db,b){
         paused_at=?,
         expired_at=?,
         updated_at=CURRENT_TIMESTAMP
-      WHERE id=?
+      WHERE ${guard.sql}
     `).bind(
       target,
       cancelledAt,
       pausedAt,
       expiredAt,
-      id
+      ...guard.params
     ),
 
     db.prepare(`
@@ -679,9 +681,8 @@ async function changeStatus(db,b){
         notes,
         event_at
       )
-      VALUES(
-        ?,?,?,?,?,?,?,CURRENT_TIMESTAMP
-      )
+      SELECT ?,?,?,?,?,?,?,CURRENT_TIMESTAMP
+      WHERE changes()=1
     `).bind(
       id,
       eventType,
@@ -692,6 +693,10 @@ async function changeStatus(db,b){
       cleanText(b.notes,1000)
     )
   ]);
+
+  if(!lifecycleUpdateChanged(results)){
+    return json({error:"Subscription state changed. Refresh before retrying this lifecycle action."},409);
+  }
 
   return json({
     ok:true,
@@ -1378,14 +1383,15 @@ async function scheduleCancel(db,b){
     });
   }
 
-  await db.batch([
+  const guard=lifecycleSnapshotGuard(current);
+  const results=await db.batch([
     db.prepare(`
       UPDATE subscriptions
       SET
         cancel_at_period_end=1,
         updated_at=CURRENT_TIMESTAMP
-      WHERE id=?
-    `).bind(id),
+      WHERE ${guard.sql}
+    `).bind(...guard.params),
 
     db.prepare(`
       INSERT INTO subscription_events(
@@ -1398,7 +1404,7 @@ async function scheduleCancel(db,b){
         notes,
         event_at
       )
-      VALUES(
+      SELECT
         ?,
         'cancel_scheduled',
         ?,
@@ -1407,7 +1413,7 @@ async function scheduleCancel(db,b){
         ?,
         ?,
         CURRENT_TIMESTAMP
-      )
+      WHERE changes()=1
     `).bind(
       id,
       String(current.status),
@@ -1417,6 +1423,10 @@ async function scheduleCancel(db,b){
       cleanText(b.notes,1000)
     )
   ]);
+
+  if(!lifecycleUpdateChanged(results)){
+    return json({error:"Subscription state changed. Refresh before retrying this lifecycle action."},409);
+  }
 
   return json({
     ok:true,

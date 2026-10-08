@@ -1,3 +1,4 @@
+import { lifecycleSnapshotGuard, lifecycleUpdateChanged } from "../../lib/subscription-lifecycle-concurrency.js";
 function json(data,status=200){
   return new Response(JSON.stringify(data),{
     status,
@@ -250,6 +251,7 @@ async function transition(db,row,action,runAt){
     expiredAt=runAt;
   }
 
+  const guard=lifecycleSnapshotGuard(row);
   const statements=[
     db.prepare(`
       UPDATE subscriptions
@@ -258,15 +260,13 @@ async function transition(db,row,action,runAt){
         cancelled_at=?,
         expired_at=?,
         updated_at=?
-      WHERE id=?
-        AND status=?
+      WHERE ${guard.sql}
     `).bind(
       to,
       cancelledAt,
       expiredAt,
       runAt,
-      id,
-      from
+      ...guard.params
     ),
 
     db.prepare(`
@@ -289,36 +289,20 @@ async function transition(db,row,action,runAt){
         'scheduled-lifecycle-run',
         ?,
         ?
-      WHERE EXISTS(
-        SELECT 1
-        FROM subscriptions
-        WHERE id=?
-          AND status=?
-          AND updated_at=?
-      )
+      WHERE changes()=1
     `).bind(
       id,
       eventType,
       from,
       to,
       cleanText(action.reason,1000),
-      runAt,
-      id,
-      to,
       runAt
     )
   ];
 
   const results=await db.batch(statements);
 
-  const updateResult=results?.[0] || {};
-  const changes=Number(
-    updateResult?.meta?.changes ??
-    updateResult?.changes ??
-    0
-  );
-
-  return changes>0;
+  return lifecycleUpdateChanged(results);
 }
 
 async function execute(context,mode){
@@ -405,8 +389,9 @@ async function execute(context,mode){
         if(!changed){
           /*
            * Another process may already have changed the row.
-           * Do not manufacture an event.
+           * Do not manufacture an event; a later run will re-evaluate.
            */
+          summary.unchanged+=1;
           break;
         }
 

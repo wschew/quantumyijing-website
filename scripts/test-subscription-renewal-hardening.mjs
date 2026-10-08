@@ -3,10 +3,13 @@
 import assert from 'node:assert/strict';
 import {mkdtemp,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
-import {join} from 'node:path';
+import {join,resolve} from 'node:path';
+import {pathToFileURL} from 'node:url';
+import {onRequestPost as lifecycleAutomation} from '../functions/api/admin/subscription-lifecycle-automation.js';
 import {createRequire} from 'node:module';
 import {execFileSync} from 'node:child_process';
 import {onRequestGet,onRequestPost} from '../functions/api/admin/subscriptions.js';
+import {lifecycleSnapshotGuard} from '../functions/lib/subscription-lifecycle-concurrency.js';
 import {renewalSnapshotGuard,isRenewalSnapshotConflict} from '../functions/lib/subscription-renewal-validation.js';
 import {processVerifiedSubscriptionRenewal as engine} from '../functions/api/admin/subscription-renewal.js';
 const require=createRequire(import.meta.url);
@@ -18,6 +21,25 @@ async function original(path){
 }
 const oldManual=await original('functions/api/admin/subscriptions.js');
 const oldEngine=await original('functions/api/admin/subscription-renewal.js');
+async function checkpoint(path){
+  const source=execFileSync('git',['show',`288f847662939a95aa1a4e554440c0b709bfdc95:${path}`],{encoding:'utf8'})
+    .replace(/from "(\.\.\/\.\.\/lib\/[^"]+)"/g,(_,relative)=>`from "${pathToFileURL(resolve('functions/api/admin',relative)).href}"`);
+  return import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+}
+const checkpointAdmin=await checkpoint('functions/api/admin/subscriptions.js');
+const checkpointAutomation=await checkpoint('functions/api/admin/subscription-lifecycle-automation.js');
+async function automation(database=db,handler=lifecycleAutomation,mode='run'){
+  const response=await handler({request:new Request('https://synthetic.invalid/lifecycle',{method:'POST',
+    headers:{authorization:`Bearer ${token}`,'content-type':'application/json'},body:JSON.stringify({action:mode})}),
+    env:{ADMIN_TOKEN:token,DB:database}});
+  return {status:response.status,body:await response.json()};
+}
+async function atTime(iso,fn){
+  const RealDate=globalThis.Date;
+  globalThis.Date=class extends RealDate { constructor(...args){super(...(args.length?args:[iso]));} static now(){return RealDate.parse(iso);} };
+  try{return await fn();}finally{globalThis.Date=RealDate;}
+}
+
 const directory=await mkdtemp(join(tmpdir(),'qy-renewal-test-'));
 const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:'export default {fetch(){return new Response("test only")}}',
   compatibilityDate:'2026-10-07',d1Databases:{DB:'qy-synthetic-renewal'},resourcePersistencePath:directory,cf:false,telemetry:{enabled:false}}));
@@ -79,7 +101,7 @@ async function seed(){
 
 }
 async function request(method, database=db, extra={}, handlers={onRequestGet,onRequestPost}){
-  const req=new Request('https://synthetic.invalid/api/admin/subscriptions?action='+ (method==='GET'?'renewal-preview&id=1&orderId=1':'renew'),{
+  const req=new Request('https://synthetic.invalid/api/admin/subscriptions?action='+ (method==='GET'?'renewal-preview&id=1&orderId=1':(extra.action || 'renew')),{
     method,headers:{authorization:`Bearer ${token}`,'content-type':'application/json'},
     ...(method==='POST'?{body:JSON.stringify({action:'renew',id:1,orderId:1,source:'A6E Manual Renewal Administration',sourceReference:`AdminRenewal:${extra.orderId || 1}`,...extra})}:{})
   });
@@ -114,6 +136,54 @@ try{
     const statements=sql.split(';').map(s=>s.trim()).filter(Boolean);
     await db.batch(statements.map(s=>db.prepare(s)));
   }
+  // Prove SQL semantics before any application hardening. These statements use
+  // actual local D1 batch(), existing schema constraints, and synthetic rows only.
+  for(const [name,expected] of [['matching snapshot',1],['stale snapshot',0]]){
+    await test(`D1 changes() atomicity: ${name}`,async()=>{
+      const results=await db.batch([
+        db.prepare("UPDATE subscriptions SET status='Paused' WHERE id=1 AND status IS ?").bind(expected?'Active':'PastDue'),
+        db.prepare("INSERT INTO subscription_events(subscription_id,event_type,from_status,to_status) SELECT 1,'paused','Active','Paused' WHERE changes()=1")
+      ]);
+      assert.equal(results[0].meta.changes,expected);assert.equal(results[1].meta.changes,expected);
+      assert.equal((await first('SELECT COUNT(*) AS n FROM subscription_events')).n,expected);
+      assert.equal((await first('SELECT status FROM subscriptions')).status,expected?'Paused':'Active');
+    });
+  }
+  await test('D1 changes() atomicity: event failure rolls back update',async()=>{
+    const before=await snapshot();
+    await assert.rejects(db.batch([
+      db.prepare("UPDATE subscriptions SET status='Paused' WHERE id=1 AND status IS 'Active'"),
+      db.prepare("INSERT INTO subscription_events(subscription_id,event_type) SELECT 1,'invalid-synthetic-event' WHERE changes()=1")
+    ]),/CHECK constraint/);
+    assert.deepEqual(await snapshot(),before);
+  });
+  // Retain deterministic reproductions of the unfixed checkpoint as regression
+  // evidence: their asserted outcome is the defect, never the desired behavior.
+  for(const kind of ['catch-up expiry','scheduled cancellation','admin status','cancellation scheduling']){
+    await scenario(`checkpoint defect reproduction: ${kind}`,async()=>{
+      await run("UPDATE subscriptions SET cancel_at_period_end=0,grace_ends_at='2026-01-31T23:59:59.000Z'");
+      if(kind==='scheduled cancellation')await run('UPDATE subscriptions SET cancel_at_period_end=1');
+    },()=>atTime('2026-02-01T00:00:00.000Z',async()=>{
+      let once=false;
+      const raced=wrapped(async statements=>{
+        if(!once){once=true;assert.equal((await request('POST')).body.renewed,true);}
+        return db.batch(statements);
+      });
+      if(kind==='catch-up expiry'||kind==='scheduled cancellation'){
+        assert.equal((await automation(raced,checkpointAutomation.onRequestPost)).status,200);
+        assert.equal((await first('SELECT status FROM subscriptions')).status,kind==='catch-up expiry'?'Expired':'Cancelled');
+      }else{
+        const result=await request('POST',raced,{action:kind==='admin status'?'status':'cancel-at-period-end',status:'Expired'},checkpointAdmin);
+        assert.equal(result.body.changed,true);
+        const row=await first('SELECT * FROM subscriptions');
+        assert.equal(kind==='admin status'?row.status:row.cancel_at_period_end,kind==='admin status'?'Expired':1);
+      }
+      assert.equal((await first('SELECT COUNT(*) AS n FROM subscription_renewal_executions')).n,1);
+    }));
+  }
+  if(process.argv.includes('--lifecycle-preflight')){
+    console.log(`PREFLIGHT: ${passed} scenarios passed; atomicity proved and checkpoint defects reproduced.`);
+  }else{
   await test('manual renewal: preview/date parity, one ledger and repeat submission',async()=>{
     const preview=await request('GET');const originalPreview=await request('GET',db,{},oldManual);
     assert.deepEqual(preview,originalPreview);
@@ -422,5 +492,270 @@ try{
       assert.equal((await first(`SELECT ${testGuard.sql} AS matches`,...testGuard.params)).matches,0,table+'.'+column);
     }
   });
+
+  const lifecycleClock='2026-02-01T00:00:00.000Z';
+  async function lifecycleFixture(path,kind){
+    await run("UPDATE subscriptions SET cancel_at_period_end=?,grace_ends_at=?,status=?",
+      kind==='scheduled cancellation'?1:0,
+      kind==='PastDue'?'2026-02-08T00:00:00.000Z':'2026-01-31T23:59:59.000Z',
+      kind==='existing Expired'?'PastDue':'Active');
+    if(path==='engine')await link();
+  }
+  async function renewalOutcome(path,database=db){
+    if(path==='manual'){
+      const response=await request('POST',database);
+      assert.ok([200,409].includes(response.status),JSON.stringify(response));
+      return response.status===200;
+    }
+    try{await engine(database,1);return true;}
+    catch(error){assert.match(error.message,/VALIDATION:.*(?:cannot be renewed|Active subscription)/);return false;}
+  }
+  function lifecycleState(state){
+    return {dates:dates(state),cancelled:state.subscriptions[0].cancelled_at,
+      paused:state.subscriptions[0].paused_at,expired:state.subscriptions[0].expired_at,
+      events:state.subscription_events.map(e=>[e.event_type,e.from_status,e.to_status,e.source_reference]),
+      memberEvents:state.membership_events.map(e=>[e.event_type,e.from_status,e.to_status]),
+      ledger:state.subscription_renewal_executions.map(e=>[e.order_id,e.previous_membership_end,e.period_start,e.new_membership_end])};
+  }
+  // Compare interleaved handlers with a sequential reference, not a new date or
+  // cancellation policy. A barrier intercepts the real batch after all reads.
+  for(const path of ['manual','engine']){
+    for(const kind of ['PastDue','catch-up Expired','scheduled cancellation',...(path==='engine'?['existing Expired']:[])]){
+      for(const winner of ['renewal','automation']){
+        await scenario(`${path} versus automated ${kind}: ${winner} commits first`,()=>lifecycleFixture(path,kind),
+          ()=>atTime(lifecycleClock,async()=>{
+            const prepared=await snapshot();
+            let expectedOutcome;
+            if(winner==='renewal'){expectedOutcome=await renewalOutcome(path);await automation();}
+            else{await automation();expectedOutcome=await renewalOutcome(path);}
+            const expected=lifecycleState(await snapshot());await restore(prepared);
+            let batches=0,actualOutcome;
+            const raced=wrapped(async statements=>{
+              if(++batches===1){
+                if(winner==='renewal')actualOutcome=await renewalOutcome(path);
+                else assert.equal((await automation()).status,200);
+              }
+              return db.batch(statements);
+            });
+            if(winner==='renewal'){
+              const result=await automation(raced);assert.equal(result.status,200);
+              assert.equal(result.body.transitioned,0);assert.equal(result.body.failed,0);
+              assert.equal(result.body.unchanged,1);assert.equal(batches,1);
+            }else actualOutcome=await renewalOutcome(path,raced);
+            assert.equal(actualOutcome,expectedOutcome);
+            assert.deepEqual(lifecycleState(await snapshot()),expected);
+          }));
+      }
+    }
+    for(const [name,extra] of [
+      ['Pause',{action:'status',status:'Paused'}],['Cancel Now',{action:'status',status:'Cancelled'}],
+      ['Mark Expired',{action:'status',status:'Expired'}],['Mark PastDue',{action:'status',status:'PastDue'}],
+      ['Cancel at Period End',{action:'cancel-at-period-end'}]
+    ]) for(const winner of ['renewal','administration']){
+      await scenario(`${path} versus admin ${name}: ${winner} commits first`,()=>lifecycleFixture(path,'PastDue'),
+        ()=>atTime(lifecycleClock,async()=>{
+          const prepared=await snapshot();let expectedOutcome;
+          // A stale administrative request is rejected; refreshing is explicit.
+          if(winner==='renewal')expectedOutcome=await renewalOutcome(path);
+          else{assert.equal((await request('POST',db,extra)).status,200);expectedOutcome=await renewalOutcome(path);}
+          const expected=lifecycleState(await snapshot());await restore(prepared);
+          let firstBatch=true,actualOutcome;
+          const raced=wrapped(async statements=>{
+            if(firstBatch){firstBatch=false;
+              if(winner==='renewal')actualOutcome=await renewalOutcome(path);
+              else assert.equal((await request('POST',db,extra)).status,200);
+            }
+            return db.batch(statements);
+          });
+          if(winner==='renewal'){
+            const result=await request('POST',raced,extra);assert.equal(result.status,409);
+            assert.match(result.body.error,/state changed/);
+          }else actualOutcome=await renewalOutcome(path,raced);
+          assert.equal(actualOutcome,expectedOutcome);assert.deepEqual(lifecycleState(await snapshot()),expected);
+          assert.equal(firstBatch,false);
+        }));
+    }
+    for(const order of ['renewal attempt first','resume first']){
+      await scenario(`${path} versus Resume from Paused: ${order}`,async()=>{
+        await lifecycleFixture(path,'PastDue');await run("UPDATE subscriptions SET status='Paused',paused_at='2026-01-01T00:00:00.000Z'");
+      },()=>atTime(lifecycleClock,async()=>{
+        const before=await snapshot();
+        if(order==='renewal attempt first'){
+          assert.equal(await renewalOutcome(path),false);assert.deepEqual(await snapshot(),before);
+        }
+        assert.equal((await request('POST',db,{action:'status',status:'Active'})).status,200);
+        assert.equal(await renewalOutcome(path),true);
+        const state=await snapshot();assert.equal(state.subscriptions[0].paused_at,'');
+        assert.equal(state.subscriptions[0].status,'Active');assert.equal(state.memberships[0].status,'Active');
+        assert.deepEqual(state.subscription_events.map(e=>e.event_type),['resumed','renewed']);
+        assert.equal(state.subscription_renewal_executions.length,1);
+      }));
+    }
+  }
+  for(const extra of [{action:'status',status:'Paused'},{action:'cancel-at-period-end'}]){
+    await scenario(`duplicate admin ${extra.action}: one event, loser 409`,()=>run('UPDATE subscriptions SET cancel_at_period_end=0'),async()=>{
+      const gate=barrier(2),raced=wrapped(async statements=>{await gate();return db.batch(statements);});
+      const results=await Promise.all([request('POST',raced,extra),request('POST',raced,extra)]);
+      assert.deepEqual(results.map(r=>r.status).sort(),[200,409]);
+      assert.equal((await first('SELECT COUNT(*) AS n FROM subscription_events')).n,1);
+      const before=await snapshot();const repeat=await request('POST',db,extra);
+      assert.equal(repeat.body.idempotent,true);assert.deepEqual(await snapshot(),before);
+    });
+  }
+  await scenario('stale Resume cannot reactivate a cancelled subscription',async()=>{
+    await run("UPDATE subscriptions SET status='Paused',paused_at='2026-01-01T00:00:00.000Z'");
+  },async()=>{
+    const raced=wrapped(async statements=>{
+      assert.equal((await request('POST',db,{action:'status',status:'Cancelled'})).status,200);
+      return db.batch(statements);
+    });
+    assert.equal((await request('POST',raced,{action:'status',status:'Active'})).status,409);
+    const state=await snapshot();assert.equal(state.subscriptions[0].status,'Cancelled');
+    assert.deepEqual(state.subscription_events.map(e=>[e.from_status,e.to_status]),[['Paused','Cancelled']]);
+  });
+  await scenario('stale scheduling cannot modify a terminal subscription',()=>run('UPDATE subscriptions SET cancel_at_period_end=0'),async()=>{
+    const raced=wrapped(async statements=>{
+      await request('POST',db,{action:'status',status:'Expired'});return db.batch(statements);
+    });
+    assert.equal((await request('POST',raced,{action:'cancel-at-period-end'})).status,409);
+    const state=await snapshot();assert.equal(state.subscriptions[0].cancel_at_period_end,0);
+    assert.deepEqual(state.subscription_events.map(e=>e.event_type),['expired']);
+  });
+  await scenario('simultaneous automation runs at identical timestamps record each catch-up event once',()=>lifecycleFixture('manual','catch-up Expired'),
+    ()=>atTime(lifecycleClock,async()=>{
+      const gate=barrier(2);let arrivals=0;
+      const raced=wrapped(async statements=>{if(++arrivals<=2)await gate();return db.batch(statements);});
+      const results=await Promise.all([automation(raced),automation(raced)]);
+      assert.equal(results.reduce((n,r)=>n+r.body.transitioned,0),2);
+      const state=await snapshot();assert.equal(state.subscriptions[0].status,'Expired');
+      assert.deepEqual(state.subscription_events.map(e=>[e.event_type,e.from_status,e.to_status]),
+        [['past_due','Active','PastDue'],['expired','PastDue','Expired']]);
+      const before=await snapshot();assert.equal((await automation()).body.transitioned,0);
+      assert.deepEqual(await snapshot(),before);
+    }));
+  await scenario('engine renewal between catch-up steps prevents stale expiry',()=>lifecycleFixture('engine','catch-up Expired'),
+    ()=>atTime(lifecycleClock,async()=>{
+      let batches=0;
+      const raced=wrapped(async statements=>{if(++batches===2)assert.equal(await renewalOutcome('engine'),true);return db.batch(statements);});
+      const result=await automation(raced);assert.equal(result.body.transitioned,1);assert.equal(result.body.unchanged,1);
+      const state=await snapshot();assert.equal(state.subscriptions[0].status,'Active');
+      assert.deepEqual(state.subscription_events.map(e=>e.event_type),['past_due','renewed']);
+    }));
+  for(const kind of ['status','scheduling','automation']){
+    await scenario(`${kind}: event failure rolls back state and unexpected SQL failure is not retried`,async()=>{
+      await lifecycleFixture('manual','PastDue');
+    },()=>atTime(lifecycleClock,async()=>{
+      const extra=kind==='status'?{action:'status',status:'Paused'}:{action:'cancel-at-period-end'};
+      const before=await snapshot();let calls=0;
+      // Append an invalid statement inside the real transaction AFTER the event:
+      // prove state and event rollback, rather than simulate a pre-write throw.
+      const fail=wrapped(async statements=>{calls++;return db.batch([...statements,
+        db.prepare("INSERT INTO subscription_events(subscription_id,event_type) VALUES(1,'invalid-synthetic-event')")]);});
+      if(kind==='automation'){
+        const result=await automation(fail);assert.equal(result.body.failed,1);assert.equal(result.body.transitioned,0);
+      }else{
+        const result=await request('POST',fail,extra);
+        assert.equal(result.status,409);assert.match(result.body.error,/constraint conflict/);
+      }
+      assert.equal(calls,1);assert.deepEqual(await snapshot(),before);
+      const sqlFailure=wrapped(async statements=>{calls++;return db.batch([...statements,db.prepare('SELECT * FROM nonexistent_synthetic_table')]);});
+      if(kind==='automation')assert.equal((await automation(sqlFailure)).body.failed,1);
+      else assert.equal((await request('POST',sqlFailure,extra)).status,500);
+      assert.equal(calls,2);assert.deepEqual(await snapshot(),before);
+    }));
+  }
+  // Exercise failure in the event statement itself through real D1, not a wrapper
+  // throwing before batch execution. Fixture-only trigger leaves app schema alone.
+  for(const kind of ['status','scheduling','automation']){
+    await scenario(`${kind}: corresponding event insertion failure rolls back update`,()=>lifecycleFixture('manual','PastDue'),
+      ()=>atTime(lifecycleClock,async()=>{
+        const before=await snapshot();
+        await run("CREATE TRIGGER synthetic_event_failure BEFORE INSERT ON subscription_events BEGIN SELECT RAISE(ABORT,'synthetic event recording failure'); END");
+        try{
+          if(kind==='automation')assert.equal((await automation()).body.failed,1);
+          else assert.equal((await request('POST',db,kind==='status'?{action:'status',status:'Paused'}:{action:'cancel-at-period-end'})).status,500);
+          assert.deepEqual(await snapshot(),before);
+        }finally{await run('DROP TRIGGER synthetic_event_failure');}
+      }));
+  }
+  for(const [name,status,end,grace,flag,events] of [
+    ['period exactly reached','Active',lifecycleClock,'2026-02-08T00:00:00.000Z',0,['past_due']],
+    ['period one millisecond future','Active','2026-02-01T00:00:00.001Z','',0,[]],
+    ['grace exactly reached','PastDue','2026-01-31T00:00:00.000Z',lifecycleClock,0,['expired']],
+    ['grace one millisecond future','PastDue','2026-01-31T00:00:00.000Z','2026-02-01T00:00:00.001Z',0,[]],
+    ['invalid dates','Active','invalid','invalid',0,[]],['empty dates','Active','','',0,[]],
+    ['Pending excluded','Pending','2026-01-31T00:00:00.000Z','',1,[]],
+    ['Paused excluded without cancellation','Paused','2026-01-31T00:00:00.000Z','',0,[]],
+    ['Paused scheduled cancellation','Paused',lifecycleClock,'',1,['cancelled']],
+    ['cancellation priority over catch-up','Active',lifecycleClock,lifecycleClock,1,['cancelled']],
+    ['catch-up preserves both transitions','Active',lifecycleClock,lifecycleClock,0,['past_due','expired']]
+  ]) await scenario(`lifecycle boundary: ${name}`,()=>run('UPDATE subscriptions SET status=?,current_period_end=?,grace_ends_at=?,cancel_at_period_end=?',status,end,grace,flag),
+    ()=>atTime(lifecycleClock,async()=>{
+      const before=await snapshot();const preview=await automation(db,lifecycleAutomation,'preview');
+      assert.equal(preview.body.planned,events.length);assert.deepEqual(await snapshot(),before);
+      const result=await automation();assert.equal(result.body.failed,0);assert.equal(result.body.transitioned,events.length);
+      const after=await snapshot();assert.deepEqual(after.subscription_events.map(e=>e.event_type),events);
+      assert.deepEqual(after.memberships,before.memberships);assert.deepEqual(after.membership_events,before.membership_events);
+    }));
+  for(const terminal of ['Cancelled','Expired']) for(const extra of [{action:'status',status:'Active'},{action:'cancel-at-period-end'}]){
+    await scenario(`${terminal} rejects ${extra.action} without entitlement writes`,()=>run('UPDATE subscriptions SET status=?',terminal),async()=>{
+      const before=await snapshot();assert.equal((await request('POST',db,extra)).status,409);assert.deepEqual(await snapshot(),before);
+    });
+  }
+
+  await test('lifecycle guard compares every business field and ignores timestamps-only changes',async()=>{
+    const row=await first('SELECT * FROM subscriptions WHERE id=1');
+    const guard=lifecycleSnapshotGuard(row);
+    assert.equal((await first(`SELECT EXISTS(SELECT 1 FROM subscriptions WHERE ${guard.sql}) AS ok`,...guard.params)).ok,1);
+    const timestampOnly=lifecycleSnapshotGuard({...row,updated_at:'same-second-or-other-time'});
+    assert.deepEqual(timestampOnly,guard);
+    for(const field of ['id','subscription_reference','customer_id','plan_id','membership_id','status',
+      'current_period_start','current_period_end','next_renewal_at','grace_ends_at','auto_renew',
+      'cancel_at_period_end','cancelled_at','paused_at','expired_at']){
+      const changed=lifecycleSnapshotGuard({...row,[field]:String(row[field])+'-stale'});
+      assert.equal((await first(`SELECT EXISTS(SELECT 1 FROM subscriptions WHERE ${changed.sql}) AS ok`,...changed.params)).ok,0,field);
+      assert.throws(()=>lifecycleSnapshotGuard({...row,[field]:undefined}),/snapshot missing/);
+    }
+    // Null-safe SQL comparisons are demonstrated even though the current schema
+    // declares the captured columns NOT NULL.
+    assert.equal((await first('SELECT NULL IS ? AS ok',null)).ok,1);
+  });
+  for(const path of ['manual','engine']) for(const extra of [
+    {action:'status',status:'Paused'},{action:'status',status:'Cancelled'},
+    {action:'status',status:'Expired'},{action:'cancel-at-period-end'}]){
+    await scenario(`${path}: fresh ${extra.status || extra.action} after renewal remains permitted`,()=>lifecycleFixture(path,'PastDue'),
+      ()=>atTime(lifecycleClock,async()=>{
+        assert.equal(await renewalOutcome(path),true);const before=await snapshot();
+        const result=await request('POST',db,extra);assert.equal(result.status,200);assert.equal(result.body.changed,true);
+        const after=await snapshot();assert.deepEqual(after.memberships,before.memberships);
+        assert.deepEqual(after.membership_events,before.membership_events);
+        for(const field of ['current_period_start','current_period_end','next_renewal_at','grace_ends_at'])
+          assert.equal(after.subscriptions[0][field],before.subscriptions[0][field]);
+        assert.equal(after.subscription_events.length,2);
+        assert.equal(after.subscription_events[1].from_status,'Active');
+        assert.equal(after.subscription_events[1].to_status,extra.status || 'Active');
+      }));
+  }
+  for(const kind of ['cancellation flag cleared','period extended without status change','grace extended without status change']){
+    await scenario(`automation skips stale ${kind}`,async()=>{
+      await lifecycleFixture('manual','catch-up Expired');
+      if(kind==='cancellation flag cleared')await run('UPDATE subscriptions SET cancel_at_period_end=1');
+      if(kind==='grace extended without status change')await run("UPDATE subscriptions SET status='PastDue'");
+    },()=>atTime(lifecycleClock,async()=>{
+      const before=await snapshot();let calls=0;
+      const raced=wrapped(async statements=>{
+        calls++;
+        if(kind==='cancellation flag cleared')await run('UPDATE subscriptions SET cancel_at_period_end=0');
+        else if(kind==='period extended without status change')await run("UPDATE subscriptions SET current_period_end='2027-01-31T23:59:59.000Z'");
+        else await run("UPDATE subscriptions SET grace_ends_at='2027-01-31T23:59:59.000Z'");
+        return db.batch(statements);
+      });
+      const result=await automation(raced);assert.equal(result.body.transitioned,0);assert.equal(result.body.unchanged,1);
+      assert.equal(calls,1);const after=await snapshot();assert.equal(after.subscription_events.length,0);
+      assert.equal(after.subscriptions[0].status,before.subscriptions[0].status);
+      assert.deepEqual(after.memberships,before.memberships);
+    }));
+  }
+  }
   console.log(`RESULT: ${passed} scenarios passed; 0 failed. Local D1 only. Protected fixture tables unchanged by handlers.`);
 }finally{globalThis.fetch=originalFetch;await mf.dispose();await rm(directory,{recursive:true,force:true});}
