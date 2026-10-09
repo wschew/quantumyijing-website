@@ -453,6 +453,24 @@ try{
       }
     });
   }
+  for(const path of ['manual','engine']) for(const table of ['subscription_events','membership_events']){
+    await scenario(`${path}: failure at ${table} write rolls back the complete renewal`,async()=>{
+      if(path==='engine')await link();
+    },async()=>{
+      const before=await snapshot();let calls=0;
+      const failed=wrapped(async statements=>{
+        calls++;
+        const index=path==='manual'?(table==='subscription_events'?4:5):(table==='membership_events'?4:5);
+        const replacement=[...statements];
+        const parent=table==='subscription_events'?'subscription_id':'membership_id';
+        replacement[index]=db.prepare(`INSERT INTO ${table}(${parent},event_type) VALUES(1,'invalid-synthetic-event')`);
+        return db.batch(replacement);
+      });
+      if(path==='manual')assert.equal((await request('POST',failed)).status,409);
+      else await assert.rejects(engine(failed,1),/CHECK constraint/);
+      assert.equal(calls,1);assert.deepEqual(await snapshot(),before);
+    });
+  }
   for(const path of ['manual','engine']){
     await scenario(`${path} retry exhaustion has no completion`,async()=>{if(path==='engine')await link();},async()=>{
       let attempts=0;
@@ -735,6 +753,24 @@ try{
         }finally{await run('DROP TRIGGER synthetic_event_failure');}
       }));
   }
+  await scenario('due period-end cancellation executes once and preserves unrelated subscriptions',async()=>{
+    await run('UPDATE subscriptions SET current_period_end=?,cancel_at_period_end=1',lifecycleClock);
+    await run("INSERT INTO subscriptions(id,subscription_reference,customer_id,plan_id,membership_id,status,current_period_end,cancel_at_period_end) VALUES(2,'SYNTH-FUTURE',1,1,1,'Active','2027-01-01T00:00:00.000Z',1),(3,'SYNTH-TERMINAL',1,1,1,'Expired','2020-01-01T00:00:00.000Z',1)");
+  },async()=>{
+    const before=await snapshot();
+    await atTime('2026-01-31T23:59:59.999Z',async()=>{
+      const result=await automation();assert.equal(result.body.transitioned,0);assert.deepEqual(await snapshot(),before);
+    });
+    await atTime(lifecycleClock,async()=>{
+      const result=await automation();assert.equal(result.status,200);assert.equal(result.body.failed,0);assert.equal(result.body.transitioned,1);
+      const after=await snapshot();const row=after.subscriptions.find(r=>r.id===1);
+      assert.equal(row.status,'Cancelled');assert.equal(row.cancelled_at,lifecycleClock);
+      assert.deepEqual(after.subscriptions.filter(r=>r.id!==1),before.subscriptions.filter(r=>r.id!==1));
+      assert.deepEqual(after.memberships,before.memberships);assert.deepEqual(after.membership_events,before.membership_events);
+      assert.deepEqual(after.subscription_events.map(e=>[e.subscription_id,e.event_type,e.from_status,e.to_status,e.event_at]),[[1,'cancelled','Active','Cancelled',lifecycleClock]]);
+      assert.equal((await automation()).body.transitioned,0);assert.deepEqual(await snapshot(),after);
+    });
+  });
   for(const [name,status,end,grace,flag,events] of [
     ['period exactly reached','Active',lifecycleClock,'2026-02-08T00:00:00.000Z',0,['past_due']],
     ['period one millisecond future','Active','2026-02-01T00:00:00.001Z','',0,[]],
