@@ -1054,6 +1054,11 @@ async function renewSubscriptionAttempt(db,b){
     `).bind(orderId).first();
 
   if(existingLink){
+    if(Number(existingLink.subscription_id)===id && existingLink.order_type==="Renewal"){
+      // Another request may have completed renewal after our first completion read.
+      const latest=await findRenewalCompletion(db,orderId,id,subscription.membership_id);
+      if(latest.completed) return manualCompletionResponse(db,id,orderId);
+    }
     return json({error:Number(existingLink.subscription_id)===id && existingLink.order_type==="Renewal"
       ? "Renewal order is linked but has no recognized completion. Use the verified-order renewal engine."
       : "Order is already linked to another subscription operation."},409);

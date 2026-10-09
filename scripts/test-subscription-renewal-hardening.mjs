@@ -241,6 +241,63 @@ try{
     assert.ok(results.every(r=>r.status===200));assert.equal(results.filter(r=>r.body.renewed).length,1);assert.equal(results.filter(r=>r.body.idempotent).length,1);
     assert.equal((await snapshot()).subscription_events.length,1);assert.equal((await snapshot()).subscription_renewal_executions.length,1);
   });
+  // Intercept the link read, after the losing request's initial completion reads.
+  // Batch-only barriers cannot exercise a winner committing at this boundary.
+  function commitBeforeLinkRead(commit){
+    let fired=false;
+    return {
+      prepare(sql){
+        const statement=db.prepare(sql);
+        if(!/FROM subscription_orders\s+WHERE order_id=\?/i.test(sql) || !sql.includes('period_end')) return statement;
+        return {bind(...params){
+          const bound=statement.bind(...params);
+          return {async first(...args){
+            if(!fired){fired=true;await commit();}
+            return bound.first(...args);
+          }};
+        }};
+      },
+      batch:statements=>db.batch(statements)
+    };
+  }
+  await test('same-order read-phase race returns the committed manual completion',async()=>{
+    let winner,committed;
+    const raced=commitBeforeLinkRead(async()=>{
+      winner=await request('POST');assert.equal(winner.status,200);assert.equal(winner.body.renewed,true);
+      committed=await snapshot();
+    });
+    const loser=await request('POST',raced);
+    assert.equal(loser.status,200);assert.equal(loser.body.idempotent,true);assert.equal(loser.body.changed,false);
+    const after=await snapshot();assert.deepEqual(after,committed);
+    assert.equal(after.subscription_renewal_executions.length,1);
+    assert.equal(after.subscription_orders.length,1);
+    assert.equal(after.subscription_events.length,1);assert.equal(after.membership_events.length,1);
+    assert.equal(after.subscriptions[0].current_period_end,'2026-02-28T23:59:59.000Z');
+    assert.equal(after.memberships[0].ends_at,'2027-01-31T23:59:59.000Z');
+  });
+  for(const kind of ['incomplete','foreign subscription','foreign membership','historical engine','historical manual']){
+    await test('read-phase link recheck: '+kind,async()=>{
+      let committed;
+      const raced=commitBeforeLinkRead(async()=>{
+        await link();
+        if(kind.startsWith('foreign')){
+          if(kind==='foreign subscription') await run("INSERT INTO subscriptions(id,subscription_reference,customer_id,plan_id,membership_id) VALUES(2,'SYNTH-S2',1,1,1)");
+          else await run("INSERT INTO memberships(id,membership_reference,customer_id,product_id,status) VALUES(2,'SYNTH-M2',1,1,'Active')");
+          await run('INSERT INTO subscription_renewal_executions(order_id,subscription_id,membership_id) VALUES(1,?,?)',kind==='foreign subscription'?2:1,kind==='foreign membership'?2:1);
+        }else if(kind.startsWith('historical')){
+          await run("INSERT INTO subscription_events(subscription_id,event_type,source,source_reference) VALUES(1,'renewed',?,?)",
+            kind==='historical manual'?'A6E Manual Renewal Administration':'Historic',
+            kind==='historical manual'?'AdminRenewal:1':'RenewalOrder:1');
+        }
+        committed=await snapshot();
+      });
+      const response=await request('POST',raced);
+      assert.equal(response.status,kind.startsWith('historical')?200:409);
+      if(kind.startsWith('historical')) assert.equal(response.body.idempotent,true);
+      else assert.match(response.body.error,kind==='incomplete'?/linked but has no recognized completion/:/another subscription or membership/);
+      assert.deepEqual(await snapshot(),committed);
+    });
+  }
   await test('manual versus engine contention: engine wins, manual batch rolls back',async()=>{
     // Manual has completed its reads. A concurrent linkage operation makes the
     // order visible to the engine; both paths now attempt the same ledger key.
