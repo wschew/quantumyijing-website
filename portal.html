@@ -552,6 +552,25 @@ function showDashboard(data){
 }
 
 
+// Presentation only; protected APIs remain the access authority.
+function courseAvailability(row,now=Date.now()){
+  if(row.status!=="Active") return "Unavailable";
+  function boundary(value){
+    if(!value) return null;
+    const text=String(value).trim();
+    const timestamp=Date.parse(/(?:Z|[+-]\d{2}:?\d{2})$/i.test(text)
+      ? text : text.replace(" ","T")+"Z");
+    return Number.isFinite(timestamp) ? Math.floor(timestamp/1000)*1000 : NaN;
+  }
+  const start=boundary(row.starts_at),end=boundary(row.ends_at);
+  now=Math.floor(now/1000)*1000;
+  if(Number.isNaN(start) || Number.isNaN(end)) return "Unavailable";
+  if(end!==null && now>=end) return "Expired";
+  if(start!==null && now<start) return "Not yet active";
+  return "Available";
+}
+
+
 function renderCourses(rows){
 
   if(!rows.length){
@@ -613,13 +632,15 @@ function renderCourses(rows){
         </p>
 
         ${
-          row.status==="Active"
+          courseAvailability(row)==="Available"
             ? `<p>
                  <a href="/course.html?product_id=${encodeURIComponent(row.product_id)}">
                    ${t("Open Course","进入课程")}
                  </a>
                </p>`
-            : ""
+            : `<p class="muted">${esc(t(courseAvailability(row),
+                courseAvailability(row)==="Expired" ? "已到期" :
+                courseAvailability(row)==="Not yet active" ? "尚未生效" : "暂不可用"))}</p>`
         }
 
       </div>

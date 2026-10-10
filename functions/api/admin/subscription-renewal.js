@@ -461,7 +461,7 @@ async function processRenewalAttempt(db,orderId){
           newEnd,
           Number(state.grace_period_days)
         )
-      : "";
+      : newEnd;
 
   const renewalRef=
     `RenewalOrder:${id}`;

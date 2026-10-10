@@ -58,7 +58,8 @@ const fixtures=[
   'database/schema.sql','database/migrate-v2.7.sql','database/migrate-v3.1.sql',
   'migrate-v3.3.15.sql','database/migrate-v4.0-customer-membership-foundation.sql',
   'database/migrate-v4.0-subscription-foundation.sql',
-  'database/migrate-v4.0-phase-b3e-renewal-hardening.sql'
+  'database/migrate-v4.0-phase-b3e-renewal-hardening.sql',
+  'database/migrate-v4.1-r3-enrollment-integrity.sql'
 ];
 const tables=['subscription_renewal_executions','subscription_events','membership_events','subscription_orders',
   'subscriptions','subscription_plans','memberships','customer_enquiry_links','customer_identifiers',
@@ -90,7 +91,7 @@ async function seed(){
 
   await run(`INSERT INTO memberships(id,membership_reference,customer_id,product_id,status,starts_at,ends_at) VALUES(1,'SYNTH-M1',1,1,'Active','2025-01-31T23:59:59.000Z','2026-01-31T23:59:59.000Z')`);
   await run(`INSERT INTO subscription_plans(id,plan_reference,plan_code,product_id,status,billing_interval_unit,billing_interval_count,membership_duration_unit,membership_duration_count,grace_period_days) VALUES(1,'SYNTH-P1','SYNTH',1,'Active','Month',1,'Year',1,7)`);
-  await run(`INSERT INTO subscriptions(id,subscription_reference,customer_id,plan_id,membership_id,status,current_period_end,cancel_at_period_end) VALUES(1,'SYNTH-S1',1,1,1,'Active','2026-01-31T23:59:59.000Z',1)`);
+  await run(`INSERT INTO subscriptions(id,subscription_reference,customer_id,plan_id,membership_id,status,current_period_start,current_period_end,cancel_at_period_end) VALUES(1,'SYNTH-S1',1,1,1,'Active','1900-01-01','2026-01-31T23:59:59.000Z',1)`);
   // Fixed fixture timestamps make independent baseline runs comparable.
   for(const table of tables){
     const columns=(await db.prepare(`PRAGMA table_info(${table})`).all()).results;
@@ -281,7 +282,7 @@ try{
       const raced=commitBeforeLinkRead(async()=>{
         await link();
         if(kind.startsWith('foreign')){
-          if(kind==='foreign subscription') await run("INSERT INTO subscriptions(id,subscription_reference,customer_id,plan_id,membership_id) VALUES(2,'SYNTH-S2',1,1,1)");
+          if(kind==='foreign subscription') await run("INSERT INTO subscriptions(id,subscription_reference,customer_id,plan_id,membership_id,status) VALUES(2,'SYNTH-S2',1,1,1,'Cancelled')");
           else await run("INSERT INTO memberships(id,membership_reference,customer_id,product_id,status) VALUES(2,'SYNTH-M2',1,1,'Active')");
           await run('INSERT INTO subscription_renewal_executions(order_id,subscription_id,membership_id) VALUES(1,?,?)',kind==='foreign subscription'?2:1,kind==='foreign membership'?2:1);
         }else if(kind.startsWith('historical')){
@@ -343,7 +344,7 @@ try{
     await run("UPDATE subscriptions SET status='Cancelled'");await run("UPDATE memberships SET status='Expired'");await run('DELETE FROM payments');await run('DELETE FROM customer_enquiry_links');
   },async()=>{const before=await snapshot();assert.equal((await request('POST')).body.idempotent,true);assert.equal((await engine(db,1)).idempotent,true);assert.deepEqual(await snapshot(),before);});
   await scenario('conflicting completion owner rejects without writes',async()=>{
-    await link();await run("INSERT INTO subscriptions(id,subscription_reference,customer_id,plan_id,membership_id) VALUES(2,'SYNTH-S2',1,1,1)");
+    await link();await run("INSERT INTO subscriptions(id,subscription_reference,customer_id,plan_id,membership_id,status) VALUES(2,'SYNTH-S2',1,1,1,'Cancelled')");
     await run('INSERT INTO subscription_renewal_executions(order_id,subscription_id,membership_id) VALUES(1,2,1)');
   },async()=>{const before=await snapshot();assert.equal((await request('GET')).status,409);assert.equal((await request('POST')).status,409);await assert.rejects(engine(db,1),/another subscription/);assert.deepEqual(await snapshot(),before);});
   await scenario('zero-total policy is retained, not silently tightened',async()=>{await run('UPDATE orders SET total=0');await run('DELETE FROM payments');},async()=>{
@@ -755,7 +756,8 @@ try{
   }
   await scenario('due period-end cancellation executes once and preserves unrelated subscriptions',async()=>{
     await run('UPDATE subscriptions SET current_period_end=?,cancel_at_period_end=1',lifecycleClock);
-    await run("INSERT INTO subscriptions(id,subscription_reference,customer_id,plan_id,membership_id,status,current_period_end,cancel_at_period_end) VALUES(2,'SYNTH-FUTURE',1,1,1,'Active','2027-01-01T00:00:00.000Z',1),(3,'SYNTH-TERMINAL',1,1,1,'Expired','2020-01-01T00:00:00.000Z',1)");
+    await run("INSERT INTO memberships(id,membership_reference,customer_id,product_id,status) VALUES(2,'SYNTH-FUTURE-M',1,1,'Active')");
+    await run("INSERT INTO subscriptions(id,subscription_reference,customer_id,plan_id,membership_id,status,current_period_end,cancel_at_period_end) VALUES(2,'SYNTH-FUTURE',1,1,2,'Active','2027-01-01T00:00:00.000Z',1),(3,'SYNTH-TERMINAL',1,1,1,'Expired','2020-01-01T00:00:00.000Z',1)");
   },async()=>{
     const before=await snapshot();
     await atTime('2026-01-31T23:59:59.999Z',async()=>{
@@ -850,5 +852,33 @@ try{
     }));
   }
   }
+  const p1LifecycleClock='2026-02-01T00:00:00.000Z';
+  for(const path of ['manual','engine'])await scenario(`P1 ${path} zero grace equals renewed period end`,async()=>{await run('UPDATE subscription_plans SET grace_period_days=0');if(path==='engine')await link();},async()=>{
+    if(path==='engine')await engine(db,1);else assert.equal((await request('POST')).status,200);
+    const state=await snapshot();assert.equal(state.subscriptions[0].grace_ends_at,state.subscriptions[0].current_period_end);
+    assert.equal(state.subscription_renewal_executions.length,1);assert.equal(state.subscription_events.length,1);assert.equal(state.membership_events.length,1);
+  });
+  for(const [name,cancel,future] of [['expiry at boundary',false,false],['cancellation priority',true,false],['not before boundary',false,true]])await scenario('P1 engine zero-grace '+name,async()=>{await run('UPDATE subscription_plans SET grace_period_days=0');await link();},async()=>{
+    await engine(db,1);const renewed=await snapshot();const end=renewed.subscriptions[0].current_period_end;
+    await run('UPDATE subscriptions SET cancel_at_period_end=?',cancel?1:0);
+    const time=future?new Date(Date.parse(end)-1).toISOString():end;
+    await atTime(time,async()=>{
+      const response=await automation();assert.equal(response.body.failed,0);
+      const events=cancel?['renewed','cancelled']:future?['renewed']:['renewed','past_due','expired'];
+      const after=await snapshot();assert.deepEqual(after.subscription_events.map(e=>e.event_type),events);
+      assert.deepEqual(after.memberships,renewed.memberships);assert.deepEqual(after.membership_events,renewed.membership_events);assert.deepEqual(after.subscription_renewal_executions,renewed.subscription_renewal_executions);
+      assert.equal((await automation()).body.transitioned,0);assert.deepEqual(await snapshot(),after);
+    });
+  });
+  for(const days of [0,7])await scenario(`P1 historical blank grace not inferred from ${days}-day plan`,()=>run("UPDATE subscription_plans SET grace_period_days=?",days),()=>atTime(p1LifecycleClock,async()=>{
+    await run("UPDATE subscriptions SET status='PastDue',grace_ends_at='',cancel_at_period_end=0");const before=await snapshot();assert.equal((await automation()).body.transitioned,0);assert.deepEqual(await snapshot(),before);
+  }));
+  await scenario('P1 zero-grace engine revalidates concurrent plan change',async()=>{await run('UPDATE subscription_plans SET grace_period_days=0');await link();},async()=>{
+    let calls=0;const raced=wrapped(async statements=>{if(++calls===1)await run('UPDATE subscription_plans SET grace_period_days=7');return db.batch(statements);});
+    await engine(raced,1);assert.equal(calls,2);const state=await snapshot();assert.equal(Date.parse(state.subscriptions[0].grace_ends_at)-Date.parse(state.subscriptions[0].current_period_end),7*86400000);assert.equal(state.subscription_renewal_executions.length,1);
+  });
+  for(const mode of ['preview','run'])await scenario(`P1 lifecycle ${mode} rejects invalid start without partial catch-up`,()=>run("UPDATE subscriptions SET current_period_start='',grace_ends_at='2026-01-31T23:59:59.000Z',cancel_at_period_end=0"),()=>atTime(p1LifecycleClock,async()=>{
+    const before=await snapshot();const response=await automation(db,lifecycleAutomation,mode);assert.equal(response.body.failed,1);assert.equal(response.body.transitioned,0);assert.ok(response.body.failures[0].periodDateIssues.length);assert.deepEqual(await snapshot(),before);
+  }));
   console.log(`RESULT: ${passed} scenarios passed; 0 failed. Local D1 only. Protected fixture tables unchanged by handlers.`);
 }finally{globalThis.fetch=originalFetch;await mf.dispose();await rm(directory,{recursive:true,force:true});}

@@ -1,4 +1,4 @@
-import { lifecycleSnapshotGuard, lifecycleUpdateChanged } from "../../lib/subscription-lifecycle-concurrency.js";
+import { lifecycleSnapshotGuard, lifecycleUpdateChanged, subscriptionPeriodDateIssues } from "../../lib/subscription-lifecycle-concurrency.js";
 function json(data,status=200){
   return new Response(JSON.stringify(data),{
     status,
@@ -178,7 +178,7 @@ function plannedTransitions(row,nowMs){
   return [];
 }
 
-async function loadCandidates(db,nowIso){
+async function loadCandidates(db,nowIso,afterId=0){
   const result=await db.prepare(`
     SELECT
       id,
@@ -201,7 +201,7 @@ async function loadCandidates(db,nowIso){
       created_at,
       updated_at
     FROM subscriptions
-    WHERE
+    WHERE id>? AND (
       (
         cancel_at_period_end=1
         AND status IN ('Active','PastDue','Paused')
@@ -220,9 +220,10 @@ async function loadCandidates(db,nowIso){
         AND grace_ends_at<>''
         AND datetime(grace_ends_at)<=datetime(?)
       )
+    )
     ORDER BY id ASC
     LIMIT 500
-  `).bind(nowIso,nowIso,nowIso).all();
+  `).bind(afterId,nowIso,nowIso,nowIso).all();
 
   return Array.isArray(result?.results)
     ? result.results
@@ -320,13 +321,17 @@ async function execute(context,mode){
   const nowMs=now.getTime();
   const runAt=now.toISOString();
 
-  const candidates=await loadCandidates(db,runAt);
+  const cursorValue=new URL(context.request.url).searchParams.get("after_id") || "0";
+  if(!/^\d+$/.test(cursorValue) || !Number.isSafeInteger(Number(cursorValue))){return json({error:"Invalid after_id."},400);}
+  const candidates=await loadCandidates(db,runAt,Number(cursorValue));
 
   const summary={
     ok:true,
     mode,
     runAt,
     checked:candidates.length,
+    nextAfterId:candidates.length ? Number(candidates[candidates.length-1].id) : Number(cursorValue),
+    hasMore:candidates.length===500,
     planned:0,
     transitioned:0,
     pastDue:0,
@@ -340,6 +345,16 @@ async function execute(context,mode){
 
   for(const row of candidates){
     const actions=plannedTransitions(row,nowMs);
+
+    // Do not enter PastDue on invalid historical periods. Cancellation and
+    // expiry of already-PastDue rows remain independently available.
+    const issues=actions.some(action=>action.to==="PastDue")?subscriptionPeriodDateIssues(row):[];
+    if(issues.length){
+      summary.failed+=1;
+      summary.failures.push({id:Number(row.id),subscriptionReference:String(row.subscription_reference || ""),
+        from:row.status,to:"PastDue",error:"Subscription period dates require administrator review.",periodDateIssues:issues});
+      continue;
+    }
 
     if(actions.length===0){
       summary.unchanged+=1;
@@ -446,6 +461,8 @@ async function execute(context,mode){
     summary.failuresTruncated=true;
   }
 
+  console.log(JSON.stringify({event:"subscription-lifecycle-run",mode,checked:summary.checked,
+    transitioned:summary.transitioned,failed:summary.failed,hasMore:summary.hasMore,nextAfterId:summary.nextAfterId}));
   return json(summary);
 }
 

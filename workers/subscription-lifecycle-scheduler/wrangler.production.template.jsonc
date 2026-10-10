@@ -1,0 +1,17 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "qy-subscription-lifecycle-scheduler-production-template",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-07",
+  "workers_dev": false,
+  "triggers": { "crons": [] },
+  "vars": {
+    "SUBSCRIPTION_AUTOMATION_ENABLED": "false",
+    "SUBSCRIPTION_AUTOMATION_ENVIRONMENT": "production",
+    "SUBSCRIPTION_APPROVED_PRODUCTION_ORIGIN": "",
+    "A6H_ENDPOINT_BASE_URL": "",
+    "A6I_ENDPOINT_BASE_URL": "",
+    "SUBSCRIPTION_NOTIFICATION_EVENT_NOT_BEFORE": ""
+  },
+  "observability": { "logs": { "enabled": true, "invocation_logs": true } }
+}

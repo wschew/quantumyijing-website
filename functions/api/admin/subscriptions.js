@@ -1,4 +1,4 @@
-import { lifecycleSnapshotGuard, lifecycleUpdateChanged } from "../../lib/subscription-lifecycle-concurrency.js";
+import { lifecycleSnapshotGuard, lifecycleUpdateChanged, subscriptionPeriodDateIssues, subscriptionPeriodReview } from "../../lib/subscription-lifecycle-concurrency.js";
 import { validateRenewalOrder, renewalSnapshotGuard, isRenewalSnapshotConflict, RENEWAL_MAX_ATTEMPTS } from "../../lib/subscription-renewal-validation.js";
 import { findRenewalCompletion } from "../../lib/subscription-renewal-completion.js";
 
@@ -223,7 +223,7 @@ async function handleSubscriptionsGet(db,url){
 
     return json({
       ok:true,
-      subscription,
+      subscription:subscriptionPeriodReview(subscription),
       events,
       orders:orders.results || []
     });
@@ -277,7 +277,7 @@ async function handleSubscriptionsGet(db,url){
 
   return json({
     ok:true,
-    subscriptions:r.results || []
+    subscriptions:(r.results || []).map(subscriptionPeriodReview)
   });
 }
 
@@ -403,6 +403,26 @@ async function createPlan(db,b){
   },201);
 }
 
+// Enrollment accepts blank dates for Pending records. Supplied dates use
+// strict ISO calendar values and normalize to UTC, without calculating periods.
+function enrollmentTimestamp(value,name){
+  if(value===undefined || value===null || value==="") return "";
+  const text=String(value).trim();
+  if(!text) return "";
+  const match=/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?(Z|[+-]\d{2}:\d{2}))?$/.exec(text);
+  if(!match) throw new Error(`VALIDATION: Invalid ${name}.`);
+  const [,year,month,day,hour="00",minute="00",second="00",fraction="",zone="Z"]=match;
+  const calendar=new Date(`${year}-${month}-${day}T00:00:00Z`);
+  if(!Number.isFinite(calendar.getTime()) || calendar.toISOString().slice(0,10)!==`${year}-${month}-${day}` ||
+     Number(hour)>23 || Number(minute)>59 || Number(second)>59 ||
+     (zone!=="Z" && (Number(zone.slice(1,3))>23 || Number(zone.slice(4))>59))){
+    throw new Error(`VALIDATION: Invalid ${name}.`);
+  }
+  const parsed=new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}${fraction?"."+fraction:""}${zone}`);
+  if(!Number.isFinite(parsed.getTime())) throw new Error(`VALIDATION: Invalid ${name}.`);
+  return parsed.toISOString();
+}
+
 async function createSubscription(db,b){
   const customerId=intId(b.customerId);
   const planId=intId(b.planId);
@@ -466,6 +486,13 @@ async function createSubscription(db,b){
     },409);
   }
 
+  if(String(membership.status)!=="Active"){
+    return json({error:"Membership must be Active."},409);
+  }
+  if(String(plan.product_status)!=="Active" || String(plan.product_type).toLowerCase()!=="membership"){
+    return json({error:"Subscription plan requires an Active membership product."},409);
+  }
+
   const existing=await db.prepare(`
     SELECT id,status
     FROM subscriptions
@@ -484,12 +511,24 @@ async function createSubscription(db,b){
 
   const subscriptionReference=ref("QYS");
 
-  const start=cleanText(b.currentPeriodStart,40);
-  const end=cleanText(b.currentPeriodEnd,40);
-  const nextRenewal=cleanText(b.nextRenewalAt,40);
-  const graceEnds=cleanText(b.graceEndsAt,40);
+  const start=enrollmentTimestamp(b.currentPeriodStart,"currentPeriodStart");
+  const end=enrollmentTimestamp(b.currentPeriodEnd,"currentPeriodEnd");
+  const nextRenewal=enrollmentTimestamp(b.nextRenewalAt,"nextRenewalAt");
+  const graceEnds=enrollmentTimestamp(b.graceEndsAt,"graceEndsAt");
+  if(start && end && Date.parse(end)<=Date.parse(start)){
+    return json({error:"currentPeriodEnd must be later than currentPeriodStart."},409);
+  }
+  // Both existing renewal paths set next renewal to period end; grace never
+  // precedes that end. Blank scheduling fields remain permitted for Pending.
+  if(nextRenewal && (!end || nextRenewal!==end)){
+    return json({error:"nextRenewalAt must equal currentPeriodEnd."},409);
+  }
+  if(graceEnds && (!end || Date.parse(graceEnds)<Date.parse(end))){
+    return json({error:"graceEndsAt must not precede currentPeriodEnd."},409);
+  }
 
-  const result=await db.prepare(`
+  const results=await db.batch([
+    db.prepare(`
     INSERT INTO subscriptions(
       subscription_reference,
       customer_id,
@@ -507,7 +546,7 @@ async function createSubscription(db,b){
       created_at,
       updated_at
     )
-    VALUES(
+    SELECT
       ?,?,?,?,
       'Pending',
       ?,?,?,?,
@@ -516,6 +555,15 @@ async function createSubscription(db,b){
       ?,?,
       CURRENT_TIMESTAMP,
       CURRENT_TIMESTAMP
+    WHERE EXISTS(
+      SELECT 1 FROM customers c
+      JOIN memberships m ON m.customer_id=c.id
+      JOIN subscription_plans sp ON sp.product_id=m.product_id
+      JOIN products p ON p.id=sp.product_id
+      WHERE c.id=? AND m.id=? AND sp.id=?
+        AND c.status='Active' AND m.status='Active'
+        AND sp.status='Active' AND sp.renewal_mode='Manual'
+        AND p.status='Active' AND lower(p.product_type)='membership'
     )
   `).bind(
     subscriptionReference,
@@ -527,12 +575,11 @@ async function createSubscription(db,b){
     nextRenewal,
     graceEnds,
     cleanText(b.source || "Admin",100),
-    cleanText(b.notes,1000)
-  ).run();
+    cleanText(b.notes,1000),
+    customerId,membershipId,planId
+  ),
 
-  const id=Number(result.meta?.last_row_id || 0);
-
-  await db.prepare(`
+  db.prepare(`
     INSERT INTO subscription_events(
       subscription_id,
       event_type,
@@ -543,8 +590,8 @@ async function createSubscription(db,b){
       notes,
       event_at
     )
-    VALUES(
-      ?,
+    SELECT
+      id,
       'created',
       '',
       'Pending',
@@ -552,14 +599,20 @@ async function createSubscription(db,b){
       ?,
       ?,
       CURRENT_TIMESTAMP
-    )
+    FROM subscriptions
+    WHERE subscription_reference=? AND changes()=1
   `).bind(
-    id,
     cleanText(b.source || "Admin",100),
     subscriptionReference,
-    cleanText(b.notes,1000)
-  ).run();
-
+    cleanText(b.notes,1000),
+    subscriptionReference
+  )
+  ]);
+  if(Number(results[0]?.meta?.changes)!==1){
+    return json({error:"Enrollment eligibility changed. Refresh before retrying."},409);
+  }
+  const inserted=await db.prepare("SELECT id FROM subscriptions WHERE subscription_reference=?").bind(subscriptionReference).first();
+  const id=Number(inserted.id);
   const subscription=await getSubscription(db,id);
 
   return json({
@@ -634,6 +687,11 @@ async function changeStatus(db,b){
     return json({
       error:`Invalid subscription transition ${from} -> ${target}.`
     },409);
+  }
+
+  if(["Active","PastDue"].includes(target)){
+    const issues=subscriptionPeriodDateIssues(current);
+    if(issues.length) return json({error:"Subscription period dates require administrator review.",periodDateIssues:issues},409);
   }
 
   const eventType=eventForTransition(from,target);

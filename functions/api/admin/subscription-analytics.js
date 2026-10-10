@@ -527,7 +527,8 @@ async function buildAnalytics(db,url){
         n.status,
         n.provider_message_id,
         n.last_error,
-        n.scheduled_for,
+        CASE WHEN n.scheduled_for='event:'||n.source_event_id
+          THEN COALESCE(e.event_at,n.scheduled_for) ELSE n.scheduled_for END AS scheduled_for,
         n.sent_at,
         n.created_at,
         n.updated_at
@@ -536,6 +537,9 @@ async function buildAnalytics(db,url){
 
       JOIN subscriptions s
         ON s.id=n.subscription_id
+
+      LEFT JOIN subscription_events e
+        ON e.id=n.source_event_id AND e.subscription_id=n.subscription_id
 
       WHERE 1=1
       ${notificationRange.sql}

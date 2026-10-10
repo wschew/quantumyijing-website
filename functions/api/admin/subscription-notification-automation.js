@@ -1,3 +1,4 @@
+import { deliverNotification, existingNotificationLog, reconcileExpiredDeliveries } from "../../lib/subscription-notification-delivery.js";
 const FROM_ADDRESS =
   "Quantum YiJing International Academy <info@quantumyijing.com>";
 
@@ -79,47 +80,6 @@ function canAttempt(log,nowMs){
   return false;
 }
 
-async function sendEmail(apiKey,payload){
-  const key=String(apiKey || "").trim();
-
-  if(!key){
-    throw new Error("RESEND_API_KEY is not configured.");
-  }
-
-  const response=await fetch("https://api.resend.com/emails",{
-    method:"POST",
-    headers:{
-      "Authorization":`Bearer ${key}`,
-      "Content-Type":"application/json"
-    },
-    body:JSON.stringify(payload)
-  });
-
-  const raw=await response.text();
-
-  let data=null;
-
-  try{
-    data=raw ? JSON.parse(raw) : {};
-  }catch{
-    data={};
-  }
-
-  if(!response.ok){
-    throw new Error(
-      clean(
-        data?.message ||
-        data?.error ||
-        raw ||
-        `Resend HTTP ${response.status}`,
-        1000
-      )
-    );
-  }
-
-  return data || {};
-}
-
 function normalizeEventNotBefore(value){
   const raw=String(value || "").trim();
 
@@ -191,6 +151,15 @@ async function loadReminderCandidates(db,runAt){
        * Pending becomes retryable after 2 hours.
        */
       AND NOT EXISTS (
+        SELECT 1 FROM subscription_notification_logs legacy
+        LEFT JOIN subscription_notification_delivery d ON d.log_id=legacy.id
+        WHERE legacy.subscription_id=s.id AND legacy.channel='email'
+          AND (d.state IN ('Reconcile','Permanent','Sent') OR
+            (d.log_id IS NULL AND legacy.status IN ('Pending','Failed')))
+          AND legacy.notification_type=(CASE WHEN julianday(s.current_period_end)<=julianday(?)+7.0 THEN 'RenewalReminder7d' ELSE 'RenewalReminder30d' END)
+          AND legacy.scheduled_for=s.current_period_end
+      )
+      AND NOT EXISTS (
         SELECT 1
         FROM subscription_notification_logs n
         WHERE
@@ -220,6 +189,7 @@ async function loadReminderCandidates(db,runAt){
     ORDER BY julianday(s.current_period_end),s.id
     LIMIT 500
   `).bind(
+    runAt,
     runAt,
     runAt,
     runAt,
@@ -319,6 +289,15 @@ async function loadEventCandidates(db,runAt,eventNotBefore){
        * before LIMIT 500.
        */
       AND NOT EXISTS (
+        SELECT 1 FROM subscription_notification_logs legacy
+        LEFT JOIN subscription_notification_delivery d ON d.log_id=legacy.id
+        WHERE legacy.subscription_id=s.id AND legacy.channel='email'
+          AND (d.state IN ('Reconcile','Permanent','Sent') OR
+            (d.log_id IS NULL AND legacy.status IN ('Pending','Failed')))
+          AND legacy.notification_type=(CASE e.event_type WHEN 'past_due' THEN 'PastDueNotice' WHEN 'expired' THEN 'ExpiredNotice' ELSE 'CancellationScheduledNotice' END)
+          AND (legacy.source_event_id=e.id OR (legacy.source_event_id IS NULL AND legacy.scheduled_for=e.event_at))
+      )
+      AND NOT EXISTS (
         SELECT 1
         FROM subscription_notification_logs n
         WHERE
@@ -334,7 +313,7 @@ async function loadEventCandidates(db,runAt,eventNotBefore){
             END
           )
           AND n.channel='email'
-          AND n.scheduled_for=e.event_at
+          AND (n.source_event_id=e.id OR (n.source_event_id IS NULL AND n.scheduled_for=e.event_at))
           AND (
             n.status IN ('Sent','Skipped')
             OR (
@@ -424,180 +403,7 @@ function eventItem(row){
 }
 
 async function existingLog(db,item){
-  return await db.prepare(`
-    SELECT
-      id,
-      status,
-      recipient,
-      provider_message_id,
-      last_error,
-      scheduled_for,
-      sent_at,
-      created_at,
-      updated_at
-    FROM subscription_notification_logs
-    WHERE
-      subscription_id=?
-      AND notification_type=?
-      AND channel='email'
-      AND scheduled_for=?
-    LIMIT 1
-  `).bind(
-    item.subscription_id,
-    item.notification_type,
-    item.scheduled_for
-  ).first();
-}
-
-async function claimLog(db,item,runAt){
-  const insert=await db.prepare(`
-    INSERT OR IGNORE INTO subscription_notification_logs(
-      subscription_id,
-      notification_type,
-      channel,
-      recipient,
-      status,
-      source_event_id,
-      provider_message_id,
-      last_error,
-      scheduled_for,
-      sent_at,
-      created_at,
-      updated_at
-    )
-    VALUES(
-      ?,
-      ?,
-      'email',
-      ?,
-      'Pending',
-      ?,
-      '',
-      '',
-      ?,
-      '',
-      ?,
-      ?
-    )
-  `).bind(
-    item.subscription_id,
-    item.notification_type,
-    item.recipient,
-    item.source_event_id,
-    item.scheduled_for,
-    runAt,
-    runAt
-  ).run();
-
-  if(changes(insert)>0){
-    return true;
-  }
-
-  const failedRetry=await db.prepare(`
-    UPDATE subscription_notification_logs
-    SET
-      recipient=?,
-      source_event_id=?,
-      status='Pending',
-      last_error='',
-      updated_at=?
-    WHERE
-      subscription_id=?
-      AND notification_type=?
-      AND channel='email'
-      AND scheduled_for=?
-      AND status='Failed'
-      AND datetime(updated_at)<=datetime(?,'-6 hours')
-  `).bind(
-    item.recipient,
-    item.source_event_id,
-    runAt,
-    item.subscription_id,
-    item.notification_type,
-    item.scheduled_for,
-    runAt
-  ).run();
-
-  if(changes(failedRetry)>0){
-    return true;
-  }
-
-  const stalePending=await db.prepare(`
-    UPDATE subscription_notification_logs
-    SET
-      recipient=?,
-      source_event_id=?,
-      updated_at=?
-    WHERE
-      subscription_id=?
-      AND notification_type=?
-      AND channel='email'
-      AND scheduled_for=?
-      AND status='Pending'
-      AND datetime(updated_at)<=datetime(?,'-2 hours')
-  `).bind(
-    item.recipient,
-    item.source_event_id,
-    runAt,
-    item.subscription_id,
-    item.notification_type,
-    item.scheduled_for,
-    runAt
-  ).run();
-
-  return changes(stalePending)>0;
-}
-
-async function markSent(db,item,providerId,runAt){
-  await db.prepare(`
-    UPDATE subscription_notification_logs
-    SET
-      status='Sent',
-      recipient=?,
-      provider_message_id=?,
-      last_error='',
-      sent_at=?,
-      updated_at=?
-    WHERE
-      subscription_id=?
-      AND notification_type=?
-      AND channel='email'
-      AND scheduled_for=?
-      AND status='Pending'
-  `).bind(
-    item.recipient,
-    clean(providerId,300),
-    runAt,
-    runAt,
-    item.subscription_id,
-    item.notification_type,
-    item.scheduled_for
-  ).run();
-}
-
-async function markFailed(db,item,error,runAt){
-  await db.prepare(`
-    UPDATE subscription_notification_logs
-    SET
-      status='Failed',
-      recipient=?,
-      provider_message_id='',
-      last_error=?,
-      updated_at=?
-    WHERE
-      subscription_id=?
-      AND notification_type=?
-      AND channel='email'
-      AND scheduled_for=?
-      AND status='Pending'
-  `).bind(
-    item.recipient,
-    clean(error,1000),
-    runAt,
-    item.subscription_id,
-    item.notification_type,
-    item.scheduled_for
-  ).run();
+  return existingNotificationLog(db,item);
 }
 
 function dateText(value){
@@ -877,21 +683,8 @@ async function execute(request,env){
     },503);
   }
 
-  /*
-   * Preview may override the rollout boundary using
-   * ?event_not_before=... so historical-cutoff behavior can
-   * be tested without changing environment configuration.
-   *
-   * run mode never accepts the query-string override.
-   */
-  /*
-   * The endpoint is already protected by ADMIN_TOKEN before
-   * this value is read.
-   *
-   * event_not_before may therefore be supplied by either the
-   * authenticated Preview caller or the authenticated shared
-   * scheduler.
-   */
+  // Existing contract: authenticated request cutoff takes precedence in both
+  // preview and run modes; otherwise use the configured cutoff. Run fails closed.
   const requestEventNotBefore =
     String(
       url.searchParams.get("event_not_before") || ""
@@ -939,6 +732,9 @@ async function execute(request,env){
   const runAt=new Date().toISOString();
   const runAtMs=Date.parse(runAt);
 
+  // Candidate eligibility must not hide abandoned in-flight work.
+  // Preview remains read-only; run reconciles at most 100 rows per invocation.
+  const expiredReconciled=action==='run' ? await reconcileExpiredDeliveries(db,{now:runAt}) : 0;
   const candidates=await buildItems(db,runAt,eventNotBefore || "");
 
   const summary={
@@ -947,11 +743,16 @@ async function execute(request,env){
     runAt,
     event_not_before:eventNotBefore || null,
     checked:candidates.length,
+    expiredReconciled,
     planned:0,
     sent:0,
     skipped:0,
     failed:0,
     failures:[],
+    reconcile:0,
+    permanent:0,
+    stale:0,
+    retryable:0,
     preview:[]
   };
 
@@ -978,60 +779,38 @@ async function execute(request,env){
       continue;
     }
 
-    const claimed=await claimLog(db,item,runAt);
-
-    if(!claimed){
-      summary.skipped+=1;
-      summary.planned-=1;
-      continue;
-    }
-
     try{
       const content=emailContent(item);
-
-      const result=await sendEmail(
-        env.RESEND_API_KEY,
-        {
-          from:FROM_ADDRESS,
-          to:[item.recipient],
-          reply_to:REPLY_ADDRESS,
-          subject:content.subject,
-          html:content.html,
-          text:content.text
-        }
-      );
-
-      await markSent(
-        db,
-        item,
-        result?.id || "",
-        runAt
-      );
-
-      summary.sent+=1;
-    }catch(error){
-      const message=clean(
-        error?.message || String(error),
-        1000
-      );
-
-      await markFailed(
-        db,
-        item,
-        message,
-        runAt
-      );
-
-      summary.failed+=1;
-
-      summary.failures.push({
-        subscription_id:item.subscription_id,
-        notification_type:item.notification_type,
-        recipient:item.recipient,
-        error:message
-      });
+      const outcome=await deliverNotification(db,item,{
+        from:FROM_ADDRESS,to:[item.recipient],reply_to:REPLY_ADDRESS,
+        subject:content.subject,html:content.html,text:content.text
+      },env.RESEND_API_KEY);
+      if(outcome==='sent') summary.sent++;
+      else if(outcome==='skipped') summary.skipped++;
+      else {summary[outcome]++;summary.failed++;}
+    }catch{
+      summary.failed++;
+      summary.failures.push({code:"notification-storage-failure"});
     }
   }
+  const counts=await db.prepare(`SELECT state,COUNT(*) AS count FROM subscription_notification_delivery
+    WHERE state IN ('Reconcile','Permanent','Sending') GROUP BY state`).all();
+  summary.deliveryStates=counts.results || [];
+  summary.legacyUnconfirmed=Number((await db.prepare(`SELECT COUNT(*) AS count FROM subscription_notification_logs n
+    LEFT JOIN subscription_notification_delivery d ON d.log_id=n.id
+    WHERE d.log_id IS NULL AND n.status IN ('Pending','Failed')`).first()).count);
+
+  summary.expiredSending=Number((await db.prepare(`SELECT COUNT(*) AS count FROM subscription_notification_delivery
+    WHERE state='Sending' AND (lease_until='' OR julianday(lease_until) IS NULL OR julianday(lease_until)<=julianday(?))`).bind(new Date().toISOString()).first()).count);
+  summary.legacyEventIdentityUnknown=Number((await db.prepare(`SELECT COUNT(*) AS count FROM subscription_notification_logs
+    WHERE source_event_id IS NULL AND notification_type IN ('PastDueNotice','ExpiredNotice','CancellationScheduledNotice')`).first()).count);
+  summary.requiresAttention=summary.expiredSending>0 || summary.legacyUnconfirmed>0 || summary.legacyEventIdentityUnknown>0 ||
+    summary.deliveryStates.some(row=>['Reconcile','Permanent'].includes(row.state) && Number(row.count)>0);
+
+  console.log(JSON.stringify({event:"subscription-notification-run",mode:action,
+    checked:summary.checked,sent:summary.sent,failed:summary.failed,reconcile:summary.reconcile,
+    permanent:summary.permanent,retryable:summary.retryable,stale:summary.stale,legacyUnconfirmed:summary.legacyUnconfirmed,
+    expiredReconciled:summary.expiredReconciled,expiredSending:summary.expiredSending,legacyEventIdentityUnknown:summary.legacyEventIdentityUnknown,requiresAttention:summary.requiresAttention,deliveryStates:summary.deliveryStates}));
 
   return json(summary,summary.failed ? 207 : 200);
 }
@@ -1042,15 +821,11 @@ export async function onRequestPost({request,env}){
   }catch(error){
     console.error(
       "Subscription notification automation failed",
-      error
+      {code:"notification-request-failure"}
     );
 
     return json({
-      error:clean(
-        error?.message ||
-        "Subscription notification automation failed.",
-        1000
-      )
+      error:"Subscription notification automation failed."
     },500);
   }
 }
