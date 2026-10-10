@@ -1,3 +1,4 @@
+export const notificationExecutionEnabled=env=>env?.SUBSCRIPTION_AUTOMATION_ENABLED==='true';
 // Idempotency-Key support: official resend-node IdempotentRequest interface.
 // Retention is not assumed: uncertain acceptance NEVER automatically resends.
 const LEASE_MS=2*60*60*1000;
@@ -17,7 +18,8 @@ export async function existingNotificationLog(db,item){
     WHERE subscription_id=? AND notification_type=? AND channel='email' AND ${eventMatch}
     ORDER BY source_event_id IS NULL,id LIMIT 1`).bind(item.subscription_id,item.notification_type,item.source_event_id,item.scheduled_for).first();
 }
-export async function reconcileExpiredDeliveries(db,{now=new Date().toISOString(),limit=100}={}){
+export async function reconcileExpiredDeliveries(db,{env,now=new Date().toISOString(),limit=100}={}){
+  if(!notificationExecutionEnabled(env)) return 0;
   if(!Number.isSafeInteger(limit) || limit<1 || limit>500) throw Error('Invalid reconciliation limit');
   const expired=(await db.prepare(`SELECT log_id,lease_token,lease_until FROM subscription_notification_delivery
     WHERE state='Sending' AND (lease_until='' OR julianday(lease_until) IS NULL OR julianday(lease_until)<=julianday(?))
@@ -49,7 +51,8 @@ async function finish(db,log,token,state,reason,providerId,now){
   ]);
   return changed(result[0]);
 }
-export async function deliverNotification(db,item,payload,apiKey,{now,clock=()=>new Date().toISOString(),fetcher=fetch}={}){
+export async function deliverNotification(db,item,payload,apiKey,{env,now,clock=()=>new Date().toISOString(),fetcher=fetch}={}){
+  if(!notificationExecutionEnabled(env)) return 'disabled';
   now=now || clock();
   if(item.source_event_id != null && (!Number.isSafeInteger(item.source_event_id) || item.source_event_id<=0)) throw Error('Invalid notification event identity');
   const historical=await existingNotificationLog(db,item);

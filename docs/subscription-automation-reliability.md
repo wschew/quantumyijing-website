@@ -87,6 +87,23 @@ existing 500-row limit. Lifecycle preview/run reports invalid periods when a
 candidate would enter PastDue; independent cancellation and terminal expiry are
 not blocked by this validation. No dates or entitlements are inferred or restored.
 
+## Stage 1 server-side execution gate
+
+Notification execution requires the Pages server configuration
+`SUBSCRIPTION_AUTOMATION_ENABLED` to be exactly the string `true`.
+Absent, false, malformed and query/body-supplied values do not enable it.
+Authenticated manual run requests return 503 with
+`subscription_notifications_disabled` before notification database/provider work.
+Both delivery and expired-delivery reconciliation helpers independently fail closed
+unless explicitly given the enabled server environment. Preview and analytics stay
+read-only; disabling does not rewrite existing logs, leases, keys or payloads.
+This gate applies only to subscription notifications, not payment emails, CRM,
+WhatsApp, entitlements or lifecycle/renewal processing.
+Future activation requires a separately approved Production Pages configuration
+change; scheduler enablement alone cannot activate the endpoint. Keep the Pages
+flag absent or false for Stage 1. Existing in-flight dispatches are not revoked
+retroactively by configuration changes.
+
 ## Backlogs, monitoring and activation
 
 Lifecycle supports authenticated `after_id` pagination, retaining the default

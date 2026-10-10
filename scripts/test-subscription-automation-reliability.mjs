@@ -67,9 +67,54 @@ try{
   const item={subscription_id:1,notification_type:'RenewalReminder30d',recipient:'test@example.invalid',source_event_id:null,scheduled_for:'2026-11-01T00:00:00.000Z'};
   const payload={from:'synthetic@example.invalid',to:[item.recipient],subject:'Synthetic',text:'Synthetic'};
   const start='2026-10-09T12:00:00.000Z',later=hours=>new Date(Date.parse(start)+hours*3600000).toISOString();
-  const send=(database=db,fetcher=async()=>Response.json({id:'synthetic-provider-id'}),time=start,body=payload)=>deliverNotification(database,item,body,'synthetic-key',{now:time,clock:()=>time,fetcher});
+  const enabledEnv={SUBSCRIPTION_AUTOMATION_ENABLED:'true'};
+  const send=(database=db,fetcher=async()=>Response.json({id:'synthetic-provider-id'}),time=start,body=payload)=>deliverNotification(database,item,body,'synthetic-key',{env:enabledEnv,now:time,clock:()=>time,fetcher});
   async function atTime(time,fn){const RealDate=globalThis.Date;globalThis.Date=class extends RealDate{constructor(...args){super(...(args.length?args:[time]));}static now(){return RealDate.parse(time);}};try{return await fn();}finally{globalThis.Date=RealDate;}}
-  async function notify(action='run',query='',env={},database=db){return atTime(start,()=>notifications({request:new Request('https://synthetic.invalid/notifications?action='+action+query,{method:'POST',headers:{authorization:'Bearer synthetic-admin'}}),env:{ENQUIRIES_DB:database,ADMIN_TOKEN:'synthetic-admin',RESEND_API_KEY:'synthetic-key',SUBSCRIPTION_NOTIFICATION_EVENT_NOT_BEFORE:'2026-10-08T00:00:00Z',...env}}));}
+  async function notify(action='run',query='',env={},database=db){return atTime(start,()=>notifications({request:new Request('https://synthetic.invalid/notifications?action='+action+query,{method:'POST',headers:{authorization:'Bearer synthetic-admin'}}),env:{ENQUIRIES_DB:database,ADMIN_TOKEN:'synthetic-admin',RESEND_API_KEY:'synthetic-key',SUBSCRIPTION_NOTIFICATION_EVENT_NOT_BEFORE:'2026-10-08T00:00:00Z',...enabledEnv,...env}}));}
+
+  const notificationRows=async()=>({logs:await rows('subscription_notification_logs'),delivery:(await db.prepare('SELECT * FROM subscription_notification_delivery ORDER BY log_id').all()).results});
+  for(const [label,value] of [['missing',undefined],['disabled','false'],['empty',''],['uppercase','TRUE'],['numeric','1'],['boolean',true],['whitespace',' true ']]){
+    await test('manual notification gate rejects '+label+' before DB/provider work and on replay',async()=>{
+      let databaseCalls=0,providerCalls=0;
+      const blocked={prepare(){databaseCalls++;throw Error('disabled DB access');},batch(){databaseCalls++;throw Error('disabled DB batch');}};
+      globalThis.fetch=()=>{providerCalls++;throw Error('disabled provider access');};
+      const env={SUBSCRIPTION_AUTOMATION_ENABLED:value};
+      for(let replay=0;replay<2;replay++){
+        const response=await notify('run','&event_not_before=1900-01-01T00:00:00Z&SUBSCRIPTION_AUTOMATION_ENABLED=true',env,blocked);
+        assert.equal(response.status,503);assert.equal((await response.json()).code,'subscription_notifications_disabled');
+        assert.equal(await deliverNotification(blocked,item,payload,'synthetic-key',{env,fetcher:globalThis.fetch}),'disabled');
+        assert.equal(await reconcileExpiredDeliveries(blocked,{env,now:start}),0);
+      }
+      assert.equal(databaseCalls,0);assert.equal(providerCalls,0);
+    });
+  }
+  await test('direct helpers fail closed without options',async()=>{
+    const blocked={prepare(){throw Error('no DB work');},batch(){throw Error('no batch work');}};
+    assert.equal(await deliverNotification(blocked,item,payload,'synthetic-key'),'disabled');
+    assert.equal(await reconcileExpiredDeliveries(blocked),0);
+  });
+  for(const [label,value] of [['missing',undefined],['disabled','false']]){
+    await test('disabled '+label+' run preserves expired delivery state on replay',async()=>{
+      await seedSending();const before=await notificationRows();let calls=0;globalThis.fetch=()=>{calls++;throw Error('no provider');};
+      for(let replay=0;replay<2;replay++)assert.equal((await notify('run','&event_not_before=1900-01-01T00:00:00Z',{SUBSCRIPTION_AUTOMATION_ENABLED:value})).status,503);
+      assert.deepEqual(await notificationRows(),before);assert.equal(calls,0);
+    });
+    await test('preview remains read-only when '+label,async()=>{
+      await seedSending();const before=await notificationRows();globalThis.fetch=()=>{throw Error('preview must not send');};
+      const response=await notify('preview','',{SUBSCRIPTION_AUTOMATION_ENABLED:value,RESEND_API_KEY:''});
+      assert.equal(response.status,200);const summary=await response.json();assert.equal(summary.mode,'preview');assert.equal(summary.expiredReconciled,0);assert.equal(summary.expiredSending,1);
+      assert.deepEqual(await notificationRows(),before);
+    });
+  }
+  await test('enabled send then disabled replay preserves durable identity',async()=>{
+    let calls=0;assert.equal(await send(db,async()=>{calls++;return Response.json({id:'enabled-once'});}),'sent');
+    const before=await notificationRows();
+    assert.equal(await deliverNotification(db,item,payload,'synthetic-key',{env:{SUBSCRIPTION_AUTOMATION_ENABLED:'false'},fetcher:()=>{throw Error('no resend');}}),'disabled');
+    assert.equal((await notify('run','',{SUBSCRIPTION_AUTOMATION_ENABLED:'false'})).status,503);
+    assert.deepEqual(await notificationRows(),before);assert.equal(calls,1);
+    assert.equal(await send(db,()=>{throw Error('reenabling must not resend');}),'skipped');assert.deepEqual(await notificationRows(),before);
+  });
+
   await test('successful send has stable identity and bounded request',async()=>{
     let captured;assert.equal(await send(db,async(url,options)=>{captured=options;assert.equal(url,'https://api.resend.com/emails');return Response.json({id:'provider-1'});}), 'sent');
     const row=(await db.prepare('SELECT * FROM subscription_notification_delivery').first());assert.equal(captured.headers['Idempotency-Key'],row.idempotency_key);assert.equal(captured.body,row.payload);assert.ok(captured.signal instanceof AbortSignal);assert.equal(captured.redirect,'error');assert.equal((await rows('subscription_notification_logs'))[0].provider_message_id,'provider-1');
@@ -129,7 +174,7 @@ try{
     for(let i=0;i<count;i++)await run("INSERT INTO subscription_events(subscription_id,event_type,event_at) VALUES(1,'cancel_scheduled',?)",start);
     return (await rows('subscription_events')).map(event=>({...item,notification_type:'CancellationScheduledNotice',source_event_id:event.id,scheduled_for:start}));
   }
-  const sendEvent=(event,provider=async()=>Response.json({id:'event-provider'}),time=start,database=db)=>deliverNotification(database,event,payload,'synthetic-key',{now:time,clock:()=>time,fetcher:provider});
+  const sendEvent=(event,provider=async()=>Response.json({id:'event-provider'}),time=start,database=db)=>deliverNotification(database,event,payload,'synthetic-key',{env:enabledEnv,now:time,clock:()=>time,fetcher:provider});
   await test('distinct identical-timestamp events get separate logs and provider keys',async()=>{
     await cancellationEvents(2);const captured=[];globalThis.fetch=async(url,options)=>{assert.equal(url,'https://api.resend.com/emails');captured.push(options.headers['Idempotency-Key']);return Response.json({id:'event-'+captured.length});};
     const result=await (await notify()).json();assert.equal(result.sent,2);assert.equal(new Set(captured).size,2);
@@ -197,18 +242,18 @@ try{
   });
   await test('expired pre-dispatch claim never calls provider',async()=>{
     let current=start,calls=0;const raced={batch:statements=>db.batch(statements),prepare:sql=>{const stmt=db.prepare(sql);if(sql.startsWith('SELECT s.status'))return {bind:(...args)=>({first:async()=>{current=later(2);return stmt.bind(...args).first();}})};return stmt;}};
-    assert.equal(await deliverNotification(raced,item,payload,'synthetic-key',{now:start,clock:()=>current,fetcher:async()=>{calls++;return Response.json({id:'forbidden'});}}),'stale');assert.equal(calls,0);assert.equal((await db.prepare('SELECT attempt_count FROM subscription_notification_delivery').first()).attempt_count,0);
+    assert.equal(await deliverNotification(raced,item,payload,'synthetic-key',{env:enabledEnv,now:start,clock:()=>current,fetcher:async()=>{calls++;return Response.json({id:'forbidden'});}}),'stale');assert.equal(calls,0);assert.equal((await db.prepare('SELECT attempt_count FROM subscription_notification_delivery').first()).attempt_count,0);
     assert.equal(await send(db,async()=>{calls++;return Response.json({id:'reclaimed'});},later(2)),'sent');assert.equal(calls,1);
   });
   await test('provider completion after unclaimed expiry reconciles instead of Sent',async()=>{
-    let current=start;const result=await deliverNotification(db,item,payload,'synthetic-key',{now:start,clock:()=>current,fetcher:async()=>{current=later(2);return Response.json({id:'late-accepted'});}});assert.equal(result,'reconcile');assert.equal((await db.prepare('SELECT status FROM subscription_notification_logs').first()).status,'Skipped');assert.equal((await db.prepare('SELECT provider_message_id FROM subscription_notification_delivery').first()).provider_message_id,'late-accepted');
+    let current=start;const result=await deliverNotification(db,item,payload,'synthetic-key',{env:enabledEnv,now:start,clock:()=>current,fetcher:async()=>{current=later(2);return Response.json({id:'late-accepted'});}});assert.equal(result,'reconcile');assert.equal((await db.prepare('SELECT status FROM subscription_notification_logs').first()).status,'Skipped');assert.equal((await db.prepare('SELECT provider_message_id FROM subscription_notification_delivery').first()).provider_message_id,'late-accepted');
   });
   await test('concurrent expired scans reconcile once and never dispatch',async()=>{
-    await seedSending();const results=await Promise.all([reconcileExpiredDeliveries(db,{now:start}),reconcileExpiredDeliveries(db,{now:start}),send(db,()=>{throw Error('no provider');})]);assert.equal(results.slice(0,2).reduce((a,b)=>a+b,0)<=1,true);assert.equal((await db.prepare('SELECT state,attempt_count FROM subscription_notification_delivery').first()).state,'Reconcile');assert.equal((await db.prepare('SELECT attempt_count FROM subscription_notification_delivery').first()).attempt_count,1);
+    await seedSending();const results=await Promise.all([reconcileExpiredDeliveries(db,{env:enabledEnv,now:start}),reconcileExpiredDeliveries(db,{env:enabledEnv,now:start}),send(db,()=>{throw Error('no provider');})]);assert.equal(results.slice(0,2).reduce((a,b)=>a+b,0)<=1,true);assert.equal((await db.prepare('SELECT state,attempt_count FROM subscription_notification_delivery').first()).state,'Reconcile');assert.equal((await db.prepare('SELECT attempt_count FROM subscription_notification_delivery').first()).attempt_count,1);
   });
   await test('reconciliation snapshot cannot overwrite a replaced lease',async()=>{
     await seedSending();let injected=false;const raced={prepare:sql=>db.prepare(sql),batch:async statements=>{if(!injected){injected=true;await run("UPDATE subscription_notification_delivery SET lease_token='new',lease_until=? WHERE log_id=1",later(2));}return db.batch(statements);}};
-    assert.equal(await reconcileExpiredDeliveries(raced,{now:start}),0);const result=await db.prepare('SELECT state,lease_token FROM subscription_notification_delivery').first();assert.equal(result.state,'Sending');assert.equal(result.lease_token,'new');assert.equal((await rows('subscription_notification_logs'))[0].status,'Pending');
+    assert.equal(await reconcileExpiredDeliveries(raced,{env:enabledEnv,now:start}),0);const result=await db.prepare('SELECT state,lease_token FROM subscription_notification_delivery').first();assert.equal(result.state,'Sending');assert.equal(result.lease_token,'new');assert.equal((await rows('subscription_notification_logs'))[0].status,'Pending');
   });
   await test('cutoff request precedence and historical exclusion',async()=>{
     await run("UPDATE subscriptions SET status='Expired'");await run("INSERT INTO subscription_events(subscription_id,event_type,event_at) VALUES(1,'expired','2026-10-07T12:00:00Z')");

@@ -1,4 +1,4 @@
-import { deliverNotification, existingNotificationLog, reconcileExpiredDeliveries } from "../../lib/subscription-notification-delivery.js";
+import { deliverNotification, existingNotificationLog, reconcileExpiredDeliveries, notificationExecutionEnabled } from "../../lib/subscription-notification-delivery.js";
 const FROM_ADDRESS =
   "Quantum YiJing International Academy <info@quantumyijing.com>";
 
@@ -677,6 +677,10 @@ async function execute(request,env){
     },400);
   }
 
+  if(action==="run" && !notificationExecutionEnabled(env)){
+    return json({error:"Subscription notification execution is disabled.",code:"subscription_notifications_disabled"},503);
+  }
+
   if(action==="run" && !String(env.RESEND_API_KEY || "").trim()){
     return json({
       error:"RESEND_API_KEY is not configured."
@@ -734,7 +738,7 @@ async function execute(request,env){
 
   // Candidate eligibility must not hide abandoned in-flight work.
   // Preview remains read-only; run reconciles at most 100 rows per invocation.
-  const expiredReconciled=action==='run' ? await reconcileExpiredDeliveries(db,{now:runAt}) : 0;
+  const expiredReconciled=action==='run' ? await reconcileExpiredDeliveries(db,{env,now:runAt}) : 0;
   const candidates=await buildItems(db,runAt,eventNotBefore || "");
 
   const summary={
@@ -784,7 +788,7 @@ async function execute(request,env){
       const outcome=await deliverNotification(db,item,{
         from:FROM_ADDRESS,to:[item.recipient],reply_to:REPLY_ADDRESS,
         subject:content.subject,html:content.html,text:content.text
-      },env.RESEND_API_KEY);
+      },env.RESEND_API_KEY,{env});
       if(outcome==='sent') summary.sent++;
       else if(outcome==='skipped') summary.skipped++;
       else {summary[outcome]++;summary.failed++;}
