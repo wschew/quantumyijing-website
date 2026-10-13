@@ -33,7 +33,7 @@ try{
  await test('canonical name search returns masked minimal records',async()=>{const r=await qy.call('qy/customers/search',{query:'Alex'});assert.equal(r.status,200);assert.equal(r.data.records.length,1);assert.equal(r.data.records[0].id,1);assert.deepEqual(Object.keys(r.data.records[0]).sort(),['id','name','maskedEmail','maskedPhone'].sort());assert.ok(!JSON.stringify(r.data).includes('synthetic@example.invalid'));assert.ok(!JSON.stringify(r.data).includes('+447700900101'));});
  await test('email search',async()=>assert.equal((await qy.call('qy/customers/search',{query:'other@example.invalid'})).data.records[0].id,2));
  await test('formatted phone search',async()=>assert.equal((await qy.call('qy/customers/search',{query:'+44 7700 900103'})).data.records[0].id,3));
- await test('customer ID search',async()=>assert.equal((await qy.call('qy/customers/search',{query:'2'})).data.records[0].id,2));
+ await test('customer ID search',async()=>{for(const id of [1,2]){const r=await qy.call('qy/customers/search',{query:String(id)});assert.equal(r.status,200);assert.equal(r.data.records[0].id,id);}});
  await test('Chinese canonical name search',async()=>assert.equal((await qy.call('qy/customers/search',{query:'张明'})).data.records[0].id,4));
  await test('inactive canonical customers excluded',async()=>assert.equal((await qy.call('qy/customers/search',{query:'inactive'})).data.records.length,0));
  await test('literal wildcard does not broaden search',async()=>assert.equal((await qy.call('qy/customers/search',{query:'%%'})).data.records.length,0));
