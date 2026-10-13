@@ -2,6 +2,7 @@
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {DatabaseSync} from 'node:sqlite';
+import {createCaptureReview} from '../functions/lib/consultation/capture-review.js';
 import {issueOffer} from '../functions/lib/consultation/foundation.js';
 import {createWorkflowLifecycle} from '../functions/lib/consultation/workflow-lifecycle.js';
 import {createWorkflowHandler} from '../functions/lib/consultation/workflow-handler.js';
@@ -27,9 +28,12 @@ async function checks(db,label){
  await db.prepare('CREATE TABLE products(id INTEGER PRIMARY KEY)').run();
  await db.prepare('CREATE TABLE enquiries(id INTEGER PRIMARY KEY)').run();
  await db.prepare('CREATE TABLE coaches(id INTEGER PRIMARY KEY)').run();
- await db.prepare('CREATE TABLE orders(id INTEGER PRIMARY KEY)').run();
+ await db.prepare('CREATE TABLE orders(id INTEGER PRIMARY KEY,enquiry_id INTEGER REFERENCES enquiries(id),currency TEXT,total REAL,payment_status TEXT)').run();
+ await db.prepare('CREATE TABLE order_items(id INTEGER PRIMARY KEY,order_id INTEGER REFERENCES orders(id),product_id INTEGER REFERENCES products(id),quantity INTEGER,unit_price REAL,line_total REAL)').run();
+ await db.prepare('CREATE TABLE payments(id INTEGER PRIMARY KEY,order_id INTEGER REFERENCES orders(id),amount REAL,currency TEXT,status TEXT,verification_status TEXT,accounting_eligible INTEGER)').run();
+ await db.prepare('CREATE TABLE customer_enquiry_links(id INTEGER PRIMARY KEY,customer_id INTEGER REFERENCES customers(id),enquiry_id INTEGER UNIQUE REFERENCES enquiries(id))').run();
  await db.prepare('INSERT INTO products VALUES(1)').run();await db.prepare('INSERT INTO coaches VALUES(1)').run();
- for(const name of ['migrate-v4.0-phase-f1f2-academy-portal.sql','migrate-c1-consultation-auth.sql','migrate-c1-consultation-customer-identity.sql','migrate-c1-bazi-consultation-foundation.sql','migrate-c1-consultation-customer-intake.sql','migrate-c1-consultation-contact-verification.sql','migrate-c1-consultation-account-stepup.sql','migrate-c1-consultation-workflow.sql','migrate-c1-consultation-workflow-lifecycle.sql'])for(const sql of split(read(name)))await db.prepare(sql).run();
+ for(const name of ['migrate-v4.0-phase-f1f2-academy-portal.sql','migrate-c1-consultation-auth.sql','migrate-c1-consultation-customer-identity.sql','migrate-c1-bazi-consultation-foundation.sql','migrate-c1-consultation-customer-intake.sql','migrate-c1-consultation-contact-verification.sql','migrate-c1-consultation-account-stepup.sql','migrate-c1-consultation-workflow.sql','migrate-c1-consultation-workflow-lifecycle.sql','migrate-c1-consultation-capture-review.sql','migrate-c1-consultation-workflow-evidence-guards.sql'])for(const sql of split(read(name)))await db.prepare(sql).run();
  const now=Date.now(),qyToken=randomSecret(),qyCSRF=randomSecret();
  await db.prepare("INSERT INTO consultation_auth_account VALUES(1,'synthetic',1,'PBKDF2-SHA256',600000,?,?,1,?)").bind('a'.repeat(64),'b'.repeat(64),now-10000).run();
  await db.prepare('INSERT INTO consultation_auth_sessions VALUES(?,1,?,?,1,?,?,NULL)').bind('qy-1',await tokenHash(qyToken),await tokenHash(qyCSRF),now-10000,now+3600000).run();
@@ -157,6 +161,9 @@ async function checks(db,label){
  await t('30-day exception never extends or forfeits automatically',async()=>{assert.equal(outside.decision,'OwnerReview');assert.equal((await db.prepare('SELECT state FROM consultation_bookings WHERE id=?').bind(rb.id).first()).state,'Confirmed');});
  const active=await db.prepare("SELECT * FROM consultation_workflow_appointments WHERE booking_id=? AND state='Active'").bind(rb.id).first();
  await t('REPLACE replacement appointment evidence rejected',async()=>{const names=Object.keys(active);await assert.rejects(db.prepare('REPLACE INTO consultation_workflow_appointments('+names.join(',')+') VALUES('+names.map(()=>'?').join(',')+')').bind(...names.map(k=>active[k])).run());});
+
+ await t('REPLACE through active-booking unique key cannot erase appointment history',async()=>{const start=active.start_at+5*hour,id=crypto.randomUUID();await db.prepare("INSERT INTO consultation_reschedule_requests(id,booking_id,requested_at,appointment_start_snapshot,original_start_snapshot,request_type,state,eligibility,replacement_start_at) VALUES(?,?,?,?,?,'Additional','Approved',0,?)").bind(id,rb.id,Date.now(),active.start_at,rb.offer.startAt,start).run();const row={...active,id:crypto.randomUUID(),sequence:active.sequence+1,start_at:start,end_at:start+5400000,request_id:id,created_at:Date.now()};const names=Object.keys(row);await assert.rejects(db.prepare('INSERT OR REPLACE INTO consultation_workflow_appointments('+names.join(',')+') VALUES('+names.map(()=>'?').join(',')+')').bind(...names.map(k=>row[k])).run());assert.equal((await db.prepare("SELECT id FROM consultation_workflow_appointments WHERE booking_id=? AND state='Active'").bind(rb.id).first()).id,active.id);});
+
  const blockedOffer=await wf.submit(req(0,true),{commandId:'overlap-submit',intake});
  const blockedReview=await wf.change(qyReq,{id:blockedOffer.id,to:'UnderReview',expectedVersion:0,commandId:'overlap-review'});
  // An initial 72-hour offer conflicts with a later replacement fixture below, in either table direction.
@@ -185,6 +192,46 @@ async function checks(db,label){
  const otherChallenge=await service.challenge(req(1,true),{contactId:qyOnly.id});await service.confirm(req(1,true),{challengeId:otherChallenge.id,code:delivered.at(-1).code});
  await t('authenticated other customer cannot reschedule another booking',()=>assert.rejects(lifecycle.requestReschedule(req(1,true),{id:rb.id,expectedVersion:outside.rowVersion,commandId:'cross-customer-reschedule'})));
  await t('lifecycle audit contains no intake plaintext',async()=>assert.ok(!JSON.stringify((await db.prepare('SELECT * FROM consultation_workflow_lifecycle_events').all()).results).includes(intake.questions)));
+
+
+ const captures=createCaptureReview({db,origin,keys});
+ async function existingFinanceOrder(id,customerId=1,total=1300){
+  await db.prepare('INSERT INTO enquiries VALUES(?)').bind(id).run();
+  await db.prepare('INSERT INTO customer_enquiry_links(customer_id,enquiry_id) VALUES(?,?)').bind(customerId,id).run();
+  await db.prepare("INSERT INTO orders VALUES(?,?,'MYR',?,'Paid')").bind(id,id,total).run();
+  await db.prepare('INSERT INTO order_items(order_id,product_id,quantity,unit_price,line_total) VALUES(?,1,1,?,?)').bind(id,total,total).run();
+  await db.prepare("INSERT INTO payments VALUES(?,?,?,'MYR','Paid','Verified',1)").bind(id,id,total).run();
+ }
+ await existingFinanceOrder(1);await existingFinanceOrder(2,2);await existingFinanceOrder(3,1,1300.01);
+ await t('finance order link rejects other canonical customer',()=>assert.rejects(captures.linkOrder(qyReq,{id:b.id,orderId:2,expectedVersion:review.rowVersion,commandId:'wrong-finance-customer'})));
+ await t('finance order link rejects price differing from immutable offer',()=>assert.rejects(captures.linkOrder(qyReq,{id:b.id,orderId:3,expectedVersion:review.rowVersion,commandId:'wrong-finance-price'})));
+ let bound=await captures.linkOrder(qyReq,{id:b.id,orderId:1,expectedVersion:review.rowVersion,commandId:'finance-link'});
+ const paymentTime=Date.now()-10;
+ const financeInput={id:b.id,expectedVersion:bound.rowVersion,commandId:'finance-review',capturedAt:paymentTime,supportingEvidenceReference:'independent-bank-proof',supportingEvidenceHash:'c'.repeat(64),independentlyFinanceVerified:true};
+ await t('finance review rejects missing supporting evidence hash',()=>assert.rejects(captures.recordFinanceReview(qyReq,{...financeInput,supportingEvidenceHash:undefined})));
+ await t('finance review rejects truthy verification flag',()=>assert.rejects(captures.recordFinanceReview(qyReq,{...financeInput,independentlyFinanceVerified:'true'})));
+ await t('customer cannot create finance capture evidence',()=>assert.rejects(captures.recordFinanceReview(req(0,true),financeInput)));
+ const financialBefore=JSON.stringify((await db.prepare('SELECT * FROM payments ORDER BY id').all()).results);
+ bound=await captures.recordFinanceReview(qyReq,financeInput);
+ await t('finance review records evidence but never automatically confirms',()=>assert.equal(bound.state,'ExceptionReview'));
+ await t('finance annotation preserves frozen payment rows',async()=>assert.ok(financialBefore===JSON.stringify((await db.prepare('SELECT * FROM payments ORDER BY id').all()).results)));
+ await t('finance evidence has required matching append-only audit',async()=>{const r=await db.prepare('SELECT r.id FROM consultation_capture_reviews r JOIN consultation_capture_audit a ON a.id=r.audit_id WHERE a.booking_id=r.booking_id AND a.actor_reference=r.reviewed_by AND a.event=\'IndependentFinanceReview\'').first();assert.ok(r);});
+ await t('REPLACE finance evidence rejected',async()=>{const row=await db.prepare('SELECT * FROM consultation_capture_reviews LIMIT 1').first();const names=Object.keys(row);await assert.rejects(db.prepare('INSERT OR REPLACE INTO consultation_capture_reviews('+names.join(',')+') VALUES('+names.map(()=>'?').join(',')+')').bind(...names.map(k=>row[k])).run());});
+
+ await t('REPLACE finance evidence through unique audit ID rejected',async()=>{const row=await db.prepare('SELECT * FROM consultation_capture_reviews LIMIT 1').first();row.id=crypto.randomUUID();row.sequence++;const names=Object.keys(row);await assert.rejects(db.prepare('REPLACE INTO consultation_capture_reviews('+names.join(',')+') VALUES('+names.map(()=>'?').join(',')+')').bind(...names.map(k=>row[k])).run());assert.equal((await db.prepare('SELECT COUNT(*) n FROM consultation_capture_reviews').first()).n,1);});
+
+ await t('duplicate finance review command rolls back new evidence',async()=>{const before=(await db.prepare('SELECT COUNT(*) n FROM consultation_capture_reviews').first()).n;await assert.rejects(captures.recordFinanceReview(qyReq,{...financeInput,expectedVersion:bound.rowVersion}));assert.equal((await db.prepare('SELECT COUNT(*) n FROM consultation_capture_reviews').first()).n,before);});
+ const reviewedWorkflow=createConsultationWorkflow({db,origin,keys,stepup:service,contacts,productId:1,practitionerId:1,policies,countryCodes:['MY'],bookingPolicy:{version:'synthetic-v1',hash:'b'.repeat(64)},readCaptureEvidence:captures.readEvidence});
+ const confirmedFinance=await reviewedWorkflow.reconcilePayment(qyReq,{id:b.id,expectedVersion:bound.rowVersion,commandId:'finance-explicit-confirm'});
+ await t('explicit QY action confirms independent verified timely full payment',()=>assert.equal(confirmedFinance.state,'Confirmed'));
+ await existingFinanceOrder(4);
+ const lateBound=await captures.linkOrder(qyReq,{id:paidUnknown.id,orderId:4,expectedVersion:unresolved.rowVersion,commandId:'late-order-link'});
+ const lateOffer=await db.prepare('SELECT accepted_at FROM consultation_offers WHERE id=?').bind(paidUnknown.offer.id).first();
+ const earlierFinance=await captures.recordFinanceReview(qyReq,{id:paidUnknown.id,expectedVersion:lateBound.rowVersion,commandId:'contradicting-finance-time',capturedAt:lateOffer.accepted_at+1,supportingEvidenceReference:'synthetic-finance-time',supportingEvidenceHash:'d'.repeat(64),independentlyFinanceVerified:true});
+ const providerTime=Date.now()-1;
+ const providerPolicy=createCaptureReview({db,origin,keys,readProviderCaptureEvidence:async args=>({source:'ProviderVerified',providerTimestampVerified:true,authoritative:true,verificationStatus:'Verified',...args,amountSen:130000,currency:'MYR',capturedAt:providerTime,guardSql:'SELECT 1 FROM payments WHERE id=? AND status=\'Paid\'',guardValues:[4]})});
+ const lateWorkflow=createConsultationWorkflow({db,origin,keys,stepup:service,contacts,productId:1,practitionerId:1,policies,countryCodes:['MY'],bookingPolicy:{version:'synthetic-v1',hash:'b'.repeat(64)},readCaptureEvidence:providerPolicy.readEvidence});
+ await t('known late provider capture cannot be overridden by earlier finance claim',async()=>assert.equal((await lateWorkflow.reconcilePayment(qyReq,{id:paidUnknown.id,expectedVersion:earlierFinance.rowVersion,commandId:'provider-priority-review'})).state,'ExceptionReview'));
 
  const rowBefore=(await db.prepare('SELECT COUNT(*) n FROM consultation_account_contacts').first()).n;
  let injected=false;const raceDb={prepare:sql=>db.prepare(sql),async batch(plan){if(!injected){injected=true;await db.prepare('UPDATE consultation_auth_account SET enabled=0').run();}return db.batch(plan);}};

@@ -24,7 +24,7 @@ const transitions = {
  PaymentPending:['Confirmed','OfferExpired','ExceptionReview','OwnerReview'],
  Confirmed:['Completed','CancelledForfeited','NoShowForfeited','ProviderRemedyPending','OwnerReview'],
  Completed:['ReportReady'], ReportReady:['ReportDelivered'],
- ExceptionReview:['OwnerReview'], OwnerReview:[], ProviderRemedyPending:[]
+ ExceptionReview:['OwnerReview','Confirmed'], OwnerReview:[], ProviderRemedyPending:[]
 };
 export function paymentDecision(offer,evidence) {
  if (evidence?.authoritative !== true || evidence.verificationStatus !== 'Verified' ||
@@ -75,6 +75,7 @@ export function transition(booking,to,{
  }
  if (to === 'PaymentPending' && (offer.state !== 'Accepted' || !Number.isSafeInteger(offer.acceptedAt) ||
      now < offer.acceptedAt || now >= offer.expiresAt)) throw Error('Accepted offer required');
+ if (booking.state === 'ExceptionReview' && to === 'Confirmed' && actorRole !== 'owner') throw Error('Owner payment review required');
  if (to === 'Confirmed' && (paymentDecision(offer,payment) !== 'Eligible' || !slotReserved ||
      now < payment.capturedAt || now >= offer.startAt)) {
   throw Error('Verified payment and available future appointment required');

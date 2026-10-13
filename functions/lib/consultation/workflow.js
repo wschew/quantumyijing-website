@@ -76,14 +76,14 @@ export function createConsultationWorkflow({db,origin,keys,stepup,contacts,produ
  }
  // Never accepts payment evidence from request JSON. No financial-table updates.
  async function reconcilePayment(request,input){
-  try{closed(input,['id','expectedVersion','commandId']);const a=await guards.qy(request,true),r=await load(input.id);if(r.state!=='PaymentPending'||r.row_version!==input.expectedVersion)fail();
+  try{closed(input,['id','expectedVersion','commandId']);const a=await guards.qy(request,true),r=await load(input.id);if(!['PaymentPending','ExceptionReview'].includes(r.state)||r.row_version!==input.expectedVersion)fail();
    const o=offer(await stmt(db,'SELECT * FROM consultation_offers WHERE id=?',[r.current_offer_id]).first(),r.customer_id);
    const evidence=typeof readCaptureEvidence==='function'?await readCaptureEvidence({bookingId:r.id,offerId:o.id,orderId:o.orderId,customerId:r.customer_id}):null;
    // An approved adapter must supply its atomic SQL evidence predicate alongside capture data.
    const eligible=paymentDecision(o,evidence)==='Eligible'&&typeof evidence?.guardSql==='string'&&Array.isArray(evidence?.guardValues);
    const target=eligible?'Confirmed':'ExceptionReview',time=await now();
    if(eligible)transition(booking(r),target,{now:time,expectedVersion:r.row_version,actorRole:'owner',offer:o,payment:evidence,slotReserved:true});
-   await db.batch([stmt(db,`UPDATE consultation_bookings SET state=?,original_start_at=CASE WHEN ?='Confirmed' THEN COALESCE(original_start_at,current_start_at) ELSE original_start_at END,row_version=row_version+1,updated_at=${DB_NOW} WHERE id=? AND state='PaymentPending' AND row_version=? AND EXISTS(${a.sql}) ${eligible?`AND EXISTS(${evidence.guardSql}) AND EXISTS(SELECT 1 FROM consultation_slot_reservations WHERE offer_id=? AND state='Held')`:''}`,[target,target,r.id,r.row_version,...a.values,...(eligible?[...evidence.guardValues,o.id]:[])]),gate(r.id,target,a),...(eligible?[stmt(db,"UPDATE consultation_slot_reservations SET state='Confirmed' WHERE offer_id=? AND state='Held'",[o.id]),gate(r.id,target,a)]:[]),await receipt(r.id,input.commandId,input)]);
+   await db.batch([stmt(db,`UPDATE consultation_bookings SET state=?,original_start_at=CASE WHEN ?='Confirmed' THEN COALESCE(original_start_at,current_start_at) ELSE original_start_at END,row_version=row_version+1,updated_at=${DB_NOW} WHERE id=? AND state=? AND row_version=? AND current_offer_id=? AND EXISTS(${a.sql}) ${eligible?`AND current_start_at>${DB_NOW} AND EXISTS(${evidence.guardSql}) AND EXISTS(SELECT 1 FROM consultation_slot_reservations WHERE offer_id=? AND state='Held')`:''}`,[target,target,r.id,r.state,r.row_version,o.id,...a.values,...(eligible?[...evidence.guardValues,o.id]:[])]),gate(r.id,target,a),...(eligible?[stmt(db,"UPDATE consultation_slot_reservations SET state='Confirmed' WHERE offer_id=? AND state='Held'",[o.id]),gate(r.id,target,a)]:[]),await receipt(r.id,input.commandId,input)]);
    return Object.freeze({id:r.id,state:target,rowVersion:r.row_version+1});
   }catch{fail();}
  }

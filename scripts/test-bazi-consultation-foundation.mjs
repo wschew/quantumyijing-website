@@ -55,6 +55,13 @@ try{
  await test('completed retention wins over terminal date',()=>assert.equal(f.retentionDeadline({completedAt:now,terminalAt:now+1}),f.calendarMonthsLater(now,24)));
  await test('private role isolation',()=>{assert(f.privateAccess({role:'owner'}));assert(f.privateAccess({role:'practitioner',actorId:1,assignedPractitionerId:1}));assert(!f.privateAccess({role:'practitioner',actorId:2,assignedPractitionerId:1}));assert(!f.privateAccess({role:'booking_admin'}))});
  await test('verified capture before deadline confirms after deadline',()=>assert.equal(transition(booking,'Confirmed',{now:offer.expiresAt+1,expectedVersion:0,actorRole:'owner',offer:accepted,payment,slotReserved:true}).state,'Confirmed'));
+
+ await test('owner resolves review only with verified full timely capture',()=>assert.equal(transition({...booking,state:'ExceptionReview'},'Confirmed',{now:offer.expiresAt+1,expectedVersion:0,actorRole:'owner',offer:accepted,payment,slotReserved:true}).state,'Confirmed'));
+ await test('review cannot resolve on ambiguous evidence',()=>assert.throws(()=>transition({...booking,state:'ExceptionReview'},'Confirmed',{now:offer.expiresAt+1,expectedVersion:0,actorRole:'owner',offer:accepted,payment:{...payment,authoritative:false},slotReserved:true})));
+ await test('review cannot resolve on late capture',()=>assert.throws(()=>transition({...booking,state:'ExceptionReview'},'Confirmed',{now:offer.expiresAt+1,expectedVersion:0,actorRole:'owner',offer:accepted,payment:{...payment,capturedAt:offer.expiresAt},slotReserved:true})));
+ await test('review cannot resolve without reservation',()=>assert.throws(()=>transition({...booking,state:'ExceptionReview'},'Confirmed',{now:offer.expiresAt+1,expectedVersion:0,actorRole:'owner',offer:accepted,payment,slotReserved:false})));
+ await test('booking admin cannot resolve payment review',()=>assert.throws(()=>transition({...booking,state:'ExceptionReview'},'Confirmed',{now:offer.expiresAt+1,expectedVersion:0,actorRole:'booking_admin',offer:accepted,payment,slotReserved:true})));
+
  for(const override of [{authoritative:false},{verificationStatus:'Unverified'},{amountSen:129999},{currency:'USD'},{capturedAt:null},{capturedAt:offer.expiresAt},{capturedAt:accepted.acceptedAt-1},{orderId:2}])await test('payment exception '+Object.keys(override),()=>assert.equal(paymentDecision(accepted,{...payment,...override}),'ExceptionReview'));
  await test('stale state version rejected',()=>assert.throws(()=>transition(booking,'Confirmed',{now,expectedVersion:1,actorRole:'owner',offer:accepted,payment,slotReserved:true})));
  await test('no reservation no confirmation',()=>assert.throws(()=>transition(booking,'Confirmed',{now,expectedVersion:0,actorRole:'owner',offer:accepted,payment,slotReserved:false})));

@@ -139,3 +139,11 @@ Apply migrate-c1-consultation-workflow-lifecycle.sql after all prior consultatio
 an isolated local/Preview database only when separately authorized. No migration is executed
 remotely by local development. The lifecycle tests use synthetic historical fixtures, explicitly
 not real payment-provider evidence. Initial schema and module scope remain consultation-only.
+
+## Approved capture review and local demonstration
+
+Authoritative verified provider capture time is primary. Missing or ambiguous evidence requires independent QY finance verification, an opaque supporting-evidence reference and SHA-256, and an immutable attributable audit. A known late provider capture cannot be overridden by an earlier manual claim. Recording finance review never confirms a booking; a separate authenticated reconciliation command checks full verified payment, canonical customer/order ownership, immutable price, capture deadline and live reservation atomically. Financial source tables remain read-only. No provider adapter uses paid_at as a substitute capture timestamp.
+
+The runnable demonstration uses HTTPS loopback, an in-memory synthetic database, ephemeral encryption keys and mocked OTP/capture delivery. It is not a remotely deployed Preview. The real provider signed-capture normalization adapter remains an integration prerequisite. Mock OTP delivery is memory-only and must be replaced by an isolated, encrypted distributed mock transport before Cloudflare Preview mounting. No live checkout is connected.
+
+The local capture-review and evidence-guard migrations follow the lifecycle migration. Replacement collisions are rejected at every relevant unique key. Native SQL rechecks appointment start at confirmation.
