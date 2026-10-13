@@ -108,6 +108,34 @@ Before any real-data/Preview mounting: independent security review, runtime key 
 and recovery/rotation, dedicated isolated primary database and origin verification, approved
 privacy/policy text and hashes, documented independent QY identity-review evidence standards,
 contact/challenge audit retention policy, mock/provider separation, browser acceptance, atomic
-payment/order adapter and end-to-end verified-capture race tests. Rescheduling/exception recovery,
-expired-offer slot release and report delivery-failure/deletion status controls remain further
-workflow work; this checkpoint does not claim those operational paths are complete.
+payment/order adapter and end-to-end verified-capture race tests. Rescheduling, unaccepted-offer expiry/slot release, protected no-show/cancellation and manual
+report follow-up/deletion metadata are now implemented in workflow-lifecycle.js. Payment
+exception resolution still requires an approved authoritative capture-evidence adapter.
+
+## Lifecycle milestone
+
+Replacement appointments use a separate append-only schedule, preserving the original accepted
+offer, price, policy, order and original appointment. A replacement is future-dated and within
+23:59:59.999 MYT on calendar day 30 of the original appointment. It is not a new payable offer;
+the initial 72-hour offer requirement is not incorrectly imposed on an approved reschedule.
+The original held/confirmed reservation is released atomically with the approved replacement.
+Bidirectional SQL overlap triggers protect initial and replacement reservations. All reads and
+completion/no-show guards use the effective current appointment, not the old immutable offer.
+
+Timely pending free-reschedule requests retain eligibility through Owner Review and prevent
+forfeiture. One free use is consumed only after approved replacement. Additional/late requests
+need explicit authenticated QY owner approval. Unavailable/out-of-window cases remain Owner
+Review without extension/refund/forfeiture. Cancellation/no-show is QY-controlled, not automatic;
+a lawful exception or QY delivery inability routes to ProviderRemedyPending. Financial tables
+are never written. Unaccepted finally expired offers get 90-MYT-calendar-day intake retention;
+accepted timeout instead goes to ExceptionReview with no premature terminal retention.
+
+Manual report Unknown/FollowUp does not claim delivery. Same-channel retry can subsequently
+record confirmed delivery. Deleted records only attest external manual deletion after confirmed
+delivery; no website file is uploaded, stored or deleted. Changing delivery channel requires a
+separate customer-authorized contact update and is not silently allowed by these methods.
+
+Apply migrate-c1-consultation-workflow-lifecycle.sql after all prior consultation migrations in
+an isolated local/Preview database only when separately authorized. No migration is executed
+remotely by local development. The lifecycle tests use synthetic historical fixtures, explicitly
+not real payment-provider evidence. Initial schema and module scope remain consultation-only.

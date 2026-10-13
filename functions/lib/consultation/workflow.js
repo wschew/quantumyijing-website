@@ -17,7 +17,7 @@ export function createConsultationWorkflow({db,origin,keys,stepup,contacts,produ
  async function now(){return (await stmt(db,`SELECT ${DB_NOW} n`).first()).n;}
  function gate(id,label,a,kind='QY'){return stmt(db,`INSERT INTO consultation_workflow_events VALUES(CASE WHEN changes()=1 THEN ? ELSE NULL END,?,?,?,?,${DB_NOW})`,[crypto.randomUUID(),id,label,kind,kind==='QY'?a.principal.sessionId:a.principal.contextId]);}
  async function receipt(id,commandId,payload){identifier(commandId);const key=await keys.lookup.provider(keys.lookup.activeKeyId);const hash=Array.from(new Uint8Array(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(JSON.stringify(['qy-workflow-command-v1',id,payload])))),x=>x.toString(16).padStart(2,'0')).join('');return stmt(db,`INSERT INTO consultation_workflow_commands VALUES(?,?,?,?,${DB_NOW})`,[commandId,id,keys.lookup.activeKeyId,hash]);}
- async function load(id){identifier(id);const row=await stmt(db,'SELECT * FROM consultation_bookings WHERE id=?',[id]).first();if(!row)fail();return row;}
+ async function load(id){identifier(id);const row=await stmt(db,`SELECT b.*,COALESCE(a.start_at,b.current_start_at) effective_start,COALESCE(a.end_at,b.current_end_at) effective_end FROM consultation_bookings b LEFT JOIN consultation_workflow_appointments a ON a.booking_id=b.id AND a.state='Active' WHERE b.id=?`,[id]).first();if(!row)fail();return {...row,current_start_at:row.effective_start,current_end_at:row.effective_end};}
  async function submit(request,input){
   try{closed(input,['commandId','intake']);identifier(input.commandId);const a=await stepup.requireStepup(request,true),time=await now();
    const contact=await contacts.verifiedContact(new Request(request.url,{method:"GET",headers:request.headers}),input.intake?.reportChannel);if(!contact)fail();
@@ -34,7 +34,7 @@ export function createConsultationWorkflow({db,origin,keys,stepup,contacts,produ
   }catch{fail();}
  }
  async function list(request,{qy=false}={}){
-  try{const a=qy?await guards.qy(request):await stepup.requireStepup(request);return (await stmt(db,`SELECT id,reference,state,report_channel,row_version,current_start_at,current_end_at,report_due_at FROM consultation_bookings WHERE EXISTS(${a.sql}) ${qy?'':'AND customer_id=?'} ORDER BY created_at DESC LIMIT 100`,[...a.values,...(qy?[]:[a.principal.customerId])]).all()).results;}catch{fail();}
+  try{const a=qy?await guards.qy(request):await stepup.requireStepup(request);return (await stmt(db,`SELECT b.id,b.reference,b.state,b.report_channel,b.row_version,COALESCE(s.start_at,b.current_start_at) current_start_at,COALESCE(s.end_at,b.current_end_at) current_end_at,b.report_due_at,r.state report_state,o.expires_at offer_expires_at FROM consultation_bookings b LEFT JOIN consultation_workflow_appointments s ON s.booking_id=b.id AND s.state='Active' LEFT JOIN consultation_manual_reports r ON r.booking_id=b.id LEFT JOIN consultation_offers o ON o.id=b.current_offer_id WHERE EXISTS(${a.sql}) ${qy?'':'AND b.customer_id=?'} ORDER BY b.created_at DESC LIMIT 100`,[...a.values,...(qy?[]:[a.principal.customerId])]).all()).results;}catch{fail();}
  }
  async function readPrivate(request,id){
   try{const a=await guards.qy(request),b=await load(id);const predicate=`SELECT i.* FROM consultation_workflow_intakes w JOIN consultation_customer_intakes i ON i.id=w.intake_id WHERE w.booking_id=? AND EXISTS(${a.sql}) AND EXISTS(SELECT 1 FROM consultation_intake_consents c WHERE c.intake_id=i.id AND c.purpose='consultation_privacy' AND c.state='Granted' AND c.policy_version=? AND c.policy_hash=? AND c.sequence=(SELECT MAX(sequence) FROM consultation_intake_consents WHERE intake_id=i.id AND purpose='consultation_privacy'))`;
@@ -46,7 +46,7 @@ export function createConsultationWorkflow({db,origin,keys,stepup,contacts,produ
  async function change(request,input){
   try{closed(input,['id','to','expectedVersion','commandId']);const a=await guards.qy(request,true),r=await load(input.id),time=await now();
    if(!['UnderReview','Declined','Completed'].includes(input.to))fail();const next=transition(booking(r),input.to,{now:time,expectedVersion:input.expectedVersion,actorRole:'owner'});
-   const plan=[stmt(db,`UPDATE consultation_bookings SET state=?,row_version=row_version+1,updated_at=${DB_NOW},completed_at=?,terminal_at=?,report_due_at=? WHERE id=? AND row_version=? AND state=? AND EXISTS(${a.sql}) ${input.to==='Completed'?`AND current_end_at<=${DB_NOW}`:''}`,[next.state,next.completedAt??null,next.terminalAt??null,next.reportDueAt??null,r.id,r.row_version,r.state,...a.values]),gate(r.id,next.state,a)];
+   const plan=[stmt(db,`UPDATE consultation_bookings SET state=?,row_version=row_version+1,updated_at=${DB_NOW},completed_at=?,terminal_at=?,report_due_at=? WHERE id=? AND row_version=? AND state=? AND EXISTS(${a.sql}) ${input.to==='Completed'?`AND COALESCE((SELECT end_at FROM consultation_workflow_appointments WHERE booking_id=consultation_bookings.id AND state='Active'),current_end_at)<=${DB_NOW}`:''}`,[next.state,next.completedAt??null,next.terminalAt??null,next.reportDueAt??null,r.id,r.row_version,r.state,...a.values]),gate(r.id,next.state,a)];
    if(['Completed','Declined'].includes(input.to)){
     const basis=input.to==='Completed'?'Completed':'FinalDeclined',retention=intakeRetention({status:basis,completedAt:next.completedAt??null,terminalAt:next.terminalAt??null});
     const current=await stmt(db,'SELECT i.id,i.revision FROM consultation_customer_intakes i JOIN consultation_workflow_intakes w ON w.intake_id=i.id WHERE w.booking_id=?',[r.id]).first();if(!current)fail();
@@ -92,7 +92,7 @@ export function createConsultationWorkflow({db,origin,keys,stepup,contacts,produ
    if(prepared&&r.state!=='Completed'||!prepared&&r.state!=='ReportReady')fail();if(!prepared)identifier(input.evidenceReference);
    const target=prepared?'ReportReady':'ReportDelivered';const plan=[stmt(db,`UPDATE consultation_bookings SET state=?,row_version=row_version+1,updated_at=${DB_NOW} WHERE id=? AND row_version=? AND state=? AND EXISTS(${a.sql})`,[target,r.id,r.row_version,r.state,...a.values]),gate(r.id,target,a)];
    if(prepared)plan.push(stmt(db,"INSERT INTO consultation_manual_reports(booking_id,revision,state,channel,prepared_at) VALUES(?,1,'Prepared',?,?)",[r.id,r.report_channel,time]));
-   else plan.push(stmt(db,"UPDATE consultation_manual_reports SET revision=revision+1,state='Delivered',evidence_reference=?,delivered_at=? WHERE booking_id=? AND state='Prepared'",[input.evidenceReference,time,r.id]),gate(r.id,target,a));
+   else { const report=await stmt(db,'SELECT revision FROM consultation_manual_reports WHERE booking_id=?',[r.id]).first();if(!report)fail();plan.push(stmt(db,"UPDATE consultation_manual_reports SET revision=revision+1,state='Delivered',evidence_reference=?,delivered_at=? WHERE booking_id=? AND revision=? AND state IN ('Prepared','Unknown','FollowUp')",[input.evidenceReference,time,r.id,report.revision]),gate(r.id,target,a)); }
    plan.push(await receipt(r.id,input.commandId,input));await db.batch(plan);return Object.freeze({id:r.id,state:target,rowVersion:r.row_version+1});
   }catch{fail();}
  }

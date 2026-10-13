@@ -6,7 +6,7 @@ async function body(request){
  const decoder=new TextDecoder('utf-8',{fatal:true});let text='',total=0;
  try{for(;;){const {done,value}=await reader.read();if(done)break;total+=value.length;if(total>20000){await reader.cancel();throw Error('Request rejected');}text+=decoder.decode(value,{stream:true});}text+=decoder.decode();return JSON.parse(text);}finally{reader.releaseLock();}
 }
-export function createWorkflowHandler({origin,workflow,stepup,contacts,identity,qyAuth,policies,captureAdapterConfigured=false}){
+export function createWorkflowHandler({origin,workflow,stepup,contacts,identity,qyAuth,policies,lifecycle=null,captureAdapterConfigured=false}){
  return async request=>{
   try{
    const url=new URL(request.url),mutation=request.method==='POST';
@@ -31,6 +31,12 @@ export function createWorkflowHandler({origin,workflow,stepup,contacts,identity,
    if(path==='offer/accept'&&mutation)return response(200,{ok:true,...await workflow.accept(request,input)});
    if(path==='qy/bookings'&&!mutation)return response(200,{ok:true,records:await workflow.list(request,{qy:true}),captureAdapterConfigured});
    if(path==='qy/private'&&!mutation)return response(200,{ok:true,privateIntake:await workflow.readPrivate(request,url.searchParams.get('id'))});
+   if(lifecycle){
+    if(path==='reschedule/list'&&!mutation)return response(200,{ok:true,records:await lifecycle.reschedules(request,url.searchParams.get('id'))});
+    if(path==='qy/reschedule/list'&&!mutation)return response(200,{ok:true,records:await lifecycle.reschedules(request,url.searchParams.get('id'),{qy:true})});
+    const actions={'reschedule/request':'requestReschedule','qy/reschedule/decide':'decideReschedule','qy/offer/expire':'expireOffer','qy/forfeit':'forfeit','qy/report/status':'reportStatus'};
+    if(mutation&&Object.hasOwn(actions,path))return response(200,{ok:true,...await lifecycle[actions[path]](request,input)});
+   }
    const operations={'qy/status':'change','qy/offer':'propose','qy/report':'report'};
    if(mutation&&Object.hasOwn(operations,path))return response(200,{ok:true,...await workflow[operations[path]](request,input)});
    if(path==='qy/payment/reconcile'&&mutation&&captureAdapterConfigured)return response(200,{ok:true,...await workflow.reconcilePayment(request,input)});

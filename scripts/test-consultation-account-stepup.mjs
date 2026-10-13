@@ -2,6 +2,8 @@
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {DatabaseSync} from 'node:sqlite';
+import {issueOffer} from '../functions/lib/consultation/foundation.js';
+import {createWorkflowLifecycle} from '../functions/lib/consultation/workflow-lifecycle.js';
 import {createWorkflowHandler} from '../functions/lib/consultation/workflow-handler.js';
 import {createConsultationAuth} from '../functions/lib/consultation/auth.js';
 import {createConsultationWorkflow} from '../functions/lib/consultation/workflow.js';
@@ -27,7 +29,7 @@ async function checks(db,label){
  await db.prepare('CREATE TABLE coaches(id INTEGER PRIMARY KEY)').run();
  await db.prepare('CREATE TABLE orders(id INTEGER PRIMARY KEY)').run();
  await db.prepare('INSERT INTO products VALUES(1)').run();await db.prepare('INSERT INTO coaches VALUES(1)').run();
- for(const name of ['migrate-v4.0-phase-f1f2-academy-portal.sql','migrate-c1-consultation-auth.sql','migrate-c1-consultation-customer-identity.sql','migrate-c1-bazi-consultation-foundation.sql','migrate-c1-consultation-customer-intake.sql','migrate-c1-consultation-contact-verification.sql','migrate-c1-consultation-account-stepup.sql','migrate-c1-consultation-workflow.sql'])for(const sql of split(read(name)))await db.prepare(sql).run();
+ for(const name of ['migrate-v4.0-phase-f1f2-academy-portal.sql','migrate-c1-consultation-auth.sql','migrate-c1-consultation-customer-identity.sql','migrate-c1-bazi-consultation-foundation.sql','migrate-c1-consultation-customer-intake.sql','migrate-c1-consultation-contact-verification.sql','migrate-c1-consultation-account-stepup.sql','migrate-c1-consultation-workflow.sql','migrate-c1-consultation-workflow-lifecycle.sql'])for(const sql of split(read(name)))await db.prepare(sql).run();
  const now=Date.now(),qyToken=randomSecret(),qyCSRF=randomSecret();
  await db.prepare("INSERT INTO consultation_auth_account VALUES(1,'synthetic',1,'PBKDF2-SHA256',600000,?,?,1,?)").bind('a'.repeat(64),'b'.repeat(64),now-10000).run();
  await db.prepare('INSERT INTO consultation_auth_sessions VALUES(?,1,?,?,1,?,?,NULL)').bind('qy-1',await tokenHash(qyToken),await tokenHash(qyCSRF),now-10000,now+3600000).run();
@@ -120,6 +122,69 @@ async function checks(db,label){
  await t('local controller refuses unwired payment operation',async()=>assert.equal((await handler(new Request(origin+'/api/consultation/qy/payment/reconcile',{method:'POST',headers:qyReq.headers,body:'{}'}))).status,404));
  await t('local controller rejects malformed UTF8 without reflecting it',async()=>{const res=await handler(new Request(origin+'/api/consultation/bookings',{method:'POST',headers:req(0,true).headers,body:new Uint8Array([123,34,120,34,58,34,255,34,125])}));assert.equal(res.status,409);assert.ok(!(await res.text()).includes('255'));});
  await t('local controller bounds request body',async()=>assert.equal((await handler(new Request(origin+'/api/consultation/bookings',{method:'POST',headers:req(0,true).headers,body:'x'.repeat(20001)}))).status,409));
+
+
+ const lifecycle=createWorkflowLifecycle({db,origin,keys,stepup:service});
+ const hour=3600000;
+ async function historicalFixture(startAt,state='Confirmed'){
+  const record=await wf.submit(req(0,true),{commandId:crypto.randomUUID(),intake});
+  const issuedAt=Math.min(Date.now()-1000,startAt-80*hour);
+  const o=await issueOffer({id:crypto.randomUUID(),bookingId:record.id,customerId:1,practitionerId:1,startAt,issuedAt,policyVersion:'synthetic-v1',policyHash:'b'.repeat(64)});
+  const accepted=state!=='Offered';
+  await db.prepare('INSERT INTO consultation_offers(id,booking_id,revision,state,practitioner_id,start_at,end_at,issued_at,expires_at,regular_price_sen,selling_price_sen,currency,policy_version,policy_hash,snapshot_hash,issued_by,accepted_at,acceptance_customer_id,acceptance_policy_hash,acceptance_snapshot_hash) VALUES(?,?,1,?,1,?,?,?,?,130000,130000,\'MYR\',?,?,?,\'qy-1\',?,?,?,?)').bind(o.id,record.id,state==='Confirmed'?'Verified':accepted?'Accepted':'Issued',o.startAt,o.endAt,o.issuedAt,o.expiresAt,o.policyVersion,o.policyHash,o.snapshotHash,accepted?issuedAt+1:null,accepted?1:null,accepted?o.policyHash:null,accepted?o.snapshotHash:null).run();
+  await db.prepare('UPDATE consultation_bookings SET state=?,current_offer_id=?,practitioner_id=1,current_start_at=?,current_end_at=?,original_start_at=? WHERE id=?').bind(state,o.id,o.startAt,o.endAt,state==='Confirmed'?o.startAt:null,record.id).run();
+  await db.prepare('INSERT INTO consultation_slot_reservations VALUES(?,?,?,1,?,?,?,?)').bind(crypto.randomUUID(),record.id,o.id,o.startAt,o.endAt,state==='Confirmed'?'Confirmed':'Held',state==='Confirmed'?null:o.expiresAt).run();
+  return {...record,state,offer:o};
+ }
+ const rb=await historicalFixture(Date.now()+96*hour);
+ await t('reschedule rejects customer-supplied request timestamp',()=>assert.rejects(lifecycle.requestReschedule(req(0,true),{id:rb.id,expectedVersion:0,commandId:'forged-request-time',requestedAt:Date.now()-86400000})));
+ let request1=await lifecycle.requestReschedule(req(0,true),{id:rb.id,expectedVersion:0,commandId:'reschedule-free'});
+ await t('timely request retains free eligibility',()=>assert.equal(request1.eligibility,'FreeEligible'));
+ await t('duplicate pending reschedule rejected',()=>assert.rejects(lifecycle.requestReschedule(req(0,true),{id:rb.id,expectedVersion:request1.rowVersion,commandId:'duplicate-pending'})));
+ await t('truthy owner approval rejected',()=>assert.rejects(lifecycle.decideReschedule(qyReq,{id:rb.id,requestId:request1.requestId,expectedVersion:request1.rowVersion,commandId:'truthy-approval',replacementStart:Date.now()+48*hour,ownerApproved:'true'})));
+ const moved=await lifecycle.decideReschedule(qyReq,{id:rb.id,requestId:request1.requestId,expectedVersion:request1.rowVersion,commandId:'approve-free',replacementStart:Date.now()+48*hour,ownerApproved:false});
+ await t('approved replacement can occur sooner than a new 72-hour booking offer',()=>assert.equal(moved.decision,'Approved'));
+ await t('one free move preserves immutable original offer and price',async()=>{const b=await db.prepare('SELECT * FROM consultation_bookings WHERE id=?').bind(rb.id).first();assert.equal(b.free_reschedule_used,1);assert.equal(b.original_start_at,rb.offer.startAt);assert.equal(b.current_offer_id,rb.offer.id);assert.equal((await db.prepare('SELECT snapshot_hash FROM consultation_offers WHERE id=?').bind(rb.offer.id).first()).snapshot_hash,rb.offer.snapshotHash);});
+ await t('list displays actual replacement appointment',async()=>{const row=(await wf.list(qyGet,{qy:true})).find(r=>r.id===rb.id);assert.ok(row.current_start_at<rb.offer.startAt);});
+ await t('completion uses replacement end, not original schedule',()=>assert.rejects(wf.change(qyReq,{id:rb.id,to:'Completed',expectedVersion:moved.rowVersion,commandId:'early-replacement-completion'})));
+ const extra=await lifecycle.requestReschedule(req(0,true),{id:rb.id,expectedVersion:moved.rowVersion,commandId:'reschedule-additional'});
+ const ownerReview=await lifecycle.decideReschedule(qyReq,{id:rb.id,requestId:extra.requestId,expectedVersion:extra.rowVersion,commandId:'additional-review',replacementStart:Date.now()+50*hour,ownerApproved:false});
+ await t('additional reschedule requires QY owner approval',()=>assert.equal(ownerReview.decision,'OwnerReview'));
+ const additional=await lifecycle.decideReschedule(qyReq,{id:rb.id,requestId:extra.requestId,expectedVersion:ownerReview.rowVersion,commandId:'additional-approved',replacementStart:Date.now()+50*hour,ownerApproved:true});
+ await t('explicit QY approval permits additional move without resetting free use',async()=>{assert.equal(additional.decision,'Approved');assert.equal((await db.prepare('SELECT free_reschedule_used FROM consultation_bookings WHERE id=?').bind(rb.id).first()).free_reschedule_used,1);});
+ const outRequest=await lifecycle.requestReschedule(req(0,true),{id:rb.id,expectedVersion:additional.rowVersion,commandId:'window-request'});
+ const outside=await lifecycle.decideReschedule(qyReq,{id:rb.id,requestId:outRequest.requestId,expectedVersion:outRequest.rowVersion,commandId:'outside-window',replacementStart:rb.offer.startAt+31*86400000,ownerApproved:true});
+ await t('30-day exception never extends or forfeits automatically',async()=>{assert.equal(outside.decision,'OwnerReview');assert.equal((await db.prepare('SELECT state FROM consultation_bookings WHERE id=?').bind(rb.id).first()).state,'Confirmed');});
+ const active=await db.prepare("SELECT * FROM consultation_workflow_appointments WHERE booking_id=? AND state='Active'").bind(rb.id).first();
+ await t('REPLACE replacement appointment evidence rejected',async()=>{const names=Object.keys(active);await assert.rejects(db.prepare('REPLACE INTO consultation_workflow_appointments('+names.join(',')+') VALUES('+names.map(()=>'?').join(',')+')').bind(...names.map(k=>active[k])).run());});
+ const blockedOffer=await wf.submit(req(0,true),{commandId:'overlap-submit',intake});
+ const blockedReview=await wf.change(qyReq,{id:blockedOffer.id,to:'UnderReview',expectedVersion:0,commandId:'overlap-review'});
+ // An initial 72-hour offer conflicts with a later replacement fixture below, in either table direction.
+ const conflictBooking=await historicalFixture(Date.now()+144*hour);
+ const conflictRequest=await lifecycle.requestReschedule(req(0,true),{id:conflictBooking.id,expectedVersion:0,commandId:'overlap-reschedule'});
+ const conflictMove=await lifecycle.decideReschedule(qyReq,{id:conflictBooking.id,requestId:conflictRequest.requestId,expectedVersion:conflictRequest.rowVersion,commandId:'overlap-approve',replacementStart:Date.now()+80*hour,ownerApproved:false});assert.equal(conflictMove.decision,'Approved');
+ await t('initial offer cannot overlap a replacement appointment',()=>assert.rejects(wf.propose(qyReq,{id:blockedOffer.id,expectedVersion:blockedReview.rowVersion,commandId:'overlap-propose',startAt:Date.now()+80*hour})));
+ await t('failed overlap transaction preserves booking and offer counts',async()=>{assert.equal((await db.prepare('SELECT state FROM consultation_bookings WHERE id=?').bind(blockedOffer.id).first()).state,'UnderReview');assert.equal((await db.prepare('SELECT COUNT(*) n FROM consultation_offers WHERE booking_id=?').bind(blockedOffer.id).first()).n,0);});
+ const elapsed=await historicalFixture(Date.now()-2*hour);
+ await db.prepare("INSERT INTO consultation_reschedule_requests(id,booking_id,requested_at,appointment_start_snapshot,original_start_snapshot,request_type,state,eligibility) VALUES(?,?,?,?,?,'Free','OwnerReview',1)").bind('historical-pending-'+label,elapsed.id,elapsed.offer.startAt-25*hour,elapsed.offer.startAt,elapsed.offer.startAt).run();
+ await t('eligible pending request blocks genuine elapsed no-show forfeiture',()=>assert.rejects(lifecycle.forfeit(qyReq,{id:elapsed.id,expectedVersion:0,commandId:'protected-no-show',reason:'NoShowForfeited',lawfulException:false})));
+ await t('eligible pending request also blocks unqualified cancellation forfeiture',()=>assert.rejects(lifecycle.forfeit(qyReq,{id:elapsed.id,expectedVersion:0,commandId:'protected-cancel',reason:'CancelledForfeited',lawfulException:false})));
+ const absent=await historicalFixture(Date.now()-10*hour);
+ const forfeited=await lifecycle.forfeit(qyReq,{id:absent.id,expectedVersion:0,commandId:'eligible-no-show',reason:'NoShowForfeited',lawfulException:false});
+ await t('QY no-show records terminal state and 90-day private retention',async()=>{assert.equal(forfeited.state,'NoShowForfeited');const i=await db.prepare('SELECT i.* FROM consultation_customer_intakes i JOIN consultation_workflow_intakes w ON w.intake_id=i.id WHERE w.booking_id=?').bind(absent.id).first();assert.equal(i.retention_basis,'FinalCancelled');assert.ok(i.retention_until-i.terminal_at>=90*86400000);assert.ok(i.retention_until-i.terminal_at<91*86400000);});
+ const expired=await historicalFixture(Date.now()+24*hour,'Offered');
+ const expiry=await lifecycle.expireOffer(qyReq,{id:expired.id,expectedVersion:0,commandId:'expire-unaccepted'});
+ await t('unaccepted expired offer releases slot and sets terminal retention',async()=>{assert.equal(expiry.state,'OfferExpired');assert.equal((await db.prepare('SELECT state FROM consultation_slot_reservations WHERE booking_id=?').bind(expired.id).first()).state,'Released');assert.equal((await db.prepare('SELECT i.retention_basis FROM consultation_customer_intakes i JOIN consultation_workflow_intakes w ON w.intake_id=i.id WHERE w.booking_id=?').bind(expired.id).first()).retention_basis,'FinalExpired');});
+ const paidUnknown=await historicalFixture(Date.now()+26*hour,'PaymentPending');
+ const unresolved=await lifecycle.expireOffer(qyReq,{id:paidUnknown.id,expectedVersion:0,commandId:'expire-accepted-review'});
+ await t('expired accepted offer preserves ambiguous payment for review',async()=>{assert.equal(unresolved.state,'ExceptionReview');assert.equal((await db.prepare('SELECT i.retention_basis FROM consultation_customer_intakes i JOIN consultation_workflow_intakes w ON w.intake_id=i.id WHERE w.booking_id=?').bind(paidUnknown.id).first()).retention_basis,'Pending');});
+ const deletion=await lifecycle.reportStatus(qyReq,{id:deliveredReport.id,expectedVersion:deliveredReport.rowVersion,commandId:'manual-pdf-delete',action:'Deleted',evidenceReference:'manual-deletion-confirmation'});
+ await t('manual PDF deletion is metadata only and preserves encrypted intake',async()=>{assert.equal(deletion.reportState,'Deleted');assert.equal((await db.prepare('SELECT COUNT(*) n FROM consultation_reports').first()).n,0);assert.equal((await wf.readPrivate(qyGet,deliveredReport.id)).questions,intake.questions);});
+ await t('repeat manual PDF deletion rejected',()=>assert.rejects(lifecycle.reportStatus(qyReq,{id:deliveredReport.id,expectedVersion:deletion.rowVersion,commandId:'second-delete',action:'Deleted',evidenceReference:'manual-deletion-confirmation'})));
+ const qyOnly=await service.reviewContact(qyReq,{customerId:2,channel:'email',contact:'other@example.invalid',evidenceReference:'other-canonical-review',independentlyVerified:true});
+ const otherChallenge=await service.challenge(req(1,true),{contactId:qyOnly.id});await service.confirm(req(1,true),{challengeId:otherChallenge.id,code:delivered.at(-1).code});
+ await t('authenticated other customer cannot reschedule another booking',()=>assert.rejects(lifecycle.requestReschedule(req(1,true),{id:rb.id,expectedVersion:outside.rowVersion,commandId:'cross-customer-reschedule'})));
+ await t('lifecycle audit contains no intake plaintext',async()=>assert.ok(!JSON.stringify((await db.prepare('SELECT * FROM consultation_workflow_lifecycle_events').all()).results).includes(intake.questions)));
 
  const rowBefore=(await db.prepare('SELECT COUNT(*) n FROM consultation_account_contacts').first()).n;
  let injected=false;const raceDb={prepare:sql=>db.prepare(sql),async batch(plan){if(!injected){injected=true;await db.prepare('UPDATE consultation_auth_account SET enabled=0').run();}return db.batch(plan);}};
