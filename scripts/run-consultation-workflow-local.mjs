@@ -7,7 +7,7 @@ import {tmpdir} from 'node:os';
 import {fileURLToPath} from 'node:url';
 import {createSyntheticWorkflow} from './consultation-workflow-local-fixture.mjs';
 import {readLocalCredentialInput} from './setup-consultation-account-local.mjs';
-const staticFiles=new Map([['/customer.html',['customer.html','text/html; charset=utf-8']],['/qy.html',['qy.html','text/html; charset=utf-8']],['/workflow-ui.js',['workflow-ui.js','text/javascript; charset=utf-8']],['/workflow.css',['workflow.css','text/css; charset=utf-8']]]);
+const staticFiles=new Map([['/academy-logo.png',['academy-logo.png','image/png']],['/customer.html',['customer.html','text/html; charset=utf-8']],['/qy.html',['qy.html','text/html; charset=utf-8']],['/workflow-ui.js',['workflow-ui.js','text/javascript; charset=utf-8']],['/workflow.css',['workflow.css','text/css; charset=utf-8']]]);
 export function localCertificate(){
  const dir=mkdtempSync(join(tmpdir(),'qy-synthetic-tls-'));
  const keyPath=join(dir,'key.pem'),certPath=join(dir,'cert.pem');
