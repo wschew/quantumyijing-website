@@ -42,7 +42,7 @@ try{
  await test('synthetic portal session establishes isolated context',async()=>{assert.equal((await customer.call('local/customer-login',{})).status,200);assert.equal((await customer.call('context',{})).status,200);});
  await test('portal customer cannot search canonical directory',async()=>assert.equal((await customer.call('qy/customers/search',{query:'Alex'})).status,409));
  await test('stored synthetic email is not trusted automatically',async()=>assert.equal((await customer.call('account/options')).data.manualReviewRequired,true));
- await test('customer cannot enroll canonical account contact',async()=>assert.equal((await customer.call('qy/account/review',{customerId:1,channel:'whatsapp',contact:'+19999999999',evidenceReference:'synthetic-independent-review',independentlyVerified:true})).status,409));
+ await test('customer cannot enroll canonical account contact',async()=>assert.equal((await customer.call('qy/account/review',{customerId:1,channel:'whatsapp',contact:'+19999999999',evidenceReference:'synthetic-independent-review',independentlyVerified:true})).status,401));
  const review=await qy.call('qy/account/review',{customerId:1,channel:'whatsapp',contact:'+19999999999',evidenceReference:'synthetic-independent-review',independentlyVerified:true});assert.equal(review.status,200);
  const issued=await customer.call('account/challenge',{contactId:review.data.id});assert.equal(issued.status,200);
  const inbox=await qy.call('qy/local/outbox');assert.equal(inbox.status,200);const message=inbox.data.records.find(r=>r.challengeId===issued.data.id);

@@ -1,4 +1,5 @@
 ﻿// Local/isolated Preview mounting only. No Pages endpoint is created by this module.
+import {normalizeContact} from './contact-policy.js';
 import {requestAllowed} from './customer-request-security.js';
 const response=(status,data)=>Response.json(data,{status,headers:{'cache-control':'no-store','x-content-type-options':'nosniff'}});
 export async function readWorkflowBody(request,maxBytes=20000){
@@ -21,7 +22,13 @@ export function createWorkflowHandler({origin,workflow,stepup,contacts,identity,
    if(path==='account/options'&&!mutation)return response(200,{ok:true,...await stepup.options(request)});
    if(path==='account/challenge'&&mutation)return response(200,{ok:true,...await stepup.challenge(request,input)});
    if(path==='account/confirm'&&mutation)return response(200,{ok:true,...await stepup.confirm(request,input)});
-   if(path==='qy/account/review'&&mutation)return response(200,{ok:true,...await stepup.reviewContact(request,input)});
+   if(path==='qy/account/review'&&mutation){
+    const authorization=await qyAuth.requirePrivateAccess(request,{stateChanging:true});
+    if(authorization.error)return response(401,{ok:false,code:'REVIEW_AUTH_REQUIRED'});
+    try{normalizeContact(input?.channel,input?.contact);}catch{return response(400,{ok:false,code:'REVIEW_CONTACT_FORMAT'});}
+    try{return response(200,{ok:true,code:'REVIEW_RECORDED',...await stepup.reviewContact(request,input)});}
+    catch{return response(409,{ok:false,code:'REVIEW_REJECTED'});}
+   }
    if(path==='contact/challenge'&&mutation)return contacts.requestChallenge(request,input);
    if(path==='contact/confirm'&&mutation)return contacts.confirm(request,input);
    if(path==='qy/contact/instructions'&&!mutation)return contacts.instructions(request,{challengeId:url.searchParams.get('id')});
