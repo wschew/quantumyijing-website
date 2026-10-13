@@ -1,7 +1,8 @@
-﻿# C1-C3 step 1: runtime prerequisites (local checkpoint)
+﻿# C1-C3: integrated local workflow checkpoints
 
-Status: preparatory foundation only; NOT an integrated or Preview-ready workflow.
-No routes, user interface, migrations, provider calls or secret provisioning are added.
+Status: integrated internal services and local screen templates; no public API mount.
+Additive migrations are local-only. No provider calls or secret provisioning.
+Not yet approved for remote Preview or real customer data.
 
 ## Implemented
 
@@ -28,14 +29,13 @@ hex-format validator. Lost historical keys make existing ciphertext unrecoverabl
 
 ## Integration blockers found in committed source
 
-1. Legacy portal cookie QY_PORTAL_SESSION lacks the __Host prefix. The consultation bridge
-rejects duplicate cookies, but a lone valid attacker-owned domain cookie is not distinguishable
-from a host-only cookie. Chosen report-contact verification alone does not establish ownership
-of the canonical portal account. Proposed additive solution: a separate account-bound step-up
-to the canonical email read from authoritative customer state, with a distinct challenge purpose,
-context generation, contact fingerprint and atomic checks. Do not reuse a report_delivery proof
-as account step-up. Canonical address changes/revocation must invalidate that proof. Owner
-review is pending; there are no sensitive public endpoints in this checkpoint.
+1. The owner approved account-bound WhatsApp or Email OTP step-up, superseding mandatory
+canonical-email-only step-up. WhatsApp is preferred only when independently reviewed and
+securely bound to the canonical customer. Email is an alternative. A new delivery address,
+portal login or report_delivery proof cannot substitute for canonical-account ownership.
+When no trusted contact exists, options returns manualReviewRequired; dedicated QY review
+must independently establish identity and contact ownership before enrollment. OTP remains
+mandatory after that review. Existing CRM addresses are not automatically enrolled.
 
 2. functions/api/payment/generic/create.js accepts a caller-supplied amount and creates orders
 without consultation offer/policy ownership guards. It is not a safe direct consultation checkout
@@ -64,3 +64,50 @@ Confirmed. Choose an approved authoritative capture-evidence interface before li
 
 No owner-approved runtime keys, isolated Preview database or canonical origin are provisioned
 by this local checkpoint. No Production configuration has been read or changed.
+
+## C1-C3 integrated local implementation
+
+account-stepup.js uses eight-digit cryptographically generated single-use OTPs, purpose-separated
+HMACs, a ten-minute expiry bounded by the context, maximum five guesses per challenge,
+three challenges and ten aggregate guesses per customer in fifteen minutes. All delivery is
+through an explicitly supplied local mock; no provider adapter or messages are implemented.
+Trusted account contacts are separately AES-GCM encrypted and HMAC fingerprinted. QY review
+is an explicit attestation with an opaque evidence reference, not automatic identity verification.
+Contact revocation, parent/context revocation or generation changes invalidate account proofs.
+A post-commit mock-delivery failure reports committed/Unknown and must not trigger blind retry.
+
+workflow.js atomically links bookings to encrypted intake and versioned consent, checks account
+step-up and report-contact proof in the same submission transaction, and maintains correct
+Customer/QY audit attribution. Operational listings omit private fields. QY private reads require
+a current dedicated session and latest matching consultation privacy grant. Requests, review,
+72-hour appointment offers, 48-hour expiry/acceptance, immutable regular-price snapshots,
+manual payment exception review, post-session completion, five-year retention and manual
+report preparation/confirmed delivery metadata are implemented. Promotions cannot activate.
+
+There is no financial writer or live checkout. Confirmation requires an approved server-side
+readCaptureEvidence adapter returning authoritative verified full-payment data AND a matching
+atomic SQL evidence predicate. Caller-supplied payment evidence is rejected. Missing capture
+proof becomes ExceptionReview. No such live adapter is installed; DOKU callback processing
+paid_at is explicitly insufficient. Order linkage/capture reconciliation must be approved and
+implemented before end-to-end payment acceptance. No provider callback is executed in tests.
+
+consultation-preview contains isolated customer/QY screen templates with no browser storage,
+no credential logging and private DOM clearing controls. workflow-handler.js is an internal
+controller, NOT a deployed or public endpoint. No API route file mounts it. Therefore these
+screens require a separately verified local/isolated Preview host to mount the controller;
+they must not be presented as already remotely usable. Test-only mock delivery is never an
+approved production transport. Existing homepage, portal and administration pages are unchanged.
+
+Commands reject duplicate/stale requests safely; there are no automatic retries. D1 batches
+use immediate changes()==1 event gates to abort zero-row CAS/authorization failures. SQL
+collision triggers protect new account proofs/audits and workflow receipts against REPLACE.
+Financial tables and the legacy PDF-object tables are not written. Intake retention is managed
+through intake-policy.js; legacy foundation retention helpers remain unchanged.
+
+Before any real-data/Preview mounting: independent security review, runtime key provisioning
+and recovery/rotation, dedicated isolated primary database and origin verification, approved
+privacy/policy text and hashes, documented independent QY identity-review evidence standards,
+contact/challenge audit retention policy, mock/provider separation, browser acceptance, atomic
+payment/order adapter and end-to-end verified-capture race tests. Rescheduling/exception recovery,
+expired-offer slot release and report delivery-failure/deletion status controls remain further
+workflow work; this checkpoint does not claim those operational paths are complete.
