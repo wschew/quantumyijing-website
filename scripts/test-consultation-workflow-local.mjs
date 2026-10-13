@@ -12,9 +12,10 @@ await test('synthetic factory requires explicit mode',()=>assert.rejects(createS
 const fixture=await createSyntheticWorkflow({origin,password,syntheticOnly:true});
 function client(qy=false){
  const jar=new Map();let csrf='';
- return {async call(path,data){
+ return {async call(path,data,overrides={}){
   const headers={cookie:Array.from(jar.entries()).map(([k,v])=>k+'='+v).join('; ')};
   if(data!==undefined){headers.origin=origin;headers['content-type']='application/json';headers[qy?'x-qy-consultation-csrf':'x-qy-consultation-customer-csrf']=csrf;}
+  Object.assign(headers,overrides);
   const response=await fixture.handler(new Request(origin+'/api/consultation/'+path,{method:data===undefined?'GET':'POST',headers,...(data===undefined?{}:{body:JSON.stringify(data)})}));
   const cookie=response.headers.get('set-cookie');if(cookie){const [name,value]=cookie.split(';')[0].split('=');jar.set(name,value);assert.ok(cookie.includes('Secure')&&cookie.includes('HttpOnly'));}
   const result=await response.json();if(result.csrfToken)csrf=result.csrfToken;return {status:response.status,data:result};
@@ -24,8 +25,22 @@ const customer=client(),qy=client(true),outsider=client(true);
 try{
  await test('mock outbox requires dedicated QY authentication',async()=>assert.equal((await outsider.call('qy/local/outbox')).status,409));
  await test('incorrect local password rejected',async()=>assert.equal((await qy.call('qy/login',{username:'qy-local-test',password:'incorrect-synthetic-password'})).status,401));
+ await test('customer search rejects unauthenticated access',async()=>assert.equal((await outsider.call('qy/customers/search',{query:'Alex'})).status,409));
  await test('dedicated local QY login succeeds',async()=>assert.equal((await qy.call('qy/login',{username:'qy-local-test',password})).status,200));
+ await test('shared administrator token cannot authorize customer search',async()=>assert.equal((await outsider.call('qy/customers/search',{query:'Alex'},{authorization:'Bearer synthetic-shared-admin-token'})).status,409));
+ await test('customer search requires CSRF',async()=>assert.equal((await qy.call('qy/customers/search',{query:'Alex'},{'x-qy-consultation-csrf':''})).status,409));
+ await test('customer search rejects foreign Origin',async()=>assert.equal((await qy.call('qy/customers/search',{query:'Alex'},{origin:'https://foreign.invalid'})).status,403));
+ await test('canonical name search returns masked minimal records',async()=>{const r=await qy.call('qy/customers/search',{query:'Alex'});assert.equal(r.status,200);assert.equal(r.data.records.length,1);assert.equal(r.data.records[0].id,1);assert.deepEqual(Object.keys(r.data.records[0]).sort(),['id','name','maskedEmail','maskedPhone'].sort());assert.ok(!JSON.stringify(r.data).includes('synthetic@example.invalid'));assert.ok(!JSON.stringify(r.data).includes('+447700900101'));});
+ await test('email search',async()=>assert.equal((await qy.call('qy/customers/search',{query:'other@example.invalid'})).data.records[0].id,2));
+ await test('formatted phone search',async()=>assert.equal((await qy.call('qy/customers/search',{query:'+44 7700 900103'})).data.records[0].id,3));
+ await test('customer ID search',async()=>assert.equal((await qy.call('qy/customers/search',{query:'2'})).data.records[0].id,2));
+ await test('Chinese canonical name search',async()=>assert.equal((await qy.call('qy/customers/search',{query:'张明'})).data.records[0].id,4));
+ await test('inactive canonical customers excluded',async()=>assert.equal((await qy.call('qy/customers/search',{query:'inactive'})).data.records.length,0));
+ await test('literal wildcard does not broaden search',async()=>assert.equal((await qy.call('qy/customers/search',{query:'%%'})).data.records.length,0));
+ await test('invalid search inputs rejected',async()=>{for(const input of [{query:''},{query:'a'.repeat(121)},{query:'a\n'},{query:'Alex',customerId:1},{query:1}])assert.equal((await qy.call('qy/customers/search',input)).status,409);});
+ await test('search does not create identity proof',async()=>{assert.equal((await fixture.db.prepare('SELECT COUNT(*) n FROM consultation_account_contacts').first()).n,0);assert.equal((await fixture.db.prepare('SELECT COUNT(*) n FROM consultation_account_stepups').first()).n,0);});
  await test('synthetic portal session establishes isolated context',async()=>{assert.equal((await customer.call('local/customer-login',{})).status,200);assert.equal((await customer.call('context',{})).status,200);});
+ await test('portal customer cannot search canonical directory',async()=>assert.equal((await customer.call('qy/customers/search',{query:'Alex'})).status,409));
  await test('stored synthetic email is not trusted automatically',async()=>assert.equal((await customer.call('account/options')).data.manualReviewRequired,true));
  await test('customer cannot enroll canonical account contact',async()=>assert.equal((await customer.call('qy/account/review',{customerId:1,channel:'whatsapp',contact:'+19999999999',evidenceReference:'synthetic-independent-review',independentlyVerified:true})).status,409));
  const review=await qy.call('qy/account/review',{customerId:1,channel:'whatsapp',contact:'+19999999999',evidenceReference:'synthetic-independent-review',independentlyVerified:true});assert.equal(review.status,200);
@@ -70,7 +85,9 @@ try{
  fixture.db.batch=originalBatch;
  await test('customer cannot invoke capture simulation',async()=>assert.equal((await customer.call('qy/local/capture',{id:raced.id,expectedVersion:raceCapture.data.rowVersion,mode:'timely'})).status,409));
  await test('no PDFs or real financial providers involved',async()=>{assert.equal((await fixture.db.prepare('SELECT COUNT(*) n FROM consultation_reports').first()).n,0);assert.equal((await fixture.db.prepare('SELECT COUNT(*) n FROM synthetic_capture_evidence').first()).n,4);});
+ await test('search result cap is enforced',async()=>{for(let i=20;i<45;i++)await fixture.db.prepare("INSERT INTO customers(id,status,email,phone,display_name) VALUES(?,'Active','bulk@example.invalid','+447700900199','Bulk Synthetic')").bind(i).run();const r=await qy.call('qy/customers/search',{query:'Bulk'});assert.equal(r.data.records.length,20);assert.equal(r.data.limit,20);});
  await test('logout invalidates QY mock outbox access',async()=>{assert.equal((await qy.call('qy/logout',{})).status,200);assert.equal((await qy.call('qy/local/outbox')).status,409);});
+ await test('revoked QY session cannot search',async()=>assert.equal((await qy.call('qy/customers/search',{query:'Alex'})).status,409));
  await test('synthetic database integrity remains valid',async()=>{assert.equal((await fixture.db.prepare('PRAGMA foreign_key_check').all()).results.length,0);assert.equal(Object.values(await fixture.db.prepare('PRAGMA quick_check').first())[0],'ok');});
 }finally{fixture.dispose();}
 const reservation=net.createServer();await new Promise(ok=>reservation.listen(0,'127.0.0.1',ok));const port=reservation.address().port;await new Promise(ok=>reservation.close(ok));

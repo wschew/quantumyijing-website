@@ -15,3 +15,7 @@ Confirm SYNTHETIC and enter a temporary masked demonstration password; never use
 7. Rescheduling, pending-request protection, expiry, completion after the full session and manual report preparation/delivery/follow-up/deletion are supported. Historical synthetic automated fixtures exercise later lifecycle stages without weakening time guards or requiring a real three-day wait. No PDF is stored or sent.
 
 Before remote Preview: separately approve an isolated database/origin, keys and rotation/recovery, account provisioning, policy text/hash, deployment and public-controller mounting. Provide distributed encrypted mock delivery and verify runtime CPU limits/browser behavior. Real providers, checkout and report channel changes remain separately controlled integrations.
+
+## Canonical customer search
+
+After dedicated QY sign-in, search above the independent review form. Fictional active IDs 1?4 support name, email, phone and ID queries; customer 4 has a Chinese display name. Selecting a result fills the canonical ID and clears stale contact/evidence/attestation fields. It never verifies identity or grants contact trust. Contacts are masked in results; do not search real customers in this local demo. Search reads the canonical customers table only and returns at most 20 active records.

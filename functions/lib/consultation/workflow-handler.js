@@ -6,7 +6,7 @@ export async function readWorkflowBody(request,maxBytes=20000){
  const decoder=new TextDecoder('utf-8',{fatal:true});let text='',total=0;
  try{for(;;){const {done,value}=await reader.read();if(done)break;total+=value.length;if(total>maxBytes){await reader.cancel();throw Error('Request rejected');}text+=decoder.decode(value,{stream:true});}text+=decoder.decode();return JSON.parse(text);}finally{reader.releaseLock();}
 }
-export function createWorkflowHandler({origin,workflow,stepup,contacts,identity,qyAuth,policies,lifecycle=null,captures=null,captureAdapterConfigured=false}){
+export function createWorkflowHandler({origin,workflow,stepup,contacts,identity,qyAuth,policies,lifecycle=null,customerSearch=null,captures=null,captureAdapterConfigured=false}){
  return async request=>{
   try{
    const url=new URL(request.url),mutation=request.method==='POST';
@@ -16,6 +16,7 @@ export function createWorkflowHandler({origin,workflow,stepup,contacts,identity,
    const input=mutation?await readWorkflowBody(request):null;
    if(path==='context'&&mutation)return identity.establish(request);
    if(path==='qy/login'&&mutation){if(!input||Object.keys(input).some(k=>!['username','password'].includes(k)))return response(400,{ok:false});return qyAuth.login(request,input);}
+   if(path==='qy/customers/search'&&mutation&&customerSearch)return response(200,{ok:true,...await customerSearch.search(request,input)});
    if(path==='qy/logout'&&mutation)return qyAuth.logout(request);
    if(path==='account/options'&&!mutation)return response(200,{ok:true,...await stepup.options(request)});
    if(path==='account/challenge'&&mutation)return response(200,{ok:true,...await stepup.challenge(request,input)});
