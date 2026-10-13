@@ -10,6 +10,8 @@ try {
  $firstPointer=[Runtime.InteropServices.Marshal]::SecureStringToBSTR($first)
  $secondPointer=[Runtime.InteropServices.Marshal]::SecureStringToBSTR($second)
  $payload=@{syntheticOnly=$true;password=[Runtime.InteropServices.Marshal]::PtrToStringBSTR($firstPointer);confirmation=[Runtime.InteropServices.Marshal]::PtrToStringBSTR($secondPointer)}
+ if($payload.password -cne $payload.confirmation){throw 'Temporary password confirmation does not match. No server started.'}
+ if($payload.password.Length -lt 20 -or [Text.Encoding]::UTF8.GetByteCount($payload.password) -gt 128){throw 'Temporary password must contain at least 20 characters and at most 128 UTF-8 bytes. No server started.'}
  $bytes=[Text.Encoding]::UTF8.GetBytes(($payload | ConvertTo-Json -Compress))
  $start=New-Object Diagnostics.ProcessStartInfo
  $start.FileName=(Get-Command node -ErrorAction Stop).Source

@@ -6,6 +6,7 @@ import {join,resolve} from 'node:path';
 import {tmpdir} from 'node:os';
 import {fileURLToPath} from 'node:url';
 import {createSyntheticWorkflow} from './consultation-workflow-local-fixture.mjs';
+import {validPassword} from '../functions/lib/consultation/auth-crypto.js';
 import {readLocalCredentialInput} from './setup-consultation-account-local.mjs';
 const staticFiles=new Map([['/academy-logo.png',['academy-logo.png','image/png']],['/customer.html',['customer.html','text/html; charset=utf-8']],['/qy.html',['qy.html','text/html; charset=utf-8']],['/workflow-ui.js',['workflow-ui.js','text/javascript; charset=utf-8']],['/workflow.css',['workflow.css','text/css; charset=utf-8']]]);
 export function localCertificate(){
@@ -47,15 +48,19 @@ export async function startSyntheticServer({port=8789,password,certificate=local
 }
 async function main(){
  let running;
+ let failureCategory='arguments';
  try{
   if(process.argv[2]!=='--synthetic-local'||process.argv.length!==5||process.argv[3]!=='--port')throw Error('Explicit local arguments required');
+  failureCategory='credential-input';
   const input=await readLocalCredentialInput(process.stdin);
   if(input?.syntheticOnly!==true||input.password!==input.confirmation)throw Error('Synthetic credential input rejected');
+  if(!validPassword(input.password))throw Error('Password requirements');
+  failureCategory='local-tls-or-synthetic-initialization';
   running=await startSyntheticServer({port:Number(process.argv[4]),password:input.password});input.password=null;input.confirmation=null;
   console.log('SYNTHETIC LOCAL ONLY. No real customer information, live credentials or provider calls.');
   console.log('In-memory data and keys disappear when stopped. Self-signed TLS is for this loopback site only.');
   console.log('Customer: '+running.origin+'/customer.html');console.log('QY: '+running.origin+'/qy.html');console.log('Dedicated test username: qy-local-test. Password is not printed.');
   for(const signal of ['SIGINT','SIGTERM'])process.once(signal,async()=>{await running.close();process.exit(0);});
- }catch{if(running)await running.close();console.error('Synthetic local startup failed. No credentials are included.');process.exitCode=1;}
+ }catch{if(running)await running.close();console.error('Synthetic local startup failed ['+failureCategory+']. No credentials are included.');process.exitCode=1;}
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url))await main();
