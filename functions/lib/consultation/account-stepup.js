@@ -11,7 +11,7 @@ function otp(){const limit=Math.floor(4294967296/100000000)*100000000;let n;do{n
 function message(row,code){return enc.encode(JSON.stringify(['qy-account-stepup-v1',row.id,row.customer_id,row.context_id,row.context_version,row.contact_id,code]));}
 async function mac(provider,id,row,code){const key=await provider(id);if(key?.algorithm?.name!=='HMAC'||key.algorithm.hash?.name!=='SHA-256'||key.algorithm.length!==256||key.extractable!==false)fail();return Array.from(new Uint8Array(await crypto.subtle.sign('HMAC',key,message(row,code))),n=>n.toString(16).padStart(2,'0')).join('');}
 function event(db,customerId,label,kind,actor){return statement(db,`INSERT INTO consultation_account_events VALUES(CASE WHEN changes()=1 THEN ? ELSE NULL END,?,?,?,?,${DB_NOW})`,[crypto.randomUUID(),label,customerId,kind,actor]);}
-export function createAccountStepup({db,origin,keys,mockDelivery}){
+export function createAccountStepup({db,origin,keys,mockDelivery,prepareMockDelivery=null}){
  if(typeof mockDelivery!=='function')fail();
  const guards=createWorkflowGuards({db,origin});
  async function options(request){
@@ -43,10 +43,12 @@ export function createAccountStepup({db,origin,keys,mockDelivery}){
    const plain=await decryptIntake({id:contact.id,customerId:contact.customer_id,payloadVersion:1,schemaVersion:1,keyId:contact.key_id,nonce:new Uint8Array(contact.nonce),ciphertext:new Uint8Array(contact.ciphertext)},keys.contact.provider);
    if(plain.channel!==contact.channel||await contactFingerprint(keys.lookup.provider,contact.fingerprint_key_id,plain.channel,plain.contact)!==contact.fingerprint)fail();
    const row={id:crypto.randomUUID(),customer_id:a.principal.customerId,context_id:a.principal.contextId,context_version:a.principal.version,contact_id:contact.id};const code=otp(),digest=await mac(keys.challenge.provider,keys.challenge.activeKeyId,row,code);
+   const deliveryMessage=Object.freeze({purpose:'canonical_account_stepup',channel:plain.channel,recipient:plain.contact,code,challengeId:row.id});
+   const deliveryPlan=prepareMockDelivery?await prepareMockDelivery(deliveryMessage,row):[];
    await db.batch([statement(db,`INSERT INTO consultation_account_challenges(id,customer_id,context_id,context_version,contact_id,digest_key_id,digest,created_at,expires_at)
     SELECT ?,?,?,?,?,?,?,${DB_NOW},MIN(${DB_NOW}+600000,x.expires_at) FROM consultation_customer_contexts x WHERE x.id=? AND x.expires_at>${DB_NOW}+5000
     AND EXISTS(${a.sql}) AND EXISTS(SELECT 1 FROM consultation_account_contacts WHERE id=? AND customer_id=? AND revoked_at IS NULL)
-    AND (SELECT COUNT(*) FROM consultation_account_challenges WHERE customer_id=? AND created_at>${DB_NOW}-900000)<3`,[row.id,row.customer_id,row.context_id,row.context_version,row.contact_id,keys.challenge.activeKeyId,digest,row.context_id,...a.values,row.contact_id,row.customer_id,row.customer_id]),event(db,row.customer_id,'ChallengeIssued','Customer',row.context_id)]);
+    AND (SELECT COUNT(*) FROM consultation_account_challenges WHERE customer_id=? AND created_at>${DB_NOW}-900000)<3`,[row.id,row.customer_id,row.context_id,row.context_version,row.contact_id,keys.challenge.activeKeyId,digest,row.context_id,...a.values,row.contact_id,row.customer_id,row.customer_id]),event(db,row.customer_id,'ChallengeIssued','Customer',row.context_id),...deliveryPlan]);
    // Test-only transport. Errors after commit never trigger an automatic resend/retry.
    try{await mockDelivery(Object.freeze({purpose:'canonical_account_stepup',channel:plain.channel,recipient:plain.contact,code,challengeId:row.id}));}
    catch{return Object.freeze({id:row.id,committed:true,delivery:'Unknown'});}

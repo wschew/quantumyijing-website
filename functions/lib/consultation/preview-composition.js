@@ -19,7 +19,7 @@ export async function validatePreviewContract(env,config,manifest){
   const checked=requirePreviewWorkflowConfiguration({...config,enabled:env.CONSULTATION_PREVIEW_ENABLED,subscriptionAutomationEnabled:env.SUBSCRIPTION_AUTOMATION_ENABLED});
   const db=env.CONSULTATION_DB;
   if(!db||typeof db.prepare!=='function'||typeof db.batch!=='function'||db===env.DB||db===env.ENQUIRIES_DB)fail();
-  if(manifest?.version!==1||manifest.migrations?.length!==14||manifest.baselineCommit!=='2f554a2b6756ee0c803ca734679c56f1ac500243')fail();
+  if(manifest?.version!==1||manifest.migrations?.length!==15||manifest.baselineCommit!=='2f554a2b6756ee0c803ca734679c56f1ac500243')fail();
   const manifestHash=await digest(JSON.stringify(manifest));
   if(config.manifestSha256!==manifestHash)fail();
   const marker=await db.prepare('SELECT * FROM consultation_preview_environment WHERE id=1').first();
@@ -47,7 +47,7 @@ export async function validatePreviewContract(env,config,manifest){
   }
   if(!Array.isArray(config.countryCodes)||!config.countryCodes.length||config.countryCodes.some(c=>!(/^[A-Z]{2}$/).test(c)))fail();
   const keys=await createWorkflowKeys(env.CONSULTATION_KEYRING);
-  if(Object.keys(keys).sort().join(',')!=='challenge,contact,intake,lookup,meeting')fail();
+  if(!['challenge,contact,intake,lookup,meeting','challenge,contact,intake,lookup,meeting,mockDelivery'].includes(Object.keys(keys).sort().join(',')))fail();
   return {db,origin:checked.origin,keys,policies};
  }catch{fail();}
 }
@@ -57,7 +57,7 @@ export async function composePreviewServices(env,config,manifest,{mockDelivery}=
  if(mockDelivery?.kind!=='EncryptedPersistentSyntheticMock'||mockDelivery.databaseId!==config.databaseId||typeof mockDelivery.send!=='function')fail();
  const {db,origin,keys,policies}=contract;
  const identity=createCustomerIdentity({db,origin}),qyAuth=createConsultationAuth({db,origin});
- const stepup=createAccountStepup({db,origin,keys,mockDelivery:message=>mockDelivery.send(message)});
+ const stepup=createAccountStepup({db,origin,keys,mockDelivery:message=>mockDelivery.send(message),prepareMockDelivery:mockDelivery.prepare??null});
  const contacts=createCustomerContact({db,origin,keyProvider:keys.contact.provider,fingerprintKeyProvider:keys.lookup.provider,challengeKeyProvider:keys.challenge.provider,activeKeyId:keys.contact.activeKeyId,activeFingerprintKeyId:keys.lookup.activeKeyId,activeChallengeKeyId:keys.challenge.activeKeyId});
  const workflow=createConsultationWorkflow({db,origin,keys,stepup,contacts,productId:config.productId,practitionerId:config.practitionerId,policies,countryCodes:config.countryCodes,bookingPolicy:policies.booking});
  const services=Object.freeze({identity,qyAuth,stepup,contacts,workflow,lifecycle:createWorkflowLifecycle({db,origin,keys,stepup}),preferences:createAppointmentPreferences({db,origin,stepup}),availability:createAvailability({db,origin,practitionerId:config.practitionerId}),meetings:createMeetingManagement({db,origin,keys,stepup}),customerSearch:createCustomerSearch({db,origin})});

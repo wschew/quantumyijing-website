@@ -30,7 +30,7 @@ async function checks(db,label){
  await db.prepare("INSERT INTO customers(id,customer_reference,status) VALUES(1,'SYNTHETIC-001','Active')").run();
  await db.prepare("INSERT INTO products(id,sku,slug,product_type,name_en,status,price,currency) VALUES(1,'CONSULT-BAZI','synthetic-bazi','consultation','Synthetic','Draft',1300,'MYR')").run();
  await db.prepare("INSERT INTO coaches(id,coach_code,full_name,email,status) VALUES(1,'SYNTHETIC','Synthetic','qy@example.invalid','Approved')").run();
- await t('empty ledger/schema requires all migrations',async()=>assert.equal(verifyApplied(manifest,[],(await db.prepare('SELECT type,name FROM sqlite_master').all()).results).pending.length,14));
+ await t('empty ledger/schema requires all migrations',async()=>assert.equal(verifyApplied(manifest,[],(await db.prepare('SELECT type,name FROM sqlite_master').all()).results).pending.length,15));
  for(const m of manifest.migrations){
   const statements=split(read(m.path)).map(sql=>db.prepare(sql));
   statements.push(db.prepare('INSERT INTO consultation_migration_ledger VALUES(?,?,?,?)').bind(m.ordinal,m.path,m.sha256,Date.now()));
@@ -38,12 +38,12 @@ async function checks(db,label){
  }
  const ledger=()=>db.prepare('SELECT * FROM consultation_migration_ledger ORDER BY ordinal').all();
  const schema=()=>db.prepare('SELECT type,name FROM sqlite_master').all();
- await t('all fourteen migrations atomically recorded on real schema',async()=>assert.equal(verifyApplied(manifest,(await ledger()).results,(await schema()).results).pending.length,0));
- await t('previously applied migrations never scheduled again',async()=>assert.equal(verifyApplied(manifest,(await ledger()).results,(await schema()).results).applied.length,14));
+ await t('all fifteen migrations atomically recorded on real schema',async()=>assert.equal(verifyApplied(manifest,(await ledger()).results,(await schema()).results).pending.length,0));
+ await t('previously applied migrations never scheduled again',async()=>assert.equal(verifyApplied(manifest,(await ledger()).results,(await schema()).results).applied.length,15));
  await t('unledgered schema and missing schema rejection',async()=>{const rows=(await ledger()).results,s=(await schema()).results;assert.throws(()=>verifyApplied(manifest,rows.slice(0,1),s));assert.throws(()=>verifyApplied(manifest,rows,s.filter(o=>o.name!=='consultation_bookings')));});
  await t('modified applied ledger rejection',async()=>{const r=(await ledger()).results;r[1].canonical_sha256='0'.repeat(64);assert.throws(()=>verifyApplied(manifest,r,(/* no async */[])));});
- await t('ledger REPLACE primary and unique paths rejected',async()=>{for(const verb of ['INSERT OR REPLACE','REPLACE']){await assert.rejects(db.prepare(verb+' INTO consultation_migration_ledger VALUES(?,?,?,?)').bind(1,manifest.migrations[0].path,manifest.migrations[0].sha256,1).run());await assert.rejects(db.prepare(verb+' INTO consultation_migration_ledger VALUES(?,?,?,?)').bind(15,manifest.migrations[0].path,manifest.migrations[0].sha256,1).run());}assert.equal((await ledger()).results.length,14);});
- await t('later statement failure rolls back ledger side effects',async()=>{await assert.rejects(db.batch([db.prepare("INSERT INTO consultation_migration_ledger VALUES(15,'synthetic-rejected',?,1)").bind('a'.repeat(64)),db.prepare('INSERT INTO consultation_migration_ledger VALUES(17,?,?,1)').bind('synthetic-failure','a'.repeat(64))]));assert.equal((await ledger()).results.length,14);});
+ await t('ledger REPLACE primary and unique paths rejected',async()=>{for(const verb of ['INSERT OR REPLACE','REPLACE']){await assert.rejects(db.prepare(verb+' INTO consultation_migration_ledger VALUES(?,?,?,?)').bind(1,manifest.migrations[0].path,manifest.migrations[0].sha256,1).run());await assert.rejects(db.prepare(verb+' INTO consultation_migration_ledger VALUES(?,?,?,?)').bind(16,manifest.migrations[0].path,manifest.migrations[0].sha256,1).run());}assert.equal((await ledger()).results.length,15);});
+ await t('later statement failure rolls back ledger side effects',async()=>{await assert.rejects(db.batch([db.prepare("INSERT INTO consultation_migration_ledger VALUES(16,'synthetic-rejected',?,1)").bind('a'.repeat(64)),db.prepare('INSERT INTO consultation_migration_ledger VALUES(18,?,?,1)').bind('synthetic-failure','a'.repeat(64))]));assert.equal((await ledger()).results.length,15);});
  await db.prepare('INSERT INTO consultation_preview_environment VALUES(1,?,?,?,1,1)').bind(databaseId,config.origin,hash).run();
  await db.prepare("INSERT INTO consultation_auth_account VALUES(1,'synthetic',1,'PBKDF2-SHA256',600000,?,?,1,?)").bind('a'.repeat(64),'b'.repeat(64),Date.now()).run();
  const env={CONSULTATION_DB:db,CONSULTATION_PREVIEW_ENABLED:'true',CONSULTATION_KEYRING:JSON.stringify(keyring)};

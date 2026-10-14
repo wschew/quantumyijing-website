@@ -896,6 +896,58 @@
           "name": "consultation_meeting_event_delete"
         }
       ]
+    },
+    {
+      "ordinal": 15,
+      "path": "database/migrate-c1-preview-adapter.sql",
+      "after": "database/migrate-c1-consultation-meetings.sql",
+      "sha256": "6ddee2b5705d7ff569ade8c8f9ba6e492648850e590e06780c0ed99fbae66c98",
+      "objects": [
+        {
+          "type": "table",
+          "name": "consultation_preview_synthetic_customers"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_preview_seed_check"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_preview_seed_replace"
+        },
+        {
+          "type": "table",
+          "name": "consultation_preview_assertions"
+        },
+        {
+          "type": "table",
+          "name": "consultation_preview_outbox"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_preview_outbox_replace"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_preview_outbox_update"
+        },
+        {
+          "type": "table",
+          "name": "consultation_preview_events"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_preview_events_replace"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_preview_events_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_preview_events_delete"
+        }
+      ]
     }
   ],
   "compatibilitySources": [
