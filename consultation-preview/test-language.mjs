@@ -62,4 +62,6 @@ test('non-synthetic response keeps mock outbox hidden',()=>assert.equal(elements
 selection.context.fetch=async()=>{throw Error('Synthetic unauthorized refresh');};elements.get('local-tools').hidden=false;elements.get('customer-search').hidden=false;
 selection.run(source.slice(source.indexOf('// Restore authenticated read-only controls')));await new Promise(resolve=>setTimeout(resolve,0));
 test('failed initial authorization keeps local controls hidden',()=>{assert.equal(elements.get('local-tools').hidden,true);assert.equal(elements.get('customer-search').hidden,true);});
+selection.run("chooseLanguage('zh-CN')");
+test('OTP recovery guidance is bilingual for every safe outcome',()=>{for(const code of ['OTP_EXPIRED','OTP_INCORRECT','OTP_FORMAT','OTP_SESSION_CHANGED','OTP_CHALLENGE_REQUIRED','OTP_USED','OTP_LOCKED','OTP_STATE_CHANGED']){selection.context.outcome=code;assert.equal(selection.run('translateText(otpMessage(outcome))===otpMessage(outcome)'),false);}});
 console.log(`RESULT ${passed} passed, 0 failed; frontend-only synthetic language tests`);

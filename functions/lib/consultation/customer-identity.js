@@ -52,7 +52,20 @@ export function createCustomerIdentity({db,origin}) {
   return db.prepare(`INSERT INTO consultation_customer_context_events(id,context_id,version,event,occurred_at)
    VALUES(?,CASE WHEN changes()=1 THEN ? ELSE NULL END,?,?,${NOW})`).bind(crypto.randomUUID(),contextId,version,event);
  }
- async function credentials(){const token=randomSecret(),csrf=randomSecret();return {token,csrf,tokenDigest:await tokenHash(token),csrfDigest:await tokenHash(csrf)};}
+ // Reproducible only with the secret HttpOnly context cookie; not stored in browser storage.
+ async function csrfFor(token){const bytes=Uint8Array.from(token.match(/../g),x=>parseInt(x,16));const key=await crypto.subtle.importKey('raw',bytes,{name:'HMAC',hash:'SHA-256'},false,['sign']);const digest=await crypto.subtle.sign('HMAC',key,new TextEncoder().encode('qy-consultation-context-csrf-v1:'+origin));return Array.from(new Uint8Array(digest),x=>x.toString(16).padStart(2,'0')).join('');}
+ async function credentials(){const token=randomSecret(),csrf=await csrfFor(token);return {token,csrf,tokenDigest:await tokenHash(token),csrfDigest:await tokenHash(csrf)};}
+ async function resume(request){
+  if(!requestAllowed(request,origin,{mutation:true}))return response(403,{ok:false,code:'CONTEXT_ORIGIN_REJECTED'});
+  try{
+   const read=new Request(request.url,{method:'GET',headers:request.headers});
+   const a=await checked(read);if(a.error)return response(401,{ok:false,code:'CONTEXT_SESSION_REQUIRED'});
+   const token=sessionCookie(request,CONTEXT_COOKIE),csrf=await csrfFor(token);
+   const row=await db.prepare(`SELECT x.id,x.version,x.customer_id,MIN(x.expires_at,${expiry}) expires_at FROM consultation_customer_contexts x JOIN academy_portal_sessions p ON p.id=x.portal_session_id JOIN customers c ON c.id=p.customer_id WHERE x.id=? AND x.version=? AND x.token_hash=? AND x.csrf_hash=? AND x.customer_id=p.customer_id AND x.revoked_at IS NULL AND x.issued_at<=${NOW} AND x.expires_at>${NOW} AND ${live}`).bind(a.principal.contextId,a.principal.version,a.digest,await tokenHash(csrf),a.parentDigest).first();
+   if(!row)return response(409,{ok:false,code:'CONTEXT_RESUME_UNAVAILABLE'});
+   return response(200,{ok:true,resumed:true,csrfToken:csrf,context:{id:row.id,version:row.version,customerId:row.customer_id,expiresAt:row.expires_at}});
+  }catch{return response(503,{ok:false,code:'CONTEXT_UNAVAILABLE'});}
+ }
  // Commit is already complete here. Never report an issuance failure as an unexecuted mutation.
  async function success(creds,id,version,parentDigest) {
   try {
@@ -105,5 +118,5 @@ export function createCustomerIdentity({db,origin}) {
    return rotate?await success(creds,principal.contextId,principal.version+1,auth.parentDigest):response(200,{ok:true},{'set-cookie':clearContextCookie()});
   }catch(error){return failure(error);}
  }
- return Object.freeze({portalIdentity,authorize,establish,rotate:request=>change(request,true),revoke:request=>change(request,false)});
+ return Object.freeze({portalIdentity,authorize,establish,resume,rotate:request=>change(request,true),revoke:request=>change(request,false)});
 }

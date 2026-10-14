@@ -15,13 +15,23 @@ export function createWorkflowHandler({origin,workflow,stepup,contacts,identity,
    const path=url.pathname.replace(/^\/api\/consultation\//,'');
    if(!url.pathname.startsWith('/api/consultation/')||url.searchParams.has('token'))return response(404,{ok:false});
    const input=mutation?await readWorkflowBody(request):null;
+   if(path==='context/resume'&&mutation){if(!input||Object.keys(input).length)return response(400,{ok:false,code:'CONTEXT_INPUT_REJECTED'});return identity.resume(request);}
+   if(path==='account/state'&&!mutation)return response(200,{ok:true,...await stepup.progress(request)});
    if(path==='context'&&mutation)return identity.establish(request);
    if(path==='qy/login'&&mutation){if(!input||Object.keys(input).some(k=>!['username','password'].includes(k)))return response(400,{ok:false});return qyAuth.login(request,input);}
    if(path==='qy/customers/search'&&mutation&&customerSearch)return response(200,{ok:true,...await customerSearch.search(request,input)});
    if(path==='qy/logout'&&mutation)return qyAuth.logout(request);
    if(path==='account/options'&&!mutation)return response(200,{ok:true,...await stepup.options(request)});
    if(path==='account/challenge'&&mutation)return response(200,{ok:true,...await stepup.challenge(request,input)});
-   if(path==='account/confirm'&&mutation)return response(200,{ok:true,...await stepup.confirm(request,input)});
+   if(path==='account/confirm'&&mutation){
+    const auth=await identity.authorize(request,{stateChanging:true});if(auth.error)return response(401,{ok:false,code:'OTP_SESSION_CHANGED'});
+    if(!input||typeof input.code!=='string'||!/^\d{8}$/.test(input.code))return response(400,{ok:false,code:'OTP_FORMAT'});
+    const read=new Request(request.url,{method:'GET',headers:request.headers});
+    let state;try{state=await stepup.progress(read,input.challengeId);}catch{return response(409,{ok:false,code:'OTP_CHALLENGE_REQUIRED'});}
+    if(!state.challenge)return response(409,{ok:false,code:'OTP_CHALLENGE_REQUIRED'});
+    if(state.challenge.state!=='Pending')return response(409,{ok:false,code:state.challenge.state==='Expired'?'OTP_EXPIRED':state.challenge.state==='Locked'?'OTP_LOCKED':state.challenge.state==='Consumed'?'OTP_USED':'OTP_CHALLENGE_REQUIRED'});
+    try{const result=await stepup.confirm(request,input);return response(200,{ok:true,...result,...(result.verified?{}:{code:'OTP_INCORRECT'})});}catch{return response(409,{ok:false,code:'OTP_STATE_CHANGED'});}
+   }
    if(path==='qy/account/review'&&mutation){
     const authorization=await qyAuth.requirePrivateAccess(request,{stateChanging:true});
     if(authorization.error)return response(401,{ok:false,code:'REVIEW_AUTH_REQUIRED'});

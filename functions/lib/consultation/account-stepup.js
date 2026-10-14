@@ -65,10 +65,18 @@ export function createAccountStepup({db,origin,keys,mockDelivery}){
    await db.batch(plan);return Object.freeze({verified:correct});
   }catch{fail();}
  }
+ async function progress(request,challengeId=null){
+  if(challengeId!==null)identifier(challengeId);
+  const a=await guards.customer(request);
+  const row=await statement(db,`SELECT h.id,h.created_at,h.expires_at,h.attempts,h.consumed_at,c.revoked_at contact_revoked FROM consultation_account_challenges h JOIN consultation_account_contacts c ON c.id=h.contact_id WHERE h.customer_id=? AND c.customer_id=h.customer_id AND h.context_id=? AND h.context_version=? AND EXISTS(${a.sql}) ${challengeId===null?'':'AND h.id=?'} ORDER BY h.created_at DESC,h.id DESC LIMIT 1`,[a.principal.customerId,a.principal.contextId,a.principal.version,...a.values,...(challengeId===null?[]:[challengeId])]).first();
+  const proof=await statement(db,`SELECT 1 FROM consultation_account_stepups s JOIN consultation_account_contacts c ON c.id=s.contact_id WHERE s.customer_id=? AND c.customer_id=s.customer_id AND s.context_id=? AND s.context_version=? AND s.expires_at>${DB_NOW} AND s.verified_at<=${DB_NOW} AND c.revoked_at IS NULL AND EXISTS(${a.sql})`,[a.principal.customerId,a.principal.contextId,a.principal.version,...a.values]).first();
+  const challenge=row?{id:row.id,createdAt:row.created_at,expiresAt:row.expires_at,attempts:row.attempts,state:row.contact_revoked!==null?'Unavailable':row.consumed_at!==null?'Consumed':row.attempts>=5?'Locked':row.expires_at<=Date.now()?'Expired':'Pending'}:null;
+  return {context:{id:a.principal.contextId,version:a.principal.version,customerId:a.principal.customerId,expiresAt:a.principal.expiresAt},verified:!!proof,challenge};
+ }
  async function requireStepup(request,mutation=false){
   try{const a=await guards.customer(request,mutation);const sql=`${a.sql} AND EXISTS(SELECT 1 FROM consultation_account_stepups s JOIN consultation_account_contacts t ON t.id=s.contact_id WHERE s.customer_id=x.customer_id AND s.context_id=x.id AND s.context_version=x.version AND s.expires_at>${DB_NOW} AND s.verified_at<=${DB_NOW} AND t.customer_id=s.customer_id AND t.revoked_at IS NULL)`;
    if(!await statement(db,sql,a.values).first())fail();return {...a,sql};
   }catch{fail();}
  }
- return Object.freeze({options,reviewContact,revokeContact,challenge,confirm,requireStepup});
+ return Object.freeze({options,reviewContact,revokeContact,challenge,confirm,progress,requireStepup});
 }
