@@ -1,3 +1,4 @@
+import {createAppointmentPreferences} from '../functions/lib/consultation/appointment-preferences.js';
 ﻿// Explicit synthetic-only factory. Cannot accept a database binding or real provider.
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
@@ -19,7 +20,7 @@ export const LOCAL_MIGRATIONS=Object.freeze([
  'migrate-c1-consultation-customer-identity.sql','migrate-c1-bazi-consultation-foundation.sql',
  'migrate-c1-consultation-customer-intake.sql','migrate-c1-consultation-contact-verification.sql',
  'migrate-c1-consultation-account-stepup.sql','migrate-c1-consultation-workflow.sql',
- 'migrate-c1-consultation-workflow-lifecycle.sql','migrate-c1-consultation-capture-review.sql','migrate-c1-consultation-workflow-evidence-guards.sql'
+ 'migrate-c1-consultation-workflow-lifecycle.sql','migrate-c1-consultation-capture-review.sql','migrate-c1-consultation-workflow-evidence-guards.sql','migrate-c1-consultation-preferences.sql'
 ]);
 function binding(raw){
  return {prepare(sql){let values=[];return {bind(...v){values=v;return this;},async first(){return raw.prepare(sql).get(...values)??null;},async all(){return {results:raw.prepare(sql).all(...values)};},async run(){if(/^\s*SELECT/i.test(sql))return {results:raw.prepare(sql).all(...values)};return {meta:{changes:Number(raw.prepare(sql).run(...values).changes)}};}};},async batch(plan){raw.exec('BEGIN');try{const result=[];for(const p of plan)result.push(await p.run());raw.exec('COMMIT');return result;}catch(e){raw.exec('ROLLBACK');throw e;}}};
@@ -52,7 +53,8 @@ export async function createSyntheticWorkflow({origin,password,syntheticOnly}){
   const workflow=createConsultationWorkflow({db,origin,keys,stepup,contacts,productId:1,practitionerId:1,policies,countryCodes:['MY','SG','CN','TW','HK','AU','GB','US'],bookingPolicy:{version:'synthetic-local-v1',hash:'b'.repeat(64)},readCaptureEvidence:captures.readEvidence});
   const lifecycle=createWorkflowLifecycle({db,origin,keys,stepup});
   const customerSearch=createCustomerSearch({db,origin});
-  const baseHandler=createWorkflowHandler({origin,workflow,customerSearch,stepup,contacts,identity,qyAuth,policies,lifecycle,captures,captureAdapterConfigured:true});
+  const preferences=createAppointmentPreferences({db,origin,stepup});
+  const baseHandler=createWorkflowHandler({origin,workflow,preferences,customerSearch,stepup,contacts,identity,qyAuth,policies,lifecycle,captures,captureAdapterConfigured:true});
   async function mockCapture(request,input){
    if(!input||Object.keys(input).some(k=>!['id','expectedVersion','mode'].includes(k))||!['timely','late','unknown'].includes(input.mode))throw Error('Synthetic capture rejected');
    const auth=await guards.qy(request,true);

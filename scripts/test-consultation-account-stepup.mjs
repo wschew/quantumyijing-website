@@ -1,3 +1,4 @@
+import {createAppointmentPreferences} from '../functions/lib/consultation/appointment-preferences.js';
 ﻿import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
@@ -85,9 +86,28 @@ async function checks(db,label){
  await t('intake without account proof fails closed',()=>assert.rejects(wf.submit(req(1,true),{commandId:'forged-booking',intake})));
  await t('intake rejects forged identifiers',()=>assert.rejects(wf.submit(req(0,true),{commandId:'forged-fields',intake:{...intake,customerId:2}})));
  let b=await wf.submit(req(0,true),{commandId:'submit-1',intake});
- await t('booking and encrypted intake submitted atomically',async()=>{assert.equal(b.state,'Submitted');assert.equal((await db.prepare('SELECT COUNT(*) n FROM consultation_workflow_intakes').first()).n,1);});
- await t('duplicate submission rolls back all records',async()=>{await assert.rejects(wf.submit(req(0,true),{commandId:'submit-1',intake}));assert.equal((await db.prepare('SELECT COUNT(*) n FROM consultation_bookings').first()).n,1);});
- await t('operational listing omits private fields',async()=>{const rows=await wf.list(qyGet,{qy:true});assert.equal(rows.length,1);assert.ok(!JSON.stringify(rows).includes('Synthetic private questions'));assert.equal(rows[0].birthDate,undefined);});
+ // U2-A is additive and exercised against both SQLite and local D1.
+ for(const sql of split(read('migrate-c1-consultation-preferences.sql')))await db.prepare(sql).run();
+ const preferences=createAppointmentPreferences({db,origin,stepup:service});
+ const pb=await wf.submit(req(0,true),{commandId:'preferences-request',intake});
+ const baseInput={id:pb.id,expectedVersion:0,expectedRevision:0,commandId:'preferences-first',starts:[Date.now()+100*3600000,Date.now()+110*3600000]};
+ await t('preferences require customer ownership and authenticated reads',async()=>{await assert.rejects(preferences.read(req(1),pb.id));await assert.rejects(preferences.read(new Request(origin),pb.id));await assert.rejects(preferences.save(req(1,true),baseInput));});
+ await t('preferences reject malformed and duplicate values atomically',async()=>{for(const starts of [[],[baseInput.starts[0],baseInput.starts[0]],['2030-01-01'],[NaN],[Date.now()-1],Array(4).fill(baseInput.starts[0]),[null]])await assert.rejects(preferences.save(req(0,true),{...baseInput,starts}));assert.equal((await db.prepare('SELECT row_version FROM consultation_bookings WHERE id=?').bind(pb.id).first()).row_version,0);});
+ const ps=await preferences.save(req(0,true),baseInput);
+ await t('preferences preserve rank without reserving, offering or payment changes',async()=>{assert.equal(ps.revision,1);const row=await db.prepare('SELECT state,current_offer_id,row_version,current_start_at FROM consultation_bookings WHERE id=?').bind(pb.id).first();assert.equal(row.state,'Submitted');assert.equal(row.current_offer_id,null);assert.equal(row.current_start_at,null);assert.equal(row.row_version,1);assert.equal((await db.prepare('SELECT COUNT(*) n FROM consultation_slot_reservations WHERE booking_id=?').bind(pb.id).first()).n,0);assert.deepEqual((await preferences.read(qyGet,pb.id,{qy:true})).starts,baseInput.starts);});
+ await t('stale preference and booking revisions roll back',async()=>{await assert.rejects(preferences.save(req(0,true),{...baseInput,commandId:'stale-preferences'}));await assert.rejects(preferences.save(req(0,true),{...baseInput,expectedVersion:1,commandId:'stale-only-preferences'}));assert.equal((await db.prepare('SELECT COUNT(*) n FROM consultation_appointment_preferences WHERE booking_id=?').bind(pb.id).first()).n,1);});
+ await t('duplicate command rolls back otherwise valid CAS',async()=>{await assert.rejects(preferences.save(req(0,true),{...baseInput,expectedVersion:1,expectedRevision:1}));assert.equal((await db.prepare('SELECT row_version FROM consultation_bookings WHERE id=?').bind(pb.id).first()).row_version,1);});
+ await t('preferences revision append preserves prior evidence',async()=>{const next=await preferences.save(req(0,true),{...baseInput,expectedVersion:1,expectedRevision:1,commandId:'preferences-second',starts:[baseInput.starts[1]]});assert.equal(next.revision,2);assert.equal((await preferences.read(req(),pb.id)).starts[0],baseInput.starts[1]);assert.equal((await db.prepare('SELECT COUNT(*) n FROM consultation_appointment_preferences WHERE booking_id=?').bind(pb.id).first()).n,2);});
+ await t('preference REPLACE collisions cannot erase evidence',async()=>{const row=await db.prepare('SELECT * FROM consultation_appointment_preferences WHERE booking_id=? AND revision=1').bind(pb.id).first();const names=Object.keys(row);await assert.rejects(db.prepare('INSERT OR REPLACE INTO consultation_appointment_preferences('+names.join(',')+') VALUES('+names.map(()=>'?').join(',')+')').bind(...names.map(k=>row[k])).run());assert.equal((await db.prepare('SELECT COUNT(*) n FROM consultation_appointment_preferences WHERE booking_id=?').bind(pb.id).first()).n,2);});
+ // A QY review changes booking CAS, but preference edits remain allowed until the offer.
+ const pr=await wf.change(qyReq,{id:pb.id,to:'UnderReview',expectedVersion:2,commandId:'preferences-review'});
+ await preferences.save(req(0,true),{...baseInput,expectedVersion:pr.rowVersion,expectedRevision:2,commandId:'preferences-under-review'});
+ const po=await wf.propose(qyReq,{id:pb.id,startAt:Date.now()+200*3600000,expectedVersion:pr.rowVersion+1,commandId:'preferences-offer'});
+ await t('issued offer permanently closes preference revisions',async()=>{await assert.rejects(preferences.save(req(0,true),{...baseInput,expectedVersion:po.rowVersion,expectedRevision:3,commandId:'preferences-after-offer'}));assert.equal((await preferences.read(req(),pb.id)).editable,false);});
+
+ await t('booking and encrypted intake submitted atomically',async()=>{assert.equal(b.state,'Submitted');assert.equal((await db.prepare('SELECT COUNT(*) n FROM consultation_workflow_intakes').first()).n,2);});
+ await t('duplicate submission rolls back all records',async()=>{await assert.rejects(wf.submit(req(0,true),{commandId:'submit-1',intake}));assert.equal((await db.prepare('SELECT COUNT(*) n FROM consultation_bookings').first()).n,2);});
+ await t('operational listing omits private fields',async()=>{const rows=await wf.list(qyGet,{qy:true});assert.equal(rows.length,2);assert.ok(!JSON.stringify(rows).includes('Synthetic private questions'));assert.equal(rows[0].birthDate,undefined);});
  await t('QY private read decrypts correct assigned case',async()=>assert.equal((await wf.readPrivate(qyGet,b.id)).questions,intake.questions));
  await t('ADMIN_TOKEN cannot read private intake',()=>assert.rejects(wf.readPrivate(new Request(origin,{headers:{authorization:'Bearer synthetic'}}),b.id)));
  b=await wf.change(qyReq,{id:b.id,to:'UnderReview',expectedVersion:0,commandId:'review-1'});
@@ -123,7 +143,7 @@ async function checks(db,label){
  await t('duplicate delivery safely rejected',()=>assert.rejects(wf.report(qyReq,{id:completed.id,action:'Delivered',expectedVersion:prepared.rowVersion,commandId:'manual-delivered',evidenceReference:'manual-customer-confirmation-1'})));
 
  const handler=createWorkflowHandler({origin,workflow:wf,stepup:service,contacts,identity,qyAuth:createConsultationAuth({db,origin}),policies});
- await t('local controller QY listing uses dedicated session',async()=>{const res=await handler(new Request(origin+'/api/consultation/qy/bookings',{headers:qyGet.headers}));assert.equal(res.status,200);assert.equal((await res.json()).records.length,2);});
+ await t('local controller QY listing uses dedicated session',async()=>{const res=await handler(new Request(origin+'/api/consultation/qy/bookings',{headers:qyGet.headers}));assert.equal(res.status,200);assert.equal((await res.json()).records.length,3);});
  await t('local controller rejects foreign Origin before mutation',async()=>{const res=await handler(new Request(origin+'/api/consultation/bookings',{method:'POST',headers:{...Object.fromEntries(req(0,true).headers),origin:'https://foreign.invalid'},body:'{}'}));assert.equal(res.status,403);});
  await t('local controller refuses unwired payment operation',async()=>assert.equal((await handler(new Request(origin+'/api/consultation/qy/payment/reconcile',{method:'POST',headers:qyReq.headers,body:'{}'}))).status,404));
  await t('local controller rejects malformed UTF8 without reflecting it',async()=>{const res=await handler(new Request(origin+'/api/consultation/bookings',{method:'POST',headers:req(0,true).headers,body:new Uint8Array([123,34,120,34,58,34,255,34,125])}));assert.equal(res.status,409);assert.ok(!(await res.text()).includes('255'));});
