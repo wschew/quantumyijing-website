@@ -1,0 +1,927 @@
+{
+  "version": 1,
+  "baselineCommit": "2f554a2b6756ee0c803ca734679c56f1ac500243",
+  "checksum": "sha256-utf8-bomless-lf",
+  "prerequisites": [
+    {
+      "path": "database/migrate-v4.0-phase-f1f2-academy-portal.sql",
+      "sha256": "9009366dfb9ca39674f70f88d1f3155972bd5384fbd06f68e442e74c089a6fd2"
+    }
+  ],
+  "migrations": [
+    {
+      "ordinal": 1,
+      "path": "database/migrate-c1-integration-control.sql",
+      "after": null,
+      "sha256": "13b8c7b3a3b8479eeb82e8a2c9951e6c9b5af31a4996e1f4a3c14eb4149481ac",
+      "objects": [
+        {
+          "type": "table",
+          "name": "consultation_migration_ledger"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_ledger_prefix"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_ledger_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_ledger_delete"
+        },
+        {
+          "type": "table",
+          "name": "consultation_preview_environment"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_environment_replace"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_environment_identity"
+        }
+      ]
+    },
+    {
+      "ordinal": 2,
+      "path": "database/migrate-c1-consultation-auth.sql",
+      "after": "database/migrate-c1-integration-control.sql",
+      "sha256": "342c9a5a62c192631fe5f981169ce0d3630262e54177c86ff542701bc8691622",
+      "objects": [
+        {
+          "type": "table",
+          "name": "consultation_auth_account"
+        },
+        {
+          "type": "table",
+          "name": "consultation_auth_control"
+        },
+        {
+          "type": "table",
+          "name": "consultation_auth_sessions"
+        },
+        {
+          "type": "table",
+          "name": "consultation_auth_audit"
+        },
+        {
+          "type": "index",
+          "name": "idx_consultation_auth_session_expiry"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_auth_audit_no_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_auth_audit_no_delete"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_auth_password_version_guard"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_auth_session_immutable"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_auth_mutation_gate"
+        }
+      ]
+    },
+    {
+      "ordinal": 3,
+      "path": "database/migrate-c1-consultation-customer-identity.sql",
+      "after": "database/migrate-c1-consultation-auth.sql",
+      "sha256": "88935351cc4dbdd4719cd77f4a5110e43efe06d1565110a85e1e9e77ead570bf",
+      "objects": [
+        {
+          "type": "table",
+          "name": "consultation_customer_contexts"
+        },
+        {
+          "type": "index",
+          "name": "idx_consultation_context_expiry"
+        },
+        {
+          "type": "table",
+          "name": "consultation_customer_context_events"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_context_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_context_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_context_event_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_context_event_no_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_context_event_no_delete"
+        }
+      ]
+    },
+    {
+      "ordinal": 4,
+      "path": "database/migrate-c1-bazi-consultation-foundation.sql",
+      "after": "database/migrate-c1-consultation-customer-identity.sql",
+      "sha256": "fac59365c1e39c36c37ba34c56b7ea835fe2502a63933acc28c305466e0af732",
+      "objects": [
+        {
+          "type": "table",
+          "name": "consultation_promotions"
+        },
+        {
+          "type": "table",
+          "name": "consultation_bookings"
+        },
+        {
+          "type": "table",
+          "name": "consultation_offers"
+        },
+        {
+          "type": "table",
+          "name": "consultation_slot_reservations"
+        },
+        {
+          "type": "table",
+          "name": "consultation_private_intakes"
+        },
+        {
+          "type": "table",
+          "name": "consultation_reschedule_requests"
+        },
+        {
+          "type": "table",
+          "name": "consultation_reports"
+        },
+        {
+          "type": "table",
+          "name": "consultation_deliveries"
+        },
+        {
+          "type": "table",
+          "name": "consultation_events"
+        },
+        {
+          "type": "index",
+          "name": "idx_consultation_bookings_customer"
+        },
+        {
+          "type": "index",
+          "name": "idx_consultation_bookings_schedule"
+        },
+        {
+          "type": "index",
+          "name": "idx_consultation_current_offer"
+        },
+        {
+          "type": "index",
+          "name": "idx_consultation_offer_expiry"
+        },
+        {
+          "type": "index",
+          "name": "idx_consultation_slots_overlap"
+        },
+        {
+          "type": "index",
+          "name": "idx_consultation_intake_retention"
+        },
+        {
+          "type": "index",
+          "name": "idx_consultation_reschedule_pending"
+        },
+        {
+          "type": "index",
+          "name": "idx_consultation_report_retention"
+        },
+        {
+          "type": "index",
+          "name": "idx_consultation_delivery_followup"
+        },
+        {
+          "type": "index",
+          "name": "idx_consultation_events_booking"
+        },
+        {
+          "type": "index",
+          "name": "idx_consultation_promotion_product"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_offer_snapshot_immutable"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_original_appointment_immutable"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_slot_insert_overlap"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_slot_update_overlap"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_relationship_0_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_relationship_0_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_relationship_1_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_relationship_1_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_relationship_2_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_relationship_2_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_relationship_3_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_relationship_3_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_relationship_4_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_relationship_4_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_relationship_5_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_relationship_5_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_booking_identity_immutable"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_acceptance_immutable"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_order_binding_immutable"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_report_identity_immutable"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_promotion_version_immutable"
+        }
+      ]
+    },
+    {
+      "ordinal": 5,
+      "path": "database/migrate-c1-consultation-customer-intake.sql",
+      "after": "database/migrate-c1-bazi-consultation-foundation.sql",
+      "sha256": "5f78ca9a97d4964709edae851b082e4c5103e4dc4bfae3541f23828992204621",
+      "objects": [
+        {
+          "type": "table",
+          "name": "consultation_customer_intakes"
+        },
+        {
+          "type": "table",
+          "name": "consultation_intake_consents"
+        },
+        {
+          "type": "table",
+          "name": "consultation_intake_commands"
+        },
+        {
+          "type": "table",
+          "name": "consultation_intake_reviews"
+        },
+        {
+          "type": "table",
+          "name": "consultation_intake_access_audit"
+        },
+        {
+          "type": "index",
+          "name": "idx_consultation_intake_customer"
+        },
+        {
+          "type": "index",
+          "name": "idx_consultation_intake_retention_review"
+        },
+        {
+          "type": "index",
+          "name": "idx_consultation_intake_consent_latest"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_customer_intake_identity"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_intake_command_gate"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_intake_consent_no_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_intake_consent_no_delete"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_intake_command_no_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_intake_command_no_delete"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_intake_access_no_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_intake_access_no_delete"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_consent_append"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_command_append"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_access_append"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_intake_no_replace"
+        }
+      ]
+    },
+    {
+      "ordinal": 6,
+      "path": "database/migrate-c1-consultation-contact-verification.sql",
+      "after": "database/migrate-c1-consultation-customer-intake.sql",
+      "sha256": "b4606aa0a4c2bd7796475f1564afab9377d215d4444e66d1327d6ff95fcfbc4c",
+      "objects": [
+        {
+          "type": "table",
+          "name": "consultation_contact_control"
+        },
+        {
+          "type": "table",
+          "name": "consultation_contact_nonces"
+        },
+        {
+          "type": "table",
+          "name": "consultation_contact_challenges"
+        },
+        {
+          "type": "index",
+          "name": "idx_consultation_contact_pending"
+        },
+        {
+          "type": "index",
+          "name": "idx_consultation_contact_context"
+        },
+        {
+          "type": "table",
+          "name": "consultation_verified_contacts"
+        },
+        {
+          "type": "index",
+          "name": "idx_consultation_contact_verified"
+        },
+        {
+          "type": "table",
+          "name": "consultation_contact_events"
+        },
+        {
+          "type": "index",
+          "name": "idx_consultation_contact_instruction_audit"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_contact_challenge_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_contact_challenge_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_contact_proof_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_contact_proof_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_contact_event_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_contact_event_no_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_contact_event_no_delete"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_contact_nonce_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_contact_nonce_no_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_contact_nonce_no_delete"
+        }
+      ]
+    },
+    {
+      "ordinal": 7,
+      "path": "database/migrate-c1-consultation-account-stepup.sql",
+      "after": "database/migrate-c1-consultation-contact-verification.sql",
+      "sha256": "770f2b19726d7bfe8311e7bb5cbe1479ad20d2bf97b0dc112f8f62cd74e616a9",
+      "objects": [
+        {
+          "type": "table",
+          "name": "consultation_account_contacts"
+        },
+        {
+          "type": "index",
+          "name": "consultation_account_contact_active"
+        },
+        {
+          "type": "table",
+          "name": "consultation_account_challenges"
+        },
+        {
+          "type": "table",
+          "name": "consultation_account_stepups"
+        },
+        {
+          "type": "table",
+          "name": "consultation_account_events"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_account_contact_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_account_contact_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_account_contact_delete"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_account_challenge_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_account_challenge_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_account_challenge_delete"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_account_stepup_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_account_stepup_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_account_stepup_delete"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_account_event_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_account_event_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_account_event_delete"
+        }
+      ]
+    },
+    {
+      "ordinal": 8,
+      "path": "database/migrate-c1-consultation-workflow.sql",
+      "after": "database/migrate-c1-consultation-account-stepup.sql",
+      "sha256": "39f80652d13c50e531b2303be7264370c72d2d03f3954beec2b991beb8cafc0c",
+      "objects": [
+        {
+          "type": "table",
+          "name": "consultation_workflow_intakes"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_intake_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_intake_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_intake_delete"
+        },
+        {
+          "type": "table",
+          "name": "consultation_workflow_events"
+        },
+        {
+          "type": "table",
+          "name": "consultation_workflow_commands"
+        },
+        {
+          "type": "table",
+          "name": "consultation_manual_reports"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_command_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_command_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_command_delete"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_event_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_event_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_event_delete"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_manual_report_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_manual_report_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_manual_report_delete"
+        }
+      ]
+    },
+    {
+      "ordinal": 9,
+      "path": "database/migrate-c1-consultation-workflow-lifecycle.sql",
+      "after": "database/migrate-c1-consultation-workflow.sql",
+      "sha256": "94f7293be82ccc68d07a68b641648e2e0a022a366721eb50212104c59979507d",
+      "objects": [
+        {
+          "type": "table",
+          "name": "consultation_workflow_appointments"
+        },
+        {
+          "type": "index",
+          "name": "consultation_workflow_current_appointment"
+        },
+        {
+          "type": "index",
+          "name": "consultation_workflow_pending_reschedule"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_appointment_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_appointment_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_appointment_delete"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_initial_slot_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_initial_slot_update"
+        },
+        {
+          "type": "table",
+          "name": "consultation_workflow_lifecycle_events"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_lifecycle_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_lifecycle_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_lifecycle_delete"
+        }
+      ]
+    },
+    {
+      "ordinal": 10,
+      "path": "database/migrate-c1-consultation-capture-review.sql",
+      "after": "database/migrate-c1-consultation-workflow-lifecycle.sql",
+      "sha256": "95e452bc74b877e1b79a979ef0ebab990a1f0e26d06e21deea4827ba160a55b1",
+      "objects": [
+        {
+          "type": "table",
+          "name": "consultation_capture_reviews"
+        },
+        {
+          "type": "table",
+          "name": "consultation_capture_audit"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_capture_review_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_capture_review_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_capture_review_delete"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_capture_audit_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_capture_audit_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_capture_audit_delete"
+        }
+      ]
+    },
+    {
+      "ordinal": 11,
+      "path": "database/migrate-c1-consultation-workflow-evidence-guards.sql",
+      "after": "database/migrate-c1-consultation-capture-review.sql",
+      "sha256": "893ac30c8fe801cfe1e38673599c61923e370928376c6bfec4a4c21a5bd0d426",
+      "objects": [
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_active_appointment_collision"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_reschedule_collision"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_reschedule_identity"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_reschedule_delete"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_workflow_original_slot_collision"
+        }
+      ]
+    },
+    {
+      "ordinal": 12,
+      "path": "database/migrate-c1-consultation-preferences.sql",
+      "after": "database/migrate-c1-consultation-workflow-evidence-guards.sql",
+      "sha256": "2f85dab0d4f9e18e6767d09a4b07cdd9b76871e9ad56ffb358fd1a1ab5d0f090",
+      "objects": [
+        {
+          "type": "table",
+          "name": "consultation_appointment_preferences"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_preferences_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_preferences_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_preferences_delete"
+        }
+      ]
+    },
+    {
+      "ordinal": 13,
+      "path": "database/migrate-c1-consultation-availability.sql",
+      "after": "database/migrate-c1-consultation-preferences.sql",
+      "sha256": "ab48006ec4dccc9be366b0325f85846710575c65249a8e703d58516d3a4aebdb",
+      "objects": [
+        {
+          "type": "table",
+          "name": "consultation_availability_windows"
+        },
+        {
+          "type": "index",
+          "name": "consultation_availability_coverage"
+        },
+        {
+          "type": "table",
+          "name": "consultation_availability_events"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_availability_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_availability_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_availability_delete"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_availability_event_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_availability_event_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_availability_event_delete"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_availability_slot_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_availability_slot_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_availability_replacement_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_availability_replacement_update"
+        }
+      ]
+    },
+    {
+      "ordinal": 14,
+      "path": "database/migrate-c1-consultation-meetings.sql",
+      "after": "database/migrate-c1-consultation-availability.sql",
+      "sha256": "e95ee0738e18a08e5fa8d65f2ef0971bd864d112fdf971f06523da45eb986e3f",
+      "objects": [
+        {
+          "type": "table",
+          "name": "consultation_meeting_publications"
+        },
+        {
+          "type": "index",
+          "name": "consultation_meeting_current"
+        },
+        {
+          "type": "table",
+          "name": "consultation_meeting_secrets"
+        },
+        {
+          "type": "table",
+          "name": "consultation_meeting_events"
+        },
+        {
+          "type": "index",
+          "name": "consultation_meeting_view_once"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_meeting_publication_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_meeting_publication_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_meeting_publication_delete"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_meeting_secret_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_meeting_secret_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_meeting_secret_delete"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_meeting_event_insert"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_meeting_event_update"
+        },
+        {
+          "type": "trigger",
+          "name": "consultation_meeting_event_delete"
+        }
+      ]
+    }
+  ],
+  "compatibilitySources": [
+    {
+      "path": "database/schema.sql",
+      "sha256": "fcc3151d2ed5fe5801278856059efb9d691adc6fa6f5b265e8e8c0694fcde3f4"
+    },
+    {
+      "path": "database/migrate-v2.7.sql",
+      "sha256": "7852df99ab6a0dc48e4729c87ef6ab78a14ea84b8ee3675692f3188605036471"
+    },
+    {
+      "path": "database/migrate-v4.0-customer-membership-foundation.sql",
+      "sha256": "bfb62ddbaab2ca282060707ee94dd07c2346aa1051f73c011a89d6c730fb074f"
+    },
+    {
+      "path": "migrate-v3.4.0-coach-foundation.sql",
+      "sha256": "efa03c5f5bad45a62f6416ec732e7197768924ba79ce94754c6040b96b2bea98"
+    },
+    {
+      "path": "database/migrate-v3.1.sql",
+      "sha256": "0f25f7b4891652ba026fd9a237355f76af767873ca45a4958045049e26290f45"
+    },
+    {
+      "path": "migrate-v3.3.15.sql",
+      "sha256": "0d1c4891081ea71ba4441fc99c7eac4bbc70de5514f785538702775b6a2bf122"
+    }
+  ]
+}
