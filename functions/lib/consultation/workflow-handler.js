@@ -39,6 +39,7 @@ export function createWorkflowHandler({origin,workflow,stepup,contacts,identity,
     try{return response(200,{ok:true,code:'REVIEW_RECORDED',...await stepup.reviewContact(request,input)});}
     catch{return response(409,{ok:false,code:'REVIEW_REJECTED'});}
    }
+   if(path==='contact/state'&&!mutation)return contacts.progress(request);
    if(path==='contact/challenge'&&mutation)return contacts.requestChallenge(request,input);
    if(path==='contact/confirm'&&mutation)return contacts.confirm(request,input);
    if(path==='qy/contact/instructions'&&!mutation)return contacts.instructions(request,{challengeId:url.searchParams.get('id')});

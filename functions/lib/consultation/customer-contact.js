@@ -1,4 +1,4 @@
-﻿// Internal consultation service only. No public routes or delivery-provider calls.
+// Internal consultation service only. No public routes or delivery-provider calls.
 import {createCustomerIdentity} from './customer-identity.js';
 import {createConsultationAuth} from './auth.js';
 import {randomSecret,tokenHash} from './auth-crypto.js';
@@ -144,6 +144,13 @@ export function createCustomerContact({db,origin,keyProvider,fingerprintKeyProvi
    return valid?reply(200,{ok:true,verified:true,verificationId:proof.id,channel:row.channel}):reply(400,{ok:false,error:'Contact response rejected.'});
   }catch(error){return classify(error);}
  }
+ async function progress(request){
+  try{const a=await customer(request,false);if(!a)return denied();
+   const row=await statement(db,`SELECT h.id,h.channel,h.state,h.expires_at,h.revision,h.attempts FROM consultation_contact_challenges h WHERE h.customer_id=? AND h.context_id=? AND h.context_version=? AND EXISTS(${a.guard}) ORDER BY h.requested_at DESC,h.id DESC LIMIT 1`,[a.principal.customerId,a.principal.contextId,a.principal.version,...a.values]).first();
+   const verified=row?await statement(db,`SELECT 1 FROM consultation_verified_contacts v WHERE v.challenge_id=? AND v.customer_id=? AND v.context_id=? AND v.context_version=? AND v.revoked_at IS NULL AND v.expires_at>${NOW} AND EXISTS(${a.guard})`,[row.id,a.principal.customerId,a.principal.contextId,a.principal.version,...a.values]).first():null;
+   return reply(200,{ok:true,verified:!!verified,challenge:row?{id:row.id,channel:row.channel,state:row.expires_at<=Date.now()?'Expired':row.state,expiresAt:row.expires_at,revision:row.revision,attempts:row.attempts}:null});
+  }catch{return unavailable();}
+ }
  async function verifiedContact(request,channel){
   try{
    if(!CHANNELS.includes(channel))return null;const a=await customer(request,false);if(!a)return null;
@@ -158,5 +165,5 @@ export function createCustomerContact({db,origin,keyProvider,fingerprintKeyProvi
   }catch{return null;}
  }
  function classify(error){if(error?.message==='Contact input rejected')return reply(400,{ok:false,error:'Contact input rejected.'});return typeof error?.message==='string'&&error.message.includes('contact authorization or quota failed')?conflict():unavailable();}
- return Object.freeze({requestChallenge,instructions,markDelivered,confirm,verifiedContact});
+ return Object.freeze({requestChallenge,instructions,markDelivered,confirm,verifiedContact,progress});
 }
