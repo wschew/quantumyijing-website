@@ -60,6 +60,7 @@ try{
   const offer=(await customer.call('offer?id='+id)).data.offer;
   const accepted=await customer.call('offer/accept',{id,expectedVersion:proposed.data.rowVersion,commandId:crypto.randomUUID(),acknowledged:true,policyHash:offer.policyHash,snapshotHash:offer.snapshotHash});assert.equal(accepted.status,200);return {id,rowVersion:accepted.data.rowVersion};
  }
+ assert.equal((await qy.call('qy/availability',{action:'Create',expectedRevision:0,commandId:crypto.randomUUID(),startAt:Date.now()+3600000,endAt:Date.now()+30*86400000})).status,200);
  const first=await offered(96);
  await test('missing capture evidence causes explicit ExceptionReview',async()=>{const r=await qy.call('qy/payment/reconcile',{id:first.id,expectedVersion:first.rowVersion,commandId:crypto.randomUUID()});assert.equal(r.status,200);assert.equal(r.data.state,'ExceptionReview');first.rowVersion=r.data.rowVersion;});
  const capture=await qy.call('qy/local/capture',{id:first.id,expectedVersion:first.rowVersion,mode:'timely'});assert.equal(capture.status,200);first.rowVersion=capture.data.rowVersion;

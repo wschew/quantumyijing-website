@@ -7,7 +7,7 @@ export async function readWorkflowBody(request,maxBytes=20000){
  const decoder=new TextDecoder('utf-8',{fatal:true});let text='',total=0;
  try{for(;;){const {done,value}=await reader.read();if(done)break;total+=value.length;if(total>maxBytes){await reader.cancel();throw Error('Request rejected');}text+=decoder.decode(value,{stream:true});}text+=decoder.decode();return JSON.parse(text);}finally{reader.releaseLock();}
 }
-export function createWorkflowHandler({origin,workflow,stepup,contacts,identity,qyAuth,policies,preferences=null,lifecycle=null,customerSearch=null,captures=null,captureAdapterConfigured=false}){
+export function createWorkflowHandler({origin,workflow,stepup,contacts,identity,qyAuth,policies,availability=null,preferences=null,lifecycle=null,customerSearch=null,captures=null,captureAdapterConfigured=false}){
  return async request=>{
   try{
    const url=new URL(request.url),mutation=request.method==='POST';
@@ -44,6 +44,8 @@ export function createWorkflowHandler({origin,workflow,stepup,contacts,identity,
    if(path==='contact/confirm'&&mutation)return contacts.confirm(request,input);
    if(path==='qy/contact/instructions'&&!mutation)return contacts.instructions(request,{challengeId:url.searchParams.get('id')});
    if(path==='qy/contact/delivered'&&mutation)return contacts.markDelivered(request,input);
+   if(availability&&path==='qy/availability'&&!mutation)return response(200,{ok:true,...await availability.list(request)});
+   if(availability&&path==='qy/availability'&&mutation)return response(200,{ok:true,...await availability.save(request,input)});
    if(preferences&&path==='preferences'&&!mutation)return response(200,{ok:true,...await preferences.read(request,url.searchParams.get('id'))});
    if(preferences&&path==='preferences'&&mutation)return response(200,{ok:true,...await preferences.save(request,input)});
    if(preferences&&path==='qy/preferences'&&!mutation)return response(200,{ok:true,...await preferences.read(request,url.searchParams.get('id'),{qy:true})});
