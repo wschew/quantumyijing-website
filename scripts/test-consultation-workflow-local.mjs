@@ -18,7 +18,7 @@ function client(qy=false){
   Object.assign(headers,overrides);
   const response=await fixture.handler(new Request(origin+'/api/consultation/'+path,{method:data===undefined?'GET':'POST',headers,...(data===undefined?{}:{body:JSON.stringify(data)})}));
   const cookie=response.headers.get('set-cookie');if(cookie){const [name,value]=cookie.split(';')[0].split('=');jar.set(name,value);assert.ok(cookie.includes('Secure')&&cookie.includes('HttpOnly'));}
-  const result=await response.json();if(result.csrfToken)csrf=result.csrfToken;return {status:response.status,data:result};
+  const result=await response.json();if(result.csrfToken)csrf=result.csrfToken;return {status:response.status,data:result,cacheControl:response.headers.get('cache-control')};
  }};
 }
 const customer=client(),qy=client(true),outsider=client(true);
@@ -65,6 +65,11 @@ try{
  await test('missing capture evidence causes explicit ExceptionReview',async()=>{const r=await qy.call('qy/payment/reconcile',{id:first.id,expectedVersion:first.rowVersion,commandId:crypto.randomUUID()});assert.equal(r.status,200);assert.equal(r.data.state,'ExceptionReview');first.rowVersion=r.data.rowVersion;});
  const capture=await qy.call('qy/local/capture',{id:first.id,expectedVersion:first.rowVersion,mode:'timely'});assert.equal(capture.status,200);first.rowVersion=capture.data.rowVersion;
  await test('explicit QY review confirms only verified full timely mock capture',async()=>{const r=await qy.call('qy/payment/reconcile',{id:first.id,expectedVersion:first.rowVersion,commandId:crypto.randomUUID()});assert.equal(r.status,200);assert.equal(r.data.state,'Confirmed');first.rowVersion=r.data.rowVersion;});
+
+ const meetingStatus=await qy.call('qy/meeting?id='+first.id);assert.equal(meetingStatus.status,200);
+ const meetingPublication=await qy.call('qy/meeting',{id:first.id,expectedVersion:meetingStatus.data.bookingVersion,commandId:crypto.randomUUID(),action:'Publish',details:{joinUrl:'https://synthetic.zoom.us/j/12345678901',meetingId:'12345678901',passcode:'SyntheticOnly42'}});
+ await test('local meeting controller publishes only after verified mock full payment',()=>assert.equal(meetingPublication.status,200));
+ await test('protected customer meeting response is no-store and absent from listings',async()=>{const r=await customer.call('meeting?id='+first.id);assert.equal(r.status,200);assert.equal(r.cacheControl,'no-store');assert.ok(r.data.meeting.passcode==='SyntheticOnly42');const listing=JSON.stringify((await qy.call('qy/bookings')).data);assert.ok(!listing.includes('SyntheticOnly42')&&!listing.includes('synthetic.zoom.us'));});
  await test('duplicate capture cannot replace existing order evidence',async()=>assert.equal((await qy.call('qy/local/capture',{id:first.id,expectedVersion:first.rowVersion,mode:'timely'})).status,409));
  await test('confirmed consultation cannot complete before session end',async()=>assert.equal((await qy.call('qy/status',{id:first.id,to:'Completed',expectedVersion:first.rowVersion,commandId:crypto.randomUUID()})).status,409));
  const late=await offered(120);const lateCapture=await qy.call('qy/local/capture',{id:late.id,expectedVersion:late.rowVersion,mode:'late'});assert.equal(lateCapture.status,200);
@@ -72,7 +77,9 @@ try{
  const uncertain=await offered(144);const unknownCapture=await qy.call('qy/local/capture',{id:uncertain.id,expectedVersion:uncertain.rowVersion,mode:'unknown'});assert.equal(unknownCapture.status,200);
  let uncertainReview;
  await test('unknown capture never confirms',async()=>{uncertainReview=await qy.call('qy/payment/reconcile',{id:uncertain.id,expectedVersion:unknownCapture.data.rowVersion,commandId:crypto.randomUUID()});assert.equal(uncertainReview.data.state,'ExceptionReview');});
- const financeBody={id:uncertain.id,expectedVersion:uncertainReview.data.rowVersion,commandId:crypto.randomUUID(),capturedAt:Date.now()-1,supportingEvidenceReference:'synthetic-independent-finance-proof',supportingEvidenceHash:'c'.repeat(64),independentlyFinanceVerified:true};
+ // Use the authoritative synthetic acceptance boundary, not a wall-clock minus-one guess.
+ const financeAcceptance=await fixture.db.prepare('SELECT o.accepted_at,o.expires_at FROM consultation_offers o JOIN consultation_bookings b ON b.current_offer_id=o.id WHERE b.id=?').bind(uncertain.id).first();
+ const financeBody={id:uncertain.id,expectedVersion:uncertainReview.data.rowVersion,commandId:crypto.randomUUID(),capturedAt:financeAcceptance.accepted_at,supportingEvidenceReference:'synthetic-independent-finance-proof',supportingEvidenceHash:'c'.repeat(64),independentlyFinanceVerified:true};
  await test('customer cannot assert independent finance verification',async()=>assert.equal((await customer.call('qy/payment/finance-review',financeBody)).status,409));
  await test('finance fallback rejects missing evidence before any state change',async()=>assert.equal((await qy.call('qy/payment/finance-review',{...financeBody,supportingEvidenceHash:undefined})).status,409));
  const annotated=await qy.call('qy/payment/finance-review',financeBody);

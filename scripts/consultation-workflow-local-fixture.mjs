@@ -1,3 +1,4 @@
+import {createMeetingManagement} from '../functions/lib/consultation/meeting-management.js';
 import {createAvailability} from '../functions/lib/consultation/availability.js';
 import {createAppointmentPreferences} from '../functions/lib/consultation/appointment-preferences.js';
 ﻿// Explicit synthetic-only factory. Cannot accept a database binding or real provider.
@@ -21,7 +22,7 @@ export const LOCAL_MIGRATIONS=Object.freeze([
  'migrate-c1-consultation-customer-identity.sql','migrate-c1-bazi-consultation-foundation.sql',
  'migrate-c1-consultation-customer-intake.sql','migrate-c1-consultation-contact-verification.sql',
  'migrate-c1-consultation-account-stepup.sql','migrate-c1-consultation-workflow.sql',
- 'migrate-c1-consultation-workflow-lifecycle.sql','migrate-c1-consultation-capture-review.sql','migrate-c1-consultation-workflow-evidence-guards.sql','migrate-c1-consultation-preferences.sql','migrate-c1-consultation-availability.sql'
+ 'migrate-c1-consultation-workflow-lifecycle.sql','migrate-c1-consultation-capture-review.sql','migrate-c1-consultation-workflow-evidence-guards.sql','migrate-c1-consultation-preferences.sql','migrate-c1-consultation-availability.sql','migrate-c1-consultation-meetings.sql'
 ]);
 function binding(raw){
  return {prepare(sql){let values=[];return {bind(...v){values=v;return this;},async first(){return raw.prepare(sql).get(...values)??null;},async all(){return {results:raw.prepare(sql).all(...values)};},async run(){if(/^\s*SELECT/i.test(sql))return {results:raw.prepare(sql).all(...values)};return {meta:{changes:Number(raw.prepare(sql).run(...values).changes)}};}};},async batch(plan){raw.exec('BEGIN');try{const result=[];for(const p of plan)result.push(await p.run());raw.exec('COMMIT');return result;}catch(e){raw.exec('ROLLBACK');throw e;}}};
@@ -37,7 +38,7 @@ export async function createSyntheticWorkflow({origin,password,syntheticOnly}){
   raw.prepare("INSERT INTO consultation_auth_account VALUES(1,'qy-local-test',1,'PBKDF2-SHA256',600000,?,?,1,?)").run(credential.salt,credential.hash,Date.now());
   raw.exec(`CREATE TABLE synthetic_local_actions(id TEXT NOT NULL PRIMARY KEY,actor_reference TEXT NOT NULL,action TEXT NOT NULL,occurred_at INTEGER NOT NULL);
    CREATE TABLE synthetic_capture_evidence(id TEXT NOT NULL PRIMARY KEY,booking_id TEXT NOT NULL UNIQUE REFERENCES consultation_bookings(id),offer_id TEXT NOT NULL UNIQUE REFERENCES consultation_offers(id),customer_id INTEGER NOT NULL REFERENCES customers(id),order_id INTEGER NOT NULL UNIQUE REFERENCES orders(id),amount_sen INTEGER NOT NULL,currency TEXT NOT NULL,status TEXT NOT NULL CHECK(status IN ('Verified','Unknown','Revoked')),captured_at INTEGER);`);
-  const db=binding(raw),keys=await createWorkflowKeys(JSON.stringify(Object.fromEntries(['intake','contact','lookup','challenge'].map(p=>[p,{active:p+'-local-v1',keys:{[p+'-local-v1']:randomSecret()}}]))));
+  const db=binding(raw),keys=await createWorkflowKeys(JSON.stringify(Object.fromEntries(['intake','contact','lookup','challenge','meeting'].map(p=>[p,{active:p+'-local-v1',keys:{[p+'-local-v1']:randomSecret()}}]))));
   const identity=createCustomerIdentity({db,origin}),qyAuth=createConsultationAuth({db,origin}),guards=createWorkflowGuards({db,origin});
   const mockOutbox=new Map();
   const stepup=createAccountStepup({db,origin,keys,mockDelivery:async message=>{mockOutbox.set(message.challengeId,{...message});}});
@@ -56,7 +57,8 @@ export async function createSyntheticWorkflow({origin,password,syntheticOnly}){
   const customerSearch=createCustomerSearch({db,origin});
   const preferences=createAppointmentPreferences({db,origin,stepup});
   const availability=createAvailability({db,origin,practitionerId:1});
-  const baseHandler=createWorkflowHandler({origin,workflow,availability,preferences,customerSearch,stepup,contacts,identity,qyAuth,policies,lifecycle,captures,captureAdapterConfigured:true});
+  const meetings=createMeetingManagement({db,origin,keys,stepup});
+  const baseHandler=createWorkflowHandler({origin,workflow,meetings,availability,preferences,customerSearch,stepup,contacts,identity,qyAuth,policies,lifecycle,captures,captureAdapterConfigured:true});
   async function mockCapture(request,input){
    if(!input||Object.keys(input).some(k=>!['id','expectedVersion','mode'].includes(k))||!['timely','late','unknown'].includes(input.mode))throw Error('Synthetic capture rejected');
    const auth=await guards.qy(request,true);

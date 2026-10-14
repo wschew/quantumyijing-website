@@ -8,12 +8,14 @@ export async function createWorkflowKeys(serializedKeyring) {
   try {
     if (typeof serializedKeyring !== 'string' || serializedKeyring.length > 32768) reject();
     const ring = JSON.parse(serializedKeyring);
-    if (!ring || Array.isArray(ring) || Object.keys(ring).length !== PURPOSES.length ||
-        Object.keys(ring).some(name => !PURPOSES.includes(name))) reject();
+    // Existing four-purpose foundations remain compatible; meeting operations require this separate key.
+    const purposes = ring && Object.hasOwn(ring, 'meeting') ? [...PURPOSES, 'meeting'] : PURPOSES;
+    if (!ring || Array.isArray(ring) || Object.keys(ring).length !== purposes.length ||
+        Object.keys(ring).some(name => !purposes.includes(name))) reject();
     const material = new Set();
     const identifiers = new Set();
     const result = {};
-    for (const purpose of PURPOSES) {
+    for (const purpose of purposes) {
       const entry = ring[purpose];
       if (!entry || Object.keys(entry).sort().join(',') !== 'active,keys' ||
           !ID.test(entry.active) || !entry.keys || Array.isArray(entry.keys)) reject();
@@ -28,7 +30,7 @@ export async function createWorkflowKeys(serializedKeyring) {
         material.add(value);
         const raw = Uint8Array.from(value.match(/../g), byte => Number.parseInt(byte, 16));
         try {
-          const algorithm = ['intake', 'contact'].includes(purpose)
+          const algorithm = ['intake', 'contact', 'meeting'].includes(purpose)
             ? {name: 'AES-GCM'} : {name: 'HMAC', hash: 'SHA-256'};
           const usages = algorithm.name === 'AES-GCM' ? ['encrypt', 'decrypt'] : ['sign', 'verify'];
           imported.set(id, await crypto.subtle.importKey('raw', raw, algorithm, false, usages));
