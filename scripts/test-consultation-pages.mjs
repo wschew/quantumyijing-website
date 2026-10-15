@@ -6,7 +6,7 @@ import {pathToFileURL} from 'node:url';
 import {createRequire} from 'node:module';
 import {DatabaseSync} from 'node:sqlite';
 import {writeFileSync} from 'node:fs';
-import {meterDatabase,profileRequest,instrumentWorkerSource,summary} from './consultation-free-profile.mjs';
+import {meterDatabase,profileRequest,instrumentWorkerSource,summary,samples} from './consultation-free-profile.mjs';
 import {freeChecks} from './consultation-pages-free-checks.mjs';
 import {buildPackage} from './build-consultation-pages.mjs';
 import {provisionOffline} from './provision-consultation-preview-offline.mjs';
@@ -63,6 +63,7 @@ try{
  await db.prepare('UPDATE consultation_preview_environment SET enabled=1').run();
  await test('offline provisioning rejects an enabled environment',()=>assert.rejects(provisionOffline(raw,{...input(),action:'rotate',expectedVersion:2})));
  const env={...settings,CONSULTATION_DB:db,ASSETS:{fetch:asset}};
+ if(process.env.QY_C1_CPU_PHASES){const {measurePhases}=await import('./consultation-cpu-phases.mjs');await measurePhases({env,config,manifest,password,output:process.env.QY_C1_CPU_PHASES});}
  await test('unknown provider binding fails closed before assets',async()=>assert.equal((await worker.fetch(new Request(origin+'/'),{...env,EMAIL_PROVIDER:'denied'})).status,503));
  await test('shared ADMIN_TOKEN is rejected',async()=>assert.equal((await worker.fetch(new Request(origin+'/'),{...env,ADMIN_TOKEN:'denied'})).status,503));
  await test('missing gate blocks assets',async()=>assert.equal((await worker.fetch(new Request(origin+'/'),{...env,CONSULTATION_PREVIEW_ENABLED:'false'})).status,503));
@@ -116,5 +117,5 @@ try{
  await checks(db,r=>profileRequest(r,async r=>mf.dispatchFetch(r.url,{method:r.method,headers:Object.fromEntries(r.headers),...(!['GET','HEAD'].includes(r.method)?{body:await r.arrayBuffer()}:{})}),'workerd/D1'),'workerd packaged Worker/D1');
 }finally{await mf.dispose();}
 await test('asset service never receives cookies or authorization',()=>{for(const r of assetRequests){assert.equal(r.headers.get('cookie'),null);assert.equal(r.headers.get('authorization'),null);assert.equal(new URL(r.url).search,'');}});
-if(process.env.QY_C1_FREE_PROFILE)writeFileSync(process.env.QY_C1_FREE_PROFILE,JSON.stringify({method:'Node process CPU user+system delta; includes crypto pool and SQLite; wall separately. Windows process CPU is quantized (~15-16ms); zero does not establish zero CPU. workerd CPU unavailable. No parallel requests. Query count includes every executed batch statement. Test-only first() uses all() to capture D1 row metadata; Node SQLite has no row billing metadata.',routes:summary()},null,2)+'\n');
+if(process.env.QY_C1_FREE_PROFILE)writeFileSync(process.env.QY_C1_FREE_PROFILE,JSON.stringify({method:'Node process CPU user+system delta; includes crypto pool and SQLite; wall separately. Windows process CPU is quantized (~15-16ms); zero does not establish zero CPU. workerd CPU unavailable. No parallel requests. Query count includes every executed batch statement. Test-only first() uses all() to capture D1 row metadata; Node SQLite has no row billing metadata.',routes:summary(),samples},null,2)+'\n');
 console.log('RESULT '+passed+' passed, 0 failed; packaged C1 Worker, SQLite, workerd/D1; outbound fetch disabled');
