@@ -38,6 +38,8 @@ export async function createSyntheticWorkflow({origin,password,syntheticOnly}){
   raw.prepare("INSERT INTO consultation_auth_account VALUES(1,'qy-local-test',1,'PBKDF2-SHA256',600000,?,?,1,?)").run(credential.salt,credential.hash,Date.now());
   raw.exec(`CREATE TABLE synthetic_local_actions(id TEXT NOT NULL PRIMARY KEY,actor_reference TEXT NOT NULL,action TEXT NOT NULL,occurred_at INTEGER NOT NULL);
    CREATE TABLE synthetic_capture_evidence(id TEXT NOT NULL PRIMARY KEY,booking_id TEXT NOT NULL UNIQUE REFERENCES consultation_bookings(id),offer_id TEXT NOT NULL UNIQUE REFERENCES consultation_offers(id),customer_id INTEGER NOT NULL REFERENCES customers(id),order_id INTEGER NOT NULL UNIQUE REFERENCES orders(id),amount_sen INTEGER NOT NULL,currency TEXT NOT NULL,status TEXT NOT NULL CHECK(status IN ('Verified','Unknown','Revoked')),captured_at INTEGER);`);
+  // Owner-specified commercial offer, synthetic local data only; not legal-policy approval.
+  raw.exec("INSERT INTO consultation_promotions(id,product_id,version,currency,selling_price_sen,starts_on,ends_on,timezone,state,approved_by,approved_at) VALUES('synthetic-bazi-promo-2026',1,1,'MYR',98000,'2026-10-11','2026-12-31','Asia/Kuala_Lumpur','Active','synthetic-owner-commercial-instruction',1791648000000)");
   const db=binding(raw),keys=await createWorkflowKeys(JSON.stringify(Object.fromEntries(['intake','contact','lookup','challenge','meeting'].map(p=>[p,{active:p+'-local-v1',keys:{[p+'-local-v1']:randomSecret()}}]))));
   const identity=createCustomerIdentity({db,origin}),qyAuth=createConsultationAuth({db,origin}),guards=createWorkflowGuards({db,origin});
   const mockOutbox=new Map();

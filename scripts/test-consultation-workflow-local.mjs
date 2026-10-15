@@ -1,3 +1,4 @@
+import {priceAt,offerOpen} from '../functions/lib/consultation/foundation.js';
 ﻿import assert from 'node:assert/strict';
 import https from 'node:https';
 import net from 'node:net';
@@ -53,12 +54,34 @@ try{
  await qy.call('qy/contact/delivered',{challengeId:reportChallenge.data.challengeId,expectedRevision:instructions.data.revision});
  await customer.call('contact/confirm',{challengeId:reportChallenge.data.challengeId,code:instructions.data.code});
  const intake={fullName:'Synthetic Adult',calculationGender:'male',birthDate:'2000-02-29',birthTimePrecision:'unknown',birthTime:null,birthCity:'Synthetic City',birthCountry:'MY',questions:'Synthetic private question',reportChannel:'whatsapp',selfBooking:true,adultAcknowledged:true,privacyAcknowledgement:{accepted:true,version:'synthetic-local-v1'}};
+ await test('incomplete underage and third-party booking requests create no records',async()=>{
+  for(const patch of [{fullName:''},{birthCity:''},{birthDate:'2015-01-01'},{selfBooking:false},{adultAcknowledged:false},{privacyAcknowledgement:{accepted:false,version:'synthetic-local-v1'}},{birthTimePrecision:'exact',birthTime:'25:00'},{unnecessarySensitiveField:'synthetic-only'}]){
+   const before=await fixture.db.prepare('SELECT count(*) n FROM consultation_bookings').first();
+   const r=await customer.call('bookings',{commandId:crypto.randomUUID(),intake:{...intake,...patch}});assert.equal(r.status,409);assert.ok(!JSON.stringify(r.data).includes('Synthetic private question'));
+   assert.equal((await fixture.db.prepare('SELECT count(*) n FROM consultation_bookings').first()).n,before.n);
+  }
+ });
+ await test('owner promotion has exact inclusive MYT dates and regular-price fallback',async()=>{
+  const p=await fixture.db.prepare('SELECT * FROM consultation_promotions').first();const promotion={...p,sku:'CONSULT-BAZI',approvedBy:p.approved_by,approvedAt:p.approved_at,sellingPriceSen:p.selling_price_sen,startsOn:p.starts_on,endsOn:p.ends_on};
+  for(const [date,amount]of [['2026-10-10T15:59:59.999Z',130000],['2026-10-10T16:00:00Z',98000],['2026-12-31T15:59:59.999Z',98000],['2026-12-31T16:00:00Z',130000]]){
+   // Approval predates the entire boundary test, independent of the fixture wall clock.
+   assert.equal(priceAt({issuedAt:Date.parse(date),promotion:{...promotion,approvedAt:Date.parse('2026-10-01T00:00:00Z')}}).sellingPriceSen,amount);
+  }
+  assert.equal(priceAt({issuedAt:Date.now(),promotion:{...promotion,state:'Draft'}}).sellingPriceSen,130000);
+ });
  async function offered(hours){
   const submitted=await customer.call('bookings',{commandId:crypto.randomUUID(),intake});assert.equal(submitted.status,200);const id=submitted.data.id;
+  await test('booking reference is unique, persisted and unconfirmed without private response data',async()=>{
+   const row=await fixture.db.prepare('SELECT reference,state FROM consultation_bookings WHERE id=?').bind(id).first();assert.equal(row.reference,'BAZI-'+id);assert.equal(row.state,'Submitted');assert.equal((await fixture.db.prepare('SELECT count(*) n FROM consultation_bookings WHERE reference=?').bind(row.reference).first()).n,1);
+   assert.ok(!JSON.stringify(submitted.data).includes(intake.birthDate));assert.ok(!JSON.stringify(submitted.data).includes(intake.questions));
+   const encrypted=await fixture.db.prepare('SELECT i.ciphertext FROM consultation_customer_intakes i JOIN consultation_workflow_intakes w ON w.intake_id=i.id WHERE w.booking_id=?').bind(id).first();assert.ok(encrypted.ciphertext.length>0);assert.ok(!Buffer.from(encrypted.ciphertext).includes(Buffer.from(intake.questions)));
+  });
   const reviewed=await qy.call('qy/status',{id,to:'UnderReview',expectedVersion:0,commandId:crypto.randomUUID()});assert.equal(reviewed.status,200);
+  await test('appointment below 72-hour lead time is rejected without an offer',async()=>{const r=await qy.call('qy/offer',{id,startAt:Date.now()+71*3600000,expectedVersion:reviewed.data.rowVersion,commandId:crypto.randomUUID()});assert.equal(r.status,409);assert.equal((await fixture.db.prepare('SELECT count(*) n FROM consultation_offers WHERE booking_id=?').bind(id).first()).n,0);});
   const proposed=await qy.call('qy/offer',{id,startAt:Date.now()+hours*3600000,expectedVersion:reviewed.data.rowVersion,commandId:crypto.randomUUID()});assert.equal(proposed.status,200);
   const offer=(await customer.call('offer?id='+id)).data.offer;
-  const accepted=await customer.call('offer/accept',{id,expectedVersion:proposed.data.rowVersion,commandId:crypto.randomUUID(),acknowledged:true,policyHash:offer.policyHash,snapshotHash:offer.snapshotHash});assert.equal(accepted.status,200);return {id,rowVersion:accepted.data.rowVersion};
+  await test('stored offer price matches approved promotion and 48-hour snapshot',async()=>{const row=await fixture.db.prepare('SELECT * FROM consultation_offers WHERE id=?').bind(offer.id).first();const day=new Date(row.issued_at+8*3600000).toISOString().slice(0,10),promo=day>='2026-10-11'&&day<='2026-12-31';assert.equal(offer.sellingPriceSen,promo?98000:130000);assert.equal(row.selling_price_sen,offer.sellingPriceSen);assert.equal(row.promotion_id,promo?'synthetic-bazi-promo-2026':null);assert.equal(offer.endAt-offer.startAt,90*60000);assert.equal(offer.expiresAt-offer.issuedAt,48*3600000);assert.ok(!offerOpen(offer,offer.expiresAt));});
+  const accepted=await customer.call('offer/accept',{id,expectedVersion:proposed.data.rowVersion,commandId:crypto.randomUUID(),acknowledged:true,policyHash:offer.policyHash,snapshotHash:offer.snapshotHash});assert.equal(accepted.status,200);assert.equal(accepted.data.state,'PaymentPending');return {id,rowVersion:accepted.data.rowVersion};
  }
  assert.equal((await qy.call('qy/availability',{action:'Create',expectedRevision:0,commandId:crypto.randomUUID(),startAt:Date.now()+3600000,endAt:Date.now()+30*86400000})).status,200);
  const first=await offered(96);
@@ -98,6 +121,8 @@ try{
  await test('revoked QY session cannot search',async()=>assert.equal((await qy.call('qy/customers/search',{query:'Alex'})).status,409));
  await test('synthetic database integrity remains valid',async()=>{assert.equal((await fixture.db.prepare('PRAGMA foreign_key_check').all()).results.length,0);assert.equal(Object.values(await fixture.db.prepare('PRAGMA quick_check').first())[0],'ok');});
 }finally{fixture.dispose();}
+// Focused booking checks do not need a new TLS listener or child process.
+if(!process.argv.includes('--booking-only')){
 const reservation=net.createServer();await new Promise(ok=>reservation.listen(0,'127.0.0.1',ok));const port=reservation.address().port;await new Promise(ok=>reservation.close(ok));
 const running=await startSyntheticServer({port,password});
 function get(path){return new Promise((ok,no)=>{const r=https.request(running.origin+path,{method:'GET',rejectUnauthorized:false,agent:false},res=>{let bytes=0;res.on('data',chunk=>bytes+=chunk.length);res.on('end',()=>ok({status:res.statusCode,headers:res.headers,bytes}));});r.once('error',no);r.end();});}
@@ -106,4 +131,5 @@ try{
  await test('local server exposes no Production admin endpoint',async()=>assert.equal((await get('/api/admin?action=stats')).status,404));
  await test('local server refuses private outbox without authentication',async()=>assert.equal((await get('/api/consultation/qy/local/outbox')).status,409));
 }finally{await running.close();}
-console.log(`RESULT ${passed} passed, 0 failed; synthetic in-memory and HTTPS loopback only`);
+}
+console.log(`RESULT ${passed} passed, 0 failed; synthetic in-memory${process.argv.includes('--booking-only')?' booking workflow':' and HTTPS loopback'} only`);

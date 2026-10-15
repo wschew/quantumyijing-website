@@ -1,6 +1,6 @@
 ﻿// Internal service: no public route, provider sends, PDF storage or financial writes.
 import {createWorkflowGuards,DB_NOW} from './workflow-guards.js';
-import {identifier,issueOffer,acceptOffer} from './foundation.js';
+import {identifier,issueOffer,acceptOffer,mytDate} from './foundation.js';
 import {transition,paymentDecision} from './state.js';
 import {validatePrivateIntake} from './intake-validation.js';
 import {encryptIntake,decryptIntake} from './intake-crypto.js';
@@ -9,7 +9,7 @@ const fail=()=>{throw Error('Consultation workflow unavailable or conflicted');}
 const stmt=(db,sql,v=[])=>db.prepare(sql).bind(...v);
 const closed=(input,names)=>{if(!input||Array.isArray(input)||Object.keys(input).some(k=>!names.includes(k)))fail();};
 function booking(r){return {id:r.id,customerId:r.customer_id,state:r.state,rowVersion:r.row_version,currentOfferId:r.current_offer_id,practitionerId:r.practitioner_id,currentStartAt:r.current_start_at,currentEndAt:r.current_end_at,originalStartAt:r.original_start_at};}
-function offer(r,customerId){return {id:r.id,bookingId:r.booking_id,customerId,practitionerId:r.practitioner_id,startAt:r.start_at,endAt:r.end_at,issuedAt:r.issued_at,expiresAt:r.expires_at,state:r.state,sellingPriceSen:r.selling_price_sen,regularPriceSen:r.regular_price_sen,currency:r.currency,policyHash:r.policy_hash,policyVersion:r.policy_version,snapshotHash:r.snapshot_hash,acceptedAt:r.accepted_at,acceptanceCustomerId:r.acceptance_customer_id,acceptancePolicyHash:r.acceptance_policy_hash,acceptanceSnapshotHash:r.acceptance_snapshot_hash,orderId:r.order_id};}
+function offer(r,customerId){return {id:r.id,bookingId:r.booking_id,customerId,practitionerId:r.practitioner_id,startAt:r.start_at,endAt:r.end_at,issuedAt:r.issued_at,expiresAt:r.expires_at,state:r.state,sellingPriceSen:r.selling_price_sen,regularPriceSen:r.regular_price_sen,promotionId:r.promotion_id,promotionVersion:r.promotion_version,currency:r.currency,policyHash:r.policy_hash,policyVersion:r.policy_version,snapshotHash:r.snapshot_hash,acceptedAt:r.accepted_at,acceptanceCustomerId:r.acceptance_customer_id,acceptancePolicyHash:r.acceptance_policy_hash,acceptanceSnapshotHash:r.acceptance_snapshot_hash,orderId:r.order_id};}
 export function createConsultationWorkflow({db,origin,keys,stepup,contacts,productId,practitionerId,policies,countryCodes,bookingPolicy,readCaptureEvidence=null}){
  if(!Number.isSafeInteger(productId)||productId<1||!Number.isSafeInteger(practitionerId)||practitionerId<1||!stepup?.requireStepup||!contacts?.verifiedContact)fail();
  identifier(bookingPolicy.version);if(!/^[a-f0-9]{64}$/.test(bookingPolicy.hash))fail();
@@ -57,10 +57,14 @@ export function createConsultationWorkflow({db,origin,keys,stepup,contacts,produ
  }
  async function propose(request,input){
   try{closed(input,['id','startAt','expectedVersion','commandId']);const a=await guards.qy(request,true),r=await load(input.id),time=await now();if(r.state!=='UnderReview'||r.row_version!==input.expectedVersion)fail();
-   const o=await issueOffer({id:crypto.randomUUID(),bookingId:r.id,customerId:r.customer_id,practitionerId,startAt:input.startAt,issuedAt:time,policyVersion:bookingPolicy.version,policyHash:bookingPolicy.hash,promotion:null});
+   // Promotion is trusted persisted commercial approval, never customer input.
+   const day=mytDate(time),promotions=(await stmt(db,"SELECT * FROM consultation_promotions WHERE product_id=? AND state='Active' AND approved_at<=? AND starts_on<=? AND ends_on>=? LIMIT 2",[productId,time,day,day]).all()).results;
+   if(promotions.length>1)fail();
+   const p=promotions[0],promotion=p?{id:p.id,version:p.version,state:p.state,approvedBy:p.approved_by,approvedAt:p.approved_at,sku:'CONSULT-BAZI',currency:p.currency,timezone:p.timezone,sellingPriceSen:p.selling_price_sen,startsOn:p.starts_on,endsOn:p.ends_on}:null;
+   const o=await issueOffer({id:crypto.randomUUID(),bookingId:r.id,customerId:r.customer_id,practitionerId,startAt:input.startAt,issuedAt:time,policyVersion:bookingPolicy.version,policyHash:bookingPolicy.hash,promotion});
    const revision=(await stmt(db,'SELECT COALESCE(MAX(revision),0)+1 n FROM consultation_offers WHERE booking_id=?',[r.id]).first()).n;
-   await db.batch([stmt(db,`INSERT INTO consultation_offers(id,booking_id,revision,state,practitioner_id,start_at,end_at,issued_at,expires_at,regular_price_sen,selling_price_sen,currency,policy_version,policy_hash,snapshot_hash,issued_by)
-    SELECT ?,?,?,'Issued',?,?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(${a.sql}) AND EXISTS(SELECT 1 FROM consultation_bookings WHERE id=? AND row_version=? AND state='UnderReview')`,[o.id,r.id,revision,practitionerId,o.startAt,o.endAt,time,o.expiresAt,130000,130000,'MYR',o.policyVersion,o.policyHash,o.snapshotHash,a.principal.sessionId,...a.values,r.id,r.row_version]),gate(r.id,'Offered',a),
+   await db.batch([stmt(db,`INSERT INTO consultation_offers(id,booking_id,revision,state,practitioner_id,start_at,end_at,issued_at,expires_at,regular_price_sen,selling_price_sen,currency,promotion_id,promotion_version,policy_version,policy_hash,snapshot_hash,issued_by)
+    SELECT ?,?,?,'Issued',?,?,?,?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(${a.sql}) AND EXISTS(SELECT 1 FROM consultation_bookings WHERE id=? AND row_version=? AND state='UnderReview') AND (? IS NULL OR EXISTS(SELECT 1 FROM consultation_promotions WHERE id=? AND version=? AND product_id=? AND state='Active' AND selling_price_sen=? AND currency=? AND timezone='Asia/Kuala_Lumpur' AND approved_by=? AND approved_at=? AND starts_on=? AND ends_on=?))`,[o.id,r.id,revision,practitionerId,o.startAt,o.endAt,time,o.expiresAt,o.regularPriceSen,o.sellingPriceSen,o.currency,o.promotionId,o.promotionVersion,o.policyVersion,o.policyHash,o.snapshotHash,a.principal.sessionId,...a.values,r.id,r.row_version,o.promotionId,o.promotionId,o.promotionVersion,productId,o.sellingPriceSen,o.currency,p?.approved_by??null,p?.approved_at??null,p?.starts_on??null,p?.ends_on??null]),gate(r.id,'Offered',a),
     stmt(db,'INSERT INTO consultation_slot_reservations VALUES(?,?,?,?,?,?,?,?)',[crypto.randomUUID(),r.id,o.id,practitionerId,o.startAt,o.endAt,'Held',o.expiresAt]),
     stmt(db,`UPDATE consultation_bookings SET state='Offered',current_offer_id=?,practitioner_id=?,current_start_at=?,current_end_at=?,row_version=row_version+1,updated_at=${DB_NOW} WHERE id=? AND row_version=? AND EXISTS(${a.sql})`,[o.id,practitionerId,o.startAt,o.endAt,r.id,r.row_version,...a.values]),gate(r.id,'Offered',a),await receipt(r.id,input.commandId,input)]);
    return Object.freeze({id:r.id,state:'Offered',rowVersion:r.row_version+1,offer:o});

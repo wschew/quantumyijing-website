@@ -9,7 +9,7 @@ const zhLabels={
   "BAZI CONSULTATION · 八字命理咨询": "八字命理咨询 · BAZI CONSULTATION",
   "Bazi Consultation / 八字命理咨询": "八字命理咨询",
   "QY Consultation Management": "QY 咨询管理",
-  "90 minutes · Zoom · Written report delivered manually. Local/isolated Preview only. Seasonal promotion inactive; regular price MYR 1,300.": "90 分钟 · Zoom 视频咨询 · 书面报告人工发送。仅供本地或隔离预览。季节优惠未启用；常规价格 MYR 1,300。",
+  "90 minutes online via Zoom. Personalized PDF report included, delivered manually. Regular price RM1,300. Promotional price RM980 for offers issued 11 October-31 December 2026 (Malaysia time), subject to the approved promotion being active. Minimum appointment lead time: 72 hours. Appointment offers are valid for 48 hours. Adults 18+ booking for themselves. Local/isolated Preview only.": "90 分钟 Zoom 在线咨询，包含个性化 PDF 报告，由人工发送。常规价格 RM1,300。2026 年 10 月 11 日至 12 月 31 日（马来西亚时间）发出的方案优惠价 RM980，须已批准的优惠处于启用状态。预约至少提前 72 小时，方案有效期 48 小时。仅限 18 岁及以上成人预约本人咨询。仅供本地或隔离预览。",
   "Authenticate through the existing customer portal first. Sensitive intake stays disabled until account and delivery-contact verification succeed.": "请先通过现有客户门户登录。账户及报告接收联系方式验证成功后，才可填写私密资料。",
   "Enter synthetic customer 1 (local only)": "进入模拟客户 1（仅限本地）",
   "Establish consultation context": "建立咨询安全会话",
