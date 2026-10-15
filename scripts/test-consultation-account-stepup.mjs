@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {DatabaseSync} from 'node:sqlite';
 import {createCaptureReview} from '../functions/lib/consultation/capture-review.js';
-import {issueOffer} from '../functions/lib/consultation/foundation.js';
+import {issueOffer,reportDeadline} from '../functions/lib/consultation/foundation.js';
 import {createWorkflowLifecycle} from '../functions/lib/consultation/workflow-lifecycle.js';
 import {createWorkflowHandler} from '../functions/lib/consultation/workflow-handler.js';
 import {createConsultationAuth} from '../functions/lib/consultation/auth.js';
@@ -125,9 +125,10 @@ async function checks(db,label){
  const accepted=await wf.accept(req(0,true),{id:b.id,expectedVersion:proposed.rowVersion,commandId:'accept-1',acknowledged:true,snapshotHash:proposed.offer.snapshotHash,policyHash:proposed.offer.policyHash});
  await t('acceptance leaves booking unconfirmed until verified capture',()=>assert.equal(accepted.state,'PaymentPending'));
  const review=await wf.reconcilePayment(qyReq,{id:b.id,expectedVersion:accepted.rowVersion,commandId:'payment-review-1'});
- await t('missing authoritative capture evidence requires manual review',()=>assert.equal(review.state,'ExceptionReview'));
+ await t('missing authoritative capture evidence preserves PaymentPending',()=>{assert.equal(review.state,'PaymentPending');assert.equal(review.rowVersion,accepted.rowVersion);});
  await t('ordinary completion cannot bypass payment',()=>assert.rejects(wf.change(qyReq,{id:b.id,to:'Completed',expectedVersion:review.rowVersion,commandId:'fake-complete'})));
  await t('PDF preparation cannot bypass completion',()=>assert.rejects(wf.report(qyReq,{id:b.id,action:'Prepared',expectedVersion:review.rowVersion,commandId:'fake-report'})));
+ await t('unpaid consultation cannot record report delivery',()=>assert.rejects(wf.report(qyReq,{id:b.id,action:'Delivered',expectedVersion:review.rowVersion,commandId:'unpaid-delivery',evidenceReference:'synthetic-no-delivery'})));
  await t('no order or payment writes performed',async()=>assert.equal((await db.prepare('SELECT COUNT(*) n FROM orders').first()).n,0));
  await t('private plaintext absent from audit',async()=>{const rows=(await db.prepare('SELECT * FROM consultation_workflow_events').all()).results;assert.ok(!JSON.stringify(rows).includes(intake.questions));});
 
@@ -138,11 +139,20 @@ async function checks(db,label){
  await db.prepare("UPDATE consultation_bookings SET state='Confirmed',current_start_at=?,current_end_at=?,original_start_at=?,practitioner_id=1 WHERE id=?").bind(ended-5400000,ended,ended-5400000,completedFixture.id).run();
  const completed=await wf.change(qyReq,{id:completedFixture.id,to:'Completed',expectedVersion:0,commandId:'complete-fixture'});
  await t('completed intake receives revised five-year retention',async()=>{const i=await db.prepare('SELECT i.* FROM consultation_customer_intakes i JOIN consultation_workflow_intakes w ON w.intake_id=i.id WHERE w.booking_id=?').bind(completed.id).first();assert.equal(i.retention_basis,'Completed');assert.ok(i.retention_until-i.completed_at>4.9*365*86400000);assert.equal(i.payload_version,1);assert.equal((await wf.readPrivate(qyGet,completed.id)).birthDate,intake.birthDate);});
- const prepared=await wf.report(qyReq,{id:completed.id,action:'Prepared',expectedVersion:completed.rowVersion,commandId:'manual-prepared'});
+ await t('completion preserves appointment times and sets third-MYT-calendar-day deadline',async()=>{const row=await db.prepare('SELECT state,current_start_at,current_end_at,original_start_at,completed_at,report_due_at FROM consultation_bookings WHERE id=?').bind(completed.id).first();assert.equal(row.state,'Completed');assert.equal(row.current_start_at,ended-5400000);assert.equal(row.current_end_at,ended);assert.equal(row.original_start_at,ended-5400000);assert.equal(row.report_due_at,reportDeadline(row.completed_at));});
+ await t('deadline handles MYT midnight year-end and leap-day boundaries',()=>{for(const [at,due]of [['2026-12-28T16:00:00Z','2027-01-01T15:59:59.999Z'],['2028-02-27T15:59:59Z','2028-03-01T15:59:59.999Z'],['2026-10-11T16:01:00Z','2026-10-15T15:59:59.999Z']])assert.equal(reportDeadline(Date.parse(at)),Date.parse(due));});
+ await t('duplicate completion cannot change completion or deadline',async()=>{const before=await db.prepare('SELECT completed_at,report_due_at,row_version FROM consultation_bookings WHERE id=?').bind(completed.id).first();await assert.rejects(wf.change(qyReq,{id:completed.id,to:'Completed',expectedVersion:completed.rowVersion,commandId:'complete-again'}));assert.deepEqual(await db.prepare('SELECT completed_at,report_due_at,row_version FROM consultation_bookings WHERE id=?').bind(completed.id).first(),before);});
+ let prepared=await wf.report(qyReq,{id:completed.id,action:'Prepared',expectedVersion:completed.rowVersion,commandId:'manual-prepared'});
  await t('report preparation stores metadata without PDFs',async()=>{const r=await db.prepare('SELECT * FROM consultation_manual_reports WHERE booking_id=?').bind(completed.id).first();assert.equal(r.state,'Prepared');assert.equal(r.object_key,undefined);assert.equal((await db.prepare('SELECT COUNT(*) n FROM consultation_reports').first()).n,0);});
  await t('delivery without evidence rejected',()=>assert.rejects(wf.report(qyReq,{id:completed.id,action:'Delivered',expectedVersion:prepared.rowVersion,commandId:'bad-delivery'})));
+ await t('unauthenticated and duplicate preparation cannot alter report metadata',async()=>{await assert.rejects(wf.report(new Request(origin),{id:completed.id,action:'Prepared',expectedVersion:prepared.rowVersion,commandId:'unauth-report'}));await assert.rejects(wf.report(qyReq,{id:completed.id,action:'Prepared',expectedVersion:prepared.rowVersion,commandId:'repeat-prepared'}));assert.equal((await db.prepare('SELECT count(*) n FROM consultation_manual_reports WHERE booking_id=?').bind(completed.id).first()).n,1);});
+ const reportLifecycle=createWorkflowLifecycle({db,origin,keys,stepup:service});
+ await t('report cannot be deleted before confirmed delivery',()=>assert.rejects(reportLifecycle.reportStatus(qyReq,{id:completed.id,expectedVersion:prepared.rowVersion,commandId:'early-delete',action:'Deleted',evidenceReference:'synthetic-early-deletion'})));
+ await t('unknown delivery and follow-up stay ReportReady without claiming delivery',async()=>{for(const action of ['Unknown','FollowUp']){const r=await reportLifecycle.reportStatus(qyReq,{id:completed.id,expectedVersion:prepared.rowVersion,commandId:'report-'+action,action});assert.equal(r.state,'ReportReady');assert.equal(r.reportState,action);prepared={...prepared,rowVersion:r.rowVersion};assert.equal((await db.prepare('SELECT delivered_at FROM consultation_manual_reports WHERE booking_id=?').bind(completed.id).first()).delivered_at,null);}});
  const deliveredReport=await wf.report(qyReq,{id:completed.id,action:'Delivered',expectedVersion:prepared.rowVersion,commandId:'manual-delivered',evidenceReference:'manual-customer-confirmation-1'});
  await t('manual confirmed delivery advances report status',()=>assert.equal(deliveredReport.state,'ReportDelivered'));
+ await t('duplicate report delivery preserves one evidence record and audit history',async()=>{const before=await db.prepare('SELECT * FROM consultation_manual_reports WHERE booking_id=?').bind(completed.id).first(),events=(await db.prepare('SELECT count(*) n FROM consultation_workflow_events').first()).n;await assert.rejects(wf.report(qyReq,{id:completed.id,action:'Delivered',expectedVersion:deliveredReport.rowVersion,commandId:'repeat-delivery',evidenceReference:'different-reference'}));assert.deepEqual(await db.prepare('SELECT * FROM consultation_manual_reports WHERE booking_id=?').bind(completed.id).first(),before);assert.equal((await db.prepare('SELECT count(*) n FROM consultation_workflow_events').first()).n,events);});
+ await t('customer listing shows delivered state and original report deadline without private report data',async()=>{const row=(await wf.list(req())).find(r=>r.id===completed.id);assert.equal(row.state,'ReportDelivered');assert.equal(row.report_state,'Delivered');assert.ok(Number.isSafeInteger(row.report_due_at));assert.equal(row.evidence_reference,undefined);assert.equal(row.ciphertext,undefined);});
  await t('duplicate delivery safely rejected',()=>assert.rejects(wf.report(qyReq,{id:completed.id,action:'Delivered',expectedVersion:prepared.rowVersion,commandId:'manual-delivered',evidenceReference:'manual-customer-confirmation-1'})));
 
  const handler=createWorkflowHandler({origin,workflow:wf,stepup:service,contacts,identity,qyAuth:createConsultationAuth({db,origin}),policies});
@@ -248,6 +258,13 @@ async function checks(db,label){
  const absent=await historicalFixture(Date.now()-10*hour);
  const forfeited=await lifecycle.forfeit(qyReq,{id:absent.id,expectedVersion:0,commandId:'eligible-no-show',reason:'NoShowForfeited',lawfulException:false});
  await t('QY no-show records terminal state and 90-day private retention',async()=>{assert.equal(forfeited.state,'NoShowForfeited');const i=await db.prepare('SELECT i.* FROM consultation_customer_intakes i JOIN consultation_workflow_intakes w ON w.intake_id=i.id WHERE w.booking_id=?').bind(absent.id).first();assert.equal(i.retention_basis,'FinalCancelled');assert.ok(i.retention_until-i.terminal_at>=90*86400000);assert.ok(i.retention_until-i.terminal_at<91*86400000);});
+ await t('forfeited consultation cannot complete or prepare or deliver reports',async()=>{await assert.rejects(wf.change(qyReq,{id:absent.id,to:'Completed',expectedVersion:forfeited.rowVersion,commandId:'forfeit-complete'}));for(const action of ['Prepared','Delivered'])await assert.rejects(wf.report(qyReq,{id:absent.id,action,expectedVersion:forfeited.rowVersion,commandId:'forfeit-'+action,evidenceReference:'synthetic-ineligible'}));});
+ await t('cancelled consultation cannot complete prepare or deliver a report',async()=>{
+  // Synthetic negative fixture only; no public status bypass is added.
+  await db.prepare("UPDATE consultation_bookings SET state='CancelledForfeited' WHERE id=?").bind(absent.id).run();
+  await assert.rejects(wf.change(qyReq,{id:absent.id,to:'Completed',expectedVersion:forfeited.rowVersion,commandId:'cancelled-complete'}));
+  for(const action of ['Prepared','Delivered'])await assert.rejects(wf.report(qyReq,{id:absent.id,action,expectedVersion:forfeited.rowVersion,commandId:'cancelled-'+action,evidenceReference:'synthetic-ineligible'}));
+ });
  const expired=await historicalFixture(Date.now()+24*hour,'Offered');
  const expiry=await lifecycle.expireOffer(qyReq,{id:expired.id,expectedVersion:0,commandId:'expire-unaccepted'});
  await t('unaccepted expired offer releases slot and sets terminal retention',async()=>{assert.equal(expiry.state,'OfferExpired');assert.equal((await db.prepare('SELECT state FROM consultation_slot_reservations WHERE booking_id=?').bind(expired.id).first()).state,'Released');assert.equal((await db.prepare('SELECT i.retention_basis FROM consultation_customer_intakes i JOIN consultation_workflow_intakes w ON w.intake_id=i.id WHERE w.booking_id=?').bind(expired.id).first()).retention_basis,'FinalExpired');});
@@ -282,7 +299,7 @@ async function checks(db,label){
  await t('customer cannot create finance capture evidence',()=>assert.rejects(captures.recordFinanceReview(req(0,true),financeInput)));
  const financialBefore=JSON.stringify((await db.prepare('SELECT * FROM payments ORDER BY id').all()).results);
  bound=await captures.recordFinanceReview(qyReq,financeInput);
- await t('finance review records evidence but never automatically confirms',()=>assert.equal(bound.state,'ExceptionReview'));
+ await t('finance review records evidence but never automatically confirms',()=>assert.equal(bound.state,'PaymentPending'));
  await t('finance annotation preserves frozen payment rows',async()=>assert.ok(financialBefore===JSON.stringify((await db.prepare('SELECT * FROM payments ORDER BY id').all()).results)));
  await t('finance evidence has required matching append-only audit',async()=>{const r=await db.prepare('SELECT r.id FROM consultation_capture_reviews r JOIN consultation_capture_audit a ON a.id=r.audit_id WHERE a.booking_id=r.booking_id AND a.actor_reference=r.reviewed_by AND a.event=\'IndependentFinanceReview\'').first();assert.ok(r);});
  await t('REPLACE finance evidence rejected',async()=>{const row=await db.prepare('SELECT * FROM consultation_capture_reviews LIMIT 1').first();const names=Object.keys(row);await assert.rejects(db.prepare('INSERT OR REPLACE INTO consultation_capture_reviews('+names.join(',')+') VALUES('+names.map(()=>'?').join(',')+')').bind(...names.map(k=>row[k])).run());});
