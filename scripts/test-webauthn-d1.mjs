@@ -5,9 +5,12 @@ import {resolve} from 'node:path';
 import {createRequire} from 'node:module';
 import {authenticator,response} from './webauthn-synthetic-fixtures.mjs';
 import {b64,hash} from './webauthn-synthetic-validation.mjs';
+import {SyntheticClient,instrumentEnrollment,instrumentMetrics} from './webauthn-d1-test-client.mjs';
+import {hexToken} from './webauthn-d1-policy.mjs';
 const require=createRequire(import.meta.url),{Miniflare,convertV4MiniflareOptions}=require(process.env.QY_MINIFLARE_PATH);
-const evidence=mkdtempSync(resolve('.local-c1-package-step2db1-'));
+const evidence=mkdtempSync(resolve('.local-c1-package-step2db4b1-d1-'));
 const persist=resolve(evidence,'d1'),id='22222222-3333-4444-8555-666666666666';
+const controlKey=hexToken();
 let gate=null,fault=null;
 const control=async req=>{
  const {stage}=await req.json();
@@ -23,7 +26,7 @@ function arm(expected){
 }
 async function reached(g){let timer;try{await Promise.race([g.arrived,new Promise((_,reject)=>timer=setTimeout(()=>reject(Error('BLOCKED: verification barrier timeout')),15000))]);}finally{clearTimeout(timer);}}
 const config=(instrument=true)=>{
- const modules=['webauthn-d1-worker.mjs','webauthn-synthetic-validation.mjs','consultation-passkey-bench-fixture.mjs'].map(name=>{
+ const modules=['webauthn-d1-worker.mjs','webauthn-d1-policy.mjs','webauthn-synthetic-validation.mjs','consultation-passkey-bench-fixture.mjs'].map(name=>{
   let contents=readFileSync(new URL(name,import.meta.url),'utf8');
   if(instrument&&name==='webauthn-d1-worker.mjs'){
    contents=contents.replace('const s=new D1Passkeys(env.SYNTHETIC_PASSKEY_DB);','const s=new D1Passkeys(env.SYNTHETIC_PASSKEY_DB);s.testControl=env.LOCAL_TEST_CONTROL;');
@@ -32,10 +35,10 @@ const config=(instrument=true)=>{
     contents=contents.replace(target,`if(!(await this.testControl.fetch('http://test-control/',{method:'POST',body:JSON.stringify({stage:'${stage}'})})).ok)throw Error('synthetic D1 failure');`);
    }
   }
-  if(name==='webauthn-d1-worker.mjs')contents=contents.replace('result:null}', 'result:null,metrics:s.stats}').replace('result},{status}', 'result,metrics:s.stats},{status}').replace('if(scope)await s.admit(scope);','// Admission independently tested by test-webauthn-d1-management.mjs');
+  if(name==='webauthn-d1-worker.mjs')contents=instrumentMetrics(instrumentEnrollment(contents)).replace('if(scope)await s.admit(scope);','// Admission independently tested by test-webauthn-d1-management.mjs');
   return {type:'ESModule',path:name,contents};
  });
- return convertV4MiniflareOptions({modules,scriptPath:'webauthn-d1-worker.mjs',compatibilityDate:'2026-10-07',d1Databases:{SYNTHETIC_PASSKEY_DB:id},resourcePersistencePath:persist,serviceBindings:instrument?{LOCAL_TEST_CONTROL:control}:{},cf:false,telemetry:{enabled:false}});
+ return convertV4MiniflareOptions({modules,scriptPath:'webauthn-d1-worker.mjs',compatibilityDate:'2026-10-07',bindings:{SYNTHETIC_CONTROL_KEY:controlKey},d1Databases:{SYNTHETIC_PASSKEY_DB:id},resourcePersistencePath:persist,serviceBindings:instrument?{LOCAL_TEST_CONTROL:control}:{},cf:false,telemetry:{enabled:false}});
 };
 let mf=new Miniflare(config()),db=await mf.getD1Database('SYNTHETIC_PASSKEY_DB');
 let passed=0;const checks=[],samples=[];
@@ -45,7 +48,8 @@ const bootstrap=b64(crypto.getRandomValues(new Uint8Array(32))),handle=b64(crypt
 const sql=async(q,...v)=>db.prepare(q).bind(...v).all();
 const one=async(q,...v)=>(await sql(q,...v)).results[0];
 async function call(path,x,label){
- const cpu=process.cpuUsage(),start=process.hrtime.bigint();const r=await mf.dispatchFetch('https://synthetic.invalid'+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(x)});const body=await r.json(),elapsed=process.cpuUsage(cpu);
+ const request=await client.prepare(path,x);
+ const cpu=process.cpuUsage(),start=process.hrtime.bigint();const r=await mf.dispatchFetch('https://synthetic.invalid'+request.route,{method:'POST',headers:request.headers,body:JSON.stringify(request.x)});const body=await r.json(),elapsed=process.cpuUsage(cpu);await client.remember(request.route,request.x,r,body);
  const sample={operation:label??path,status:r.status,wallMs:Number(process.hrtime.bigint()-start)/1e6,hostDriverCpuMs:(elapsed.user+elapsed.system)/1000,...body.metrics};if(label)samples.push(sample);
  return {...body,status:r.status,sample};
 }
@@ -55,6 +59,7 @@ const begin=(kind='get',authority)=>ok('/begin',{kind,authority});
 const finish=(o,r,label)=>ok('/finish',{challenge:o.challenge,response:r},label);
 const reject=(o,r)=>bad('/finish',{challenge:o.challenge,response:r});
 const a=await authenticator(),b=await authenticator();let count=1;
+const client=new SyntheticClient((...args)=>mf.dispatchFetch(...args),o=>response(a,o,{count:++count}),id=>sql('INSERT OR IGNORE INTO credential_custody VALUES(?,?)',id,'synthetic-'+id));
 async function login(label){const o=await begin();return finish(o,await response(a,o,{count:++count}),label);}
 const snapshot=async()=>{
  const result={};for(const table of ['account','credential','challenge','session','atomic_guard','security_event'])result[table]=(await sql(`SELECT * FROM ${table} ORDER BY 1`)).results;return result;
@@ -108,7 +113,7 @@ try{
   await reject(c,r);assert.equal((await one('SELECT used FROM challenge WHERE hash=?',await digest(c.challenge))).used,0);assert.equal((await one('SELECT count FROM credential WHERE id=?',a.id)).count,before.count);
   await sql('DROP TRIGGER fail_session');await finish(c,r);
  });
- await test('session-authorized additional enrollment',async()=>{const c=await begin('create',session);await finish(c,await response(await authenticator(),c));});
+ await test('offline fixture additional enrollment rechecks live authority',async()=>{const c=await begin('create',session);await finish(c,await response(await authenticator(),c));});
  await test('logout invalidates pending enrollment authority',async()=>{const c=await begin('create',session);await ok('/logout',{session});await bad('/session',{session});await reject(c,await response(await authenticator(),c));});
  await test('session expiry',async()=>{const s=await login();await sql('UPDATE session SET expires=0 WHERE hash=?',await digest(s));await bad('/session',{session:s});await bad('/begin',{kind:'create',authority:s});});
  await test('enrollment authority expiry rechecked at completion',async()=>{const s=await login(),c=await begin('create',s);await sql('UPDATE session SET expires=0 WHERE hash=?',await digest(s));await reject(c,await response(await authenticator(),c));});
@@ -129,7 +134,7 @@ try{
    const pending=cs.map((c,i)=>call('/finish',{challenge:c.challenge,response:rs[i]},distinct?'barrier counter':'barrier replay'));
    try{await reached(g);assert.equal(gate.arrived,4);assert.deepEqual(await authState(cs[0]),before);}finally{g.release();}
    const results=await Promise.all(pending);assert.equal(results.filter(r=>r.status===200).length,1);
-   for(const r of results){assert.equal(r.metrics.statements,7);assert.equal(r.metrics.metadataComplete,r.status===200);}
+   for(const r of results){assert.equal(r.metrics.statements,8);assert.equal(r.metrics.metadataComplete,r.status===200);}
    const after=await authState(cs[0]);assert.equal(after.count,n);assert.equal(after.sessions,before.sessions+1);
    const uses=await Promise.all(cs.map(async c=>(await authState(c)).used));assert.equal(uses.reduce((n,v)=>n+v,0),distinct?1:4);
    assert.equal((await one('SELECT count(*) n FROM atomic_guard')).n,0);
@@ -142,7 +147,7 @@ try{
    if(change==='expiry')await sql('UPDATE challenge SET expires=0 WHERE hash=?',await digest(c.challenge));
    if(change==='credential revocation')await sql('UPDATE credential SET revoked=1 WHERE id=?',a.id);
    if(change==='epoch')await sql('UPDATE account SET epoch=epoch+1 WHERE id=1');
-   const before=await snapshot();g.release();const out=await pending;assert.equal(out.status,400);assert.equal(out.metrics.statements,7);assert.equal(out.metrics.metadataComplete,false);assert.deepEqual(await snapshot(),before);
+   const before=await snapshot();g.release();const out=await pending;assert.equal(out.status,400);assert.equal(out.metrics.statements,8);assert.equal(out.metrics.metadataComplete,false);assert.deepEqual(await snapshot(),before);
   }finally{g.release();if(change==='credential revocation')await sql('UPDATE credential SET revoked=0 WHERE id=?',a.id);}
  });
  for(const stage of ['query','atomic'])await test('quota-like '+stage+' failure has incomplete metadata and safe explicit retry',async()=>{
@@ -171,7 +176,7 @@ try{
     let accepted=true;try{await readBoundedJSON(new Request('https://synthetic.invalid/',{method:'POST',body:stream,headers}));}catch{accepted=false;}
     results.push({mode,pulls,cancelled,accepted});
    }return Response.json(results);}}`;
-  const probeModules=[{type:'ESModule',path:'reader-probe.mjs',contents:probe},...['webauthn-d1-worker.mjs','webauthn-synthetic-validation.mjs','consultation-passkey-bench-fixture.mjs'].map(name=>({type:'ESModule',path:name,contents:readFileSync(new URL(name,import.meta.url),'utf8')}))];
+  const probeModules=[{type:'ESModule',path:'reader-probe.mjs',contents:probe},...['webauthn-d1-worker.mjs','webauthn-d1-policy.mjs','webauthn-synthetic-validation.mjs','consultation-passkey-bench-fixture.mjs'].map(name=>({type:'ESModule',path:name,contents:readFileSync(new URL(name,import.meta.url),'utf8')}))];
   const runtime=new Miniflare(convertV4MiniflareOptions({modules:probeModules,scriptPath:'reader-probe.mjs',compatibilityDate:'2026-10-07',cf:false,telemetry:{enabled:false}}));
   try{const result=await (await runtime.dispatchFetch('https://synthetic.invalid/')).json();
    for(const r of result){assert.equal(r.accepted,r.mode==='exact');if(['chunked','lying-length'].includes(r.mode)){assert.equal(r.pulls,2);assert.equal(r.cancelled,true);}if(r.mode==='declared-large')assert.equal(r.pulls,0);}
@@ -208,7 +213,7 @@ try{
   for(const body of [' '.repeat(20001),'"'+'\u00e9'.repeat(10000)+'"']){
    const res=await mf.dispatchFetch('https://synthetic.invalid/begin',{method:'POST',headers:{'content-type':'application/json'},body});assert.equal(res.status,400);assert.equal((await res.json()).metrics.statements,0);
   }
-  const body='{"session":"wrong"}';const exact=body+' '.repeat(20000-Buffer.byteLength(body));const out=await mf.dispatchFetch('https://synthetic.invalid/session',{method:'POST',headers:{'content-type':'application/json'},body:exact});assert.equal(out.status,400);assert.equal((await out.json()).metrics.statements,1);
+  const body='{"session":"wrong"}';const exact=body+' '.repeat(20000-Buffer.byteLength(body));const out=await mf.dispatchFetch('https://synthetic.invalid/session',{method:'POST',headers:{'content-type':'application/json'},body:exact});assert.equal(out.status,400);assert.equal((await out.json()).metrics.statements,0);
   for(const body of ['{',Uint8Array.of(0xff)]){const out=await mf.dispatchFetch('https://synthetic.invalid/begin',{method:'POST',headers:{'content-type':'application/json'},body});assert.equal(out.status,400);assert.equal((await out.json()).metrics.statements,0);}
  });
  await test('profile failed signature and SQL rollback paths with safe retries (100 each)',async()=>{

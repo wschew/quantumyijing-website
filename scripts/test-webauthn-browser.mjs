@@ -6,32 +6,44 @@ import {spawn} from 'node:child_process';
 import {createServer} from 'node:http';
 import {createRequire} from 'node:module';
 import {b64,hash} from './webauthn-synthetic-validation.mjs';
+import {hexToken} from './webauthn-d1-policy.mjs';
+import {instrumentEnrollment,instrumentMetrics} from './webauthn-d1-test-client.mjs';
 const require=createRequire(import.meta.url),{Miniflare,convertV4MiniflareOptions}=require(process.env.QY_MINIFLARE_PATH);
-const evidence=mkdtempSync(resolve('.local-c1-package-step2db2b-'));
+const evidence=mkdtempSync(resolve('.local-c1-package-step2db4b1-browser-'));
 const checks=[],samples=[],browserSamples=[],ceremonySamples=[],failures=[];let mf,db,chrome,ws,server,origin,authA,setupError;
 const digest=async s=>b64(await hash(new TextEncoder().encode(s)));
 const bootstrap=b64(crypto.getRandomValues(new Uint8Array(32))),handle=b64(crypto.getRandomValues(new Uint8Array(32)));
+const controlKey=hexToken();
 const sql=async(q,...v)=>db.prepare(q).bind(...v).all();
 const one=async(q,...v)=>(await sql(q,...v)).results[0];
 const test=async(name,fn)=>{try{await fn();checks.push(name);console.log('PASS '+name);}catch(e){failures.push({name,error:String(e)});throw e;}};
 function config(){
- const modules=['webauthn-d1-worker.mjs','webauthn-synthetic-validation.mjs','consultation-passkey-bench-fixture.mjs'].map(name=>{
+ const modules=['webauthn-d1-worker.mjs','webauthn-d1-policy.mjs','webauthn-synthetic-validation.mjs','consultation-passkey-bench-fixture.mjs'].map(name=>{
   let contents=readFileSync(new URL(name,import.meta.url),'utf8');
   if(name==='webauthn-d1-worker.mjs'){
    // Only RP configuration and observability differ; parser, crypto, admission and SQL remain real.
    contents=contents.replaceAll("'synthetic.invalid'","'localhost'").replaceAll("'https://synthetic.invalid'",JSON.stringify(origin));
-   contents=contents.replace('result},{status}','result,metrics:s.stats},{status}');
+   contents=instrumentMetrics(instrumentEnrollment(contents));
   }
   return {type:'ESModule',path:name,contents};
  });
- return convertV4MiniflareOptions({modules,scriptPath:'webauthn-d1-worker.mjs',compatibilityDate:'2026-10-07',d1Databases:{SYNTHETIC_PASSKEY_DB:'bbbbbbbb-2222-4444-8888-222222222222'},resourcePersistencePath:resolve(evidence,'d1'),cf:false,telemetry:{enabled:false}});
+ return convertV4MiniflareOptions({modules,scriptPath:'webauthn-d1-worker.mjs',compatibilityDate:'2026-10-07',bindings:{SYNTHETIC_CONTROL_KEY:controlKey},d1Databases:{SYNTHETIC_PASSKEY_DB:'bbbbbbbb-2222-4444-8888-222222222222'},resourcePersistencePath:resolve(evidence,'d1'),cf:false,telemetry:{enabled:false}});
 }
 async function restart(){if(mf)await mf.dispose();mf=new Miniflare(config());db=await mf.getD1Database('SYNTHETIC_PASSKEY_DB');}
 let seq=0;const pending=new Map();
 async function connect(url){ws=new WebSocket(url);await new Promise((r,j)=>{ws.onopen=r;ws.onerror=j;});ws.onmessage=event=>{const m=JSON.parse(event.data),p=pending.get(m.id);if(p){pending.delete(m.id);clearTimeout(p.timer);m.error?p.reject(Error(JSON.stringify(m.error))):p.resolve(m.result);}};}
 function cdp(method,params={}){return new Promise((resolve,reject)=>{const id=++seq,timer=setTimeout(()=>{pending.delete(id);reject(Error('CDP timeout '+method));},20000);pending.set(id,{resolve,reject,timer});ws.send(JSON.stringify({id,method,params}));});}
 async function evaluate(expression){const r=await cdp('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result.value;}
-async function call(path,x){const r=await evaluate(`request(${JSON.stringify(path)},${JSON.stringify(x)})`);browserSamples.push({operation:path,status:r.status,browserRequestMs:r.browserRequestMs});return r;}
+async function call(path,x){
+ if(path==='/begin'&&x.kind==='create'||path==='/finish'&&x.response?.response?.attestationObject!==undefined){
+  // Trusted Node-only enrollment. These routes are NOT forwarded by HTTP adapter.
+  const route=path==='/begin'?'/local-enroll-begin':'/local-enroll-finish',r=await mf.dispatchFetch(origin+route,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(x)}),body=await r.json();
+  if(r.status===200&&path==='/finish')await sql('INSERT OR IGNORE INTO credential_custody VALUES(?,?)',x.response.id,'virtual-'+x.response.id);
+  return{...body,status:r.status};
+ }
+ if(['/revoke-all','/revoke-credential','/suspend'].includes(path)&&!x.proof){const o=await ok('/control-options',{session:x.session,action:path.slice(1),id:x.id});x={...x,ticket:o.ticket,proof:await ceremony(o)};}
+ const r=await evaluate(`request(${JSON.stringify(path)},${JSON.stringify(x)})`);browserSamples.push({operation:path,status:r.status,browserRequestMs:r.browserRequestMs});return r;
+}
 async function ok(path,x){const r=await call(path,x);assert.equal(r.status,200,path+' '+JSON.stringify(r));return r.result;}
 async function bad(path,x){assert.equal((await call(path,x)).status,400,path);}
 const begin=(kind='get',authority)=>ok('/begin',{kind,authority});
@@ -46,7 +58,8 @@ const mutate=(r,field,fn)=>{r=structuredClone(r);const bytes=Buffer.from(r.respo
 const page=`<!doctype html><meta charset="utf-8"><title>Isolated C1 virtual WebAuthn test</title><p>Disposable local synthetic test.</p><script>
 const decode=s=>Uint8Array.from(atob(s.replaceAll('-','+').replaceAll('_','/')),c=>c.charCodeAt(0));
 const encode=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');
-async function request(path,x){const start=performance.now(),r=await fetch(path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(x)});return {...await r.json(),status:r.status,browserRequestMs:performance.now()-start};}
+let csrf;
+async function request(path,x){const start=performance.now(),r=await fetch(path,{method:'POST',headers:{'content-type':'application/json',...(csrf?{'x-qy-consultation-csrf':csrf}:{})},body:JSON.stringify(x)}),body=await r.json();if(body.csrfToken)csrf=body.csrfToken;return {...body,status:r.status,browserRequestMs:performance.now()-start};}
 async function ceremony(o,extra){const publicKey={challenge:decode(o.challenge),timeout:5000,userVerification:'required',...extra};
  if(o.kind==='create')Object.assign(publicKey,{rp:{id:o.rpId,name:'Synthetic only'},user:{id:decode(o.userHandle),name:'synthetic',displayName:'Synthetic'},pubKeyCredParams:o.pubKeyCredParams,attestation:'none',authenticatorSelection:{userVerification:'required',residentKey:'discouraged'}});
  else {publicKey.rpId=o.rpId;if(publicKey.allowCredentials)publicKey.allowCredentials=publicKey.allowCredentials.map(c=>({...c,id:decode(c.id)}));}
@@ -63,12 +76,13 @@ try{
   try{
    if(req.headers.host!==new URL(origin).host){res.writeHead(403);res.end();return;}
    if(req.method==='GET'&&req.url==='/'){res.setHeader('content-type','text/html');res.end(page);return;}
-   if(req.method!=='POST'||!['/begin','/finish','/session','/logout','/revoke-all','/revoke-credential'].includes(req.url)){res.writeHead(404);res.end();return;}
+   if(req.method!=='POST'||!['/begin','/finish','/session','/logout','/revoke-all','/revoke-credential','/control-options','/suspend'].includes(req.url)){res.writeHead(404);res.end();return;}
    const chunks=[];let size=0;for await(const c of req){size+=c.length;if(size>20000)throw Error('body bound');chunks.push(c);}
    const start=performance.now(),cpu=process.cpuUsage();
-   const r=await mf.dispatchFetch(origin+req.url,{method:'POST',headers:{'content-type':req.headers['content-type']},body:Buffer.concat(chunks)}),body=await r.json(),used=process.cpuUsage(cpu);
+   const forwarded=Object.fromEntries(['content-type','origin','cookie','x-qy-consultation-csrf','sec-fetch-site'].filter(k=>req.headers[k]!==undefined).map(k=>[k,req.headers[k]]));
+   const r=await mf.dispatchFetch(origin+req.url,{method:'POST',headers:forwarded,body:Buffer.concat(chunks)}),body=await r.json(),used=process.cpuUsage(cpu);
    samples.push({operation:req.url,status:r.status,hostWallMs:performance.now()-start,hostDriverCpuMs:(used.user+used.system)/1000,...body.metrics});
-   res.writeHead(r.status,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify(body));
+   res.writeHead(r.status,{'content-type':'application/json','cache-control':'no-store',...(r.headers.getSetCookie().length?{'set-cookie':r.headers.getSetCookie()}:{})});res.end(JSON.stringify(body));
   }catch{res.writeHead(500);res.end('{}');}
  });
  await new Promise(r=>server.listen(0,'127.0.0.1',r));origin='http://localhost:'+server.address().port;
@@ -110,7 +124,7 @@ try{
  await test('shared-account get allowance exhaustion across callers',async()=>{const window=Math.floor(Date.now()/60000);await sql("INSERT INTO rate_bucket VALUES('get',?,59) ON CONFLICT(scope) DO UPDATE SET window=excluded.window,hits=59",window);await begin();await bad('/begin',{kind:'get',authority:'different-caller'});assert.equal((await one("SELECT hits FROM rate_bucket WHERE scope='get'")).hits,60);});
  await test('rate window rollover admits and resets count',async()=>{await sql("UPDATE rate_bucket SET window=CAST(unixepoch('subsec')/60 AS INTEGER)-1,hits=60 WHERE scope='get'");await begin();assert.equal((await one("SELECT hits FROM rate_bucket WHERE scope='get'")).hits,1);});
  await test('backward rate window fails closed without changing bucket',async()=>{await sql("UPDATE rate_bucket SET window=CAST(unixepoch('subsec')/60 AS INTEGER)+10,hits=60 WHERE scope='get'");const before=await one("SELECT * FROM rate_bucket WHERE scope='get'");await bad('/begin',{kind:'get'});assert.deepEqual(await one("SELECT * FROM rate_bucket WHERE scope='get'"),before);await sql("DELETE FROM rate_bucket WHERE scope='get'");});
- await test('credential revocation rejects sessions pending assertions and two-key gate',async()=>{session=await login();const o=await begin(),r=await ceremony(o);await ok('/revoke-credential',{session,id:a.id});await bad('/session',{session});await reject(o,r);await bad('/begin',{kind:'get'});});
+ await test('credential revocation rejects sessions pending assertions and two-key gate',async()=>{session=await login();const o=await begin(),r=await ceremony(o);await ok('/revoke-credential',{session,id:b.id});await bad('/session',{session});await reject(o,r);await bad('/begin',{kind:'get'});});
  const size=await sql('SELECT count(*) n FROM challenge');
  versions.localDependencies=Object.fromEntries(['miniflare','workerd'].map(n=>[n,JSON.parse(readFileSync(require.resolve(n+'/package.json',{paths:[require.resolve(process.env.QY_MINIFLARE_PATH)]}))).version]));
  versions.databaseMetadata=size.meta;
