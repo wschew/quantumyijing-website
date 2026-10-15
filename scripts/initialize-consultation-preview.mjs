@@ -8,7 +8,7 @@ import {provisionOffline} from './provision-consultation-preview-offline.mjs';
 import {PAGES_PROJECT,PREVIEW_BRANCH,PREVIEW_ORIGIN} from '../functions/lib/consultation/pages-boundary.js';
 
 const fail=()=>{throw Error('Preview initialization rejected; inspect target and sanitized database state. No automatic retry.');};
-const schemaSQL="SELECT type,name,tbl_name,sql FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' AND name<>'_cf_METADATA' ORDER BY type,name";
+const schemaSQL="SELECT type,name,tbl_name,sql FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' AND name NOT IN ('_cf_METADATA','_cf_KV') ORDER BY type,name";
 const normalized=rows=>JSON.stringify(rows.map(r=>({type:r.type,name:r.name,tbl_name:r.tbl_name,sql:r.sql?.trim()})));
 const markerSQL='SELECT * FROM consultation_preview_environment WHERE id=1';
 export function prepareTarget(target){
