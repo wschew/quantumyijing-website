@@ -1,3 +1,4 @@
+import {createWorkflowHandler} from '../functions/lib/consultation/workflow-handler.js';
 import {priceAt,offerOpen} from '../functions/lib/consultation/foundation.js';
 ﻿import assert from 'node:assert/strict';
 import https from 'node:https';
@@ -85,9 +86,32 @@ try{
  }
  assert.equal((await qy.call('qy/availability',{action:'Create',expectedRevision:0,commandId:crypto.randomUUID(),startAt:Date.now()+3600000,endAt:Date.now()+30*86400000})).status,200);
  const first=await offered(96);
- await test('missing capture evidence causes explicit ExceptionReview',async()=>{const r=await qy.call('qy/payment/reconcile',{id:first.id,expectedVersion:first.rowVersion,commandId:crypto.randomUUID()});assert.equal(r.status,200);assert.equal(r.data.state,'ExceptionReview');first.rowVersion=r.data.rowVersion;});
+ await test('unpaid reconciliation preserves PaymentPending and its version',async()=>{const version=first.rowVersion;const r=await qy.call('qy/payment/reconcile',{id:first.id,expectedVersion:version,commandId:crypto.randomUUID()});assert.equal(r.status,200);assert.equal(r.data.state,'PaymentPending');assert.equal(r.data.rowVersion,version);assert.equal((await fixture.db.prepare('SELECT state FROM consultation_slot_reservations WHERE booking_id=?').bind(first.id).first()).state,'Held');});
+ await test('Preview-style handler without trusted adapter disables reconciliation',async()=>{let invoked=false;const handler=createWorkflowHandler({origin,workflow:{reconcilePayment(){invoked=true;}},policies:{}});const r=await handler(new Request(origin+'/api/consultation/qy/payment/reconcile',{method:'POST',headers:{origin,'content-type':'application/json'},body:JSON.stringify({id:first.id,expectedVersion:first.rowVersion,commandId:crypto.randomUUID()})}));assert.equal(r.status,404);assert.equal(invoked,false);assert.equal((await fixture.db.prepare('SELECT state FROM consultation_bookings WHERE id=?').bind(first.id).first()).state,'PaymentPending');});
  const capture=await qy.call('qy/local/capture',{id:first.id,expectedVersion:first.rowVersion,mode:'timely'});assert.equal(capture.status,200);first.rowVersion=capture.data.rowVersion;
- await test('explicit QY review confirms only verified full timely mock capture',async()=>{const r=await qy.call('qy/payment/reconcile',{id:first.id,expectedVersion:first.rowVersion,commandId:crypto.randomUUID()});assert.equal(r.status,200);assert.equal(r.data.state,'Confirmed');first.rowVersion=r.data.rowVersion;});
+ await test('customer input and unsupported administrator claims cannot confirm',async()=>{
+  const cmd={id:first.id,expectedVersion:first.rowVersion,commandId:crypto.randomUUID()};
+  assert.equal((await customer.call('qy/payment/reconcile',cmd)).status,409);
+  assert.equal((await qy.call('qy/payment/reconcile',{...cmd,paid:true,amountSen:98000})).status,409);
+  assert.equal((await qy.call('qy/status',{...cmd,to:'Confirmed'})).status,409);
+ });
+ await test('partial failed pending unverified and mismatched trusted rows never confirm',async()=>{
+  const payment=await fixture.db.prepare('SELECT p.* FROM payments p JOIN consultation_offers o ON o.order_id=p.order_id JOIN consultation_bookings b ON b.current_offer_id=o.id WHERE b.id=?').bind(first.id).first();
+  for(const [column,value]of [['amount',payment.amount-1],['currency','USD'],['status','Failed'],['status','Pending'],['verification_status','Unverified'],['accounting_eligible',0]]){
+   await fixture.db.prepare('UPDATE payments SET '+column+'=? WHERE id=?').bind(value,payment.id).run();
+   const r=await qy.call('qy/payment/reconcile',{id:first.id,expectedVersion:first.rowVersion,commandId:crypto.randomUUID()});assert.equal(r.status,200);assert.equal(r.data.state,'PaymentPending');assert.equal(r.data.rowVersion,first.rowVersion);
+   await fixture.db.prepare('UPDATE payments SET '+column+'=? WHERE id=?').bind(payment[column],payment.id).run();
+  }
+  for(const [column,value]of [['currency','USD'],['total',payment.amount+1],['payment_status','Pending']]){
+   const order=await fixture.db.prepare('SELECT * FROM orders WHERE id=?').bind(payment.order_id).first();await fixture.db.prepare('UPDATE orders SET '+column+'=? WHERE id=?').bind(value,payment.order_id).run();
+   assert.equal((await qy.call('qy/payment/reconcile',{id:first.id,expectedVersion:first.rowVersion,commandId:crypto.randomUUID()})).data.state,'PaymentPending');await fixture.db.prepare('UPDATE orders SET '+column+'=? WHERE id=?').bind(order[column],payment.order_id).run();
+  }
+ });
+ const confirmation={id:first.id,expectedVersion:first.rowVersion,commandId:crypto.randomUUID()};let confirmed;
+ await test('concurrent repeated verified confirmation commits once and returns identical results',async()=>{const results=await Promise.all([qy.call('qy/payment/reconcile',confirmation),qy.call('qy/payment/reconcile',confirmation)]);assert.deepEqual(results.map(r=>r.status),[200,200]);assert.deepEqual(results[0].data,results[1].data);confirmed=results[0];assert.equal(confirmed.data.state,'Confirmed');first.rowVersion=confirmed.data.rowVersion;assert.equal((await fixture.db.prepare('SELECT count(*) n FROM consultation_workflow_commands WHERE command_id=?').bind(confirmation.commandId).first()).n,1);assert.equal((await fixture.db.prepare("SELECT count(*) n FROM consultation_slot_reservations WHERE booking_id=? AND state='Confirmed'").bind(first.id).first()).n,1);});
+ await test('exact retry has no additional version audit or receipt effects',async()=>{const before=await fixture.db.prepare('SELECT count(*) n FROM consultation_workflow_events').first();assert.deepEqual(await qy.call('qy/payment/reconcile',confirmation),confirmed);assert.equal((await fixture.db.prepare('SELECT count(*) n FROM consultation_workflow_events').first()).n,before.n);assert.equal((await fixture.db.prepare('SELECT row_version FROM consultation_bookings WHERE id=?').bind(first.id).first()).row_version,first.rowVersion);});
+ await test('duplicate command with altered payload or another booking is rejected',async()=>{assert.equal((await qy.call('qy/payment/reconcile',{...confirmation,expectedVersion:confirmation.expectedVersion+1})).status,409);assert.equal((await qy.call('qy/payment/reconcile',{...confirmation,id:'synthetic-other-booking'})).status,409);});
+ await test('new command cannot re-confirm an already confirmed appointment',async()=>assert.equal((await qy.call('qy/payment/reconcile',{id:first.id,expectedVersion:first.rowVersion,commandId:crypto.randomUUID()})).status,409));
 
  const meetingStatus=await qy.call('qy/meeting?id='+first.id);assert.equal(meetingStatus.status,200);
  const meetingPublication=await qy.call('qy/meeting',{id:first.id,expectedVersion:meetingStatus.data.bookingVersion,commandId:crypto.randomUUID(),action:'Publish',details:{joinUrl:'https://synthetic.zoom.us/j/12345678901',meetingId:'12345678901',passcode:'SyntheticOnly42'}});
@@ -96,17 +120,17 @@ try{
  await test('duplicate capture cannot replace existing order evidence',async()=>assert.equal((await qy.call('qy/local/capture',{id:first.id,expectedVersion:first.rowVersion,mode:'timely'})).status,409));
  await test('confirmed consultation cannot complete before session end',async()=>assert.equal((await qy.call('qy/status',{id:first.id,to:'Completed',expectedVersion:first.rowVersion,commandId:crypto.randomUUID()})).status,409));
  const late=await offered(120);const lateCapture=await qy.call('qy/local/capture',{id:late.id,expectedVersion:late.rowVersion,mode:'late'});assert.equal(lateCapture.status,200);
- await test('late capture remains review-only',async()=>assert.equal((await qy.call('qy/payment/reconcile',{id:late.id,expectedVersion:lateCapture.data.rowVersion,commandId:crypto.randomUUID()})).data.state,'ExceptionReview'));
+ await test('future-dated capture is not trusted and remains PaymentPending',async()=>assert.equal((await qy.call('qy/payment/reconcile',{id:late.id,expectedVersion:lateCapture.data.rowVersion,commandId:crypto.randomUUID()})).data.state,'PaymentPending'));
  const uncertain=await offered(144);const unknownCapture=await qy.call('qy/local/capture',{id:uncertain.id,expectedVersion:uncertain.rowVersion,mode:'unknown'});assert.equal(unknownCapture.status,200);
  let uncertainReview;
- await test('unknown capture never confirms',async()=>{uncertainReview=await qy.call('qy/payment/reconcile',{id:uncertain.id,expectedVersion:unknownCapture.data.rowVersion,commandId:crypto.randomUUID()});assert.equal(uncertainReview.data.state,'ExceptionReview');});
+ await test('unknown capture never confirms',async()=>{uncertainReview=await qy.call('qy/payment/reconcile',{id:uncertain.id,expectedVersion:unknownCapture.data.rowVersion,commandId:crypto.randomUUID()});assert.equal(uncertainReview.data.state,'PaymentPending');});
  // Use the authoritative synthetic acceptance boundary, not a wall-clock minus-one guess.
  const financeAcceptance=await fixture.db.prepare('SELECT o.accepted_at,o.expires_at FROM consultation_offers o JOIN consultation_bookings b ON b.current_offer_id=o.id WHERE b.id=?').bind(uncertain.id).first();
  const financeBody={id:uncertain.id,expectedVersion:uncertainReview.data.rowVersion,commandId:crypto.randomUUID(),capturedAt:financeAcceptance.accepted_at,supportingEvidenceReference:'synthetic-independent-finance-proof',supportingEvidenceHash:'c'.repeat(64),independentlyFinanceVerified:true};
  await test('customer cannot assert independent finance verification',async()=>assert.equal((await customer.call('qy/payment/finance-review',financeBody)).status,409));
  await test('finance fallback rejects missing evidence before any state change',async()=>assert.equal((await qy.call('qy/payment/finance-review',{...financeBody,supportingEvidenceHash:undefined})).status,409));
  const annotated=await qy.call('qy/payment/finance-review',financeBody);
- await test('finance review endpoint preserves review state',()=>{assert.equal(annotated.status,200);assert.equal(annotated.data.state,'ExceptionReview');assert.equal(annotated.data.reviewRecorded,true);});
+ await test('finance review endpoint preserves review state',()=>{assert.equal(annotated.status,200);assert.equal(annotated.data.state,'PaymentPending');assert.equal(annotated.data.reviewRecorded,true);});
  await test('finance annotation includes independent audit evidence',async()=>assert.equal((await fixture.db.prepare("SELECT COUNT(*) n FROM consultation_capture_reviews r JOIN consultation_capture_audit a ON a.id=r.audit_id AND a.event='IndependentFinanceReview'").first()).n,1));
  await test('explicit reconciliation uses documented finance fallback',async()=>{const resolved=await qy.call('qy/payment/reconcile',{id:uncertain.id,expectedVersion:annotated.data.rowVersion,commandId:crypto.randomUUID()});assert.equal(resolved.status,200);assert.equal(resolved.data.state,'Confirmed');});
  const raced=await offered(168);const raceCapture=await qy.call('qy/local/capture',{id:raced.id,expectedVersion:raced.rowVersion,mode:'timely'});assert.equal(raceCapture.status,200);

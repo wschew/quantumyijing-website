@@ -16,7 +16,17 @@ export function createConsultationWorkflow({db,origin,keys,stepup,contacts,produ
  const guards=createWorkflowGuards({db,origin});
  async function now(){return (await stmt(db,`SELECT ${DB_NOW} n`).first()).n;}
  function gate(id,label,a,kind='QY'){return stmt(db,`INSERT INTO consultation_workflow_events VALUES(CASE WHEN changes()=1 THEN ? ELSE NULL END,?,?,?,?,${DB_NOW})`,[crypto.randomUUID(),id,label,kind,kind==='QY'?a.principal.sessionId:a.principal.contextId]);}
- async function receipt(id,commandId,payload){identifier(commandId);const key=await keys.lookup.provider(keys.lookup.activeKeyId);const hash=Array.from(new Uint8Array(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(JSON.stringify(['qy-workflow-command-v1',id,payload])))),x=>x.toString(16).padStart(2,'0')).join('');return stmt(db,`INSERT INTO consultation_workflow_commands VALUES(?,?,?,?,${DB_NOW})`,[commandId,id,keys.lookup.activeKeyId,hash]);}
+ async function fingerprint(id,payload,keyId=keys.lookup.activeKeyId){const key=await keys.lookup.provider(keyId);return Array.from(new Uint8Array(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(JSON.stringify(['qy-workflow-command-v1',id,payload])))),x=>x.toString(16).padStart(2,'0')).join('');}
+ async function receipt(id,commandId,payload){identifier(commandId);return stmt(db,`INSERT INTO consultation_workflow_commands VALUES(?,?,?,?,${DB_NOW})`,[commandId,id,keys.lookup.activeKeyId,await fingerprint(id,payload)]);}
+ function paymentResult(input,state){return {id:input.id,state,rowVersion:input.expectedVersion+1};}
+ function paymentReceipt(input,state){return {operation:'PaymentReconciliation',id:input.id,expectedVersion:input.expectedVersion,commandId:input.commandId,result:paymentResult(input,state)};}
+ async function replayPayment(a,input){
+  const old=await stmt(db,`SELECT * FROM consultation_workflow_commands WHERE command_id=? AND EXISTS(${a.sql})`,[input.commandId,...a.values]).first();if(!old)return null;
+  if(old.booking_id!==input.id)fail();
+  for(const state of ['Confirmed','ExceptionReview'])if(old.fingerprint===await fingerprint(input.id,paymentReceipt(input,state),old.fingerprint_key_id))return Object.freeze(paymentResult(input,state));
+  fail(); // Same command with different input, legacy receipt or another operation.
+ }
+
  async function load(id){identifier(id);const row=await stmt(db,`SELECT b.*,COALESCE(a.start_at,b.current_start_at) effective_start,COALESCE(a.end_at,b.current_end_at) effective_end FROM consultation_bookings b LEFT JOIN consultation_workflow_appointments a ON a.booking_id=b.id AND a.state='Active' WHERE b.id=?`,[id]).first();if(!row)fail();return {...row,current_start_at:row.effective_start,current_end_at:row.effective_end};}
  async function submit(request,input){
   try{closed(input,['commandId','intake']);identifier(input.commandId);const a=await stepup.requireStepup(request,true),time=await now();
@@ -80,14 +90,16 @@ export function createConsultationWorkflow({db,origin,keys,stepup,contacts,produ
  }
  // Never accepts payment evidence from request JSON. No financial-table updates.
  async function reconcilePayment(request,input){
-  try{closed(input,['id','expectedVersion','commandId']);const a=await guards.qy(request,true),r=await load(input.id);if(!['PaymentPending','ExceptionReview'].includes(r.state)||r.row_version!==input.expectedVersion)fail();
+  try{closed(input,['id','expectedVersion','commandId']);identifier(input.id);identifier(input.commandId);if(!Number.isSafeInteger(input.expectedVersion)||input.expectedVersion<0)fail();const a=await guards.qy(request,true),prior=await replayPayment(a,input);if(prior)return prior;const r=await load(input.id);if(!['PaymentPending','ExceptionReview'].includes(r.state)||r.row_version!==input.expectedVersion){const raced=await replayPayment(a,input);if(raced)return raced;fail();}
    const o=offer(await stmt(db,'SELECT * FROM consultation_offers WHERE id=?',[r.current_offer_id]).first(),r.customer_id);
    const evidence=typeof readCaptureEvidence==='function'?await readCaptureEvidence({bookingId:r.id,offerId:o.id,orderId:o.orderId,customerId:r.customer_id}):null;
+   // No authoritative record is not a payment exception or confirmation. Preserve state.
+   if(!evidence)return Object.freeze({id:r.id,state:r.state,rowVersion:r.row_version});
    // An approved adapter must supply its atomic SQL evidence predicate alongside capture data.
    const eligible=paymentDecision(o,evidence)==='Eligible'&&typeof evidence?.guardSql==='string'&&Array.isArray(evidence?.guardValues);
    const target=eligible?'Confirmed':'ExceptionReview',time=await now();
    if(eligible)transition(booking(r),target,{now:time,expectedVersion:r.row_version,actorRole:'owner',offer:o,payment:evidence,slotReserved:true});
-   await db.batch([stmt(db,`UPDATE consultation_bookings SET state=?,original_start_at=CASE WHEN ?='Confirmed' THEN COALESCE(original_start_at,current_start_at) ELSE original_start_at END,row_version=row_version+1,updated_at=${DB_NOW} WHERE id=? AND state=? AND row_version=? AND current_offer_id=? AND EXISTS(${a.sql}) ${eligible?`AND current_start_at>${DB_NOW} AND EXISTS(${evidence.guardSql}) AND EXISTS(SELECT 1 FROM consultation_slot_reservations WHERE offer_id=? AND state='Held')`:''}`,[target,target,r.id,r.state,r.row_version,o.id,...a.values,...(eligible?[...evidence.guardValues,o.id]:[])]),gate(r.id,target,a),...(eligible?[stmt(db,"UPDATE consultation_slot_reservations SET state='Confirmed' WHERE offer_id=? AND state='Held'",[o.id]),gate(r.id,target,a)]:[]),await receipt(r.id,input.commandId,input)]);
+   try{await db.batch([stmt(db,`UPDATE consultation_bookings SET state=?,original_start_at=CASE WHEN ?='Confirmed' THEN COALESCE(original_start_at,current_start_at) ELSE original_start_at END,row_version=row_version+1,updated_at=${DB_NOW} WHERE id=? AND state=? AND row_version=? AND current_offer_id=? AND EXISTS(${a.sql}) ${eligible?`AND current_start_at>${DB_NOW} AND EXISTS(${evidence.guardSql}) AND EXISTS(SELECT 1 FROM consultation_slot_reservations WHERE offer_id=? AND state='Held')`:''}`,[target,target,r.id,r.state,r.row_version,o.id,...a.values,...(eligible?[...evidence.guardValues,o.id]:[])]),gate(r.id,target,a),...(eligible?[stmt(db,"UPDATE consultation_slot_reservations SET state='Confirmed' WHERE offer_id=? AND state='Held'",[o.id]),gate(r.id,target,a)]:[]),await receipt(r.id,input.commandId,paymentReceipt(input,target))]);}catch{const raced=await replayPayment(a,input);if(raced)return raced;fail();}
    return Object.freeze({id:r.id,state:target,rowVersion:r.row_version+1});
   }catch{fail();}
  }
