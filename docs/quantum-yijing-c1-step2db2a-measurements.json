@@ -1,0 +1,2191 @@
+{
+  "passed": 14,
+  "checks": [
+    "admission contention: exactly remaining get allowance wins",
+    "all five fixed scopes count failures and cap atomically",
+    "forced authentication-first then revoke invalidates issued session",
+    "forced revoke-first ordering at post-verification barrier",
+    "multiple concurrent revoke-all: one authorized winner, one event",
+    "authentication racing cleanup retains live challenge and creates valid session",
+    "logout and expiry invalidate sessions and pending enrollment authority",
+    "audit failure rolls back revoke epoch and leaves session usable",
+    "database admission failure fails closed before challenge creation",
+    "offline reset audit failure rolls back epoch key generation and bootstrap",
+    "cleanup bound, holds, grace, concurrent cleanup and resume after rollback",
+    "credential revocation invalidates all sessions and pending challenges",
+    "offline reset is constant-size, rotates key epoch, and needs two fresh keys",
+    "pristine dispatcher exposes no maintenance/recovery routes or SQL metadata"
+  ],
+  "evidence": "C:\\Users\\WIN10\\Desktop\\qy-c1-bazi-consultation-development\\.local-c1-package-step2db2a-BViYJC",
+  "node": "v24.20.0",
+  "versions": {
+    "miniflare": "5.20261006.1-alpha",
+    "workerd": "1.20261006.1"
+  },
+  "growth": [
+    {
+      "insertedPerTable": 100,
+      "seeded": {
+        "sessions": 119,
+        "challenges": 131,
+        "databaseMetadata": {
+          "served_by": "miniflare.db",
+          "duration": 0,
+          "changes": 0,
+          "last_row_id": 120,
+          "changed_db": false,
+          "size_after": 81920,
+          "rows_read": 119,
+          "rows_written": 0
+        }
+      },
+      "sessions": 20,
+      "challenges": 32
+    },
+    {
+      "insertedPerTable": 1000,
+      "seeded": {
+        "sessions": 1020,
+        "challenges": 1032,
+        "databaseMetadata": {
+          "served_by": "miniflare.db",
+          "duration": 1,
+          "changes": 0,
+          "last_row_id": 1121,
+          "changed_db": false,
+          "size_after": 253952,
+          "rows_read": 1020,
+          "rows_written": 0
+        }
+      },
+      "sessions": 21,
+      "challenges": 33
+    },
+    {
+      "insertedPerTable": 10000,
+      "seeded": {
+        "sessions": 10021,
+        "challenges": 10033,
+        "databaseMetadata": {
+          "served_by": "miniflare.db",
+          "duration": 0,
+          "changes": 0,
+          "last_row_id": 11122,
+          "changed_db": false,
+          "size_after": 1806336,
+          "rows_read": 10021,
+          "rows_written": 0
+        }
+      },
+      "sessions": 9022,
+      "challenges": 9034
+    }
+  ],
+  "summary": [
+    {
+      "operation": "rate contention",
+      "n": 24,
+      "wallMs": {
+        "p50": 130.209,
+        "p95": 184.6617,
+        "max": 184.7669
+      },
+      "hostDriverCpuMs": {
+        "p50": 110,
+        "p95": 126,
+        "max": 126
+      },
+      "statements": {
+        "p50": 1,
+        "p95": 5,
+        "max": 5
+      },
+      "rowsRead": {
+        "p50": 2,
+        "p95": 7,
+        "max": 7
+      },
+      "rowsWritten": {
+        "p50": 0,
+        "p95": 6,
+        "max": 6
+      },
+      "d1DurationMs": {
+        "p50": 0,
+        "p95": 1,
+        "max": 2
+      }
+    },
+    {
+      "operation": "rate rejected get",
+      "n": 1,
+      "wallMs": {
+        "p50": 6.1548,
+        "p95": 6.1548,
+        "max": 6.1548
+      },
+      "hostDriverCpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "statements": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "rowsRead": {
+        "p50": 2,
+        "p95": 2,
+        "max": 2
+      },
+      "rowsWritten": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "d1DurationMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      }
+    },
+    {
+      "operation": "rate rejected create",
+      "n": 1,
+      "wallMs": {
+        "p50": 7.8273,
+        "p95": 7.8273,
+        "max": 7.8273
+      },
+      "hostDriverCpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "statements": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "rowsRead": {
+        "p50": 2,
+        "p95": 2,
+        "max": 2
+      },
+      "rowsWritten": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "d1DurationMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      }
+    },
+    {
+      "operation": "rate rejected finish",
+      "n": 1,
+      "wallMs": {
+        "p50": 8.53,
+        "p95": 8.53,
+        "max": 8.53
+      },
+      "hostDriverCpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "statements": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "rowsRead": {
+        "p50": 2,
+        "p95": 2,
+        "max": 2
+      },
+      "rowsWritten": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "d1DurationMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      }
+    },
+    {
+      "operation": "rate rejected control",
+      "n": 1,
+      "wallMs": {
+        "p50": 5.6911,
+        "p95": 5.6911,
+        "max": 5.6911
+      },
+      "hostDriverCpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "statements": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "rowsRead": {
+        "p50": 2,
+        "p95": 2,
+        "max": 2
+      },
+      "rowsWritten": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "d1DurationMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      }
+    },
+    {
+      "operation": "rate rejected session",
+      "n": 1,
+      "wallMs": {
+        "p50": 7.2935,
+        "p95": 7.2935,
+        "max": 7.2935
+      },
+      "hostDriverCpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "statements": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "rowsRead": {
+        "p50": 2,
+        "p95": 2,
+        "max": 2
+      },
+      "rowsWritten": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "d1DurationMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      }
+    },
+    {
+      "operation": "forced auth first",
+      "n": 1,
+      "wallMs": {
+        "p50": 19.9935,
+        "p95": 19.9935,
+        "max": 19.9935
+      },
+      "hostDriverCpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "statements": {
+        "p50": 8,
+        "p95": 8,
+        "max": 8
+      },
+      "rowsRead": {
+        "p50": 16,
+        "p95": 16,
+        "max": 16
+      },
+      "rowsWritten": {
+        "p50": 8,
+        "p95": 8,
+        "max": 8
+      },
+      "d1DurationMs": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      }
+    },
+    {
+      "operation": "forced stale auth",
+      "n": 1,
+      "wallMs": {
+        "p50": 29.4122,
+        "p95": 29.4122,
+        "max": 29.4122
+      },
+      "hostDriverCpuMs": {
+        "p50": 16,
+        "p95": 16,
+        "max": 16
+      },
+      "statements": {
+        "p50": 8,
+        "p95": 8,
+        "max": 8
+      },
+      "rowsRead": {
+        "p50": 6,
+        "p95": 6,
+        "max": 6
+      },
+      "rowsWritten": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "d1DurationMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      }
+    },
+    {
+      "operation": "concurrent revoke",
+      "n": 8,
+      "wallMs": {
+        "p50": 75.8871,
+        "p95": 75.9687,
+        "max": 75.9687
+      },
+      "hostDriverCpuMs": {
+        "p50": 47,
+        "p95": 47,
+        "max": 47
+      },
+      "statements": {
+        "p50": 5,
+        "p95": 5,
+        "max": 5
+      },
+      "rowsRead": {
+        "p50": 2,
+        "p95": 9,
+        "max": 9
+      },
+      "rowsWritten": {
+        "p50": 1,
+        "p95": 6,
+        "max": 6
+      },
+      "d1DurationMs": {
+        "p50": 0,
+        "p95": 1,
+        "max": 1
+      }
+    },
+    {
+      "operation": "cleanup",
+      "n": 5,
+      "wallMs": {
+        "p50": 6.4743,
+        "p95": 27.2102,
+        "max": 27.2102
+      },
+      "hostDriverCpuMs": {
+        "p50": 0,
+        "p95": 32,
+        "max": 32
+      },
+      "statements": {
+        "p50": 4,
+        "p95": 4,
+        "max": 4
+      },
+      "rowsRead": {
+        "p50": 207,
+        "p95": 416,
+        "max": 416
+      },
+      "rowsWritten": {
+        "p50": 50,
+        "p95": 103,
+        "max": 103
+      },
+      "d1DurationMs": {
+        "p50": 0,
+        "p95": 2,
+        "max": 2
+      }
+    },
+    {
+      "operation": "auth cleanup",
+      "n": 1,
+      "wallMs": {
+        "p50": 22.9849,
+        "p95": 22.9849,
+        "max": 22.9849
+      },
+      "hostDriverCpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "statements": {
+        "p50": 8,
+        "p95": 8,
+        "max": 8
+      },
+      "rowsRead": {
+        "p50": 15,
+        "p95": 15,
+        "max": 15
+      },
+      "rowsWritten": {
+        "p50": 9,
+        "p95": 9,
+        "max": 9
+      },
+      "d1DurationMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      }
+    },
+    {
+      "operation": "admission DB failure",
+      "n": 1,
+      "wallMs": {
+        "p50": 8.7235,
+        "p95": 8.7235,
+        "max": 8.7235
+      },
+      "hostDriverCpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "statements": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "rowsRead": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "rowsWritten": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "d1DurationMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      }
+    },
+    {
+      "operation": "limited login begin",
+      "n": 10,
+      "wallMs": {
+        "p50": 8.1378,
+        "p95": 18.2717,
+        "max": 18.2717
+      },
+      "hostDriverCpuMs": {
+        "p50": 0,
+        "p95": 16,
+        "max": 16
+      },
+      "statements": {
+        "p50": 5,
+        "p95": 5,
+        "max": 5
+      },
+      "rowsRead": {
+        "p50": 7,
+        "p95": 7,
+        "max": 7
+      },
+      "rowsWritten": {
+        "p50": 6,
+        "p95": 7,
+        "max": 7
+      },
+      "d1DurationMs": {
+        "p50": 0,
+        "p95": 2,
+        "max": 2
+      }
+    },
+    {
+      "operation": "limited login finish",
+      "n": 10,
+      "wallMs": {
+        "p50": 10.1678,
+        "p95": 13.2102,
+        "max": 13.2102
+      },
+      "hostDriverCpuMs": {
+        "p50": 0,
+        "p95": 31,
+        "max": 31
+      },
+      "statements": {
+        "p50": 8,
+        "p95": 8,
+        "max": 8
+      },
+      "rowsRead": {
+        "p50": 16,
+        "p95": 16,
+        "max": 16
+      },
+      "rowsWritten": {
+        "p50": 8,
+        "p95": 9,
+        "max": 9
+      },
+      "d1DurationMs": {
+        "p50": 0,
+        "p95": 1,
+        "max": 1
+      }
+    },
+    {
+      "operation": "limited session read",
+      "n": 10,
+      "wallMs": {
+        "p50": 5.6784,
+        "p95": 7.4436,
+        "max": 7.4436
+      },
+      "hostDriverCpuMs": {
+        "p50": 0,
+        "p95": 16,
+        "max": 16
+      },
+      "statements": {
+        "p50": 2,
+        "p95": 2,
+        "max": 2
+      },
+      "rowsRead": {
+        "p50": 7,
+        "p95": 7,
+        "max": 7
+      },
+      "rowsWritten": {
+        "p50": 1,
+        "p95": 2,
+        "max": 2
+      },
+      "d1DurationMs": {
+        "p50": 0,
+        "p95": 1,
+        "max": 1
+      }
+    },
+    {
+      "operation": "limited logout",
+      "n": 10,
+      "wallMs": {
+        "p50": 5.5119,
+        "p95": 7.5198,
+        "max": 7.5198
+      },
+      "hostDriverCpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "statements": {
+        "p50": 5,
+        "p95": 5,
+        "max": 5
+      },
+      "rowsRead": {
+        "p50": 9,
+        "p95": 9,
+        "max": 9
+      },
+      "rowsWritten": {
+        "p50": 6,
+        "p95": 7,
+        "max": 7
+      },
+      "d1DurationMs": {
+        "p50": 0,
+        "p95": 1,
+        "max": 1
+      }
+    },
+    {
+      "operation": "growth revoke 100",
+      "n": 1,
+      "wallMs": {
+        "p50": 5.6589,
+        "p95": 5.6589,
+        "max": 5.6589
+      },
+      "hostDriverCpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "statements": {
+        "p50": 5,
+        "p95": 5,
+        "max": 5
+      },
+      "rowsRead": {
+        "p50": 8,
+        "p95": 8,
+        "max": 8
+      },
+      "rowsWritten": {
+        "p50": 7,
+        "p95": 7,
+        "max": 7
+      },
+      "d1DurationMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      }
+    },
+    {
+      "operation": "growth cleanup 100",
+      "n": 10,
+      "wallMs": {
+        "p50": 4.5321,
+        "p95": 5.2997,
+        "max": 5.2997
+      },
+      "hostDriverCpuMs": {
+        "p50": 0,
+        "p95": 16,
+        "max": 16
+      },
+      "statements": {
+        "p50": 4,
+        "p95": 4,
+        "max": 4
+      },
+      "rowsRead": {
+        "p50": 10,
+        "p95": 806,
+        "max": 806
+      },
+      "rowsWritten": {
+        "p50": 0,
+        "p95": 200,
+        "max": 200
+      },
+      "d1DurationMs": {
+        "p50": 0,
+        "p95": 1,
+        "max": 1
+      }
+    },
+    {
+      "operation": "growth revoke 1000",
+      "n": 1,
+      "wallMs": {
+        "p50": 6.2384,
+        "p95": 6.2384,
+        "max": 6.2384
+      },
+      "hostDriverCpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "statements": {
+        "p50": 5,
+        "p95": 5,
+        "max": 5
+      },
+      "rowsRead": {
+        "p50": 8,
+        "p95": 8,
+        "max": 8
+      },
+      "rowsWritten": {
+        "p50": 7,
+        "p95": 7,
+        "max": 7
+      },
+      "d1DurationMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      }
+    },
+    {
+      "operation": "growth cleanup 1000",
+      "n": 10,
+      "wallMs": {
+        "p50": 5.1025,
+        "p95": 6.9016,
+        "max": 6.9016
+      },
+      "hostDriverCpuMs": {
+        "p50": 0,
+        "p95": 31,
+        "max": 31
+      },
+      "statements": {
+        "p50": 4,
+        "p95": 4,
+        "max": 4
+      },
+      "rowsRead": {
+        "p50": 806,
+        "p95": 806,
+        "max": 806
+      },
+      "rowsWritten": {
+        "p50": 200,
+        "p95": 200,
+        "max": 200
+      },
+      "d1DurationMs": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      }
+    },
+    {
+      "operation": "growth revoke 10000",
+      "n": 1,
+      "wallMs": {
+        "p50": 5.8561,
+        "p95": 5.8561,
+        "max": 5.8561
+      },
+      "hostDriverCpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "statements": {
+        "p50": 5,
+        "p95": 5,
+        "max": 5
+      },
+      "rowsRead": {
+        "p50": 8,
+        "p95": 8,
+        "max": 8
+      },
+      "rowsWritten": {
+        "p50": 7,
+        "p95": 7,
+        "max": 7
+      },
+      "d1DurationMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      }
+    },
+    {
+      "operation": "growth cleanup 10000",
+      "n": 10,
+      "wallMs": {
+        "p50": 4.5978,
+        "p95": 5.879,
+        "max": 5.879
+      },
+      "hostDriverCpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "statements": {
+        "p50": 4,
+        "p95": 4,
+        "max": 4
+      },
+      "rowsRead": {
+        "p50": 806,
+        "p95": 806,
+        "max": 806
+      },
+      "rowsWritten": {
+        "p50": 200,
+        "p95": 200,
+        "max": 200
+      },
+      "d1DurationMs": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      }
+    },
+    {
+      "operation": "offline reset growth",
+      "n": 1,
+      "wallMs": {
+        "p50": 3.9878,
+        "p95": 3.9878,
+        "max": 3.9878
+      },
+      "hostDriverCpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "statements": {
+        "p50": 4,
+        "p95": 4,
+        "max": 4
+      },
+      "rowsRead": {
+        "p50": 2,
+        "p95": 2,
+        "max": 2
+      },
+      "rowsWritten": {
+        "p50": 5,
+        "p95": 5,
+        "max": 5
+      },
+      "d1DurationMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      }
+    }
+  ],
+  "samples": [
+    {
+      "operation": "rate contention",
+      "status": 400,
+      "wallMs": 129.2871,
+      "hostDriverCpuMs": 110,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 400,
+      "wallMs": 129.4244,
+      "hostDriverCpuMs": 110,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 400,
+      "wallMs": 129.4977,
+      "hostDriverCpuMs": 110,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 400,
+      "wallMs": 129.5671,
+      "hostDriverCpuMs": 110,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 400,
+      "wallMs": 129.6331,
+      "hostDriverCpuMs": 110,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 400,
+      "wallMs": 129.7285,
+      "hostDriverCpuMs": 110,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 400,
+      "wallMs": 129.8792,
+      "hostDriverCpuMs": 110,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 400,
+      "wallMs": 129.9888,
+      "hostDriverCpuMs": 110,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 400,
+      "wallMs": 130.0506,
+      "hostDriverCpuMs": 110,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 400,
+      "wallMs": 130.103,
+      "hostDriverCpuMs": 110,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 400,
+      "wallMs": 130.1592,
+      "hostDriverCpuMs": 110,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 400,
+      "wallMs": 130.209,
+      "hostDriverCpuMs": 110,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 400,
+      "wallMs": 130.2588,
+      "hostDriverCpuMs": 110,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 400,
+      "wallMs": 130.3042,
+      "hostDriverCpuMs": 110,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 400,
+      "wallMs": 130.3523,
+      "hostDriverCpuMs": 110,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 400,
+      "wallMs": 159.9208,
+      "hostDriverCpuMs": 126,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 400,
+      "wallMs": 160.0889,
+      "hostDriverCpuMs": 126,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 400,
+      "wallMs": 160.1677,
+      "hostDriverCpuMs": 126,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 400,
+      "wallMs": 160.2381,
+      "hostDriverCpuMs": 126,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 200,
+      "wallMs": 175.9016,
+      "hostDriverCpuMs": 126,
+      "statements": 5,
+      "rowsRead": 7,
+      "rowsWritten": 6,
+      "d1DurationMs": 2,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 200,
+      "wallMs": 175.9591,
+      "hostDriverCpuMs": 126,
+      "statements": 5,
+      "rowsRead": 7,
+      "rowsWritten": 6,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 200,
+      "wallMs": 176.059,
+      "hostDriverCpuMs": 126,
+      "statements": 5,
+      "rowsRead": 7,
+      "rowsWritten": 6,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 200,
+      "wallMs": 184.6617,
+      "hostDriverCpuMs": 126,
+      "statements": 5,
+      "rowsRead": 7,
+      "rowsWritten": 6,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate contention",
+      "status": 200,
+      "wallMs": 184.7669,
+      "hostDriverCpuMs": 126,
+      "statements": 5,
+      "rowsRead": 7,
+      "rowsWritten": 6,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate rejected get",
+      "status": 400,
+      "wallMs": 6.1548,
+      "hostDriverCpuMs": 0,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate rejected create",
+      "status": 400,
+      "wallMs": 7.8273,
+      "hostDriverCpuMs": 0,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate rejected finish",
+      "status": 400,
+      "wallMs": 8.53,
+      "hostDriverCpuMs": 0,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate rejected control",
+      "status": 400,
+      "wallMs": 5.6911,
+      "hostDriverCpuMs": 0,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "rate rejected session",
+      "status": 400,
+      "wallMs": 7.2935,
+      "hostDriverCpuMs": 0,
+      "statements": 1,
+      "rowsRead": 2,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "forced auth first",
+      "status": 200,
+      "wallMs": 19.9935,
+      "hostDriverCpuMs": 0,
+      "statements": 8,
+      "rowsRead": 16,
+      "rowsWritten": 8,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "forced stale auth",
+      "status": 400,
+      "wallMs": 29.4122,
+      "hostDriverCpuMs": 16,
+      "statements": 8,
+      "rowsRead": 6,
+      "rowsWritten": 1,
+      "d1DurationMs": 0,
+      "metadataComplete": false
+    },
+    {
+      "operation": "concurrent revoke",
+      "status": 200,
+      "wallMs": 44.1341,
+      "hostDriverCpuMs": 47,
+      "statements": 5,
+      "rowsRead": 9,
+      "rowsWritten": 6,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "concurrent revoke",
+      "status": 400,
+      "wallMs": 75.8008,
+      "hostDriverCpuMs": 47,
+      "statements": 5,
+      "rowsRead": 2,
+      "rowsWritten": 1,
+      "d1DurationMs": 0,
+      "metadataComplete": false
+    },
+    {
+      "operation": "concurrent revoke",
+      "status": 400,
+      "wallMs": 75.8583,
+      "hostDriverCpuMs": 47,
+      "statements": 5,
+      "rowsRead": 2,
+      "rowsWritten": 1,
+      "d1DurationMs": 0,
+      "metadataComplete": false
+    },
+    {
+      "operation": "concurrent revoke",
+      "status": 400,
+      "wallMs": 75.8871,
+      "hostDriverCpuMs": 47,
+      "statements": 5,
+      "rowsRead": 2,
+      "rowsWritten": 1,
+      "d1DurationMs": 0,
+      "metadataComplete": false
+    },
+    {
+      "operation": "concurrent revoke",
+      "status": 400,
+      "wallMs": 75.8934,
+      "hostDriverCpuMs": 47,
+      "statements": 5,
+      "rowsRead": 2,
+      "rowsWritten": 1,
+      "d1DurationMs": 0,
+      "metadataComplete": false
+    },
+    {
+      "operation": "concurrent revoke",
+      "status": 400,
+      "wallMs": 75.9183,
+      "hostDriverCpuMs": 47,
+      "statements": 5,
+      "rowsRead": 2,
+      "rowsWritten": 1,
+      "d1DurationMs": 0,
+      "metadataComplete": false
+    },
+    {
+      "operation": "concurrent revoke",
+      "status": 400,
+      "wallMs": 75.9436,
+      "hostDriverCpuMs": 47,
+      "statements": 5,
+      "rowsRead": 2,
+      "rowsWritten": 1,
+      "d1DurationMs": 1,
+      "metadataComplete": false
+    },
+    {
+      "operation": "concurrent revoke",
+      "status": 400,
+      "wallMs": 75.9687,
+      "hostDriverCpuMs": 47,
+      "statements": 5,
+      "rowsRead": 2,
+      "rowsWritten": 1,
+      "d1DurationMs": 0,
+      "metadataComplete": false
+    },
+    {
+      "operation": "cleanup",
+      "status": 200,
+      "wallMs": 4.8812,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 9,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "auth cleanup",
+      "status": 200,
+      "wallMs": 22.9849,
+      "hostDriverCpuMs": 0,
+      "statements": 8,
+      "rowsRead": 15,
+      "rowsWritten": 9,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "admission DB failure",
+      "status": 400,
+      "wallMs": 8.7235,
+      "hostDriverCpuMs": 0,
+      "statements": 1,
+      "rowsRead": 0,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": false
+    },
+    {
+      "operation": "cleanup",
+      "status": 200,
+      "wallMs": 6.4743,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 416,
+      "rowsWritten": 103,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "cleanup",
+      "status": 200,
+      "wallMs": 9.9059,
+      "hostDriverCpuMs": 32,
+      "statements": 4,
+      "rowsRead": 406,
+      "rowsWritten": 100,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "cleanup",
+      "status": 200,
+      "wallMs": 27.2102,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 207,
+      "rowsWritten": 50,
+      "d1DurationMs": 2,
+      "metadataComplete": true
+    },
+    {
+      "operation": "cleanup",
+      "status": 200,
+      "wallMs": 4.7736,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 8,
+      "rowsWritten": 0,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited login begin",
+      "status": 200,
+      "wallMs": 18.2717,
+      "hostDriverCpuMs": 0,
+      "statements": 5,
+      "rowsRead": 6,
+      "rowsWritten": 7,
+      "d1DurationMs": 2,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited login finish",
+      "status": 200,
+      "wallMs": 12.7489,
+      "hostDriverCpuMs": 0,
+      "statements": 8,
+      "rowsRead": 15,
+      "rowsWritten": 9,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited session read",
+      "status": 200,
+      "wallMs": 5.8602,
+      "hostDriverCpuMs": 0,
+      "statements": 2,
+      "rowsRead": 6,
+      "rowsWritten": 2,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited logout",
+      "status": 200,
+      "wallMs": 7.5198,
+      "hostDriverCpuMs": 0,
+      "statements": 5,
+      "rowsRead": 8,
+      "rowsWritten": 7,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited login begin",
+      "status": 200,
+      "wallMs": 7.2686,
+      "hostDriverCpuMs": 0,
+      "statements": 5,
+      "rowsRead": 7,
+      "rowsWritten": 6,
+      "d1DurationMs": 2,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited login finish",
+      "status": 200,
+      "wallMs": 10.4398,
+      "hostDriverCpuMs": 0,
+      "statements": 8,
+      "rowsRead": 16,
+      "rowsWritten": 8,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited session read",
+      "status": 200,
+      "wallMs": 5.1638,
+      "hostDriverCpuMs": 0,
+      "statements": 2,
+      "rowsRead": 7,
+      "rowsWritten": 1,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited logout",
+      "status": 200,
+      "wallMs": 5.6158,
+      "hostDriverCpuMs": 0,
+      "statements": 5,
+      "rowsRead": 9,
+      "rowsWritten": 6,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited login begin",
+      "status": 200,
+      "wallMs": 7.7008,
+      "hostDriverCpuMs": 16,
+      "statements": 5,
+      "rowsRead": 7,
+      "rowsWritten": 6,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited login finish",
+      "status": 200,
+      "wallMs": 9.4215,
+      "hostDriverCpuMs": 0,
+      "statements": 8,
+      "rowsRead": 16,
+      "rowsWritten": 8,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited session read",
+      "status": 200,
+      "wallMs": 5.0846,
+      "hostDriverCpuMs": 0,
+      "statements": 2,
+      "rowsRead": 7,
+      "rowsWritten": 1,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited logout",
+      "status": 200,
+      "wallMs": 5.2152,
+      "hostDriverCpuMs": 0,
+      "statements": 5,
+      "rowsRead": 9,
+      "rowsWritten": 6,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited login begin",
+      "status": 200,
+      "wallMs": 8.3309,
+      "hostDriverCpuMs": 0,
+      "statements": 5,
+      "rowsRead": 7,
+      "rowsWritten": 6,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited login finish",
+      "status": 200,
+      "wallMs": 13.2102,
+      "hostDriverCpuMs": 31,
+      "statements": 8,
+      "rowsRead": 16,
+      "rowsWritten": 8,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited session read",
+      "status": 200,
+      "wallMs": 7.4436,
+      "hostDriverCpuMs": 0,
+      "statements": 2,
+      "rowsRead": 7,
+      "rowsWritten": 1,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited logout",
+      "status": 200,
+      "wallMs": 5.7894,
+      "hostDriverCpuMs": 0,
+      "statements": 5,
+      "rowsRead": 9,
+      "rowsWritten": 6,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited login begin",
+      "status": 200,
+      "wallMs": 7.5667,
+      "hostDriverCpuMs": 16,
+      "statements": 5,
+      "rowsRead": 7,
+      "rowsWritten": 6,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited login finish",
+      "status": 200,
+      "wallMs": 10.1678,
+      "hostDriverCpuMs": 0,
+      "statements": 8,
+      "rowsRead": 16,
+      "rowsWritten": 8,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited session read",
+      "status": 200,
+      "wallMs": 5.4128,
+      "hostDriverCpuMs": 0,
+      "statements": 2,
+      "rowsRead": 7,
+      "rowsWritten": 1,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited logout",
+      "status": 200,
+      "wallMs": 5.5119,
+      "hostDriverCpuMs": 0,
+      "statements": 5,
+      "rowsRead": 9,
+      "rowsWritten": 6,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited login begin",
+      "status": 200,
+      "wallMs": 8.1378,
+      "hostDriverCpuMs": 0,
+      "statements": 5,
+      "rowsRead": 7,
+      "rowsWritten": 6,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited login finish",
+      "status": 200,
+      "wallMs": 11.2329,
+      "hostDriverCpuMs": 0,
+      "statements": 8,
+      "rowsRead": 16,
+      "rowsWritten": 8,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited session read",
+      "status": 200,
+      "wallMs": 5.1064,
+      "hostDriverCpuMs": 0,
+      "statements": 2,
+      "rowsRead": 7,
+      "rowsWritten": 1,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited logout",
+      "status": 200,
+      "wallMs": 5.1444,
+      "hostDriverCpuMs": 0,
+      "statements": 5,
+      "rowsRead": 9,
+      "rowsWritten": 6,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited login begin",
+      "status": 200,
+      "wallMs": 8.2164,
+      "hostDriverCpuMs": 0,
+      "statements": 5,
+      "rowsRead": 7,
+      "rowsWritten": 6,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited login finish",
+      "status": 200,
+      "wallMs": 11.7952,
+      "hostDriverCpuMs": 0,
+      "statements": 8,
+      "rowsRead": 16,
+      "rowsWritten": 8,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited session read",
+      "status": 200,
+      "wallMs": 6.0294,
+      "hostDriverCpuMs": 0,
+      "statements": 2,
+      "rowsRead": 7,
+      "rowsWritten": 1,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited logout",
+      "status": 200,
+      "wallMs": 5.4486,
+      "hostDriverCpuMs": 0,
+      "statements": 5,
+      "rowsRead": 9,
+      "rowsWritten": 6,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited login begin",
+      "status": 200,
+      "wallMs": 7.8603,
+      "hostDriverCpuMs": 0,
+      "statements": 5,
+      "rowsRead": 7,
+      "rowsWritten": 6,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited login finish",
+      "status": 200,
+      "wallMs": 9.9422,
+      "hostDriverCpuMs": 16,
+      "statements": 8,
+      "rowsRead": 16,
+      "rowsWritten": 8,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited session read",
+      "status": 200,
+      "wallMs": 5.8133,
+      "hostDriverCpuMs": 0,
+      "statements": 2,
+      "rowsRead": 7,
+      "rowsWritten": 1,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited logout",
+      "status": 200,
+      "wallMs": 5.4047,
+      "hostDriverCpuMs": 0,
+      "statements": 5,
+      "rowsRead": 9,
+      "rowsWritten": 6,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited login begin",
+      "status": 200,
+      "wallMs": 8.388,
+      "hostDriverCpuMs": 15,
+      "statements": 5,
+      "rowsRead": 7,
+      "rowsWritten": 6,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited login finish",
+      "status": 200,
+      "wallMs": 9.7849,
+      "hostDriverCpuMs": 0,
+      "statements": 8,
+      "rowsRead": 16,
+      "rowsWritten": 8,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited session read",
+      "status": 200,
+      "wallMs": 5.6784,
+      "hostDriverCpuMs": 16,
+      "statements": 2,
+      "rowsRead": 7,
+      "rowsWritten": 1,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited logout",
+      "status": 200,
+      "wallMs": 5.8371,
+      "hostDriverCpuMs": 0,
+      "statements": 5,
+      "rowsRead": 9,
+      "rowsWritten": 6,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited login begin",
+      "status": 200,
+      "wallMs": 8.5455,
+      "hostDriverCpuMs": 0,
+      "statements": 5,
+      "rowsRead": 7,
+      "rowsWritten": 6,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited login finish",
+      "status": 200,
+      "wallMs": 8.9842,
+      "hostDriverCpuMs": 0,
+      "statements": 8,
+      "rowsRead": 16,
+      "rowsWritten": 8,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited session read",
+      "status": 200,
+      "wallMs": 5.8176,
+      "hostDriverCpuMs": 0,
+      "statements": 2,
+      "rowsRead": 7,
+      "rowsWritten": 1,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "limited logout",
+      "status": 200,
+      "wallMs": 5.5844,
+      "hostDriverCpuMs": 0,
+      "statements": 5,
+      "rowsRead": 9,
+      "rowsWritten": 6,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth revoke 100",
+      "status": 200,
+      "wallMs": 5.6589,
+      "hostDriverCpuMs": 0,
+      "statements": 5,
+      "rowsRead": 8,
+      "rowsWritten": 7,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 100",
+      "status": 200,
+      "wallMs": 5.2997,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 100",
+      "status": 200,
+      "wallMs": 4.2951,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 10,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 100",
+      "status": 200,
+      "wallMs": 4.7486,
+      "hostDriverCpuMs": 16,
+      "statements": 4,
+      "rowsRead": 10,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 100",
+      "status": 200,
+      "wallMs": 4.1911,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 10,
+      "rowsWritten": 0,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 100",
+      "status": 200,
+      "wallMs": 4.5321,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 10,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 100",
+      "status": 200,
+      "wallMs": 4.6292,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 10,
+      "rowsWritten": 0,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 100",
+      "status": 200,
+      "wallMs": 4.0381,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 10,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 100",
+      "status": 200,
+      "wallMs": 4.535,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 10,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 100",
+      "status": 200,
+      "wallMs": 4.0481,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 10,
+      "rowsWritten": 0,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 100",
+      "status": 200,
+      "wallMs": 5.2538,
+      "hostDriverCpuMs": 16,
+      "statements": 4,
+      "rowsRead": 10,
+      "rowsWritten": 0,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth revoke 1000",
+      "status": 200,
+      "wallMs": 6.2384,
+      "hostDriverCpuMs": 0,
+      "statements": 5,
+      "rowsRead": 8,
+      "rowsWritten": 7,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 1000",
+      "status": 200,
+      "wallMs": 4.9037,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 1000",
+      "status": 200,
+      "wallMs": 5.1025,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 1000",
+      "status": 200,
+      "wallMs": 4.9764,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 1000",
+      "status": 200,
+      "wallMs": 4.6897,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 1000",
+      "status": 200,
+      "wallMs": 6.9016,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 1000",
+      "status": 200,
+      "wallMs": 6.7532,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 1000",
+      "status": 200,
+      "wallMs": 6.6395,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 1000",
+      "status": 200,
+      "wallMs": 4.7815,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 1000",
+      "status": 200,
+      "wallMs": 6.8298,
+      "hostDriverCpuMs": 31,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 1000",
+      "status": 200,
+      "wallMs": 5.2529,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth revoke 10000",
+      "status": 200,
+      "wallMs": 5.8561,
+      "hostDriverCpuMs": 0,
+      "statements": 5,
+      "rowsRead": 8,
+      "rowsWritten": 7,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 10000",
+      "status": 200,
+      "wallMs": 4.714,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 10000",
+      "status": 200,
+      "wallMs": 5.7164,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 10000",
+      "status": 200,
+      "wallMs": 4.4442,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 10000",
+      "status": 200,
+      "wallMs": 4.4631,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 10000",
+      "status": 200,
+      "wallMs": 5.3029,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 10000",
+      "status": 200,
+      "wallMs": 5.879,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 10000",
+      "status": 200,
+      "wallMs": 4.5726,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 10000",
+      "status": 200,
+      "wallMs": 5.4769,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 10000",
+      "status": 200,
+      "wallMs": 4.5536,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 1,
+      "metadataComplete": true
+    },
+    {
+      "operation": "growth cleanup 10000",
+      "status": 200,
+      "wallMs": 4.5978,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 806,
+      "rowsWritten": 200,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    },
+    {
+      "operation": "offline reset growth",
+      "status": 200,
+      "wallMs": 3.9878,
+      "hostDriverCpuMs": 0,
+      "statements": 4,
+      "rowsRead": 2,
+      "rowsWritten": 5,
+      "d1DurationMs": 0,
+      "metadataComplete": true
+    }
+  ],
+  "method": "Local workerd/D1 only. Barrier tests include harness overhead; growth profiling has no barrier. Metrics/maintenance dispatcher routes injected only in harness. Setup, fixture signing and inspections excluded. Statements are application submission attempts; failed batches have incomplete returned metadata. Node host CPU excludes workerd and is Windows-quantized. No deployed CPU or billing evidence."
+}

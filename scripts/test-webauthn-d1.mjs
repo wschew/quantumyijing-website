@@ -32,6 +32,7 @@ const config=(instrument=true)=>{
     contents=contents.replace(target,`if(!(await this.testControl.fetch('http://test-control/',{method:'POST',body:JSON.stringify({stage:'${stage}'})})).ok)throw Error('synthetic D1 failure');`);
    }
   }
+  if(name==='webauthn-d1-worker.mjs')contents=contents.replace('result:null}', 'result:null,metrics:s.stats}').replace('result},{status}', 'result,metrics:s.stats},{status}').replace('if(scope)await s.admit(scope);','// Admission independently tested by test-webauthn-d1-management.mjs');
   return {type:'ESModule',path:name,contents};
  });
  return convertV4MiniflareOptions({modules,scriptPath:'webauthn-d1-worker.mjs',compatibilityDate:'2026-10-07',d1Databases:{SYNTHETIC_PASSKEY_DB:id},resourcePersistencePath:persist,serviceBindings:instrument?{LOCAL_TEST_CONTROL:control}:{},cf:false,telemetry:{enabled:false}});
@@ -56,12 +57,12 @@ const reject=(o,r)=>bad('/finish',{challenge:o.challenge,response:r});
 const a=await authenticator(),b=await authenticator();let count=1;
 async function login(label){const o=await begin();return finish(o,await response(a,o,{count:++count}),label);}
 const snapshot=async()=>{
- const result={};for(const table of ['account','credential','challenge','session','atomic_guard'])result[table]=(await sql(`SELECT * FROM ${table} ORDER BY 1`)).results;return result;
+ const result={};for(const table of ['account','credential','challenge','session','atomic_guard','security_event'])result[table]=(await sql(`SELECT * FROM ${table} ORDER BY 1`)).results;return result;
 };
 const authState=async c=>({used:(await one('SELECT used FROM challenge WHERE hash=?',await digest(c.challenge))).used,count:(await one('SELECT count FROM credential WHERE id=?',a.id)).count,sessions:(await one('SELECT count(*) n FROM session')).n});
 const resetPlans=async capability=>[
- db.prepare('UPDATE account SET epoch=epoch+1,closed=0,bootstrap_hash=? WHERE id=1').bind(await digest(capability)),
- db.prepare('UPDATE credential SET revoked=1'),db.prepare('UPDATE session SET revoked=1'),db.prepare('UPDATE challenge SET used=1')
+ db.prepare('UPDATE account SET epoch=epoch+1,key_epoch=key_epoch+1,closed=0,bootstrap_hash=? WHERE id=1').bind(await digest(capability)),
+ db.prepare("INSERT INTO security_event(at,kind,epoch) SELECT 0,'owner-reset',epoch FROM account WHERE id=1")
 ];
 async function measuredReset(capability,label){
  const plans=await resetPlans(capability),start=process.hrtime.bigint(),cpu=process.cpuUsage();let results=[],success=true;
@@ -176,10 +177,10 @@ try{
    for(const r of result){assert.equal(r.accepted,r.mode==='exact');if(['chunked','lying-length'].includes(r.mode)){assert.equal(r.pulls,2);assert.equal(r.cancelled,true);}if(r.mode==='declared-large')assert.equal(r.pulls,0);}
   }finally{await runtime.dispose();}
  });
- // Reopen the SAME persistent database using pristine source: all serial
+ // Reopen the SAME persistent database without test-control barriers: all serial
  // profiling below excludes test-control RPC and barrier overhead.
  await mf.dispose();mf=new Miniflare(config(false));db=await mf.getD1Database('SYNTHETIC_PASSKEY_DB');
- await test('pristine worker has no test-control binding and authenticates normally',async()=>{const s=await login();await ok('/session',{session:s});});
+ await test('regression wrapper has no test-control binding and authenticates normally',async()=>{const s=await login();await ok('/session',{session:s});});
  // Complete begin/finish HTTP timings; signing is client work, excluded. Each
  // finish still includes parsing, crypto, challenge/counter checks and D1 batch.
  for(let i=0;i<100;i++){
@@ -225,7 +226,7 @@ try{
  });
  const growthBefore=await snapshot();
  await test('offline reset failure rolls back every table (100 profiled failures)',async()=>{
-  await sql("CREATE TRIGGER fail_reset BEFORE UPDATE ON session BEGIN SELECT RAISE(ABORT,'synthetic reset failure'); END");
+  await sql("CREATE TRIGGER fail_reset BEFORE UPDATE ON account BEGIN SELECT RAISE(ABORT,'synthetic reset failure'); END");
   try{for(let i=0;i<100;i++){assert.equal(await measuredReset('synthetic-unused-reset-capability','offline reset rollback'),false);assert.deepEqual(await snapshot(),growthBefore);}}finally{await sql('DROP TRIGGER fail_reset');}
  });
  // Trusted offline owner simulation through the harness's direct database
@@ -233,8 +234,8 @@ try{
  const oldSession=await login(),oldChallenge=await begin(),replacementBootstrap=b64(crypto.getRandomValues(new Uint8Array(32)));
  await test('offline owner reset atomically revokes old keys sessions challenges and bootstrap',async()=>{
   await db.batch([
-   db.prepare('UPDATE account SET epoch=epoch+1,closed=0,bootstrap_hash=? WHERE id=1').bind(await digest(replacementBootstrap)),
-   db.prepare('UPDATE credential SET revoked=1'),db.prepare('UPDATE session SET revoked=1'),db.prepare('UPDATE challenge SET used=1')
+   db.prepare('UPDATE account SET epoch=epoch+1,key_epoch=key_epoch+1,closed=0,bootstrap_hash=? WHERE id=1').bind(await digest(replacementBootstrap)),
+   db.prepare("INSERT INTO security_event(at,kind,epoch) SELECT 0,'owner-reset',epoch FROM account WHERE id=1")
   ]);
   await bad('/session',{session:oldSession});await reject(oldChallenge,await response(a,oldChallenge,{count:++count}));await bad('/begin',{kind:'create',authority:bootstrap});await bad('/begin',{kind:'get'});
  });
@@ -251,7 +252,7 @@ try{
  const pct=values=>{const v=values.sort((a,b)=>a-b);return Object.fromEntries([['p50',.5],['p95',.95],['max',1]].map(([k,p])=>[k,v[Math.ceil(v.length*p)-1]]));};
  const summary=[...new Set(samples.map(s=>s.operation))].map(operation=>{const rows=samples.filter(s=>s.operation===operation);return {operation,n:rows.length,...Object.fromEntries(['wallMs','hostDriverCpuMs','statements','rowsRead','rowsWritten','d1DurationMs'].map(k=>[k,pct(rows.map(s=>s[k]))]))};});
  const versions=Object.fromEntries(['miniflare','workerd'].map(n=>[n,JSON.parse(readFileSync(require.resolve(n+'/package.json',{paths:[require.resolve(process.env.QY_MINIFLARE_PATH)]}))).version]));
- const result={passed,checks,node:process.version,versions,evidence,resetGrowth,method:'Actual local workerd; dedicated on-disk Miniflare D1. Barrier/boundary/injected groups use harness-only source instrumentation and Node service binding, so include test-control/wait overhead. Serial profiling reopens pristine source with NO test binding. Host wall includes dispatch and body consumption; combined begin+finish excludes synthetic signing. Nearest rank; no discarded warmup. statements counts submitted application SQL plans, NOT actual execution or internal transactions/retries/rollbacks. Offline resets use direct D1 driver binding with four plans; hashing/preparation excluded. D1 metadata is returned local rows/duration, not deployed billing or CPU. Failed batches/queries have metadataComplete=false and unavailable failed-operation metadata; only prior successful metadata retained. No automatic application retries; explicit retries are separate samples. hostDriverCpuMs is Node process user+system CPU, Windows quantized, excludes workerd subprocess; overlapping concurrent CPU is not additive. Workerd and deployed CPU unavailable. JSON groups measure full finish path, not isolated parser CPU.',summary,samples};
+ const result={passed,checks,node:process.version,versions,evidence,resetGrowth,method:'Actual local workerd; dedicated on-disk Miniflare D1. Barrier/boundary/injected groups use harness-only source instrumentation and Node service binding, so include test-control/wait overhead. Admission is independently tested in the management suite. Serial profiling reopens a regression wrapper with admission disabled and metrics restored, with NO test-control binding. Host wall includes dispatch and body consumption; combined begin+finish excludes synthetic signing. Nearest rank; no discarded warmup. statements counts submitted application SQL plans, NOT actual execution or internal transactions/retries/rollbacks. Offline resets use direct D1 driver binding with two plans; hashing/preparation excluded. D1 metadata is returned local rows/duration, not deployed billing or CPU. Failed batches/queries have metadataComplete=false and unavailable failed-operation metadata; only prior successful metadata retained. No automatic application retries; explicit retries are separate samples. hostDriverCpuMs is Node process user+system CPU, Windows quantized, excludes workerd subprocess; overlapping concurrent CPU is not additive. Workerd and deployed CPU unavailable. JSON groups measure full finish path, not isolated parser CPU.',summary,samples};
  writeFileSync(resolve(evidence,'results.json'),JSON.stringify(result,null,2)+'\n',{flag:'wx'});
  const output=process.argv[2]?resolve(process.argv[2]):new URL('../docs/quantum-yijing-c1-step2db1-measurements.json',import.meta.url);
  writeFileSync(output,JSON.stringify(result,null,2)+'\n',{flag:'wx'});
