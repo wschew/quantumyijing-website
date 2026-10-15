@@ -1,7 +1,7 @@
 // Synthetic local accounts only. No existing QY authentication is invoked.
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
-import {readFileSync,mkdtempSync,rmSync,realpathSync,existsSync} from 'node:fs';
+import {readFileSync,mkdtempSync,rmSync,realpathSync,existsSync,openSync,closeSync,unlinkSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join,relative,isAbsolute} from 'node:path';
 import {spawnSync,execFileSync} from 'node:child_process';
@@ -45,8 +45,27 @@ function privateSyntheticDirectory(prefix) {
  }
  [IO.Directory]::CreateDirectory($env:QY_SYNTHETIC_DIR,$security) | Out-Null
  exit 0`;
- const result=spawnSync('powershell.exe',['-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(script,'utf16le').toString('base64')],{env:{...process.env,QY_SYNTHETIC_DIR:path},encoding:'utf8',timeout:15000});
- if(result.status!==0)throw Error('Private synthetic directory creation failed');
+ // Avoid Windows sandbox anonymous-pipe EPERM. Only ACL setup diagnostics pass
+ // through these files; no password, credential input or key is written here.
+ const diagnostic=join(process.cwd(),'.qy-auth-acl-'+crypto.randomUUID()+'.tmp');
+ const fd=openSync(diagnostic,'wx',0o600);
+ let result;
+ try {
+  result=spawnSync('powershell.exe',['-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(script,'utf16le').toString('base64')],{env:{...process.env,QY_SYNTHETIC_DIR:path},stdio:['ignore',fd,fd],windowsHide:true,timeout:15000});
+  result.stderr=readFileSync(diagnostic,'utf8');
+ } finally {closeSync(fd);unlinkSync(diagnostic);}
+ if(result.status!==0) {
+  // This subprocess receives only a synthetic directory path, never credentials.
+  // Redact local identity/path details before making failure evidence visible.
+  const sanitize=value=>String(value??'').replaceAll(path,'[synthetic-directory]')
+   .replaceAll(root,'[temporary-root]').replaceAll(process.env.USERPROFILE||'\0','[user-profile]')
+   .replace(/S-1-5-[0-9-]+/g,'[SID]').slice(0,6000);
+  throw Error('Private synthetic directory creation failed: '+JSON.stringify({
+   status:result.status,signal:result.signal,error:result.error?{
+    code:result.error.code,errno:result.error.errno,syscall:result.error.syscall,
+    message:sanitize(result.error.message)}:null,stderr:sanitize(result.stderr)
+  }));
+ }
  return path;
 }
 function localBinding(sqlite) {
@@ -202,7 +221,14 @@ try {
   const dir=privateSyntheticDirectory('qy-consult-auth-');const path=join(dir,'synthetic.sqlite');
   try {
    const run=()=>spawnSync(process.execPath,['scripts/setup-consultation-account-local.mjs','--local-db',path,'--initialize'],{encoding:'utf8',input:JSON.stringify({username:'synthetic-qy',password:secret,confirmation:secret})});
-   const result=run();assert.equal(result.status,0);assert(!result.stdout.includes(secret));assert(!result.stderr.includes(secret));
+   const result=run();
+   // Spawn failures contain no child output; report only transport metadata.
+   // Never include credential-bearing stdin or subprocess arguments.
+   if(result.error)throw Error('Synthetic setup subprocess failed: '+JSON.stringify({
+    status:result.status,signal:result.signal,error:{code:result.error.code,errno:result.error.errno},
+    stderr:result.stderr==null||result.stderr===''?'[empty]':'[withheld]'
+   }));
+   assert.equal(result.status,0);assert(!result.stdout.includes(secret));assert(!result.stderr.includes(secret));
    const sqlite=new DatabaseSync(path);try{const row=sqlite.prepare('SELECT * FROM consultation_auth_account').get();assert.notEqual(row.password_hash,secret);assert.equal(row.password_iterations,600000);}finally{sqlite.close();}
    assert.equal(run().status,1);
   } finally {
