@@ -14,7 +14,6 @@ const markerSQL='SELECT * FROM consultation_preview_environment WHERE id=1';
 export function prepareTarget(target){
  if(!target||!['initialize','administrator','verify'].includes(target.action)||
   !/^[a-f0-9]{32}$/.test(target.accountId)||target.accountId!==target.expectedAccountId||
-  typeof target.projectId!=='string'||!/^[a-zA-Z0-9-]{16,64}$/.test(target.projectId)||
   target.project!==PAGES_PROJECT||target.branch!==PREVIEW_BRANCH||target.slot!=='preview'||
   target.origin!==PREVIEW_ORIGIN||target.productionBranch!=='c1-production-disabled'||
   target.databaseName!=='qy-c1-consultation-preview-db'||target.ownerApproved!==true||
@@ -57,7 +56,9 @@ export async function initializePreview(target,api,{credentials=null}={}){
  const read=async(sql,params=[])=> (await query([{sql,params}]))[0];
  async function identity(){
   const account=await api(base),db=await api(dbPath),project=await api(base+'/pages/projects/'+target.project);
-  if(account.id!==target.accountId||db.uuid!==target.databaseId||db.name!==target.databaseName||project.id!==target.projectId||project.name!==target.project||project.production_branch!==target.productionBranch)fail();
+  // Pages is addressed by the approved account/name pair. The exact Preview D1
+  // UUID/binding and disabled environment checks below remain mandatory.
+  if(account.id!==target.accountId||db.uuid!==target.databaseId||db.name!==target.databaseName||project.name!==target.project||project.production_branch!==target.productionBranch)fail();
   const preview=project.deployment_configs?.preview,production=project.deployment_configs?.production;
   if(preview?.d1_databases?.CONSULTATION_DB?.id!==target.databaseId||Object.keys(preview.d1_databases).length!==1||Object.keys(production?.d1_databases||{}).length)fail();
   for(const env of [preview,production]){

@@ -8,7 +8,7 @@ The initializer resolves the missing owner-run migration/provisioning transport.
 
 Use Node 24 and normal Windows PowerShell in a private session without transcript, debug tracing, TLS-inspection proxy, debugger or heap capture. Secrets are prompted as SecureString and passed to the Node child over private stdin; they are never arguments, files or environment variables. The process holds plaintext/password hashes in memory temporarily; JavaScript strings cannot be guaranteed zeroized. End the process after use. No secrets are included in the target file.
 
-The new Pages project and new dedicated D1 must already exist. Independently verify their account, Pages project ID and D1 UUID in Cloudflare. Use a short-lived account-scoped API token with D1 write, Pages read and permission to read the selected account details; do not use a global API key. Grant the narrowest available resource scope. This tool only calls the approved account details, exact Pages project and exact D1 UUID; it does not enumerate or query Academy/shared databases. Revoke the token after initialization. An owner-approved maintenance window with one initializer and no other DDL/activation operators is required.
+The new Pages project and new dedicated D1 must already exist. Independently verify their account, exact Pages project name, production branch, Preview D1 binding and D1 UUID in Cloudflare. Use a short-lived account-scoped API token with D1 write, Pages read and permission to read the selected account details; do not use a global API key. Grant the narrowest available resource scope. This tool only calls the approved account details, exact Pages project and exact D1 UUID; it does not enumerate or query Academy/shared databases. Revoke the token after initialization. An owner-approved maintenance window with one initializer and no other DDL/activation operators is required.
 
 Before running, configure **the new project's Preview environment** with exactly one D1 binding `CONSULTATION_DB` pointing to the new UUID. Configure its Production branch as `c1-production-disabled`. Both Preview and Production must explicitly have these values:
 
@@ -23,14 +23,13 @@ Preview `CONSULTATION_DEPLOYMENT_SLOT` must be `preview`; Production must be `di
 
 ## Target file and minimum commands
 
-Create an ignored local directory, for example `.local-c1-package-preview-initialization/`, and save `target.json` there. Replace placeholders with independently verified IDs; do not change the fixed project, origin or branch. The duplicate account/UUID fields must match the separately approved target. Approval flags are owner attestations, not substitutes for live API identity checks.
+Create an ignored local directory, for example `.local-c1-package-preview-initialization/`, and save `target.json` there. Replace placeholders with independently verified IDs; do not change the fixed project, origin or branch. The duplicate account/UUID fields must match the separately approved target. An internal Pages project ID is not required: the authenticated request addresses the exact account/project-name pair and verifies the returned name, production branch, Preview binding/UUID and disabled environments. This pins the approved deployment target, not a particular historical project incarnation; deleting and recreating the same named project does not bypass the remaining exact D1 and environment checks. Approval flags are owner attestations, not substitutes for live API identity checks.
 
 ```json
 {
   "action": "initialize",
   "accountId": "<VERIFIED_ACCOUNT_ID_32_LOWERCASE_HEX>",
   "expectedAccountId": "<SAME_OWNER_APPROVED_ACCOUNT_ID>",
-  "projectId": "<VERIFIED_NEW_PAGES_PROJECT_ID>",
   "databaseId": "<VERIFIED_NEW_D1_UUID>",
   "expectedDatabaseId": "<SAME_OWNER_APPROVED_D1_UUID>",
   "project": "qy-c1-consultation-preview",
@@ -83,7 +82,7 @@ $env:QY_MINIFLARE_PATH='<EXISTING_MINIFLARE_PACKAGE_PATH>'
 node --require ./scripts/consultation-local-file-stdio.cjs scripts/test-consultation-preview-initialization.mjs
 ```
 
-All remote API behavior in this suite is an in-process fake over disposable SQLite and actual local workerd/D1; tests make **zero remote calls**. Updated result: **44 passed, zero failed**, Node v24.20.0 with the existing local Miniflare installation. Tests cover target rejection, wrong account/UUID/project/binding/gates, prerequisite and migration rollback, exact-prefix resume, rerun safety, schema drift, password rejection, account/audit rollback, activation race, lost response, existing-account refusal, unchanged password verification and secret-safe single-attempt transport errors. The resource-configuration follow-up adds preservation of a synthetic `_cf_KV` table in SQLite, unknown-object refusal, actual D1 rejection of reserved-table creation, and confirmation that the initializer never submits platform-table writes. D1 security is not weakened to fabricate its internal table. JavaScript syntax, PowerShell parsing, whitespace and all 15 migration pins are checked separately. No historical regression campaign is rerun.
+All remote API behavior in this suite is an in-process fake over disposable SQLite and actual local workerd/D1; tests make **zero remote calls**. Updated result: **46 passed, zero failed**, Node v24.20.0 with the existing local Miniflare installation. Tests cover target rejection, wrong account/UUID/project/binding/gates, prerequisite and migration rollback, exact-prefix resume, rerun safety, schema drift, password rejection, account/audit rollback, activation race, lost response, existing-account refusal, unchanged password verification and secret-safe single-attempt transport errors. The resource-configuration follow-up adds preservation of a synthetic `_cf_KV` table in SQLite, unknown-object refusal, actual D1 rejection of reserved-table creation, and confirmation that the initializer never submits platform-table writes. D1 security is not weakened to fabricate its internal table. JavaScript syntax, PowerShell parsing, whitespace and all 15 migration pins are checked separately. No historical regression campaign is rerun.
 
 No paid service, deployed initialization Worker or Worker CPU is needed: password hashing runs in the local process. D1 Free read/write/storage and API limits still apply. A rejected or oversized management batch stops rather than being split. This does not establish deployed application CPU compliance: the existing PBKDF2 login still needs the separately bounded Cloudflare Free test. No algorithm/strength changes or passkey integration are included.
 
