@@ -1,0 +1,20 @@
+// REVIEW TEMPLATE ONLY. Invalid identities and disabled gates intentionally block use.
+// Place a reviewed copy beside public/ in a NEW isolated package, never site root.
+{
+  "name": "OWNER_REVIEW_REQUIRED",
+  "pages_build_output_dir": "./public",
+  "compatibility_date": "2026-10-07",
+  "d1_databases": [{
+    "binding": "CONSULTATION_DB",
+    "database_name": "OWNER_REVIEW_REQUIRED",
+    "database_id": "OWNER_REVIEW_REQUIRED"
+  }],
+  "vars": {
+    "CONSULTATION_CONFIG": "{}",
+    "CONSULTATION_PREVIEW_ENABLED": "false",
+    "CONSULTATION_SYNTHETIC_BOOTSTRAP_ENABLED": "false",
+    "CONSULTATION_MOCK_DELIVERY_ENABLED": "false",
+    "SUBSCRIPTION_AUTOMATION_ENABLED": "false"
+  }
+  // CONSULTATION_KEYRING is a private six-purpose secret, NEVER a vars entry.
+}

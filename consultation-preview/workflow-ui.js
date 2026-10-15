@@ -223,6 +223,7 @@ const originalText=new WeakMap();
 function translateText(value){
  if(uiLanguage!=='zh-CN')return value;
  if(Object.prototype.hasOwnProperty.call(zhLabels,value))return zhLabels[value];
+ const accountPrefix='Account OTP request ID: ';if(value.startsWith(accountPrefix))return zhLabels[accountPrefix]+value.slice(accountPrefix.length);
  const record=value.match(/^(.*) — ([A-Za-z]+) — revision (\d+)$/);if(record)return record[1]+' — '+(zhLabels[record[2]]||record[2])+' — 版本 '+record[3];
  const prefix='Give QY this report-contact challenge ID: ';if(value.startsWith(prefix))return '请向 QY 提供此报告接收验证请求 ID：'+value.slice(prefix.length).replace('. Local synthetic delivery only.','。仅限本地模拟发送。');
  return value;
@@ -253,11 +254,38 @@ Object.assign(zhLabels,{"Meeting management":"会议管理","View confirmed appo
 applyLanguage();
 const languageObserver=new MutationObserver(()=>applyLanguage());languageObserver.observe(document.body,{childList:true,characterData:true,subtree:true});
 
-﻿// Local/isolated Preview screens only. Secrets remain in memory, never browser storage or logs.
+﻿Object.assign(zhLabels,{
+ 'Synthetic Preview access':'模拟预览访问',
+ 'Synthetic customer ID':'模拟客户编号',
+ 'Establish synthetic customer session':'建立模拟客户会话',
+ 'Account challenge ID':'账户验证码请求编号',
+ 'Synthetic session established. Open Customer Booking in this browser. Account and delivery verification are still required.':'模拟会话已建立。请在此浏览器打开客户预约，仍须验证账户及报告接收方式。',
+ 'Account OTP request ID: ':'账户验证码请求编号：'
+});
+// Local/isolated Preview screens only. Secrets remain in memory, never browser storage or logs.
 const el=id=>document.getElementById(id),qy=document.body.dataset.page==='qy';
 let dashboardGeneration=0,qyReadAuthenticated=false;
 let customerGeneration=0,customerBinding=null,customerResume=null,accountVerified=false,customerResumeStatus=0,accountChallengeState=null;
 let csrf=null,accountChallenge=null,deliveryChallenge=null,deliveryChannel=null,policies=null,currentOffer=null,instructions=null;
+const previewDeployment=document.body.dataset.deployment==='preview';
+let previewPrivateGeneration=0;
+
+if(previewDeployment&&qy){
+ const tools=el('local-tools');
+ tools.querySelector('h2').textContent='Synthetic Preview access';
+ tools.querySelector('p').textContent='Protected synthetic OTP outbox. No screenshots or logging.';
+ const customerLabel=document.createElement('label');customerLabel.textContent='Synthetic customer ID';
+ const customer=document.createElement('input');customer.id='preview-customer-id';customer.type='number';customer.min='1';customer.autocomplete='off';customerLabel.append(customer);
+ const bootstrap=document.createElement('button');bootstrap.id='preview-bootstrap';bootstrap.textContent='Establish synthetic customer session';
+ const challengeLabel=document.createElement('label');challengeLabel.textContent='Account challenge ID';
+ const challenge=document.createElement('input');challenge.id='preview-account-challenge';challenge.maxLength=128;challenge.autocomplete='off';challengeLabel.append(challenge);
+ tools.prepend(customerLabel,bootstrap,challengeLabel);
+ action('preview-bootstrap',async()=>{const customerId=Number(customer.value);if(!Number.isSafeInteger(customerId)||customerId<1)throw Error('Synthetic customer ID required');await api('preview/bootstrap',{customerId});customer.value='';status('Synthetic session established. Open Customer Booking in this browser. Account and delivery verification are still required.');});
+ applyLanguage();
+ const clearPreviewPrivate=()=>{previewPrivateGeneration++;el('mock-outbox-output').textContent='';challenge.value='';customer.value='';};
+ window.addEventListener('pagehide',clearPreviewPrivate);
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)clearPreviewPrivate();});
+}
 function status(message){el('status').textContent=message;}
 async function api(path,data){
  if(qy&&data!==undefined&&path!=='qy/login'&&!csrf){const error=Error('QY reauthentication required');error.safeCode='QY_REAUTH_REQUIRED';throw error;}
@@ -359,7 +387,7 @@ async function refresh(){
  clearMeetingViews();
  cancelManagement();
  const generation=dashboardGeneration,customerRevision=customerGeneration;
- const result=await api(qy?'qy/bookings':'bookings');if(generation!==dashboardGeneration||!qy&&customerRevision!==customerGeneration)return;if(result.policies)policies=result.policies;if(qy&&el('local-tools'))el('local-tools').hidden=result.syntheticLocal!==true;
+ const result=await api(qy?'qy/bookings':'bookings');if(generation!==dashboardGeneration||!qy&&customerRevision!==customerGeneration)return;if(result.policies)policies=result.policies;if(qy&&el('local-tools'))el('local-tools').hidden=previewDeployment?false:result.syntheticLocal!==true;
  if(qy){if(el('availability-section'))el('availability-section').hidden=false;qyReadAuthenticated=true;el('login').hidden=!!csrf;el('qy-auth-state').textContent=csrf?'QY authenticated for reading and changes.':'QY session active for reading. Sign in again before recording changes; the page does not store your CSRF credential.';}
  if(qy&&el('customer-search'))el('customer-search').hidden=false;
  const target=el('records');target.replaceChildren();if(!qy)renderJourney(result.records.length?journeyStage(result.records[0].state):accountVerified&&el('contact').hidden?1:0);
@@ -375,7 +403,7 @@ async function refresh(){
    if(['Submitted','UnderReview'].includes(r.state))button('Decline',async()=>{if(!await managementConfirm('Decline this uncompleted request?'))return;await api('qy/status',{...command(),to:'Declined'});await refresh();});
    if(r.state==='UnderReview')button('Propose appointment',async()=>{const value=await managementInput('Start in Malaysia time: YYYY-MM-DDTHH:mm. At least 72 hours ahead.');if(value===null)return;if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))throw Error('Invalid start');await api('qy/offer',{...command(),startAt:parseMyt(value)});await refresh();});
    if(['PaymentPending','ExceptionReview'].includes(r.state)){
-    if(result.syntheticLocal===true)button('Simulate provider capture (local only)',async()=>{const mode=await managementInput('Synthetic capture case: timely, late, or unknown');if(mode===null)return;if(!['timely','late','unknown'].includes(mode))throw Error('Invalid mock case');await api('qy/local/capture',{id:r.id,expectedVersion:r.row_version,mode});status('Synthetic capture evidence recorded; run explicit QY reconciliation next.');await refresh();});
+    if(!previewDeployment&&result.syntheticLocal===true)button('Simulate provider capture (local only)',async()=>{const mode=await managementInput('Synthetic capture case: timely, late, or unknown');if(mode===null)return;if(!['timely','late','unknown'].includes(mode))throw Error('Invalid mock case');await api('qy/local/capture',{id:r.id,expectedVersion:r.row_version,mode});status('Synthetic capture evidence recorded; run explicit QY reconciliation next.');await refresh();});
     if(result.financeReviewConfigured){
      button('Link pre-existing finance order',async()=>{const raw=await managementInput('Existing finance order ID. Must match canonical customer, Bazi product and immutable offer price.');if(raw===null)return;const orderId=Number(raw);if(!Number.isSafeInteger(orderId)||orderId<1)throw Error('Invalid order');await api('qy/payment/link',{...command(),orderId});await refresh();});
      button('Record independent finance capture review',async()=>{const text=await managementInput('Independently verified capture timestamp in UTC: YYYY-MM-DDTHH:mm:ss.sssZ');if(text===null)return;const capturedAt=Date.parse(text);if(!Number.isSafeInteger(capturedAt)||new Date(capturedAt).toISOString()!==text)throw Error('Invalid UTC instant');const ref=await managementInput('Opaque supporting evidence reference (no customer or bank details):');if(ref===null)return;const hash=await managementInput('SHA-256 of supporting evidence, retained outside this website:');if(hash===null)return;if(!await managementConfirm('Attest independent QY finance verification. This records evidence only and does not confirm the booking.'))return;await api('qy/payment/finance-review',{...command(),capturedAt,supportingEvidenceReference:ref,supportingEvidenceHash:hash,independentlyFinanceVerified:true});status('Independent review recorded. Explicit reconciliation is still required; known late provider capture cannot be overridden.');await refresh();});
@@ -429,6 +457,7 @@ async function resumeCustomer(quiet=false){
   else if(state.challenge?.state==='Expired')status(otpMessage('OTP_EXPIRED'));
   else if(!quiet&&reportResumeMessage)status(reportResumeMessage);
   else if(!quiet)status(accountVerified?'Account verified. Now verify the chosen report-delivery contact independently.':pending?'Customer session restored. Continue with the pending OTP; do not establish another context.':choices.manualReviewRequired?'No trusted account-bound contact. Independent manual QY identity review is required.':'Choose a trusted contact for account OTP verification.');
+  if(previewDeployment&&pending)status('Account OTP request ID: '+accountChallenge);
   return true;
  }catch(error){if(generation!==customerGeneration)return false;customerResumeStatus=error.httpStatus||0;clearCustomerState();if(!quiet)status(error.httpStatus===401?otpMessage('OTP_SESSION_CHANGED'):'Customer verification could not be resumed. Check the local server and ask QY for assistance; no OTP was submitted.');return false;}})();
  customerResume=task;try{return await task;}finally{if(customerResume===task)customerResume=null;}
@@ -436,10 +465,10 @@ async function resumeCustomer(quiet=false){
 action('refresh',refresh);
 if(qy)el('case-filter')?.addEventListener('change',async()=>{caseFilter=el('case-filter').value;try{await refresh();}catch(error){showFailure(error,'Operation rejected. No automatic retry.');}});else renderJourney(0);
 if(!qy){
- if(['localhost','127.0.0.1'].includes(location.hostname))el('local-customer-login').hidden=false;
- action('local-customer-login',async()=>{customerGeneration++;clearCustomerState();await api('local/customer-login',{});status('Synthetic portal session created. Establish a new consultation context next.');});
+ if(!previewDeployment&&['localhost','127.0.0.1'].includes(location.hostname))el('local-customer-login').hidden=false;
+ if(!previewDeployment)action('local-customer-login',async()=>{customerGeneration++;clearCustomerState();await api('local/customer-login',{});status('Synthetic portal session created. Establish a new consultation context next.');});
  action('start',async()=>{if(await resumeCustomer())return;if(customerResumeStatus!==401)return;customerGeneration++;clearCustomerState();const result=await api('context',{});if(result.issued!==true)throw Error('Context not issued');csrf=result.csrfToken;await resumeCustomer();});
- action('send-account',async()=>{if(!await resumeCustomer(true)){status(otpMessage('OTP_SESSION_CHANGED'));return;}if(accountChallenge){status('A pending OTP already exists. Use that code; no additional OTP was requested.');return;}const r=await api('account/challenge',{contactId:el('account-choice').value});accountChallenge=r.id;el('account-code').value='';status(r.delivery==='Mocked'?'OTP queued to local mock delivery. No live message sent.':'Delivery unknown after commit. Ask QY; do not automatically resend.');});
+ action('send-account',async()=>{if(!await resumeCustomer(true)){status(otpMessage('OTP_SESSION_CHANGED'));return;}if(accountChallenge){status('A pending OTP already exists. Use that code; no additional OTP was requested.');return;}const r=await api('account/challenge',{contactId:el('account-choice').value});accountChallenge=r.id;el('account-code').value='';status(r.delivery==='Mocked'?'OTP queued to local mock delivery. No live message sent.':'Delivery unknown after commit. Ask QY; do not automatically resend.');if(previewDeployment)status('Account OTP request ID: '+r.id);});
  action('confirm-account',async()=>{const previous=accountChallenge,binding=customerBinding;if(!await resumeCustomer(true)){status(otpMessage('OTP_SESSION_CHANGED'));return;}if(accountVerified){status('Account verified. Now verify the chosen report-delivery contact independently.');return;}if(!accountChallenge||previous&&previous!==accountChallenge||binding&&binding!==customerBinding){el('account-code').value='';status(otpMessage(accountChallengeState==='Expired'?'OTP_EXPIRED':accountChallengeState==='Missing'?'OTP_CHALLENGE_REQUIRED':'OTP_STATE_CHANGED'));return;}const code=el('account-code').value;el('account-code').value='';if(!/^\d{8}$/.test(code)){status(otpMessage('OTP_FORMAT'));return;}try{const r=await api('account/confirm',{challengeId:accountChallenge,code});if(r.verified!==true){status(otpMessage('OTP_INCORRECT'));return;}accountVerified=true;accountChallenge=null;el('account').hidden=true;el('contact').hidden=false;status('Account verified. Now verify the chosen report-delivery contact independently.');}catch(error){if(error.safeCode==='OTP_SESSION_CHANGED')clearCustomerState();status(otpMessage(error.safeCode));}});
  action('send-contact',async()=>{deliveryChannel=el('delivery-channel').value;const r=await api('contact/challenge',{channel:deliveryChannel,contact:el('delivery-contact').value});deliveryChallenge=r.challengeId;status('Give QY this report-contact challenge ID: '+deliveryChallenge+'. Local synthetic delivery only.');});
  action('confirm-contact',async()=>{const code=el('delivery-code').value;el('delivery-code').value='';await api('contact/confirm',{challengeId:deliveryChallenge,code});await refresh();el('contact').hidden=true;el('intake').hidden=false;renderJourney(1);status('Account and report-delivery contact verified. Private intake is enabled for this short-lived context.');});
@@ -449,7 +478,7 @@ if(!qy){
  action('availability-refresh',refreshAvailability);
  action('availability-new',resetAvailabilityForm);
  form('availability-form',async data=>{if(availabilitySaving)return;availabilitySaving=true;try{const selected=availabilitySelection;await api('qy/availability',{...(selected?{id:selected.id}:{}),action:selected?'Modify':'Create',expectedRevision:selected?selected.revision:0,commandId:crypto.randomUUID(),startAt:parseMyt(data.get('windowStart')),endAt:parseMyt(data.get('windowEnd'))});resetAvailabilityForm();await refreshAvailability();status('Availability saved. Existing reservation and payment rules remain unchanged.');}finally{availabilitySaving=false;}});
- action('mock-outbox',async()=>{const result=await api('qy/local/outbox');el('mock-outbox-output').textContent=JSON.stringify(result.records,null,2);status('Protected synthetic OTP outbox. No screenshots or logging.');});
+ action('mock-outbox',async()=>{el('mock-outbox-output').textContent='';const generation=dashboardGeneration,privateGeneration=++previewPrivateGeneration;const result=previewDeployment?await api('qy/preview/outbox',{challengeId:el('preview-account-challenge').value}):await api('qy/local/outbox');if(generation!==dashboardGeneration||privateGeneration!==previewPrivateGeneration)return;el('mock-outbox-output').dataset.noI18n='';el('mock-outbox-output').textContent=JSON.stringify(previewDeployment?{channel:result.channel,recipient:result.recipient,code:result.code}:result.records,null,2);status('Protected synthetic OTP outbox. No screenshots or logging.');});
  form('customer-search',async data=>{const feedback=el('customer-search-feedback'),submit=el('customer-search').querySelector?.('button');feedback.textContent='Searching customers…';el('customer-search-results').replaceChildren();if(submit)submit.disabled=true;try{const result=await api('qy/customers/search',{query:data.get('query')});if(!Array.isArray(result.records))throw Error('Invalid search response');const target=el('customer-search-results');target.replaceChildren();if(!result.records.length){const p=document.createElement('p');p.textContent='No matching customers.';target.append(p);feedback.textContent='No matching customers.';return;}const table=document.createElement('table');const head=table.createTHead().insertRow();for(const text of ['Customer ID','Customer name','Masked email','Masked phone','Select']){const th=document.createElement('th');th.scope='col';th.textContent=text;head.append(th);}const body=table.createTBody();for(const customer of result.records){const row=body.insertRow();for(const text of [customer.id,customer.name,customer.maskedEmail,customer.maskedPhone]){const cell=row.insertCell();cell.dataset.noI18n='';cell.textContent=String(text);}const cell=row.insertCell(),button=document.createElement('button');button.type='button';button.textContent='Select';button.addEventListener('click',()=>{el('review').reset();el('review').elements.namedItem('customerId').value=String(customer.id);el('customer-selected-name').textContent=customer.name+' (ID '+customer.id+')';el('customer-selected').hidden=false;status('Customer selected. Independent identity and contact review is still required.');});cell.append(button);}target.append(table);feedback.textContent='Showing up to 20 matches. Narrow your search if needed.';}catch(error){feedback.textContent=error.httpStatus===404?'Customer search is unavailable on the running server. Restart the local demonstration, sign in again, then search.':[401,403,409].includes(error.httpStatus)?'Customer search was rejected. Sign in to the dedicated QY account again and check the search value.':'Customer search failed. Check the local server connection and try again manually.';}finally{if(submit)submit.disabled=false;}});
  form('login',async data=>{dashboardGeneration++;try{const result=await api('qy/login',{username:data.get('username'),password:data.get('password')});csrf=result.csrfToken;await refresh();status('Dedicated QY consultation session established.');}finally{el('login').reset();}});
  action('logout',async()=>{clearMeetingViews();resetAvailabilityForm();if(el('availability-section'))el('availability-section').hidden=true;if(el('availability-records'))el('availability-records').replaceChildren();cancelManagement();dashboardGeneration++;qyReadAuthenticated=false;el('login').hidden=false;el('qy-auth-state').textContent='QY sign-in required. No session-expiry conclusion can be drawn from an old warning.';el('local-tools').hidden=true;el('customer-search').hidden=true;el('customer-search-feedback').textContent='';el('customer-search-results').replaceChildren();el('customer-selected-name').textContent='';el('customer-selected').hidden=true;el('customer-search').reset();el('review').reset();el('review-feedback').textContent='';el('private-output').textContent='';el('instructions-output').textContent='';el('mock-outbox-output').textContent='';try{await api('qy/logout',{});}finally{csrf=null;instructions=null;el('records').replaceChildren();status('Private screen cleared.');}});

@@ -1,0 +1,18 @@
+{
+  "environment": "preview",
+  "syntheticOnly": true,
+  "isolatedPreviewProject": "OWNER_REVIEW_REQUIRED",
+  "origin": "OWNER_REVIEW_REQUIRED",
+  "databaseId": "OWNER_REVIEW_REQUIRED",
+  "expectedDatabaseId": "OWNER_REVIEW_REQUIRED",
+  "manifestSha256": "FROM_PACKAGE_INVENTORY",
+  "productId": null,
+  "practitionerId": null,
+  "countryCodes": ["MY"],
+  "policies": {
+    "consultation_privacy": {"version": "OWNER_REVIEW_REQUIRED", "text": "", "hash": ""},
+    "future_calculations": {"version": "OWNER_REVIEW_REQUIRED", "text": "", "hash": ""},
+    "marketing": {"version": "OWNER_REVIEW_REQUIRED", "text": "", "hash": ""},
+    "booking": {"version": "OWNER_REVIEW_REQUIRED", "text": "", "hash": ""}
+  }
+}

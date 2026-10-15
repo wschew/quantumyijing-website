@@ -1,4 +1,5 @@
 .wrangler/
+.local-c1-package*/
 # Local secrets — never commit
 .dev.vars
 .env
