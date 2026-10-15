@@ -22,23 +22,34 @@ export async function validatePreviewContract(env,config,manifest){
   if(manifest?.version!==1||manifest.migrations?.length!==15||manifest.baselineCommit!=='2f554a2b6756ee0c803ca734679c56f1ac500243')fail();
   const manifestHash=await digest(JSON.stringify(manifest));
   if(config.manifestSha256!==manifestHash)fail();
-  const marker=await db.prepare('SELECT * FROM consultation_preview_environment WHERE id=1').first();
+  // One fresh SQLite snapshot per validation, never a cross-request cache.
+  // Table-valued PRAGMAs preserve all prerequisite column checks.
+  const snapshot=await db.prepare(`SELECT
+   (SELECT json_object('enabled',enabled,'synthetic_only',synthetic_only,'database_id',database_id,'origin',origin,'manifest_sha256',manifest_sha256) FROM consultation_preview_environment WHERE id=1) marker,
+   (SELECT json_group_array(json_object('ordinal',ordinal,'path',path,'canonical_sha256',canonical_sha256)) FROM (SELECT * FROM consultation_migration_ledger ORDER BY ordinal)) ledger,
+   (SELECT json_group_array(json_object('name',name,'type',type)) FROM sqlite_master) schema,
+   (SELECT json_group_array(json_object('table',t.value,'name',p.name)) FROM json_each(?) t JOIN pragma_table_info(t.value) p) columns,
+   (SELECT json_object('sku',sku,'product_type',product_type,'price',price,'currency',currency) FROM products WHERE id=?) product,
+   (SELECT status FROM coaches WHERE id=?) practitioner,
+   (SELECT COUNT(*) FROM consultation_auth_account WHERE id=1 AND enabled=1) administrator,
+   (SELECT COUNT(*) FROM customers c LEFT JOIN consultation_preview_synthetic_customers s ON s.customer_id=c.id WHERE s.customer_id IS NULL OR c.customer_reference NOT GLOB 'SYNTHETIC-*') unknownCustomers
+  `).bind(JSON.stringify(['customers','products','coaches','orders','payments','academy_portal_sessions']),config.productId,config.practitionerId).first();
+  const marker=JSON.parse(snapshot.marker);
   if(!marker||marker.enabled!==1||marker.synthetic_only!==1||marker.database_id!==checked.databaseId||marker.origin!==checked.origin||marker.manifest_sha256!==manifestHash)fail();
-  const ledger=(await db.prepare('SELECT * FROM consultation_migration_ledger ORDER BY ordinal').all()).results;
+  const ledger=JSON.parse(snapshot.ledger);
   if(ledger.length!==manifest.migrations.length)fail();
   for(const [i,m] of manifest.migrations.entries())if(m.ordinal!==i+1||ledger[i].ordinal!==m.ordinal||ledger[i].path!==m.path||ledger[i].canonical_sha256!==m.sha256)fail();
-  const schema=(await db.prepare('SELECT name,type FROM sqlite_master').all()).results;
+  const schema=JSON.parse(snapshot.schema);
   for(const migration of manifest.migrations)for(const object of migration.objects)if(!schema.some(row=>row.name===object.name&&row.type===object.type))fail();
   const required={customers:['id','status','customer_reference'],products:['id','sku','product_type','price','currency'],coaches:['id','status','coach_code'],orders:['id','enquiry_id','total','currency','payment_status'],payments:['id','order_id','verification_status','accounting_eligible'],academy_portal_sessions:['id','customer_id','token_hash','expires_at','revoked_at']};
   for(const [table,columns] of Object.entries(required)){
-   const rows=(await db.prepare('PRAGMA table_info('+table+')').all()).results;
+   const rows=JSON.parse(snapshot.columns).filter(row=>row.table===table);
    if(columns.some(c=>!rows.some(r=>r.name===c)))fail();
   }
   if(!Number.isSafeInteger(config.productId)||config.productId<1||!Number.isSafeInteger(config.practitionerId)||config.practitionerId<1)fail();
-  const product=await db.prepare('SELECT sku,product_type,price,currency FROM products WHERE id=?').bind(config.productId).first();
-  const practitioner=await db.prepare('SELECT status FROM coaches WHERE id=?').bind(config.practitionerId).first();
-  if(product?.sku!=='CONSULT-BAZI'||product.product_type!=='consultation'||product.price!==1300||product.currency!=='MYR'||practitioner?.status!=='Approved')fail();
-  if((await db.prepare('SELECT COUNT(*) n FROM consultation_auth_account WHERE id=1 AND enabled=1').first())?.n!==1)fail();
+  const product=JSON.parse(snapshot.product);
+  if(product?.sku!=='CONSULT-BAZI'||product.product_type!=='consultation'||product.price!==1300||product.currency!=='MYR'||snapshot.practitioner!=='Approved')fail();
+  if(snapshot.administrator!==1)fail();
   const policies={};
   for(const purpose of ['consultation_privacy','future_calculations','marketing','booking']){
    const p=config.policies?.[purpose];
@@ -48,7 +59,7 @@ export async function validatePreviewContract(env,config,manifest){
   if(!Array.isArray(config.countryCodes)||!config.countryCodes.length||config.countryCodes.some(c=>!(/^[A-Z]{2}$/).test(c)))fail();
   const keys=await createWorkflowKeys(env.CONSULTATION_KEYRING);
   if(!['challenge,contact,intake,lookup,meeting','challenge,contact,intake,lookup,meeting,mockDelivery'].includes(Object.keys(keys).sort().join(',')))fail();
-  return {db,origin:checked.origin,keys,policies};
+  return {db,origin:checked.origin,keys,policies,unknownCustomers:snapshot.unknownCustomers};
  }catch{fail();}
 }
 export async function composePreviewServices(env,config,manifest,{mockDelivery}={}){

@@ -23,6 +23,10 @@ cp.execFileSync=function(command,args,options={}){
  }finally{fs.closeSync(a);fs.closeSync(b);fs.unlinkSync(out);fs.unlinkSync(err);fs.rmdirSync(dir);}
 };
 cp.spawnSync=function(command,args,options){
+ if(process.platform==='win32'&&process.env.QY_TEST_OPENSSL&&/[\\/]openssl\.exe$/i.test(command)&&args?.[0]==='req'&&args.includes('/CN=localhost')){
+  // Native MinGW OpenSSL avoids MSYS signal pipes; same ephemeral TLS request.
+  return originalSync(process.env.QY_TEST_OPENSSL,args,{...options,env:process.env,windowsHide:true});
+ }
  if(process.platform==='win32'&&process.env.QY_TEST_PYTHON&&/[\\/]openssl\.exe$/i.test(command)&&args?.[0]==='req'&&args.includes('/CN=localhost')){
   return originalSync(process.env.QY_TEST_PYTHON,[path.join(__dirname,'consultation-test-certificate.py'),args[args.indexOf('-keyout')+1],args[args.indexOf('-out')+1]],{...options,stdio:'inherit',env:process.env,windowsHide:true});
  }

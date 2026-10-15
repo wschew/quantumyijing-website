@@ -69,7 +69,7 @@ export async function createPreviewAdapter(env,config,manifest){
  if(host!==config.isolatedPreviewProject+'.pages.dev'&&!host.endsWith('.'+config.isolatedPreviewProject+'.pages.dev'))fail();
  const base=await validatePreviewContract(env,config,manifest);
  if(!base.keys.mockDelivery)fail();
- const unknown=await base.db.prepare("SELECT COUNT(*) n FROM customers c LEFT JOIN consultation_preview_synthetic_customers s ON s.customer_id=c.id WHERE s.customer_id IS NULL OR c.customer_reference NOT GLOB 'SYNTHETIC-*'").first();if(unknown?.n!==0)fail();
+ if(base.unknownCustomers!==0)fail();
  const db=createPreviewDatabase(base.db,config),localEnv={...env,CONSULTATION_DB:db};
  const transport=createEncryptedPreviewOutbox({db,config,key:base.keys.mockDelivery});
  const runtime=await composePreviewServices(localEnv,config,manifest,{mockDelivery:transport});

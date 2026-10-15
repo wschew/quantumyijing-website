@@ -2,7 +2,9 @@
 import {createPreviewAdapter} from '../functions/lib/consultation/preview-adapter.js';
 import {requirePreviewWorkflowConfiguration} from '../functions/lib/consultation/workflow-runtime.js';
 import manifest from '../database/c1-migration-manifest.json';
-const allowed=['ASSETS','CONSULTATION_CONFIG','CONSULTATION_DB','CONSULTATION_PREVIEW_ENABLED','CONSULTATION_KEYRING','CONSULTATION_SYNTHETIC_BOOTSTRAP_ENABLED','CONSULTATION_MOCK_DELIVERY_ENABLED','SUBSCRIPTION_AUTOMATION_ENABLED','CF_PAGES','CF_PAGES_BRANCH','CF_PAGES_COMMIT_SHA','CF_PAGES_URL'];
+import {requirePagesPreview} from '../functions/lib/consultation/pages-boundary.js';
+import {validatePreviewContract} from '../functions/lib/consultation/preview-composition.js';
+const allowed=['CONSULTATION_DEPLOYMENT_SLOT','ASSETS','CONSULTATION_CONFIG','CONSULTATION_DB','CONSULTATION_PREVIEW_ENABLED','CONSULTATION_KEYRING','CONSULTATION_SYNTHETIC_BOOTSTRAP_ENABLED','CONSULTATION_MOCK_DELIVERY_ENABLED','SUBSCRIPTION_AUTOMATION_ENABLED','CF_PAGES','CF_PAGES_BRANCH','CF_PAGES_COMMIT_SHA','CF_PAGES_URL'];
 // Pages serves HTML at clean URLs. Fetching .html through ASSETS can redirect;
 // resolve both UI link forms to the clean asset path to avoid redirect loops.
 const assets=new Map([['/','/customer'],['/customer','/customer'],['/customer.html','/customer'],['/qy','/qy'],['/qy.html','/qy'],...['/workflow-ui.js','/workflow.css','/academy-logo.png'].map(p=>[p,p])]);
@@ -18,14 +20,22 @@ export default {async fetch(request,env){
   if(Object.keys(env).some(k=>!allowed.includes(k)))return error(503);
   for(const name of ['CONSULTATION_PREVIEW_ENABLED','CONSULTATION_SYNTHETIC_BOOTSTRAP_ENABLED','CONSULTATION_MOCK_DELIVERY_ENABLED'])if(env[name]!=='true')return error(503);
   const config=JSON.parse(env.CONSULTATION_CONFIG);
+  requirePagesPreview(env,config);
   requirePreviewWorkflowConfiguration({...config,enabled:env.CONSULTATION_PREVIEW_ENABLED,subscriptionAutomationEnabled:env.SUBSCRIPTION_AUTOMATION_ENABLED});
   const url=new URL(request.url);
   if(url.origin!==config.origin)return error(403);
   // Metadata is explicitly allowed but never forwarded as a service dependency.
   const local=Object.fromEntries(Object.entries(env).filter(([k])=>!['ASSETS','CONSULTATION_CONFIG'].includes(k)&&!k.startsWith('CF_PAGES')));
-  const adapter=await createPreviewAdapter(local,config,manifest);
-  if(url.pathname.startsWith('/api/consultation/'))return secure(await adapter.fetch(request),request.method==='HEAD');
+  delete local.CONSULTATION_DEPLOYMENT_SLOT;
+  if(url.pathname.startsWith('/api/consultation/')){
+   const adapter=await createPreviewAdapter(local,config,manifest);
+   return secure(await adapter.fetch(request),request.method==='HEAD');
+  }
   if(!assets.has(url.pathname)||url.search||!['GET','HEAD'].includes(request.method))return error(404);
+  // Assets retain the live disable/schema/key contract without constructing API
+  // services or repeating validation. One read, no database writes, no cache.
+  const contract=await validatePreviewContract(local,config,manifest);
+  if(contract.unknownCustomers!==0||!contract.keys.mockDelivery)return error(503);
   if(!env.ASSETS||typeof env.ASSETS.fetch!=='function')return error(503);
   // ASSETS receives no cookies, auth headers, query strings or arbitrary paths.
   const path=assets.get(url.pathname);

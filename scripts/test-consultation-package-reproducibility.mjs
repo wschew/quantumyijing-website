@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import {mkdtempSync,readFileSync,readdirSync,writeFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+import {tmpdir} from 'node:os';
+import {buildPackage} from './build-consultation-pages.mjs';
+import {reviewPackage} from './review-consultation-preview.mjs';
+import {canonical,sha,root,verifyManifest} from './consultation-migration-verifier.mjs';
+import {compatibilityDDL} from './consultation-schema-compatibility.mjs';
+let passed=0;async function test(name,fn){await fn();passed++;console.log('PASS '+name);}
+const directory=mkdtempSync(resolve(tmpdir(),'c1-step2a-reproducible-'));
+const a=resolve(directory,'a'),b=resolve(directory,'b');
+await buildPackage(a,process.env.QY_ESBUILD_PATH);await buildPackage(b,process.env.QY_ESBUILD_PATH);
+await test('two fresh packages have identical complete inventory',()=>assert.equal(readFileSync(resolve(a,'package-inventory.json'),'utf8'),readFileSync(resolve(b,'package-inventory.json'),'utf8')));
+await test('both inventories and exact public scope verify fail-closed configuration',()=>{assert.equal(reviewPackage(a).remoteReady,false);assert.equal(reviewPackage(b).remoteReady,false);});
+const manifest=verifyManifest(JSON.parse(readFileSync(new URL('database/c1-migration-manifest.json',root),'utf8')));
+await test('generated prerequisite equals verified source projection',()=>assert.equal(readFileSync(resolve(a,'offline/000-isolated-prerequisites.sql'),'utf8'),compatibilityDDL().statements.join('\n')+'\n'+canonical(readFileSync(new URL(manifest.prerequisites[0].path,root)))));
+await test('all fifteen generated SQL hashes equal original manifest',()=>{for(const m of manifest.migrations)assert.equal(sha(canonical(readFileSync(resolve(a,'offline',String(m.ordinal).padStart(3,'0')+'-'+m.path.split('/').at(-1))))),m.sha256);});
+await test('private tooling, SQL, inventory and keys never become assets',()=>{assert.equal(readdirSync(resolve(a,'public')).length,7);const inputs=JSON.parse(readFileSync(resolve(a,'package-inventory.json'))).workerInputs;assert.ok(inputs.every(p=>/^(consultation-pages\/worker\.js|functions\/lib\/consultation\/[^/]+\.js|database\/c1-migration-manifest\.json)$/.test(p)));});
+await test('inventory tampering is detected',()=>{writeFileSync(resolve(b,'public/workflow.css'),'synthetic tamper');assert.throws(()=>reviewPackage(b));});
+console.log('RESULT '+passed+' passed, 0 failed; offline reproducible build');

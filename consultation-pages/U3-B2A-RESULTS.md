@@ -145,12 +145,11 @@ commit is the only authorized Git publication step; no push, merge or deployment
 is permitted. Preliminary package folders remain untouched. All U3-B2B security
 and deployment prerequisites listed above remain in force.
 
-The authorized checkpoint attempt was blocked before staging: Git could not
-create `C:/Users/WIN10/Desktop/quantumyijing-website/.git/worktrees/qy-c1-bazi-consultation-development/index.lock`
-(`Permission denied`). This linked worktree's Git metadata is outside the
-session's writable workspace. The session cannot escalate filesystem permissions.
-No commit was created; the index remains empty, HEAD remains the stated parent,
-and all 13 source/documentation changes remain uncommitted and unstaged. The
-working tree therefore remains dirty. Completing the local checkpoint requires
-an environment allowed to write this worktree's Git metadata; no implementation,
-deployment or remote operation is needed to resolve that filesystem blocker.
+The initial authorized checkpoint attempt encountered an index.lock permission
+failure. That account described an intermediate state and is superseded by the
+successful local checkpoint: U3-B2A was committed at
+`01e545ced64b1cee5783ed1142b0740df0feccf2`, titled
+`C1 U3-B2A prepare isolated consultation Pages package`.
+U3-B2B Step 2A independently verified that exact HEAD, the expected branch, and
+a clean working tree before starting its local changes. This reconciliation
+does not authorize another commit, push, merge, deployment or provisioning.

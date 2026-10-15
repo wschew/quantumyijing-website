@@ -1,0 +1,2651 @@
+{
+  "method": "Node process CPU user+system delta; includes crypto pool and SQLite; wall separately. Windows process CPU is quantized (~15-16ms); zero does not establish zero CPU. workerd CPU unavailable. No parallel requests. Query count includes every executed batch statement. Test-only first() uses all() to capture D1 row metadata; Node SQLite has no row billing metadata.",
+  "routes": [
+    {
+      "route": "Node/SQLite GET /",
+      "samples": 1,
+      "queries": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 7.0399,
+        "p95": 7.0399,
+        "max": 7.0399
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /customer",
+      "samples": 23,
+      "queries": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 15,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 3.1027,
+        "p95": 4.2027,
+        "max": 5.2066
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /customer.html",
+      "samples": 2,
+      "queries": {
+        "p50": 0,
+        "p95": 1,
+        "max": 1
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 0.2259,
+        "p95": 4.4801,
+        "max": 4.4801
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /qy",
+      "samples": 29,
+      "queries": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 16,
+        "max": 32
+      },
+      "wallMs": {
+        "p50": 2.9924,
+        "p95": 5.5601,
+        "max": 8.9168
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /qy.html",
+      "samples": 3,
+      "queries": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 15,
+        "max": 15
+      },
+      "wallMs": {
+        "p50": 1.1037,
+        "p95": 3.3605,
+        "max": 3.3605
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /admin.html",
+      "samples": 1,
+      "queries": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 0.3274,
+        "p95": 0.3274,
+        "max": 0.3274
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /.env",
+      "samples": 1,
+      "queries": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 0.1803,
+        "p95": 0.1803,
+        "max": 0.1803
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /offline/migration-manifest.json",
+      "samples": 1,
+      "queries": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 0.1431,
+        "p95": 0.1431,
+        "max": 0.1431
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /scripts/provision-consultation-preview-offline.mjs",
+      "samples": 1,
+      "queries": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 0.1384,
+        "p95": 0.1384,
+        "max": 0.1384
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /_worker.js",
+      "samples": 1,
+      "queries": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 0.1664,
+        "p95": 0.1664,
+        "max": 0.1664
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /functions/api/admin",
+      "samples": 1,
+      "queries": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 0.1351,
+        "p95": 0.1351,
+        "max": 0.1351
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/qy/login",
+      "samples": 14,
+      "queries": {
+        "p50": 12,
+        "p95": 12,
+        "max": 12
+      },
+      "cpuMs": {
+        "p50": 156,
+        "p95": 172,
+        "max": 172
+      },
+      "wallMs": {
+        "p50": 152.2974,
+        "p95": 170.9655,
+        "max": 170.9655
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite HEAD /customer.html",
+      "samples": 1,
+      "queries": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "cpuMs": {
+        "p50": 16,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 4.8184,
+        "p95": 4.8184,
+        "max": 4.8184
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /customer.html",
+      "samples": 1,
+      "queries": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 0.2105,
+        "p95": 0.2105,
+        "max": 0.2105
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/setup",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 8.4457,
+        "p95": 8.4457,
+        "max": 8.4457
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/qy/setup",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": 16,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 6.688,
+        "p95": 6.688,
+        "max": 6.688
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/local/customer-login",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 8.832,
+        "p95": 8.832,
+        "max": 8.832
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/qy/local/outbox",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": 47,
+        "p95": 47,
+        "max": 47
+      },
+      "wallMs": {
+        "p50": 14.3009,
+        "p95": 14.3009,
+        "max": 14.3009
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/qy/local/capture",
+      "samples": 2,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": 16,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 5.4628,
+        "p95": 8.0625,
+        "max": 8.0625
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/qy/payment/reconcile",
+      "samples": 2,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 4.7452,
+        "p95": 5.6862,
+        "max": 5.6862
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/qy/payment/finance-review",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 5.4964,
+        "p95": 5.4964,
+        "max": 5.4964
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/preview/bootstrap",
+      "samples": 5,
+      "queries": {
+        "p50": 4,
+        "p95": 8,
+        "max": 8
+      },
+      "cpuMs": {
+        "p50": 15,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 10.8905,
+        "p95": 11.6997,
+        "max": 11.6997
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/context",
+      "samples": 1,
+      "queries": {
+        "p50": 10,
+        "p95": 10,
+        "max": 10
+      },
+      "cpuMs": {
+        "p50": 15,
+        "p95": 15,
+        "max": 15
+      },
+      "wallMs": {
+        "p50": 11.2988,
+        "p95": 11.2988,
+        "max": 11.2988
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /api/consultation/account/options",
+      "samples": 1,
+      "queries": {
+        "p50": 6,
+        "p95": 6,
+        "max": 6
+      },
+      "cpuMs": {
+        "p50": 32,
+        "p95": 32,
+        "max": 32
+      },
+      "wallMs": {
+        "p50": 8.8649,
+        "p95": 8.8649,
+        "max": 8.8649
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/qy/account/review",
+      "samples": 1,
+      "queries": {
+        "p50": 10,
+        "p95": 10,
+        "max": 10
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 8.6623,
+        "p95": 8.6623,
+        "max": 8.6623
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/account/challenge",
+      "samples": 1,
+      "queries": {
+        "p50": 14,
+        "p95": 14,
+        "max": 14
+      },
+      "cpuMs": {
+        "p50": 16,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 10.9041,
+        "p95": 10.9041,
+        "max": 10.9041
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/qy/preview/outbox",
+      "samples": 3,
+      "queries": {
+        "p50": 8,
+        "p95": 8,
+        "max": 8
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 15,
+        "max": 15
+      },
+      "wallMs": {
+        "p50": 6.4863,
+        "p95": 9.7719,
+        "max": 9.7719
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/account/confirm",
+      "samples": 1,
+      "queries": {
+        "p50": 17,
+        "p95": 17,
+        "max": 17
+      },
+      "cpuMs": {
+        "p50": 16,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 11.9143,
+        "p95": 11.9143,
+        "max": 11.9143
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/contact/challenge",
+      "samples": 1,
+      "queries": {
+        "p50": 17,
+        "p95": 17,
+        "max": 17
+      },
+      "cpuMs": {
+        "p50": 16,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 11.3415,
+        "p95": 11.3415,
+        "max": 11.3415
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /api/consultation/qy/contact/instructions",
+      "samples": 1,
+      "queries": {
+        "p50": 8,
+        "p95": 8,
+        "max": 8
+      },
+      "cpuMs": {
+        "p50": 16,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 11.8395,
+        "p95": 11.8395,
+        "max": 11.8395
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/qy/contact/delivered",
+      "samples": 1,
+      "queries": {
+        "p50": 9,
+        "p95": 9,
+        "max": 9
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 10.9341,
+        "p95": 10.9341,
+        "max": 10.9341
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/contact/confirm",
+      "samples": 1,
+      "queries": {
+        "p50": 14,
+        "p95": 14,
+        "max": 14
+      },
+      "cpuMs": {
+        "p50": 15,
+        "p95": 15,
+        "max": 15
+      },
+      "wallMs": {
+        "p50": 11.3358,
+        "p95": 11.3358,
+        "max": 11.3358
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/bookings",
+      "samples": 1,
+      "queries": {
+        "p50": 21,
+        "p95": 21,
+        "max": 21
+      },
+      "cpuMs": {
+        "p50": 16,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 13.4139,
+        "p95": 13.4139,
+        "max": 13.4139
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/qy/status",
+      "samples": 2,
+      "queries": {
+        "p50": 6,
+        "p95": 11,
+        "max": 11
+      },
+      "cpuMs": {
+        "p50": 15,
+        "p95": 15,
+        "max": 15
+      },
+      "wallMs": {
+        "p50": 9.1167,
+        "p95": 10.3992,
+        "max": 10.3992
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/qy/availability",
+      "samples": 1,
+      "queries": {
+        "p50": 9,
+        "p95": 9,
+        "max": 9
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 8.0625,
+        "p95": 8.0625,
+        "max": 8.0625
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/qy/offer",
+      "samples": 1,
+      "queries": {
+        "p50": 15,
+        "p95": 15,
+        "max": 15
+      },
+      "cpuMs": {
+        "p50": 16,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 11.6851,
+        "p95": 11.6851,
+        "max": 11.6851
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /api/consultation/offer",
+      "samples": 1,
+      "queries": {
+        "p50": 7,
+        "p95": 7,
+        "max": 7
+      },
+      "cpuMs": {
+        "p50": 16,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 9.7871,
+        "p95": 9.7871,
+        "max": 9.7871
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/offer/accept",
+      "samples": 1,
+      "queries": {
+        "p50": 16,
+        "p95": 16,
+        "max": 16
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 11.3209,
+        "p95": 11.3209,
+        "max": 11.3209
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /api/consultation/qy/bookings",
+      "samples": 27,
+      "queries": {
+        "p50": 5,
+        "p95": 5,
+        "max": 5
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 6.2437,
+        "p95": 10.4757,
+        "max": 10.8826
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /workflow-ui.js",
+      "samples": 20,
+      "queries": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 2.3141,
+        "p95": 3.6849,
+        "max": 3.9481
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /workflow.css",
+      "samples": 20,
+      "queries": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 15,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 3.5534,
+        "p95": 5.1575,
+        "max": 5.2427
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /academy-logo.png",
+      "samples": 20,
+      "queries": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 4.7065,
+        "p95": 5.5415,
+        "max": 5.7435
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /api/consultation/bookings",
+      "samples": 20,
+      "queries": {
+        "p50": 7,
+        "p95": 7,
+        "max": 7
+      },
+      "cpuMs": {
+        "p50": 15,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 7.4608,
+        "p95": 10.5655,
+        "max": 10.6611
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /api/consultation/account/state",
+      "samples": 20,
+      "queries": {
+        "p50": 7,
+        "p95": 7,
+        "max": 7
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 6.5156,
+        "p95": 8.7441,
+        "max": 9.7407
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /api/consultation/meeting",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 6.1069,
+        "p95": 6.1069,
+        "max": 6.1069
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /api/consultation/qy/meeting",
+      "samples": 1,
+      "queries": {
+        "p50": 4,
+        "p95": 4,
+        "max": 4
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 8.7608,
+        "p95": 8.7608,
+        "max": 8.7608
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /api/consultation/qy/availability",
+      "samples": 1,
+      "queries": {
+        "p50": 6,
+        "p95": 6,
+        "max": 6
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 7.753,
+        "p95": 7.753,
+        "max": 7.753
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /api/consultation/preferences",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": 15,
+        "p95": 15,
+        "max": 15
+      },
+      "wallMs": {
+        "p50": 10.1118,
+        "p95": 10.1118,
+        "max": 10.1118
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /api/consultation/qy/preferences",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 5.7013,
+        "p95": 5.7013,
+        "max": 5.7013
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /api/consultation/qy/private",
+      "samples": 1,
+      "queries": {
+        "p50": 4,
+        "p95": 4,
+        "max": 4
+      },
+      "cpuMs": {
+        "p50": 16,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 6.5085,
+        "p95": 6.5085,
+        "max": 6.5085
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /api/consultation/reschedule/list",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 6.7214,
+        "p95": 6.7214,
+        "max": 6.7214
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite GET /api/consultation/qy/reschedule/list",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": 16,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 8.1418,
+        "p95": 8.1418,
+        "max": 8.1418
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/qy/meeting",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 9.7488,
+        "p95": 9.7488,
+        "max": 9.7488
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/preferences",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": 31,
+        "p95": 31,
+        "max": 31
+      },
+      "wallMs": {
+        "p50": 7.307,
+        "p95": 7.307,
+        "max": 7.307
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/reschedule/request",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 7.8383,
+        "p95": 7.8383,
+        "max": 7.8383
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/qy/reschedule/decide",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 5.3992,
+        "p95": 5.3992,
+        "max": 5.3992
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/qy/offer/expire",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 8.5679,
+        "p95": 8.5679,
+        "max": 8.5679
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/qy/forfeit",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 5.3097,
+        "p95": 5.3097,
+        "max": 5.3097
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/qy/report/status",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": 16,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 6.2582,
+        "p95": 6.2582,
+        "max": 6.2582
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/qy/report",
+      "samples": 1,
+      "queries": {
+        "p50": 4,
+        "p95": 4,
+        "max": 4
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 5.0511,
+        "p95": 5.0511,
+        "max": 5.0511
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/qy/customers/search",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": 16,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 7.2496,
+        "p95": 7.2496,
+        "max": 7.2496
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/context/resume",
+      "samples": 1,
+      "queries": {
+        "p50": 6,
+        "p95": 6,
+        "max": 6
+      },
+      "cpuMs": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "wallMs": {
+        "p50": 5.6267,
+        "p95": 5.6267,
+        "max": 5.6267
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "Node/SQLite POST /api/consultation/qy/logout",
+      "samples": 1,
+      "queries": {
+        "p50": 8,
+        "p95": 8,
+        "max": 8
+      },
+      "cpuMs": {
+        "p50": 16,
+        "p95": 16,
+        "max": 16
+      },
+      "wallMs": {
+        "p50": 12.0047,
+        "p95": 12.0047,
+        "max": 12.0047
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /",
+      "samples": 1,
+      "queries": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 21.2858,
+        "p95": 21.2858,
+        "max": 21.2858
+      },
+      "maxRowsRead": 440,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /customer",
+      "samples": 23,
+      "queries": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 7.5016,
+        "p95": 9.9564,
+        "max": 10.2518
+      },
+      "maxRowsRead": 442,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /customer.html",
+      "samples": 2,
+      "queries": {
+        "p50": 0,
+        "p95": 1,
+        "max": 1
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 2.6688,
+        "p95": 9.1716,
+        "max": 9.1716
+      },
+      "maxRowsRead": 440,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /qy",
+      "samples": 29,
+      "queries": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 7.7099,
+        "p95": 10.4777,
+        "max": 11.1457
+      },
+      "maxRowsRead": 440,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /qy.html",
+      "samples": 3,
+      "queries": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 3.8276,
+        "p95": 7.2897,
+        "max": 7.2897
+      },
+      "maxRowsRead": 440,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /admin.html",
+      "samples": 1,
+      "queries": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 2.3128,
+        "p95": 2.3128,
+        "max": 2.3128
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /.env",
+      "samples": 1,
+      "queries": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 1.9909,
+        "p95": 1.9909,
+        "max": 1.9909
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /offline/migration-manifest.json",
+      "samples": 1,
+      "queries": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 1.8716,
+        "p95": 1.8716,
+        "max": 1.8716
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /scripts/provision-consultation-preview-offline.mjs",
+      "samples": 1,
+      "queries": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 2.189,
+        "p95": 2.189,
+        "max": 2.189
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /_worker.js",
+      "samples": 1,
+      "queries": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 2.2254,
+        "p95": 2.2254,
+        "max": 2.2254
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /functions/api/admin",
+      "samples": 1,
+      "queries": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 1.8785,
+        "p95": 1.8785,
+        "max": 1.8785
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/qy/login",
+      "samples": 14,
+      "queries": {
+        "p50": 12,
+        "p95": 12,
+        "max": 12
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 488.9904,
+        "p95": 511.2391,
+        "max": 511.2391
+      },
+      "maxRowsRead": 1337,
+      "maxRowsWritten": 14
+    },
+    {
+      "route": "workerd/D1 HEAD /customer.html",
+      "samples": 1,
+      "queries": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 44.3174,
+        "p95": 44.3174,
+        "max": 44.3174
+      },
+      "maxRowsRead": 440,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /customer.html",
+      "samples": 1,
+      "queries": {
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 2.9976,
+        "p95": 2.9976,
+        "max": 2.9976
+      },
+      "maxRowsRead": 0,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/setup",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 18.3542,
+        "p95": 18.3542,
+        "max": 18.3542
+      },
+      "maxRowsRead": 1320,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/qy/setup",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 12.5893,
+        "p95": 12.5893,
+        "max": 12.5893
+      },
+      "maxRowsRead": 1320,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/local/customer-login",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 11.8752,
+        "p95": 11.8752,
+        "max": 11.8752
+      },
+      "maxRowsRead": 1320,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/qy/local/outbox",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 14.2938,
+        "p95": 14.2938,
+        "max": 14.2938
+      },
+      "maxRowsRead": 1320,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/qy/local/capture",
+      "samples": 2,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 12.2872,
+        "p95": 14.7056,
+        "max": 14.7056
+      },
+      "maxRowsRead": 1320,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/qy/payment/reconcile",
+      "samples": 2,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 14.7555,
+        "p95": 15.4985,
+        "max": 15.4985
+      },
+      "maxRowsRead": 1320,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/qy/payment/finance-review",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 13.0644,
+        "p95": 13.0644,
+        "max": 13.0644
+      },
+      "maxRowsRead": 1320,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/preview/bootstrap",
+      "samples": 5,
+      "queries": {
+        "p50": 4,
+        "p95": 8,
+        "max": 8
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 14.5391,
+        "p95": 16.867,
+        "max": 16.867
+      },
+      "maxRowsRead": 1334,
+      "maxRowsWritten": 10
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/context",
+      "samples": 1,
+      "queries": {
+        "p50": 10,
+        "p95": 10,
+        "max": 10
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 21.8425,
+        "p95": 21.8425,
+        "max": 21.8425
+      },
+      "maxRowsRead": 1338,
+      "maxRowsWritten": 11
+    },
+    {
+      "route": "workerd/D1 GET /api/consultation/account/options",
+      "samples": 1,
+      "queries": {
+        "p50": 6,
+        "p95": 6,
+        "max": 6
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 17.2835,
+        "p95": 17.2835,
+        "max": 17.2835
+      },
+      "maxRowsRead": 1326,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/qy/account/review",
+      "samples": 1,
+      "queries": {
+        "p50": 10,
+        "p95": 10,
+        "max": 10
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 19.4364,
+        "p95": 19.4364,
+        "max": 19.4364
+      },
+      "maxRowsRead": 1336,
+      "maxRowsWritten": 11
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/account/challenge",
+      "samples": 1,
+      "queries": {
+        "p50": 14,
+        "p95": 14,
+        "max": 14
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 24.1956,
+        "p95": 24.1956,
+        "max": 24.1956
+      },
+      "maxRowsRead": 1349,
+      "maxRowsWritten": 13
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/qy/preview/outbox",
+      "samples": 3,
+      "queries": {
+        "p50": 8,
+        "p95": 8,
+        "max": 8
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 14.9517,
+        "p95": 20.3718,
+        "max": 20.3718
+      },
+      "maxRowsRead": 1345,
+      "maxRowsWritten": 5
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/account/confirm",
+      "samples": 1,
+      "queries": {
+        "p50": 17,
+        "p95": 17,
+        "max": 17
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 30.6446,
+        "p95": 30.6446,
+        "max": 30.6446
+      },
+      "maxRowsRead": 1366,
+      "maxRowsWritten": 9
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/contact/challenge",
+      "samples": 1,
+      "queries": {
+        "p50": 17,
+        "p95": 17,
+        "max": 17
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 23.3203,
+        "p95": 23.3203,
+        "max": 23.3203
+      },
+      "maxRowsRead": 1355,
+      "maxRowsWritten": 15
+    },
+    {
+      "route": "workerd/D1 GET /api/consultation/qy/contact/instructions",
+      "samples": 1,
+      "queries": {
+        "p50": 8,
+        "p95": 8,
+        "max": 8
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 19.0812,
+        "p95": 19.0812,
+        "max": 19.0812
+      },
+      "maxRowsRead": 1343,
+      "maxRowsWritten": 6
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/qy/contact/delivered",
+      "samples": 1,
+      "queries": {
+        "p50": 9,
+        "p95": 9,
+        "max": 9
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 19.5878,
+        "p95": 19.5878,
+        "max": 19.5878
+      },
+      "maxRowsRead": 1340,
+      "maxRowsWritten": 7
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/contact/confirm",
+      "samples": 1,
+      "queries": {
+        "p50": 14,
+        "p95": 14,
+        "max": 14
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 22.5062,
+        "p95": 22.5062,
+        "max": 22.5062
+      },
+      "maxRowsRead": 1355,
+      "maxRowsWritten": 15
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/bookings",
+      "samples": 1,
+      "queries": {
+        "p50": 21,
+        "p95": 21,
+        "max": 21
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 30.9077,
+        "p95": 30.9077,
+        "max": 30.9077
+      },
+      "maxRowsRead": 1370,
+      "maxRowsWritten": 35
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/qy/status",
+      "samples": 2,
+      "queries": {
+        "p50": 6,
+        "p95": 11,
+        "max": 11
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 18.4338,
+        "p95": 21.713,
+        "max": 21.713
+      },
+      "maxRowsRead": 1333,
+      "maxRowsWritten": 10
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/qy/availability",
+      "samples": 1,
+      "queries": {
+        "p50": 9,
+        "p95": 9,
+        "max": 9
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 18.6114,
+        "p95": 18.6114,
+        "max": 18.6114
+      },
+      "maxRowsRead": 1335,
+      "maxRowsWritten": 10
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/qy/offer",
+      "samples": 1,
+      "queries": {
+        "p50": 15,
+        "p95": 15,
+        "max": 15
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 23.2885,
+        "p95": 23.2885,
+        "max": 23.2885
+      },
+      "maxRowsRead": 1348,
+      "maxRowsWritten": 22
+    },
+    {
+      "route": "workerd/D1 GET /api/consultation/offer",
+      "samples": 1,
+      "queries": {
+        "p50": 7,
+        "p95": 7,
+        "max": 7
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 20.1218,
+        "p95": 20.1218,
+        "max": 20.1218
+      },
+      "maxRowsRead": 1337,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/offer/accept",
+      "samples": 1,
+      "queries": {
+        "p50": 16,
+        "p95": 16,
+        "max": 16
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 27.1415,
+        "p95": 27.1415,
+        "max": 27.1415
+      },
+      "maxRowsRead": 1357,
+      "maxRowsWritten": 15
+    },
+    {
+      "route": "workerd/D1 GET /api/consultation/qy/bookings",
+      "samples": 27,
+      "queries": {
+        "p50": 5,
+        "p95": 5,
+        "max": 5
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 15.0371,
+        "p95": 25.6136,
+        "max": 32.1089
+      },
+      "maxRowsRead": 1327,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /workflow-ui.js",
+      "samples": 20,
+      "queries": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 6.9397,
+        "p95": 9.6891,
+        "max": 89.2686
+      },
+      "maxRowsRead": 440,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /workflow.css",
+      "samples": 20,
+      "queries": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 9.6285,
+        "p95": 12.8402,
+        "max": 22.8688
+      },
+      "maxRowsRead": 440,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /academy-logo.png",
+      "samples": 20,
+      "queries": {
+        "p50": 1,
+        "p95": 1,
+        "max": 1
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 8.8791,
+        "p95": 11.3835,
+        "max": 11.79
+      },
+      "maxRowsRead": 440,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /api/consultation/bookings",
+      "samples": 20,
+      "queries": {
+        "p50": 7,
+        "p95": 7,
+        "max": 7
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 20.0362,
+        "p95": 109.7819,
+        "max": 146.3273
+      },
+      "maxRowsRead": 1339,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /api/consultation/account/state",
+      "samples": 20,
+      "queries": {
+        "p50": 7,
+        "p95": 7,
+        "max": 7
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 18.6495,
+        "p95": 120.2925,
+        "max": 170.7586
+      },
+      "maxRowsRead": 1336,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /api/consultation/meeting",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 15.4477,
+        "p95": 15.4477,
+        "max": 15.4477
+      },
+      "maxRowsRead": 1320,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /api/consultation/qy/meeting",
+      "samples": 1,
+      "queries": {
+        "p50": 4,
+        "p95": 4,
+        "max": 4
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 13.8265,
+        "p95": 13.8265,
+        "max": 13.8265
+      },
+      "maxRowsRead": 1322,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /api/consultation/qy/availability",
+      "samples": 1,
+      "queries": {
+        "p50": 6,
+        "p95": 6,
+        "max": 6
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 15.7621,
+        "p95": 15.7621,
+        "max": 15.7621
+      },
+      "maxRowsRead": 1331,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /api/consultation/preferences",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 10.5701,
+        "p95": 10.5701,
+        "max": 10.5701
+      },
+      "maxRowsRead": 1320,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /api/consultation/qy/preferences",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 10.821,
+        "p95": 10.821,
+        "max": 10.821
+      },
+      "maxRowsRead": 1320,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /api/consultation/qy/private",
+      "samples": 1,
+      "queries": {
+        "p50": 4,
+        "p95": 4,
+        "max": 4
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 13.4478,
+        "p95": 13.4478,
+        "max": 13.4478
+      },
+      "maxRowsRead": 1322,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /api/consultation/reschedule/list",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 10.6864,
+        "p95": 10.6864,
+        "max": 10.6864
+      },
+      "maxRowsRead": 1320,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 GET /api/consultation/qy/reschedule/list",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 10.2271,
+        "p95": 10.2271,
+        "max": 10.2271
+      },
+      "maxRowsRead": 1320,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/qy/meeting",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 12.4695,
+        "p95": 12.4695,
+        "max": 12.4695
+      },
+      "maxRowsRead": 1320,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/preferences",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 13.2014,
+        "p95": 13.2014,
+        "max": 13.2014
+      },
+      "maxRowsRead": 1320,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/reschedule/request",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 11.8348,
+        "p95": 11.8348,
+        "max": 11.8348
+      },
+      "maxRowsRead": 1320,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/qy/reschedule/decide",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 13.6699,
+        "p95": 13.6699,
+        "max": 13.6699
+      },
+      "maxRowsRead": 1320,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/qy/offer/expire",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 11.0267,
+        "p95": 11.0267,
+        "max": 11.0267
+      },
+      "maxRowsRead": 1320,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/qy/forfeit",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 11.5187,
+        "p95": 11.5187,
+        "max": 11.5187
+      },
+      "maxRowsRead": 1320,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/qy/report/status",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 11.6382,
+        "p95": 11.6382,
+        "max": 11.6382
+      },
+      "maxRowsRead": 1320,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/qy/report",
+      "samples": 1,
+      "queries": {
+        "p50": 4,
+        "p95": 4,
+        "max": 4
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 13.1385,
+        "p95": 13.1385,
+        "max": 13.1385
+      },
+      "maxRowsRead": 1322,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/qy/customers/search",
+      "samples": 1,
+      "queries": {
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 11.6411,
+        "p95": 11.6411,
+        "max": 11.6411
+      },
+      "maxRowsRead": 1320,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/context/resume",
+      "samples": 1,
+      "queries": {
+        "p50": 6,
+        "p95": 6,
+        "max": 6
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 17.2515,
+        "p95": 17.2515,
+        "max": 17.2515
+      },
+      "maxRowsRead": 1328,
+      "maxRowsWritten": 0
+    },
+    {
+      "route": "workerd/D1 POST /api/consultation/qy/logout",
+      "samples": 1,
+      "queries": {
+        "p50": 8,
+        "p95": 8,
+        "max": 8
+      },
+      "cpuMs": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "wallMs": {
+        "p50": 21.3104,
+        "p95": 21.3104,
+        "max": 21.3104
+      },
+      "maxRowsRead": 1332,
+      "maxRowsWritten": 7
+    }
+  ]
+}

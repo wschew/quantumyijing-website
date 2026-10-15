@@ -5,6 +5,9 @@ import {resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {createRequire} from 'node:module';
 import {DatabaseSync} from 'node:sqlite';
+import {writeFileSync} from 'node:fs';
+import {meterDatabase,profileRequest,instrumentWorkerSource,summary} from './consultation-free-profile.mjs';
+import {freeChecks} from './consultation-pages-free-checks.mjs';
 import {buildPackage} from './build-consultation-pages.mjs';
 import {provisionOffline} from './provision-consultation-preview-offline.mjs';
 import {root,sha,canonical,verifyManifest} from './consultation-migration-verifier.mjs';
@@ -12,10 +15,10 @@ import {newPasswordRecord,randomSecret} from '../functions/lib/consultation/auth
 const output=resolve(mkdtempSync(resolve(tmpdir(),'c1-package-test-')),'package');
 const packageInfo=await buildPackage(output,process.env.QY_ESBUILD_PATH);
 const manifest=verifyManifest(packageInfo.manifest),publicPath=packageInfo.publicPath,offline=packageInfo.offline;
-const origin='https://test.qy-c1-synthetic-preview.pages.dev',databaseId='11111111-2222-4333-8444-555555555555';
-const config={environment:'preview',syntheticOnly:true,origin,databaseId,expectedDatabaseId:databaseId,manifestSha256:sha(JSON.stringify(manifest)),productId:1,practitionerId:1,countryCodes:['MY'],isolatedPreviewProject:'qy-c1-synthetic-preview',policies:Object.fromEntries(['consultation_privacy','future_calculations','marketing','booking'].map(p=>[p,{version:'synthetic-v1',text:'Synthetic '+p,hash:sha('Synthetic '+p)}]))};
+const origin='https://c1-bazi-consultation-development.qy-c1-consultation-preview.pages.dev',databaseId='11111111-2222-4333-8444-555555555555';
+const config={environment:'preview',syntheticOnly:true,origin,databaseId,expectedDatabaseId:databaseId,manifestSha256:sha(JSON.stringify(manifest)),productId:1,practitionerId:1,countryCodes:['MY'],isolatedPreviewProject:'qy-c1-consultation-preview',previewBranch:'c1-bazi-consultation-development',policies:Object.fromEntries(['consultation_privacy','future_calculations','marketing','booking'].map(p=>[p,{version:'synthetic-v1',text:'Synthetic '+p,hash:sha('Synthetic '+p)}]))};
 const ring=Object.fromEntries(['intake','contact','lookup','challenge','meeting','mockDelivery'].map(p=>[p,{active:p+'-synthetic-v1',keys:{[p+'-synthetic-v1']:randomSecret()}}]));
-const settings={CONSULTATION_CONFIG:JSON.stringify(config),CONSULTATION_PREVIEW_ENABLED:'true',CONSULTATION_SYNTHETIC_BOOTSTRAP_ENABLED:'true',CONSULTATION_MOCK_DELIVERY_ENABLED:'true',CONSULTATION_KEYRING:JSON.stringify(ring),CF_PAGES:'1',CF_PAGES_BRANCH:'synthetic-test',CF_PAGES_COMMIT_SHA:'synthetic',CF_PAGES_URL:origin};
+const settings={CONSULTATION_DEPLOYMENT_SLOT:'preview',CONSULTATION_CONFIG:JSON.stringify(config),CONSULTATION_PREVIEW_ENABLED:'true',CONSULTATION_SYNTHETIC_BOOTSTRAP_ENABLED:'true',CONSULTATION_MOCK_DELIVERY_ENABLED:'true',CONSULTATION_KEYRING:JSON.stringify(ring),CF_PAGES:'1',CF_PAGES_BRANCH:'c1-bazi-consultation-development',CF_PAGES_COMMIT_SHA:'synthetic',CF_PAGES_URL:origin};
 const password=randomSecret()+'Aa!';
 let passed=0;
 async function test(name,fn){await fn();passed++;console.log('PASS '+name);}
@@ -64,9 +67,9 @@ try{
  await test('shared ADMIN_TOKEN is rejected',async()=>assert.equal((await worker.fetch(new Request(origin+'/'),{...env,ADMIN_TOKEN:'denied'})).status,503));
  await test('missing gate blocks assets',async()=>assert.equal((await worker.fetch(new Request(origin+'/'),{...env,CONSULTATION_PREVIEW_ENABLED:'false'})).status,503));
  await test('malformed server config gives sanitized failure',async()=>{const r=await worker.fetch(new Request(origin+'/'),{...env,CONSULTATION_CONFIG:'invalid'});assert.equal(r.status,503);assert.equal((await r.json()).code,'PREVIEW_UNAVAILABLE');});
- await checks(db,r=>worker.fetch(r,env),'SQLite packaged Worker');
+ await checks(db,r=>profileRequest(r,async request=>{const meter=meterDatabase(db,Number(request.headers.get('x-c1-test-limit')||50),request.headers.get('x-c1-test-failure')||'none');const response=await worker.fetch(request,{...env,CONSULTATION_DB:meter.db});const headers=new Headers(response.headers);headers.set('x-c1-test-metrics',JSON.stringify(meter.stats));return new Response(response.body,{status:response.status,headers});},'Node/SQLite'),'SQLite packaged Worker',env);
 }finally{raw.close();}
-async function checks(db,dispatch,label){
+async function checks(db,dispatch,label,env=null){
  const t=(name,fn)=>test(label+' '+name,fn);
  const request=(path,body,cookie='',csrf='',extra={})=>new Request(origin+path,{method:body===undefined?'GET':'POST',headers:{origin,'content-type':'application/json',...(cookie?{cookie}:{}),...(csrf?{'x-qy-consultation-csrf':csrf,'x-qy-consultation-customer-csrf':csrf}:{}),...extra},...(body===undefined?{}:{body:JSON.stringify(body)})});
  const call=(path,body,cookie,csrf,extra)=>dispatch(request('/api/consultation/'+path,body,cookie,csrf,extra));
@@ -100,16 +103,18 @@ async function checks(db,dispatch,label){
  await t('direct Confirmed transition and simulated capture cannot confirm',async()=>{for(const [path,body] of [['qy/status',{id,to:'Confirmed',expectedVersion:version,commandId:crypto.randomUUID()}],['qy/local/capture',{id,mode:'timely'}],['qy/payment/reconcile',{id,expectedVersion:version,commandId:crypto.randomUUID()}]])assert.notEqual((await client(qy,path,body)).status,200);const rows=(await client(qy,'qy/bookings')).data;assert.equal(rows.captureAdapterConfigured,false);assert.equal(rows.financeReviewConfigured,false);assert.equal(rows.records.find(r=>r.id===id).state,'PaymentPending');});
  await t('no financial records are created',async()=>{for(const table of ['orders','payments'])assert.equal((await db.prepare('SELECT COUNT(*) n FROM '+table).first()).n,0);});
  await t('feature marker disable prevents both private API and assets',async()=>{await db.prepare('UPDATE consultation_preview_environment SET enabled=0').run();assert.equal((await dispatch(request('/qy.html'))).status,503);assert.equal((await call('qy/bookings',undefined,qy.cookie)).status,503);await db.prepare('UPDATE consultation_preview_environment SET enabled=1').run();});
+ if(process.env.QY_C1_FREE_PROFILE)await freeChecks({test:t,dispatch,request,call,client,qy,customer,db,env,worker:env?worker:null,origin,password});
  await t('logout revokes bootstrap access',async()=>{assert.equal((await client(qy,'qy/logout',{})).status,200);assert.notEqual((await client(qy,'preview/bootstrap',{customerId:1})).status,200);});
  await t('foreign keys and supported integrity checks pass',async()=>{assert.equal((await db.prepare('PRAGMA foreign_key_check').all()).results.length,0);assert.equal(Object.values(await db.prepare('PRAGMA quick_check').first())[0],'ok');});
 }
 const {Miniflare,convertV4MiniflareOptions}=createRequire(import.meta.url)(process.env.QY_MINIFLARE_PATH);
 const source=readFileSync(resolve(publicPath,'_worker.js'),'utf8');
-const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:"globalThis.fetch=async()=>{throw Error('Outbound disabled');};\n"+source,compatibilityDate:'2026-10-07',bindings:settings,d1Databases:{CONSULTATION_DB:'synthetic-c1-pages'},d1Persist:false,serviceBindings:{ASSETS:asset},cf:false,telemetry:{enabled:false}}));
+const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:"globalThis.fetch=async()=>{throw Error('Outbound disabled');};\n"+instrumentWorkerSource(source),compatibilityDate:'2026-10-07',bindings:settings,d1Databases:{CONSULTATION_DB:'synthetic-c1-pages'},d1Persist:false,serviceBindings:{ASSETS:asset},cf:false,telemetry:{enabled:false}}));
 try{
  const db=await mf.getD1Database('CONSULTATION_DB');await schema(db);const credential=await newPasswordRecord(password);
  await db.prepare("INSERT INTO consultation_auth_account VALUES(1,'synthetic',1,'PBKDF2-SHA256',600000,?,?,1,?)").bind(credential.salt,credential.hash,Date.now()).run();await db.prepare('UPDATE consultation_preview_environment SET enabled=1').run();
- await checks(db,async r=>mf.dispatchFetch(r.url,{method:r.method,headers:Object.fromEntries(r.headers),...(!['GET','HEAD'].includes(r.method)?{body:await r.arrayBuffer()}:{})}),'workerd packaged Worker/D1');
+ await checks(db,r=>profileRequest(r,async r=>mf.dispatchFetch(r.url,{method:r.method,headers:Object.fromEntries(r.headers),...(!['GET','HEAD'].includes(r.method)?{body:await r.arrayBuffer()}:{})}),'workerd/D1'),'workerd packaged Worker/D1');
 }finally{await mf.dispose();}
 await test('asset service never receives cookies or authorization',()=>{for(const r of assetRequests){assert.equal(r.headers.get('cookie'),null);assert.equal(r.headers.get('authorization'),null);assert.equal(new URL(r.url).search,'');}});
+if(process.env.QY_C1_FREE_PROFILE)writeFileSync(process.env.QY_C1_FREE_PROFILE,JSON.stringify({method:'Node process CPU user+system delta; includes crypto pool and SQLite; wall separately. Windows process CPU is quantized (~15-16ms); zero does not establish zero CPU. workerd CPU unavailable. No parallel requests. Query count includes every executed batch statement. Test-only first() uses all() to capture D1 row metadata; Node SQLite has no row billing metadata.',routes:summary()},null,2)+'\n');
 console.log('RESULT '+passed+' passed, 0 failed; packaged C1 Worker, SQLite, workerd/D1; outbound fetch disabled');

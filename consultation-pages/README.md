@@ -1,5 +1,11 @@
 # C1 U3-B2A local deployment package
 
+U3-B2B Step 2A updates the disabled configuration and request validation. See
+[the Free-plan runbook](U3-B2B-STEP2A-RUNBOOK.md) and
+[local acceptance report](U3-B2B-STEP2A-RESULTS.md). The current review artifact
+is `.local-c1-package-u3b2b-step2a-review/`; earlier packages remain historical.
+Free-plan CPU compatibility and private administrator transfer remain BLOCKED.
+
 Prepared for owner review only. No deployment, remote database, provider operation,
 commit, staged file or owner-server restart is part of this phase. The package is
 for a **new, dedicated synthetic C1 Pages project**. Never use the existing site's
@@ -41,14 +47,20 @@ pages.dev origin, independently attested database UUID, expected UUID, manifest
 fingerprint and synthetic product/practitioner mappings. No request body can
 provide server configuration. Draft examples cannot enable a runtime.
 
-The entry accepts only `ASSETS`, `CONSULTATION_CONFIG`, the six explicitly
+The entry accepts only `ASSETS`, `CONSULTATION_CONFIG`, `CONSULTATION_DEPLOYMENT_SLOT`, the six explicitly
 supported adapter bindings/flags and these Pages metadata fields: `CF_PAGES`,
 `CF_PAGES_BRANCH`, `CF_PAGES_COMMIT_SHA`, `CF_PAGES_URL`. Metadata never enters the
 adapter dependency object. Unknown fields, shared DB aliases, ADMIN_TOKEN and
 provider credentials reject. Exact host/origin and all three Preview/bootstrap/
 mock gates must match. The full live adapter contract is checked for **every
 request, including assets**. A disabled marker denies assets as well as APIs.
-Existing atomic mutation assertions remain unchanged.
+Existing atomic mutation assertions remain unchanged. The Pages entry additionally
+requires the exact prepared project, Preview branch alias and Pages branch metadata.
+The Production/default configuration has disabled gates and no D1 binding.
+Static assets perform one fresh live contract query; API validation uses the same
+snapshot query rather than separate schema/ledger/prerequisite lookups. There is
+no cross-request security cache. An asset's live read is necessary to preserve
+the database disable switch; it is not an unconditional public static bypass.
 
 Static requests have an exact path/method allowlist and no query strings. Root,
 `/customer`, `/customer.html`, `/qy` and `/qy.html` resolve to Pages clean HTML
