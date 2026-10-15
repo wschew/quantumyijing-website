@@ -1,0 +1,5827 @@
+{
+  "checkpoint": "418d1f55312f5f08ada588d90feb615883a31c30",
+  "qualification": "CONDITIONAL PASS: owner-run Chrome virtual-authenticator browser tests PASS; physical compatibility, deployed Cloudflare Free CPU and production readiness unqualified",
+  "browser": {
+    "origin": "http://localhost:59529",
+    "node": "v24.20.0",
+    "versions": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/155.0.8059.40",
+      "revision": "@cfaadc5a132d78e1828635aa8405a499f3e14864",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+      "jsVersion": "15.5.35.20",
+      "localDependencies": {
+        "miniflare": "5.20261006.1-alpha",
+        "workerd": "1.20261006.1"
+      },
+      "databaseMetadata": {
+        "served_by": "miniflare.db",
+        "duration": 0,
+        "changes": 0,
+        "last_row_id": 3,
+        "changed_db": false,
+        "size_after": 73728,
+        "rows_read": 22,
+        "rows_written": 0
+      }
+    },
+    "checks": [
+      "localhost is a browser secure context",
+      "browser ES256 none registration persists credential ID and EC public key",
+      "browser registration challenge replay rejected",
+      "second distinct virtual authenticator enrollment",
+      "browser signature verifies and creates usable session",
+      "authentication and session survive Worker restart",
+      "browser assertion replay rejected",
+      "browser challenge mismatch rejected",
+      "expired browser challenge rejected",
+      "browser-derived invalid origin rejected",
+      "browser-derived invalid RP hash rejected",
+      "browser-derived missing UP rejected",
+      "virtual authenticator signed missing UV rejected",
+      "browser signature tampering rejected",
+      "virtual authenticator counter rollback rejected",
+      "logout rejects old session",
+      "revoke-all restart rejects old sessions and pending browser challenges",
+      "shared-account get allowance exhaustion across callers",
+      "rate window rollover admits and resets count",
+      "backward rate window fails closed without changing bucket",
+      "credential revocation rejects sessions pending assertions and two-key gate"
+    ],
+    "failures": [],
+    "samples": [
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 56.064600000000155,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 4,
+        "rowsWritten": 7,
+        "d1DurationMs": 2,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 200,
+        "hostWallMs": 99.35739999999987,
+        "hostDriverCpuMs": 16,
+        "statements": 8,
+        "rowsRead": 12,
+        "rowsWritten": 9,
+        "d1DurationMs": 19,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "hostWallMs": 42.43809999999985,
+        "hostDriverCpuMs": 47,
+        "statements": 2,
+        "rowsRead": 4,
+        "rowsWritten": 1,
+        "d1DurationMs": 2,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 20.891099999999824,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 5,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 200,
+        "hostWallMs": 72.99349999999959,
+        "hostDriverCpuMs": 16,
+        "statements": 8,
+        "rowsRead": 15,
+        "rowsWritten": 9,
+        "d1DurationMs": 2,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 116.52919999999995,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 6,
+        "rowsWritten": 7,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 200,
+        "hostWallMs": 71.62530000000015,
+        "hostDriverCpuMs": 0,
+        "statements": 8,
+        "rowsRead": 16,
+        "rowsWritten": 8,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/session",
+        "status": 200,
+        "hostWallMs": 32.1561999999999,
+        "hostDriverCpuMs": 15,
+        "statements": 2,
+        "rowsRead": 6,
+        "rowsWritten": 2,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/session",
+        "status": 200,
+        "hostWallMs": 79.18339999999989,
+        "hostDriverCpuMs": 0,
+        "statements": 2,
+        "rowsRead": 7,
+        "rowsWritten": 1,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 36.9367000000002,
+        "hostDriverCpuMs": 16,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 200,
+        "hostWallMs": 69.47189999999955,
+        "hostDriverCpuMs": 0,
+        "statements": 8,
+        "rowsRead": 16,
+        "rowsWritten": 8,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 34.17500000000018,
+        "hostDriverCpuMs": 16,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 200,
+        "hostWallMs": 13.29240000000027,
+        "hostDriverCpuMs": 0,
+        "statements": 8,
+        "rowsRead": 16,
+        "rowsWritten": 8,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "hostWallMs": 8.20720000000074,
+        "hostDriverCpuMs": 15,
+        "statements": 2,
+        "rowsRead": 4,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 11.690599999999904,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 13.313700000000608,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "hostWallMs": 13.030999999999949,
+        "hostDriverCpuMs": 0,
+        "statements": 3,
+        "rowsRead": 6,
+        "rowsWritten": 1,
+        "d1DurationMs": 2,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 12.101200000000063,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "hostWallMs": 12.611499999999978,
+        "hostDriverCpuMs": 0,
+        "statements": 2,
+        "rowsRead": 4,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 13.598899999999958,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "hostWallMs": 12.483799999999974,
+        "hostDriverCpuMs": 0,
+        "statements": 3,
+        "rowsRead": 6,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 11.741300000000592,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "hostWallMs": 11.59270000000015,
+        "hostDriverCpuMs": 0,
+        "statements": 3,
+        "rowsRead": 6,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 12.015199999999822,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "hostWallMs": 11.808600000000297,
+        "hostDriverCpuMs": 0,
+        "statements": 3,
+        "rowsRead": 6,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 13.846199999999953,
+        "hostDriverCpuMs": 16,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "hostWallMs": 14.009900000000016,
+        "hostDriverCpuMs": 0,
+        "statements": 3,
+        "rowsRead": 6,
+        "rowsWritten": 1,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 13.487100000000282,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "hostWallMs": 13.5621000000001,
+        "hostDriverCpuMs": 0,
+        "statements": 3,
+        "rowsRead": 6,
+        "rowsWritten": 1,
+        "d1DurationMs": 2,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 16.352700000000368,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "hostWallMs": 12.358000000000175,
+        "hostDriverCpuMs": 0,
+        "statements": 3,
+        "rowsRead": 6,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 11.827099999999518,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 200,
+        "hostWallMs": 15.223100000000159,
+        "hostDriverCpuMs": 0,
+        "statements": 8,
+        "rowsRead": 16,
+        "rowsWritten": 8,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/logout",
+        "status": 200,
+        "hostWallMs": 10.458099999999831,
+        "hostDriverCpuMs": 16,
+        "statements": 5,
+        "rowsRead": 8,
+        "rowsWritten": 7,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/session",
+        "status": 400,
+        "hostWallMs": 8.430000000000291,
+        "hostDriverCpuMs": 0,
+        "statements": 2,
+        "rowsRead": 3,
+        "rowsWritten": 1,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 14.150900000000547,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 200,
+        "hostWallMs": 18.787099999999555,
+        "hostDriverCpuMs": 15,
+        "statements": 8,
+        "rowsRead": 16,
+        "rowsWritten": 8,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 14.217799999999443,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/revoke-all",
+        "status": 200,
+        "hostWallMs": 9.648400000000038,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 9,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/session",
+        "status": 400,
+        "hostWallMs": 54.74070000000029,
+        "hostDriverCpuMs": 16,
+        "statements": 2,
+        "rowsRead": 4,
+        "rowsWritten": 1,
+        "d1DurationMs": 2,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "hostWallMs": 11.699200000000019,
+        "hostDriverCpuMs": 0,
+        "statements": 2,
+        "rowsRead": 4,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 15.695999999999913,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 200,
+        "hostWallMs": 18.514600000000428,
+        "hostDriverCpuMs": 0,
+        "statements": 8,
+        "rowsRead": 16,
+        "rowsWritten": 8,
+        "d1DurationMs": 2,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 10.935199999999895,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 400,
+        "hostWallMs": 5.467599999999948,
+        "hostDriverCpuMs": 0,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 10.832300000000032,
+        "hostDriverCpuMs": 16,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 400,
+        "hostWallMs": 13.450900000000729,
+        "hostDriverCpuMs": 0,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 13.07890000000043,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 6,
+        "rowsWritten": 7,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 200,
+        "hostWallMs": 16.480099999999766,
+        "hostDriverCpuMs": 0,
+        "statements": 8,
+        "rowsRead": 16,
+        "rowsWritten": 8,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "hostWallMs": 14.598500000000058,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/revoke-credential",
+        "status": 200,
+        "hostWallMs": 9.119299999999384,
+        "hostDriverCpuMs": 0,
+        "statements": 6,
+        "rowsRead": 13,
+        "rowsWritten": 8,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/session",
+        "status": 400,
+        "hostWallMs": 8.922499999999673,
+        "hostDriverCpuMs": 0,
+        "statements": 2,
+        "rowsRead": 4,
+        "rowsWritten": 1,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "hostWallMs": 9.08889999999974,
+        "hostDriverCpuMs": 15,
+        "statements": 2,
+        "rowsRead": 4,
+        "rowsWritten": 1,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "/begin",
+        "status": 400,
+        "hostWallMs": 109.04110000000037,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 3,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": false
+      }
+    ],
+    "browserSamples": [
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 61
+      },
+      {
+        "operation": "/finish",
+        "status": 200,
+        "browserRequestMs": 103.5
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "browserRequestMs": 45.100000001490116
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 23.899999998509884
+      },
+      {
+        "operation": "/finish",
+        "status": 200,
+        "browserRequestMs": 75.89999999850988
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 118.90000000596046
+      },
+      {
+        "operation": "/finish",
+        "status": 200,
+        "browserRequestMs": 74.5
+      },
+      {
+        "operation": "/session",
+        "status": 200,
+        "browserRequestMs": 34.899999998509884
+      },
+      {
+        "operation": "/session",
+        "status": 200,
+        "browserRequestMs": 82.10000000149012
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 39.600000001490116
+      },
+      {
+        "operation": "/finish",
+        "status": 200,
+        "browserRequestMs": 72.20000000298023
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 36.599999994039536
+      },
+      {
+        "operation": "/finish",
+        "status": 200,
+        "browserRequestMs": 15.600000001490116
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "browserRequestMs": 11.100000001490116
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 14.100000001490116
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 16
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "browserRequestMs": 15.899999998509884
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 14.5
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "browserRequestMs": 15.100000001490116
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 16.19999999552965
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "browserRequestMs": 15.100000001490116
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 13.899999998509884
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "browserRequestMs": 14
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 14.399999998509884
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "browserRequestMs": 15.100000001490116
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 16.700000002980232
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "browserRequestMs": 17
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 16.100000001490116
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "browserRequestMs": 17.700000002980232
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 19
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "browserRequestMs": 14.900000005960464
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 14.200000002980232
+      },
+      {
+        "operation": "/finish",
+        "status": 200,
+        "browserRequestMs": 18.299999997019768
+      },
+      {
+        "operation": "/logout",
+        "status": 200,
+        "browserRequestMs": 12.899999998509884
+      },
+      {
+        "operation": "/session",
+        "status": 400,
+        "browserRequestMs": 10.799999997019768
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 16.600000001490116
+      },
+      {
+        "operation": "/finish",
+        "status": 200,
+        "browserRequestMs": 23.69999999552965
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 16.700000002980232
+      },
+      {
+        "operation": "/revoke-all",
+        "status": 200,
+        "browserRequestMs": 12
+      },
+      {
+        "operation": "/session",
+        "status": 400,
+        "browserRequestMs": 58.19999999552965
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "browserRequestMs": 14
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 18.200000002980232
+      },
+      {
+        "operation": "/finish",
+        "status": 200,
+        "browserRequestMs": 21
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 13.199999995529652
+      },
+      {
+        "operation": "/begin",
+        "status": 400,
+        "browserRequestMs": 7.600000001490116
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 13.199999995529652
+      },
+      {
+        "operation": "/begin",
+        "status": 400,
+        "browserRequestMs": 16.30000000447035
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 15.5
+      },
+      {
+        "operation": "/finish",
+        "status": 200,
+        "browserRequestMs": 19.200000002980232
+      },
+      {
+        "operation": "/begin",
+        "status": 200,
+        "browserRequestMs": 17
+      },
+      {
+        "operation": "/revoke-credential",
+        "status": 200,
+        "browserRequestMs": 11.399999998509884
+      },
+      {
+        "operation": "/session",
+        "status": 400,
+        "browserRequestMs": 11.399999998509884
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "browserRequestMs": 11.5
+      },
+      {
+        "operation": "/begin",
+        "status": 400,
+        "browserRequestMs": 111.59999999403954
+      }
+    ],
+    "ceremonySamples": [
+      {
+        "kind": "create",
+        "hostCeremonyWallMs": 6.9965000000001965
+      },
+      {
+        "kind": "create",
+        "hostCeremonyWallMs": 13.527700000000095
+      },
+      {
+        "kind": "get",
+        "hostCeremonyWallMs": 20.66070000000036
+      },
+      {
+        "kind": "get",
+        "hostCeremonyWallMs": 2.971400000000358
+      },
+      {
+        "kind": "get",
+        "hostCeremonyWallMs": 2.984599999999773
+      },
+      {
+        "kind": "get",
+        "hostCeremonyWallMs": 5.7039999999997235
+      },
+      {
+        "kind": "get",
+        "hostCeremonyWallMs": 20.326000000000022
+      },
+      {
+        "kind": "get",
+        "hostCeremonyWallMs": 62.72540000000026
+      },
+      {
+        "kind": "get",
+        "hostCeremonyWallMs": 6.093799999999646
+      },
+      {
+        "kind": "get",
+        "hostCeremonyWallMs": 5.30829999999969
+      },
+      {
+        "kind": "get",
+        "hostCeremonyWallMs": 4.145199999999932
+      },
+      {
+        "kind": "get",
+        "hostCeremonyWallMs": 5.673099999999977
+      },
+      {
+        "kind": "get",
+        "hostCeremonyWallMs": 3.7062000000005355
+      },
+      {
+        "kind": "get",
+        "hostCeremonyWallMs": 6.650200000000041
+      },
+      {
+        "kind": "get",
+        "hostCeremonyWallMs": 5.340500000000247
+      },
+      {
+        "kind": "get",
+        "hostCeremonyWallMs": 5.925600000000486
+      },
+      {
+        "kind": "get",
+        "hostCeremonyWallMs": 3.395100000000639
+      },
+      {
+        "kind": "get",
+        "hostCeremonyWallMs": 8.203400000000329
+      },
+      {
+        "kind": "get",
+        "hostCeremonyWallMs": 4.27139999999963
+      }
+    ],
+    "blocked": [
+      "physical security key",
+      "platform authenticator",
+      "Firefox",
+      "WebKit",
+      "deployed Worker CPU / Free qualification"
+    ],
+    "cpuCaveat": "hostDriverCpuMs covers Node driver only; neither browser latency nor host wall time is deployed Worker CPU"
+  },
+  "management": {
+    "passed": 17,
+    "checks": [
+      "admission contention: exactly remaining get allowance wins",
+      "all five fixed scopes count failures and cap atomically",
+      "all five backward admission windows fail closed and preserve buckets",
+      "shared account exhaustion cannot be escaped with caller-controlled authority",
+      "revoke-all persists across restart rejecting old sessions and unused challenges",
+      "forced authentication-first then revoke invalidates issued session",
+      "forced revoke-first ordering at post-verification barrier",
+      "multiple concurrent revoke-all: one authorized winner, one event",
+      "authentication racing cleanup retains live challenge and creates valid session",
+      "logout and expiry invalidate sessions and pending enrollment authority",
+      "audit failure rolls back revoke epoch and leaves session usable",
+      "database admission failure fails closed before challenge creation",
+      "offline reset audit failure rolls back epoch key generation and bootstrap",
+      "cleanup bound, holds, grace, concurrent cleanup and resume after rollback",
+      "credential revocation rejects racing authentication sessions and pending challenges",
+      "offline reset is constant-size, rotates key epoch, and needs two fresh keys",
+      "pristine dispatcher exposes no maintenance/recovery routes or SQL metadata"
+    ],
+    "evidence": "C:\\Users\\WIN10\\Desktop\\qy-c1-bazi-consultation-development\\.local-c1-package-step2db2a-pkKWXQ",
+    "node": "v24.20.0",
+    "versions": {
+      "miniflare": "5.20261006.1-alpha",
+      "workerd": "1.20261006.1"
+    },
+    "growth": [
+      {
+        "insertedPerTable": 100,
+        "seeded": {
+          "sessions": 121,
+          "challenges": 135,
+          "databaseMetadata": {
+            "served_by": "miniflare.db",
+            "duration": 0,
+            "changes": 0,
+            "last_row_id": 122,
+            "changed_db": false,
+            "size_after": 81920,
+            "rows_read": 121,
+            "rows_written": 0
+          }
+        },
+        "sessions": 22,
+        "challenges": 36
+      },
+      {
+        "insertedPerTable": 1000,
+        "seeded": {
+          "sessions": 1022,
+          "challenges": 1036,
+          "databaseMetadata": {
+            "served_by": "miniflare.db",
+            "duration": 0,
+            "changes": 0,
+            "last_row_id": 1123,
+            "changed_db": false,
+            "size_after": 253952,
+            "rows_read": 1022,
+            "rows_written": 0
+          }
+        },
+        "sessions": 23,
+        "challenges": 37
+      },
+      {
+        "insertedPerTable": 10000,
+        "seeded": {
+          "sessions": 10023,
+          "challenges": 10037,
+          "databaseMetadata": {
+            "served_by": "miniflare.db",
+            "duration": 0,
+            "changes": 0,
+            "last_row_id": 11124,
+            "changed_db": false,
+            "size_after": 1806336,
+            "rows_read": 10023,
+            "rows_written": 0
+          }
+        },
+        "sessions": 9024,
+        "challenges": 9038
+      }
+    ],
+    "summary": [
+      {
+        "operation": "rate contention",
+        "n": 24,
+        "wallMs": {
+          "p50": 172.668,
+          "p95": 201.375,
+          "max": 204.4126
+        },
+        "hostDriverCpuMs": {
+          "p50": 93,
+          "p95": 109,
+          "max": 109
+        },
+        "statements": {
+          "p50": 1,
+          "p95": 5,
+          "max": 5
+        },
+        "rowsRead": {
+          "p50": 2,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 6,
+          "max": 6
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 1,
+          "max": 1
+        }
+      },
+      {
+        "operation": "rate rejected get",
+        "n": 1,
+        "wallMs": {
+          "p50": 10.4861,
+          "p95": 10.4861,
+          "max": 10.4861
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        },
+        "rowsRead": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "rate rejected create",
+        "n": 1,
+        "wallMs": {
+          "p50": 7.2825,
+          "p95": 7.2825,
+          "max": 7.2825
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        },
+        "rowsRead": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "rate rejected finish",
+        "n": 1,
+        "wallMs": {
+          "p50": 8.9949,
+          "p95": 8.9949,
+          "max": 8.9949
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        },
+        "rowsRead": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "rate rejected control",
+        "n": 1,
+        "wallMs": {
+          "p50": 6.9023,
+          "p95": 6.9023,
+          "max": 6.9023
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        },
+        "rowsRead": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "rate rejected session",
+        "n": 1,
+        "wallMs": {
+          "p50": 5.984,
+          "p95": 5.984,
+          "max": 5.984
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        },
+        "rowsRead": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "backward window get",
+        "n": 2,
+        "wallMs": {
+          "p50": 6.5326,
+          "p95": 6.8315,
+          "max": 6.8315
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 16,
+          "max": 16
+        },
+        "statements": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        },
+        "rowsRead": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 1,
+          "max": 1
+        }
+      },
+      {
+        "operation": "backward window create",
+        "n": 2,
+        "wallMs": {
+          "p50": 7.2715,
+          "p95": 7.2817,
+          "max": 7.2817
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 31,
+          "max": 31
+        },
+        "statements": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        },
+        "rowsRead": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 1,
+          "max": 1
+        }
+      },
+      {
+        "operation": "backward window finish",
+        "n": 2,
+        "wallMs": {
+          "p50": 6.535,
+          "p95": 7.3677,
+          "max": 7.3677
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        },
+        "rowsRead": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "backward window control",
+        "n": 2,
+        "wallMs": {
+          "p50": 6.5318,
+          "p95": 7.3262,
+          "max": 7.3262
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        },
+        "rowsRead": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "backward window session",
+        "n": 2,
+        "wallMs": {
+          "p50": 9.4198,
+          "p95": 10.8547,
+          "max": 10.8547
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 31,
+          "max": 31
+        },
+        "statements": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        },
+        "rowsRead": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "forced auth first",
+        "n": 1,
+        "wallMs": {
+          "p50": 19.8976,
+          "p95": 19.8976,
+          "max": 19.8976
+        },
+        "hostDriverCpuMs": {
+          "p50": 16,
+          "p95": 16,
+          "max": 16
+        },
+        "statements": {
+          "p50": 8,
+          "p95": 8,
+          "max": 8
+        },
+        "rowsRead": {
+          "p50": 16,
+          "p95": 16,
+          "max": 16
+        },
+        "rowsWritten": {
+          "p50": 8,
+          "p95": 8,
+          "max": 8
+        },
+        "d1DurationMs": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        }
+      },
+      {
+        "operation": "forced stale auth",
+        "n": 1,
+        "wallMs": {
+          "p50": 75.7829,
+          "p95": 75.7829,
+          "max": 75.7829
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 8,
+          "p95": 8,
+          "max": 8
+        },
+        "rowsRead": {
+          "p50": 6,
+          "p95": 6,
+          "max": 6
+        },
+        "rowsWritten": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        },
+        "d1DurationMs": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        }
+      },
+      {
+        "operation": "concurrent revoke",
+        "n": 8,
+        "wallMs": {
+          "p50": 80.4489,
+          "p95": 81.2552,
+          "max": 81.2552
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 5,
+          "p95": 5,
+          "max": 5
+        },
+        "rowsRead": {
+          "p50": 2,
+          "p95": 9,
+          "max": 9
+        },
+        "rowsWritten": {
+          "p50": 1,
+          "p95": 6,
+          "max": 6
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 2,
+          "max": 2
+        }
+      },
+      {
+        "operation": "cleanup",
+        "n": 5,
+        "wallMs": {
+          "p50": 7.3697,
+          "p95": 28.1922,
+          "max": 28.1922
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 4,
+          "p95": 4,
+          "max": 4
+        },
+        "rowsRead": {
+          "p50": 207,
+          "p95": 416,
+          "max": 416
+        },
+        "rowsWritten": {
+          "p50": 50,
+          "p95": 103,
+          "max": 103
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 2,
+          "max": 2
+        }
+      },
+      {
+        "operation": "auth cleanup",
+        "n": 1,
+        "wallMs": {
+          "p50": 35.6047,
+          "p95": 35.6047,
+          "max": 35.6047
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 8,
+          "p95": 8,
+          "max": 8
+        },
+        "rowsRead": {
+          "p50": 15,
+          "p95": 15,
+          "max": 15
+        },
+        "rowsWritten": {
+          "p50": 9,
+          "p95": 9,
+          "max": 9
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "admission DB failure",
+        "n": 1,
+        "wallMs": {
+          "p50": 10.4338,
+          "p95": 10.4338,
+          "max": 10.4338
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        },
+        "rowsRead": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "limited login begin",
+        "n": 10,
+        "wallMs": {
+          "p50": 8.3098,
+          "p95": 12.3993,
+          "max": 12.3993
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 16,
+          "max": 16
+        },
+        "statements": {
+          "p50": 5,
+          "p95": 5,
+          "max": 5
+        },
+        "rowsRead": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsWritten": {
+          "p50": 6,
+          "p95": 7,
+          "max": 7
+        },
+        "d1DurationMs": {
+          "p50": 1,
+          "p95": 2,
+          "max": 2
+        }
+      },
+      {
+        "operation": "limited login finish",
+        "n": 10,
+        "wallMs": {
+          "p50": 10.4947,
+          "p95": 13.7612,
+          "max": 13.7612
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 15,
+          "max": 15
+        },
+        "statements": {
+          "p50": 8,
+          "p95": 8,
+          "max": 8
+        },
+        "rowsRead": {
+          "p50": 16,
+          "p95": 16,
+          "max": 16
+        },
+        "rowsWritten": {
+          "p50": 8,
+          "p95": 9,
+          "max": 9
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 2,
+          "max": 2
+        }
+      },
+      {
+        "operation": "limited session read",
+        "n": 10,
+        "wallMs": {
+          "p50": 5.9645,
+          "p95": 7.6513,
+          "max": 7.6513
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 15,
+          "max": 15
+        },
+        "statements": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsRead": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsWritten": {
+          "p50": 1,
+          "p95": 2,
+          "max": 2
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 1,
+          "max": 1
+        }
+      },
+      {
+        "operation": "limited logout",
+        "n": 10,
+        "wallMs": {
+          "p50": 6.3697,
+          "p95": 9.6947,
+          "max": 9.6947
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 47,
+          "max": 47
+        },
+        "statements": {
+          "p50": 5,
+          "p95": 5,
+          "max": 5
+        },
+        "rowsRead": {
+          "p50": 9,
+          "p95": 9,
+          "max": 9
+        },
+        "rowsWritten": {
+          "p50": 6,
+          "p95": 7,
+          "max": 7
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 1,
+          "max": 1
+        }
+      },
+      {
+        "operation": "growth revoke 100",
+        "n": 1,
+        "wallMs": {
+          "p50": 6.9087,
+          "p95": 6.9087,
+          "max": 6.9087
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 5,
+          "p95": 5,
+          "max": 5
+        },
+        "rowsRead": {
+          "p50": 8,
+          "p95": 8,
+          "max": 8
+        },
+        "rowsWritten": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "d1DurationMs": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        }
+      },
+      {
+        "operation": "growth cleanup 100",
+        "n": 10,
+        "wallMs": {
+          "p50": 5.0736,
+          "p95": 7.6321,
+          "max": 7.6321
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 16,
+          "max": 16
+        },
+        "statements": {
+          "p50": 4,
+          "p95": 4,
+          "max": 4
+        },
+        "rowsRead": {
+          "p50": 10,
+          "p95": 806,
+          "max": 806
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 200,
+          "max": 200
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 1,
+          "max": 1
+        }
+      },
+      {
+        "operation": "growth revoke 1000",
+        "n": 1,
+        "wallMs": {
+          "p50": 6.2308,
+          "p95": 6.2308,
+          "max": 6.2308
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 5,
+          "p95": 5,
+          "max": 5
+        },
+        "rowsRead": {
+          "p50": 8,
+          "p95": 8,
+          "max": 8
+        },
+        "rowsWritten": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "growth cleanup 1000",
+        "n": 10,
+        "wallMs": {
+          "p50": 6.5915,
+          "p95": 8.6284,
+          "max": 8.6284
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 16,
+          "max": 16
+        },
+        "statements": {
+          "p50": 4,
+          "p95": 4,
+          "max": 4
+        },
+        "rowsRead": {
+          "p50": 806,
+          "p95": 806,
+          "max": 806
+        },
+        "rowsWritten": {
+          "p50": 200,
+          "p95": 200,
+          "max": 200
+        },
+        "d1DurationMs": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        }
+      },
+      {
+        "operation": "growth revoke 10000",
+        "n": 1,
+        "wallMs": {
+          "p50": 6.2036,
+          "p95": 6.2036,
+          "max": 6.2036
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 5,
+          "p95": 5,
+          "max": 5
+        },
+        "rowsRead": {
+          "p50": 8,
+          "p95": 8,
+          "max": 8
+        },
+        "rowsWritten": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "growth cleanup 10000",
+        "n": 10,
+        "wallMs": {
+          "p50": 6.1203,
+          "p95": 13.6747,
+          "max": 13.6747
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 16,
+          "max": 16
+        },
+        "statements": {
+          "p50": 4,
+          "p95": 4,
+          "max": 4
+        },
+        "rowsRead": {
+          "p50": 806,
+          "p95": 806,
+          "max": 806
+        },
+        "rowsWritten": {
+          "p50": 200,
+          "p95": 200,
+          "max": 200
+        },
+        "d1DurationMs": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        }
+      },
+      {
+        "operation": "credential revoke racing auth",
+        "n": 1,
+        "wallMs": {
+          "p50": 69.8997,
+          "p95": 69.8997,
+          "max": 69.8997
+        },
+        "hostDriverCpuMs": {
+          "p50": 31,
+          "p95": 31,
+          "max": 31
+        },
+        "statements": {
+          "p50": 8,
+          "p95": 8,
+          "max": 8
+        },
+        "rowsRead": {
+          "p50": 6,
+          "p95": 6,
+          "max": 6
+        },
+        "rowsWritten": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "offline reset growth",
+        "n": 1,
+        "wallMs": {
+          "p50": 7.1219,
+          "p95": 7.1219,
+          "max": 7.1219
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 4,
+          "p95": 4,
+          "max": 4
+        },
+        "rowsRead": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsWritten": {
+          "p50": 5,
+          "p95": 5,
+          "max": 5
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      }
+    ],
+    "samples": [
+      {
+        "operation": "rate contention",
+        "status": 400,
+        "wallMs": 144.7167,
+        "hostDriverCpuMs": 78,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 400,
+        "wallMs": 144.9225,
+        "hostDriverCpuMs": 78,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 400,
+        "wallMs": 145.0375,
+        "hostDriverCpuMs": 78,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 400,
+        "wallMs": 145.1241,
+        "hostDriverCpuMs": 78,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 400,
+        "wallMs": 145.2188,
+        "hostDriverCpuMs": 78,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 400,
+        "wallMs": 145.3466,
+        "hostDriverCpuMs": 78,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 400,
+        "wallMs": 145.4366,
+        "hostDriverCpuMs": 78,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 400,
+        "wallMs": 145.4991,
+        "hostDriverCpuMs": 78,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 400,
+        "wallMs": 145.5649,
+        "hostDriverCpuMs": 78,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 400,
+        "wallMs": 145.7655,
+        "hostDriverCpuMs": 78,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 400,
+        "wallMs": 172.5591,
+        "hostDriverCpuMs": 93,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 400,
+        "wallMs": 172.668,
+        "hostDriverCpuMs": 93,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 400,
+        "wallMs": 173.5507,
+        "hostDriverCpuMs": 93,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 400,
+        "wallMs": 173.6469,
+        "hostDriverCpuMs": 93,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 400,
+        "wallMs": 173.7567,
+        "hostDriverCpuMs": 93,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 400,
+        "wallMs": 173.8128,
+        "hostDriverCpuMs": 93,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 400,
+        "wallMs": 173.9104,
+        "hostDriverCpuMs": 93,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 400,
+        "wallMs": 173.9636,
+        "hostDriverCpuMs": 93,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 400,
+        "wallMs": 174.0152,
+        "hostDriverCpuMs": 93,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 200,
+        "wallMs": 194.3274,
+        "hostDriverCpuMs": 93,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 200,
+        "wallMs": 194.394,
+        "hostDriverCpuMs": 93,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 200,
+        "wallMs": 201.2353,
+        "hostDriverCpuMs": 109,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 200,
+        "wallMs": 201.375,
+        "hostDriverCpuMs": 109,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate contention",
+        "status": 200,
+        "wallMs": 204.4126,
+        "hostDriverCpuMs": 109,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate rejected get",
+        "status": 400,
+        "wallMs": 10.4861,
+        "hostDriverCpuMs": 0,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate rejected create",
+        "status": 400,
+        "wallMs": 7.2825,
+        "hostDriverCpuMs": 0,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate rejected finish",
+        "status": 400,
+        "wallMs": 8.9949,
+        "hostDriverCpuMs": 0,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate rejected control",
+        "status": 400,
+        "wallMs": 6.9023,
+        "hostDriverCpuMs": 0,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "rate rejected session",
+        "status": 400,
+        "wallMs": 5.984,
+        "hostDriverCpuMs": 0,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "backward window get",
+        "status": 400,
+        "wallMs": 6.5326,
+        "hostDriverCpuMs": 0,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "backward window get",
+        "status": 400,
+        "wallMs": 6.8315,
+        "hostDriverCpuMs": 16,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "backward window create",
+        "status": 400,
+        "wallMs": 7.2715,
+        "hostDriverCpuMs": 31,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "backward window create",
+        "status": 400,
+        "wallMs": 7.2817,
+        "hostDriverCpuMs": 0,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "backward window finish",
+        "status": 400,
+        "wallMs": 6.535,
+        "hostDriverCpuMs": 0,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "backward window finish",
+        "status": 400,
+        "wallMs": 7.3677,
+        "hostDriverCpuMs": 0,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "backward window control",
+        "status": 400,
+        "wallMs": 6.5318,
+        "hostDriverCpuMs": 0,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "backward window control",
+        "status": 400,
+        "wallMs": 7.3262,
+        "hostDriverCpuMs": 0,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "backward window session",
+        "status": 400,
+        "wallMs": 10.8547,
+        "hostDriverCpuMs": 31,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "backward window session",
+        "status": 400,
+        "wallMs": 9.4198,
+        "hostDriverCpuMs": 0,
+        "statements": 1,
+        "rowsRead": 2,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "forced auth first",
+        "status": 200,
+        "wallMs": 19.8976,
+        "hostDriverCpuMs": 16,
+        "statements": 8,
+        "rowsRead": 16,
+        "rowsWritten": 8,
+        "d1DurationMs": 2,
+        "metadataComplete": true
+      },
+      {
+        "operation": "forced stale auth",
+        "status": 400,
+        "wallMs": 75.7829,
+        "hostDriverCpuMs": 0,
+        "statements": 8,
+        "rowsRead": 6,
+        "rowsWritten": 1,
+        "d1DurationMs": 1,
+        "metadataComplete": false
+      },
+      {
+        "operation": "concurrent revoke",
+        "status": 200,
+        "wallMs": 39.7877,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 9,
+        "rowsWritten": 6,
+        "d1DurationMs": 2,
+        "metadataComplete": true
+      },
+      {
+        "operation": "concurrent revoke",
+        "status": 400,
+        "wallMs": 80.2933,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 2,
+        "rowsWritten": 1,
+        "d1DurationMs": 1,
+        "metadataComplete": false
+      },
+      {
+        "operation": "concurrent revoke",
+        "status": 400,
+        "wallMs": 80.3855,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 2,
+        "rowsWritten": 1,
+        "d1DurationMs": 1,
+        "metadataComplete": false
+      },
+      {
+        "operation": "concurrent revoke",
+        "status": 400,
+        "wallMs": 80.4489,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 2,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": false
+      },
+      {
+        "operation": "concurrent revoke",
+        "status": 400,
+        "wallMs": 80.5363,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 2,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": false
+      },
+      {
+        "operation": "concurrent revoke",
+        "status": 400,
+        "wallMs": 80.5896,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 2,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": false
+      },
+      {
+        "operation": "concurrent revoke",
+        "status": 400,
+        "wallMs": 81.1591,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 2,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": false
+      },
+      {
+        "operation": "concurrent revoke",
+        "status": 400,
+        "wallMs": 81.2552,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 2,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": false
+      },
+      {
+        "operation": "cleanup",
+        "status": 200,
+        "wallMs": 7.3697,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 9,
+        "rowsWritten": 0,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "auth cleanup",
+        "status": 200,
+        "wallMs": 35.6047,
+        "hostDriverCpuMs": 0,
+        "statements": 8,
+        "rowsRead": 15,
+        "rowsWritten": 9,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "admission DB failure",
+        "status": 400,
+        "wallMs": 10.4338,
+        "hostDriverCpuMs": 0,
+        "statements": 1,
+        "rowsRead": 0,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": false
+      },
+      {
+        "operation": "cleanup",
+        "status": 200,
+        "wallMs": 6.1804,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 416,
+        "rowsWritten": 103,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "cleanup",
+        "status": 200,
+        "wallMs": 9.4497,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 406,
+        "rowsWritten": 100,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "cleanup",
+        "status": 200,
+        "wallMs": 28.1922,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 207,
+        "rowsWritten": 50,
+        "d1DurationMs": 2,
+        "metadataComplete": true
+      },
+      {
+        "operation": "cleanup",
+        "status": 200,
+        "wallMs": 5.1524,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 8,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited login begin",
+        "status": 200,
+        "wallMs": 12.3993,
+        "hostDriverCpuMs": 16,
+        "statements": 5,
+        "rowsRead": 6,
+        "rowsWritten": 7,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited login finish",
+        "status": 200,
+        "wallMs": 13.7612,
+        "hostDriverCpuMs": 0,
+        "statements": 8,
+        "rowsRead": 15,
+        "rowsWritten": 9,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited session read",
+        "status": 200,
+        "wallMs": 6.9807,
+        "hostDriverCpuMs": 0,
+        "statements": 2,
+        "rowsRead": 6,
+        "rowsWritten": 2,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited logout",
+        "status": 200,
+        "wallMs": 6.8342,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 8,
+        "rowsWritten": 7,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited login begin",
+        "status": 200,
+        "wallMs": 11.2817,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 2,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited login finish",
+        "status": 200,
+        "wallMs": 10.3556,
+        "hostDriverCpuMs": 0,
+        "statements": 8,
+        "rowsRead": 16,
+        "rowsWritten": 8,
+        "d1DurationMs": 2,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited session read",
+        "status": 200,
+        "wallMs": 6.267,
+        "hostDriverCpuMs": 15,
+        "statements": 2,
+        "rowsRead": 7,
+        "rowsWritten": 1,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited logout",
+        "status": 200,
+        "wallMs": 5.9424,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 9,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited login begin",
+        "status": 200,
+        "wallMs": 8.3098,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited login finish",
+        "status": 200,
+        "wallMs": 12.2056,
+        "hostDriverCpuMs": 0,
+        "statements": 8,
+        "rowsRead": 16,
+        "rowsWritten": 8,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited session read",
+        "status": 200,
+        "wallMs": 5.8341,
+        "hostDriverCpuMs": 0,
+        "statements": 2,
+        "rowsRead": 7,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited logout",
+        "status": 200,
+        "wallMs": 5.7965,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 9,
+        "rowsWritten": 6,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited login begin",
+        "status": 200,
+        "wallMs": 8.4171,
+        "hostDriverCpuMs": 16,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited login finish",
+        "status": 200,
+        "wallMs": 10.4947,
+        "hostDriverCpuMs": 0,
+        "statements": 8,
+        "rowsRead": 16,
+        "rowsWritten": 8,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited session read",
+        "status": 200,
+        "wallMs": 6.3988,
+        "hostDriverCpuMs": 0,
+        "statements": 2,
+        "rowsRead": 7,
+        "rowsWritten": 1,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited logout",
+        "status": 200,
+        "wallMs": 8.057,
+        "hostDriverCpuMs": 47,
+        "statements": 5,
+        "rowsRead": 9,
+        "rowsWritten": 6,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited login begin",
+        "status": 200,
+        "wallMs": 9.0672,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited login finish",
+        "status": 200,
+        "wallMs": 10.3521,
+        "hostDriverCpuMs": 0,
+        "statements": 8,
+        "rowsRead": 16,
+        "rowsWritten": 8,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited session read",
+        "status": 200,
+        "wallMs": 5.8697,
+        "hostDriverCpuMs": 0,
+        "statements": 2,
+        "rowsRead": 7,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited logout",
+        "status": 200,
+        "wallMs": 9.6947,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 9,
+        "rowsWritten": 6,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited login begin",
+        "status": 200,
+        "wallMs": 7.5726,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited login finish",
+        "status": 200,
+        "wallMs": 11.135,
+        "hostDriverCpuMs": 0,
+        "statements": 8,
+        "rowsRead": 16,
+        "rowsWritten": 8,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited session read",
+        "status": 200,
+        "wallMs": 5.8161,
+        "hostDriverCpuMs": 0,
+        "statements": 2,
+        "rowsRead": 7,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited logout",
+        "status": 200,
+        "wallMs": 6.3697,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 9,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited login begin",
+        "status": 200,
+        "wallMs": 7.9772,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited login finish",
+        "status": 200,
+        "wallMs": 9.955,
+        "hostDriverCpuMs": 0,
+        "statements": 8,
+        "rowsRead": 16,
+        "rowsWritten": 8,
+        "d1DurationMs": 2,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited session read",
+        "status": 200,
+        "wallMs": 5.5407,
+        "hostDriverCpuMs": 0,
+        "statements": 2,
+        "rowsRead": 7,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited logout",
+        "status": 200,
+        "wallMs": 6.0219,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 9,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited login begin",
+        "status": 200,
+        "wallMs": 7.9022,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited login finish",
+        "status": 200,
+        "wallMs": 10.8944,
+        "hostDriverCpuMs": 0,
+        "statements": 8,
+        "rowsRead": 16,
+        "rowsWritten": 8,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited session read",
+        "status": 200,
+        "wallMs": 7.6513,
+        "hostDriverCpuMs": 0,
+        "statements": 2,
+        "rowsRead": 7,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited logout",
+        "status": 200,
+        "wallMs": 7.413,
+        "hostDriverCpuMs": 15,
+        "statements": 5,
+        "rowsRead": 9,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited login begin",
+        "status": 200,
+        "wallMs": 7.5592,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited login finish",
+        "status": 200,
+        "wallMs": 10.5817,
+        "hostDriverCpuMs": 15,
+        "statements": 8,
+        "rowsRead": 16,
+        "rowsWritten": 8,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited session read",
+        "status": 200,
+        "wallMs": 7.4328,
+        "hostDriverCpuMs": 0,
+        "statements": 2,
+        "rowsRead": 7,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited logout",
+        "status": 200,
+        "wallMs": 6.0853,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 9,
+        "rowsWritten": 6,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited login begin",
+        "status": 200,
+        "wallMs": 9.5465,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 7,
+        "rowsWritten": 6,
+        "d1DurationMs": 2,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited login finish",
+        "status": 200,
+        "wallMs": 9.5289,
+        "hostDriverCpuMs": 0,
+        "statements": 8,
+        "rowsRead": 16,
+        "rowsWritten": 8,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited session read",
+        "status": 200,
+        "wallMs": 5.9645,
+        "hostDriverCpuMs": 0,
+        "statements": 2,
+        "rowsRead": 7,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "limited logout",
+        "status": 200,
+        "wallMs": 6.4626,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 9,
+        "rowsWritten": 6,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth revoke 100",
+        "status": 200,
+        "wallMs": 6.9087,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 8,
+        "rowsWritten": 7,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 100",
+        "status": 200,
+        "wallMs": 7.6321,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 100",
+        "status": 200,
+        "wallMs": 5.0736,
+        "hostDriverCpuMs": 15,
+        "statements": 4,
+        "rowsRead": 10,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 100",
+        "status": 200,
+        "wallMs": 5.3858,
+        "hostDriverCpuMs": 16,
+        "statements": 4,
+        "rowsRead": 10,
+        "rowsWritten": 0,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 100",
+        "status": 200,
+        "wallMs": 4.9009,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 10,
+        "rowsWritten": 0,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 100",
+        "status": 200,
+        "wallMs": 4.5219,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 10,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 100",
+        "status": 200,
+        "wallMs": 5.2444,
+        "hostDriverCpuMs": 16,
+        "statements": 4,
+        "rowsRead": 10,
+        "rowsWritten": 0,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 100",
+        "status": 200,
+        "wallMs": 4.8795,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 10,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 100",
+        "status": 200,
+        "wallMs": 5.2617,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 10,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 100",
+        "status": 200,
+        "wallMs": 5.0703,
+        "hostDriverCpuMs": 15,
+        "statements": 4,
+        "rowsRead": 10,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 100",
+        "status": 200,
+        "wallMs": 5.3549,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 10,
+        "rowsWritten": 0,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth revoke 1000",
+        "status": 200,
+        "wallMs": 6.2308,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 8,
+        "rowsWritten": 7,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 1000",
+        "status": 200,
+        "wallMs": 8.4322,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 1000",
+        "status": 200,
+        "wallMs": 6.5823,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 1000",
+        "status": 200,
+        "wallMs": 6.4841,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 1000",
+        "status": 200,
+        "wallMs": 8.6284,
+        "hostDriverCpuMs": 16,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 1000",
+        "status": 200,
+        "wallMs": 8.016,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 1000",
+        "status": 200,
+        "wallMs": 6.5915,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 1000",
+        "status": 200,
+        "wallMs": 7.0527,
+        "hostDriverCpuMs": 16,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 1000",
+        "status": 200,
+        "wallMs": 6.9766,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 1000",
+        "status": 200,
+        "wallMs": 6.1073,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 1000",
+        "status": 200,
+        "wallMs": 6.5547,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth revoke 10000",
+        "status": 200,
+        "wallMs": 6.2036,
+        "hostDriverCpuMs": 0,
+        "statements": 5,
+        "rowsRead": 8,
+        "rowsWritten": 7,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 10000",
+        "status": 200,
+        "wallMs": 13.6747,
+        "hostDriverCpuMs": 15,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 10000",
+        "status": 200,
+        "wallMs": 6.1657,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 10000",
+        "status": 200,
+        "wallMs": 6.1203,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 10000",
+        "status": 200,
+        "wallMs": 5.7265,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 10000",
+        "status": 200,
+        "wallMs": 6.3678,
+        "hostDriverCpuMs": 16,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 10000",
+        "status": 200,
+        "wallMs": 5.6944,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 10000",
+        "status": 200,
+        "wallMs": 4.609,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 10000",
+        "status": 200,
+        "wallMs": 4.8107,
+        "hostDriverCpuMs": 16,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 10000",
+        "status": 200,
+        "wallMs": 6.3955,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 1,
+        "metadataComplete": true
+      },
+      {
+        "operation": "growth cleanup 10000",
+        "status": 200,
+        "wallMs": 6.4249,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 806,
+        "rowsWritten": 200,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      },
+      {
+        "operation": "credential revoke racing auth",
+        "status": 400,
+        "wallMs": 69.8997,
+        "hostDriverCpuMs": 31,
+        "statements": 8,
+        "rowsRead": 6,
+        "rowsWritten": 1,
+        "d1DurationMs": 0,
+        "metadataComplete": false
+      },
+      {
+        "operation": "offline reset growth",
+        "status": 200,
+        "wallMs": 7.1219,
+        "hostDriverCpuMs": 0,
+        "statements": 4,
+        "rowsRead": 2,
+        "rowsWritten": 5,
+        "d1DurationMs": 0,
+        "metadataComplete": true
+      }
+    ],
+    "method": "Local workerd/D1 only. Barrier tests include harness overhead; growth profiling has no barrier. Metrics/maintenance dispatcher routes injected only in harness. Setup, fixture signing and inspections excluded. Statements are application submission attempts; failed batches have incomplete returned metadata. Node host CPU excludes workerd and is Windows-quantized. No deployed CPU or billing evidence."
+  },
+  "persistentD1": {
+    "passed": 65,
+    "checks": [
+      "only isolated binding and persistent schema",
+      "bootstrap required",
+      "two credentials required before login",
+      "registration rejects UV",
+      "registration rejects UP",
+      "registration rejects origin",
+      "registration rejects RP",
+      "registration rejects challenge",
+      "registration rejects algorithm",
+      "registration rejects crossOrigin",
+      "registration rejects duplicate JSON",
+      "first enrollment",
+      "registration replay",
+      "one key blocks login",
+      "distinct public keys required and failed insert rolls back challenge",
+      "concurrent second enrollments have one winner and close persisted bootstrap",
+      "pending bootstrap cannot enroll third key",
+      "bootstrap closed at begin",
+      "state survives workerd disposal and reopen",
+      "login rejects UV",
+      "login rejects RP",
+      "login rejects origin",
+      "login rejects user handle",
+      "login rejects zero counter",
+      "login rejects equal counter",
+      "login rejects typed crossOrigin",
+      "login rejects topOrigin",
+      "login rejects tokenBinding",
+      "signature tampering",
+      "valid ES256 login creates hashed session",
+      "sessions counters and pending challenges survive runtime reopen",
+      "challenge replay denied",
+      "challenge expiry",
+      "concurrent identical assertion exactly one winner",
+      "concurrent distinct challenges same counter exactly one winner",
+      "batch rollback after session insert SQL failure",
+      "session-authorized additional enrollment",
+      "logout invalidates pending enrollment authority",
+      "session expiry",
+      "enrollment authority expiry rechecked at completion",
+      "revoke-all invalidates sessions and pending challenges",
+      "unauthenticated revoke-all denied",
+      "concurrent login and revoke-all leave no usable old-epoch session",
+      "no recovery or reset HTTP surface",
+      "guard rows do not persist",
+      "deterministic post-verification identical replay races (25 rounds of four)",
+      "deterministic post-verification counter CAS races (25 rounds of four)",
+      "post-verification expiry fails without partial authentication state",
+      "post-verification credential revocation fails without partial authentication state",
+      "post-verification epoch fails without partial authentication state",
+      "quota-like query failure has incomplete metadata and safe explicit retry",
+      "quota-like atomic failure has incomplete metadata and safe explicit retry",
+      "real D1 standalone query error reports incomplete metadata",
+      "public input cannot activate the test barrier or reset routes",
+      "enrollment session expiry after verification prevents writes",
+      "bounded reader cancels chunked input early and enforces UTF-8 byte limits in workerd",
+      "regression wrapper has no test-control binding and authenticates normally",
+      "streaming HTTP size limit rejects oversized and malformed requests before D1",
+      "profile failed signature and SQL rollback paths with safe retries (100 each)",
+      "profile logout and revoke-all including growing retained history (100 each)",
+      "offline reset failure rolls back every table (100 profiled failures)",
+      "offline owner reset atomically revokes old keys sessions challenges and bootstrap",
+      "recovery still requires two fresh credentials",
+      "old credentials fail after recovery and fresh UV key can login",
+      "profile successful offline resets over retained history (100 operations)"
+    ],
+    "node": "v24.20.0",
+    "versions": {
+      "miniflare": "5.20261006.1-alpha",
+      "workerd": "1.20261006.1"
+    },
+    "evidence": "C:\\Users\\WIN10\\Desktop\\qy-c1-bazi-consultation-development\\.local-c1-package-step2db1-tiKCus",
+    "method": "Actual local workerd; dedicated on-disk Miniflare D1. Barrier/boundary/injected groups use harness-only source instrumentation and Node service binding, so include test-control/wait overhead. Admission is independently tested in the management suite. Serial profiling reopens a regression wrapper with admission disabled and metrics restored, with NO test-control binding. Host wall includes dispatch and body consumption; combined begin+finish excludes synthetic signing. Nearest rank; no discarded warmup. statements counts submitted application SQL plans, NOT actual execution or internal transactions/retries/rollbacks. Offline resets use direct D1 driver binding with two plans; hashing/preparation excluded. D1 metadata is returned local rows/duration, not deployed billing or CPU. Failed batches/queries have metadataComplete=false and unavailable failed-operation metadata; only prior successful metadata retained. No automatic application retries; explicit retries are separate samples. hostDriverCpuMs is Node process user+system CPU, Windows quantized, excludes workerd subprocess; overlapping concurrent CPU is not additive. Workerd and deployed CPU unavailable. JSON groups measure full finish path, not isolated parser CPU.",
+    "summary": [
+      {
+        "operation": "registration finish",
+        "n": 101,
+        "wallMs": {
+          "p50": 7.5834,
+          "p95": 10.7582,
+          "max": 16.7671
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 16,
+          "max": 16
+        },
+        "statements": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsRead": {
+          "p50": 15,
+          "p95": 15,
+          "max": 15
+        },
+        "rowsWritten": {
+          "p50": 8,
+          "p95": 8,
+          "max": 8
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 2,
+          "max": 2
+        }
+      },
+      {
+        "operation": "login finish",
+        "n": 201,
+        "wallMs": {
+          "p50": 7.7706,
+          "p95": 11.4182,
+          "max": 26.0931
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 16,
+          "max": 78
+        },
+        "statements": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsRead": {
+          "p50": 14,
+          "p95": 14,
+          "max": 14
+        },
+        "rowsWritten": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 1,
+          "max": 2
+        }
+      },
+      {
+        "operation": "concurrent replay",
+        "n": 12,
+        "wallMs": {
+          "p50": 160.4605,
+          "p95": 181.3195,
+          "max": 181.3195
+        },
+        "hostDriverCpuMs": {
+          "p50": 30,
+          "p95": 78,
+          "max": 78
+        },
+        "statements": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsRead": {
+          "p50": 4,
+          "p95": 14,
+          "max": 14
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 7,
+          "max": 7
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 1,
+          "max": 1
+        }
+      },
+      {
+        "operation": "concurrent counter",
+        "n": 8,
+        "wallMs": {
+          "p50": 71.8014,
+          "p95": 91.1012,
+          "max": 91.1012
+        },
+        "hostDriverCpuMs": {
+          "p50": 46,
+          "p95": 46,
+          "max": 46
+        },
+        "statements": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsRead": {
+          "p50": 4,
+          "p95": 14,
+          "max": 14
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 7,
+          "max": 7
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 1,
+          "max": 1
+        }
+      },
+      {
+        "operation": "barrier replay",
+        "n": 100,
+        "wallMs": {
+          "p50": 79.3908,
+          "p95": 125.5574,
+          "max": 127.2764
+        },
+        "hostDriverCpuMs": {
+          "p50": 32,
+          "p95": 63,
+          "max": 109
+        },
+        "statements": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsRead": {
+          "p50": 4,
+          "p95": 14,
+          "max": 14
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 7,
+          "max": 7
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 1,
+          "max": 2
+        }
+      },
+      {
+        "operation": "barrier counter",
+        "n": 100,
+        "wallMs": {
+          "p50": 79.3531,
+          "p95": 109.6532,
+          "max": 124.4426
+        },
+        "hostDriverCpuMs": {
+          "p50": 31,
+          "p95": 63,
+          "max": 94
+        },
+        "statements": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsRead": {
+          "p50": 4,
+          "p95": 14,
+          "max": 14
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 7,
+          "max": 7
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 1,
+          "max": 2
+        }
+      },
+      {
+        "operation": "boundary expiry",
+        "n": 1,
+        "wallMs": {
+          "p50": 93.1755,
+          "p95": 93.1755,
+          "max": 93.1755
+        },
+        "hostDriverCpuMs": {
+          "p50": 31,
+          "p95": 31,
+          "max": 31
+        },
+        "statements": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsRead": {
+          "p50": 4,
+          "p95": 4,
+          "max": 4
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        }
+      },
+      {
+        "operation": "boundary credential revocation",
+        "n": 1,
+        "wallMs": {
+          "p50": 98.3761,
+          "p95": 98.3761,
+          "max": 98.3761
+        },
+        "hostDriverCpuMs": {
+          "p50": 46,
+          "p95": 46,
+          "max": 46
+        },
+        "statements": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsRead": {
+          "p50": 4,
+          "p95": 4,
+          "max": 4
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "boundary epoch",
+        "n": 1,
+        "wallMs": {
+          "p50": 88.4916,
+          "p95": 88.4916,
+          "max": 88.4916
+        },
+        "hostDriverCpuMs": {
+          "p50": 47,
+          "p95": 47,
+          "max": 47
+        },
+        "statements": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsRead": {
+          "p50": 4,
+          "p95": 4,
+          "max": 4
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "injected query failure",
+        "n": 1,
+        "wallMs": {
+          "p50": 3.9792,
+          "p95": 3.9792,
+          "max": 3.9792
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "rowsRead": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "explicit retry after query failure",
+        "n": 1,
+        "wallMs": {
+          "p50": 12.6356,
+          "p95": 12.6356,
+          "max": 12.6356
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsRead": {
+          "p50": 14,
+          "p95": 14,
+          "max": 14
+        },
+        "rowsWritten": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "injected atomic failure",
+        "n": 1,
+        "wallMs": {
+          "p50": 10.88,
+          "p95": 10.88,
+          "max": 10.88
+        },
+        "hostDriverCpuMs": {
+          "p50": 16,
+          "p95": 16,
+          "max": 16
+        },
+        "statements": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsRead": {
+          "p50": 4,
+          "p95": 4,
+          "max": 4
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "explicit retry after atomic failure",
+        "n": 1,
+        "wallMs": {
+          "p50": 13.3647,
+          "p95": 13.3647,
+          "max": 13.3647
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsRead": {
+          "p50": 14,
+          "p95": 14,
+          "max": 14
+        },
+        "rowsWritten": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "d1DurationMs": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        }
+      },
+      {
+        "operation": "real query error",
+        "n": 1,
+        "wallMs": {
+          "p50": 8.7214,
+          "p95": 8.7214,
+          "max": 8.7214
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        },
+        "rowsRead": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "boundary enrollment session expiry",
+        "n": 1,
+        "wallMs": {
+          "p50": 94.883,
+          "p95": 94.883,
+          "max": 94.883
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsRead": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "registration begin",
+        "n": 100,
+        "wallMs": {
+          "p50": 5.7665,
+          "p95": 8.3319,
+          "max": 10.5111
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 16,
+          "max": 47
+        },
+        "statements": {
+          "p50": 4,
+          "p95": 4,
+          "max": 4
+        },
+        "rowsRead": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsWritten": {
+          "p50": 5,
+          "p95": 5,
+          "max": 5
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 1,
+          "max": 2
+        }
+      },
+      {
+        "operation": "registration begin + finish",
+        "n": 100,
+        "wallMs": {
+          "p50": 13.6035,
+          "p95": 18.1794,
+          "max": 22.5682
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 16,
+          "max": 47
+        },
+        "statements": {
+          "p50": 11,
+          "p95": 11,
+          "max": 11
+        },
+        "rowsRead": {
+          "p50": 22,
+          "p95": 22,
+          "max": 22
+        },
+        "rowsWritten": {
+          "p50": 13,
+          "p95": 13,
+          "max": 13
+        },
+        "d1DurationMs": {
+          "p50": 1,
+          "p95": 2,
+          "max": 3
+        }
+      },
+      {
+        "operation": "login begin",
+        "n": 100,
+        "wallMs": {
+          "p50": 5.7475,
+          "p95": 8.0551,
+          "max": 11.2622
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 15,
+          "max": 16
+        },
+        "statements": {
+          "p50": 4,
+          "p95": 4,
+          "max": 4
+        },
+        "rowsRead": {
+          "p50": 5,
+          "p95": 5,
+          "max": 5
+        },
+        "rowsWritten": {
+          "p50": 5,
+          "p95": 5,
+          "max": 5
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 1,
+          "max": 2
+        }
+      },
+      {
+        "operation": "login begin + finish",
+        "n": 100,
+        "wallMs": {
+          "p50": 13.725200000000001,
+          "p95": 18.827199999999998,
+          "max": 27.031799999999997
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 16,
+          "max": 63
+        },
+        "statements": {
+          "p50": 11,
+          "p95": 11,
+          "max": 11
+        },
+        "rowsRead": {
+          "p50": 19,
+          "p95": 19,
+          "max": 19
+        },
+        "rowsWritten": {
+          "p50": 12,
+          "p95": 12,
+          "max": 12
+        },
+        "d1DurationMs": {
+          "p50": 1,
+          "p95": 2,
+          "max": 4
+        }
+      },
+      {
+        "operation": "JSON valid",
+        "n": 100,
+        "wallMs": {
+          "p50": 7.6099,
+          "p95": 10.8105,
+          "max": 13.1913
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 16,
+          "max": 16
+        },
+        "statements": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsRead": {
+          "p50": 14,
+          "p95": 14,
+          "max": 14
+        },
+        "rowsWritten": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 2,
+          "max": 3
+        }
+      },
+      {
+        "operation": "JSON duplicate",
+        "n": 100,
+        "wallMs": {
+          "p50": 5.1667,
+          "p95": 6.6607,
+          "max": 16.1585
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 16,
+          "max": 47
+        },
+        "statements": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsRead": {
+          "p50": 4,
+          "p95": 4,
+          "max": 4
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 1,
+          "max": 1
+        }
+      },
+      {
+        "operation": "JSON bounded nested",
+        "n": 100,
+        "wallMs": {
+          "p50": 7.5816,
+          "p95": 11.587,
+          "max": 22.4844
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 16
+        },
+        "statements": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsRead": {
+          "p50": 14,
+          "p95": 14,
+          "max": 14
+        },
+        "rowsWritten": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 2,
+          "max": 3
+        }
+      },
+      {
+        "operation": "invalid signature",
+        "n": 100,
+        "wallMs": {
+          "p50": 6.0372,
+          "p95": 9.3577,
+          "max": 29.4535
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 16,
+          "max": 47
+        },
+        "statements": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsRead": {
+          "p50": 4,
+          "p95": 4,
+          "max": 4
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 1,
+          "max": 1
+        }
+      },
+      {
+        "operation": "session insert rollback",
+        "n": 100,
+        "wallMs": {
+          "p50": 10.9689,
+          "p95": 15.6789,
+          "max": 23.8271
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 15,
+          "max": 31
+        },
+        "statements": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsRead": {
+          "p50": 4,
+          "p95": 4,
+          "max": 4
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 1,
+          "max": 2
+        }
+      },
+      {
+        "operation": "retry after session rollback",
+        "n": 100,
+        "wallMs": {
+          "p50": 8.8069,
+          "p95": 11.8211,
+          "max": 14.0274
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 16,
+          "max": 16
+        },
+        "statements": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsRead": {
+          "p50": 14,
+          "p95": 14,
+          "max": 14
+        },
+        "rowsWritten": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "d1DurationMs": {
+          "p50": 1,
+          "p95": 2,
+          "max": 3
+        }
+      },
+      {
+        "operation": "logout",
+        "n": 100,
+        "wallMs": {
+          "p50": 4.1528,
+          "p95": 5.8521,
+          "max": 7.4133
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 15,
+          "max": 16
+        },
+        "statements": {
+          "p50": 4,
+          "p95": 4,
+          "max": 4
+        },
+        "rowsRead": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsWritten": {
+          "p50": 5,
+          "p95": 5,
+          "max": 5
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 1,
+          "max": 1
+        }
+      },
+      {
+        "operation": "revoke-all",
+        "n": 100,
+        "wallMs": {
+          "p50": 4.9264,
+          "p95": 6.9937,
+          "max": 12.7515
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 16,
+          "max": 32
+        },
+        "statements": {
+          "p50": 4,
+          "p95": 4,
+          "max": 4
+        },
+        "rowsRead": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsWritten": {
+          "p50": 5,
+          "p95": 5,
+          "max": 5
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 1,
+          "max": 1
+        }
+      },
+      {
+        "operation": "offline reset rollback",
+        "n": 100,
+        "wallMs": {
+          "p50": 6.0636,
+          "p95": 8.0967,
+          "max": 12.1773
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 15,
+          "max": 16
+        },
+        "statements": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsRead": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        }
+      },
+      {
+        "operation": "offline reset success",
+        "n": 100,
+        "wallMs": {
+          "p50": 4.3716,
+          "p95": 5.5143,
+          "max": 19.7792
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 15,
+          "max": 32
+        },
+        "statements": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsRead": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsWritten": {
+          "p50": 3,
+          "p95": 3,
+          "max": 3
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 1,
+          "max": 1
+        }
+      }
+    ],
+    "rawSamples": ".local-c1-package-step2db2b-regression/d1.json"
+  },
+  "regressions": [
+    {
+      "exit": 0,
+      "name": "node"
+    },
+    {
+      "exit": 0,
+      "name": "workerd"
+    },
+    {
+      "exit": 0,
+      "name": "d1"
+    },
+    {
+      "exit": 0,
+      "name": "management"
+    },
+    {
+      "exit": 0,
+      "name": "repro"
+    },
+    {
+      "exit": 0,
+      "name": "acceptance"
+    },
+    {
+      "exit": 0,
+      "name": "pins"
+    }
+  ],
+  "acceptance": {
+    "results": [
+      {
+        "name": "pages",
+        "expected": 65,
+        "passed": 65,
+        "exit": 0,
+        "ok": true
+      },
+      {
+        "name": "pages-ui",
+        "expected": 11,
+        "passed": 11,
+        "exit": 0,
+        "ok": true
+      },
+      {
+        "name": "meetings",
+        "expected": 30,
+        "passed": 30,
+        "exit": 0,
+        "ok": true
+      },
+      {
+        "name": "account-stepup",
+        "expected": 248,
+        "passed": 248,
+        "exit": 0,
+        "ok": true
+      },
+      {
+        "name": "availability",
+        "expected": 48,
+        "passed": 48,
+        "exit": 0,
+        "ok": true
+      },
+      {
+        "name": "preferences",
+        "expected": 13,
+        "passed": 13,
+        "exit": 0,
+        "ok": true
+      },
+      {
+        "name": "workflow-local",
+        "expected": 50,
+        "passed": 50,
+        "exit": 0,
+        "ok": true
+      },
+      {
+        "name": "booking-ui",
+        "expected": 23,
+        "passed": 23,
+        "exit": 0,
+        "ok": true
+      },
+      {
+        "name": "customer-resume",
+        "expected": 18,
+        "passed": 18,
+        "exit": 0,
+        "ok": true
+      },
+      {
+        "name": "report-navigation",
+        "expected": 15,
+        "passed": 15,
+        "exit": 0,
+        "ok": true
+      },
+      {
+        "name": "language",
+        "expected": 29,
+        "passed": 29,
+        "exit": 0,
+        "ok": true
+      },
+      {
+        "name": "foundation",
+        "expected": 142,
+        "passed": 142,
+        "exit": 0,
+        "ok": true
+      },
+      {
+        "name": "workflow-runtime",
+        "expected": 23,
+        "passed": 23,
+        "exit": 0,
+        "ok": true
+      },
+      {
+        "name": "integration",
+        "expected": 62,
+        "passed": 62,
+        "exit": 0,
+        "ok": true
+      },
+      {
+        "name": "preview-adapter",
+        "expected": 51,
+        "passed": 51,
+        "exit": 0,
+        "ok": true
+      }
+    ],
+    "passed": 828,
+    "ok": true
+  },
+  "passedTestNames": {
+    "node": [
+      "PASS create client data rejects type missing",
+      "PASS create client data rejects type empty",
+      "PASS create client data rejects type wrong string",
+      "PASS create client data rejects type number",
+      "PASS create client data rejects type boolean",
+      "PASS create client data rejects type null",
+      "PASS create client data rejects type array",
+      "PASS create client data rejects type object",
+      "PASS create client data rejects challenge missing",
+      "PASS create client data rejects challenge empty",
+      "PASS create client data rejects challenge wrong string",
+      "PASS create client data rejects challenge number",
+      "PASS create client data rejects challenge boolean",
+      "PASS create client data rejects challenge null",
+      "PASS create client data rejects challenge array",
+      "PASS create client data rejects challenge object",
+      "PASS create client data rejects origin missing",
+      "PASS create client data rejects origin empty",
+      "PASS create client data rejects origin wrong string",
+      "PASS create client data rejects origin number",
+      "PASS create client data rejects origin boolean",
+      "PASS create client data rejects origin null",
+      "PASS create client data rejects origin array",
+      "PASS create client data rejects origin object",
+      "PASS create client data rejects crossOrigin true",
+      "PASS create client data rejects crossOrigin string true",
+      "PASS create client data rejects crossOrigin string false",
+      "PASS create client data rejects crossOrigin empty string",
+      "PASS create client data rejects crossOrigin zero",
+      "PASS create client data rejects crossOrigin one",
+      "PASS create client data rejects crossOrigin null",
+      "PASS create client data rejects crossOrigin array",
+      "PASS create client data rejects crossOrigin object",
+      "PASS create client data rejects tokenBinding string",
+      "PASS create client data rejects tokenBinding null",
+      "PASS create client data rejects tokenBinding boolean",
+      "PASS create client data rejects tokenBinding number",
+      "PASS create client data rejects tokenBinding array",
+      "PASS create client data rejects tokenBinding object",
+      "PASS create client data rejects tokenBinding present binding",
+      "PASS create client data rejects tokenBinding supported binding",
+      "PASS create client data rejects topOrigin string",
+      "PASS create client data rejects topOrigin null",
+      "PASS create client data rejects topOrigin boolean",
+      "PASS create client data rejects topOrigin number",
+      "PASS create client data rejects topOrigin array",
+      "PASS create client data rejects topOrigin object",
+      "PASS create client data rejects topOrigin present binding",
+      "PASS create client data rejects topOrigin supported binding",
+      "PASS create client data rejects duplicate type matching",
+      "PASS create client data rejects duplicate type invalid then valid",
+      "PASS create client data rejects duplicate type escaped key",
+      "PASS create client data rejects duplicate challenge matching",
+      "PASS create client data rejects duplicate challenge invalid then valid",
+      "PASS create client data rejects duplicate challenge escaped key",
+      "PASS create client data rejects duplicate origin matching",
+      "PASS create client data rejects duplicate origin invalid then valid",
+      "PASS create client data rejects duplicate origin escaped key",
+      "PASS create client data rejects duplicate crossOrigin matching",
+      "PASS create client data rejects duplicate crossOrigin invalid then valid",
+      "PASS create client data rejects duplicate crossOrigin escaped key",
+      "PASS create client data rejects duplicate tokenBinding matching",
+      "PASS create client data rejects duplicate topOrigin matching",
+      "PASS create client data rejects nested duplicate future member",
+      "PASS create client data rejects root null",
+      "PASS create client data rejects root array",
+      "PASS create client data rejects root string",
+      "PASS create client data rejects root number",
+      "PASS create client data rejects root boolean",
+      "PASS create client data rejects truncated JSON",
+      "PASS create client data rejects trailing JSON",
+      "PASS create client data rejects trailing comma",
+      "PASS create client data rejects JSON comment",
+      "PASS create client data rejects unescaped control",
+      "PASS create client data rejects UTF-8 overlong",
+      "PASS create client data rejects UTF-8 surrogate",
+      "PASS create client data rejects UTF-8 truncated",
+      "PASS create client data rejects UTF-8 continuation",
+      "PASS create client data rejects UTF-8 invalid byte",
+      "PASS create client data rejects UTF-8 BOM",
+      "PASS create client data rejects UTF-16 encoding",
+      "PASS create client data rejects excessive JSON nesting",
+      "PASS create client data accepts false crossOrigin",
+      "PASS create client data accepts missing crossOrigin",
+      "PASS create client data accepts whitespace and member order",
+      "PASS create client data accepts escaped keys and values",
+      "PASS create client data accepts unknown future members",
+      "PASS get client data rejects type missing",
+      "PASS get client data rejects type empty",
+      "PASS get client data rejects type wrong string",
+      "PASS get client data rejects type number",
+      "PASS get client data rejects type boolean",
+      "PASS get client data rejects type null",
+      "PASS get client data rejects type array",
+      "PASS get client data rejects type object",
+      "PASS get client data rejects challenge missing",
+      "PASS get client data rejects challenge empty",
+      "PASS get client data rejects challenge wrong string",
+      "PASS get client data rejects challenge number",
+      "PASS get client data rejects challenge boolean",
+      "PASS get client data rejects challenge null",
+      "PASS get client data rejects challenge array",
+      "PASS get client data rejects challenge object",
+      "PASS get client data rejects origin missing",
+      "PASS get client data rejects origin empty",
+      "PASS get client data rejects origin wrong string",
+      "PASS get client data rejects origin number",
+      "PASS get client data rejects origin boolean",
+      "PASS get client data rejects origin null",
+      "PASS get client data rejects origin array",
+      "PASS get client data rejects origin object",
+      "PASS get client data rejects crossOrigin true",
+      "PASS get client data rejects crossOrigin string true",
+      "PASS get client data rejects crossOrigin string false",
+      "PASS get client data rejects crossOrigin empty string",
+      "PASS get client data rejects crossOrigin zero",
+      "PASS get client data rejects crossOrigin one",
+      "PASS get client data rejects crossOrigin null",
+      "PASS get client data rejects crossOrigin array",
+      "PASS get client data rejects crossOrigin object",
+      "PASS get client data rejects tokenBinding string",
+      "PASS get client data rejects tokenBinding null",
+      "PASS get client data rejects tokenBinding boolean",
+      "PASS get client data rejects tokenBinding number",
+      "PASS get client data rejects tokenBinding array",
+      "PASS get client data rejects tokenBinding object",
+      "PASS get client data rejects tokenBinding present binding",
+      "PASS get client data rejects tokenBinding supported binding",
+      "PASS get client data rejects topOrigin string",
+      "PASS get client data rejects topOrigin null",
+      "PASS get client data rejects topOrigin boolean",
+      "PASS get client data rejects topOrigin number",
+      "PASS get client data rejects topOrigin array",
+      "PASS get client data rejects topOrigin object",
+      "PASS get client data rejects topOrigin present binding",
+      "PASS get client data rejects topOrigin supported binding",
+      "PASS get client data rejects duplicate type matching",
+      "PASS get client data rejects duplicate type invalid then valid",
+      "PASS get client data rejects duplicate type escaped key",
+      "PASS get client data rejects duplicate challenge matching",
+      "PASS get client data rejects duplicate challenge invalid then valid",
+      "PASS get client data rejects duplicate challenge escaped key",
+      "PASS get client data rejects duplicate origin matching",
+      "PASS get client data rejects duplicate origin invalid then valid",
+      "PASS get client data rejects duplicate origin escaped key",
+      "PASS get client data rejects duplicate crossOrigin matching",
+      "PASS get client data rejects duplicate crossOrigin invalid then valid",
+      "PASS get client data rejects duplicate crossOrigin escaped key",
+      "PASS get client data rejects duplicate tokenBinding matching",
+      "PASS get client data rejects duplicate topOrigin matching",
+      "PASS get client data rejects nested duplicate future member",
+      "PASS get client data rejects root null",
+      "PASS get client data rejects root array",
+      "PASS get client data rejects root string",
+      "PASS get client data rejects root number",
+      "PASS get client data rejects root boolean",
+      "PASS get client data rejects truncated JSON",
+      "PASS get client data rejects trailing JSON",
+      "PASS get client data rejects trailing comma",
+      "PASS get client data rejects JSON comment",
+      "PASS get client data rejects unescaped control",
+      "PASS get client data rejects UTF-8 overlong",
+      "PASS get client data rejects UTF-8 surrogate",
+      "PASS get client data rejects UTF-8 truncated",
+      "PASS get client data rejects UTF-8 continuation",
+      "PASS get client data rejects UTF-8 invalid byte",
+      "PASS get client data rejects UTF-8 BOM",
+      "PASS get client data rejects UTF-16 encoding",
+      "PASS get client data rejects excessive JSON nesting",
+      "PASS get client data accepts false crossOrigin",
+      "PASS get client data accepts missing crossOrigin",
+      "PASS get client data accepts whitespace and member order",
+      "PASS get client data accepts escaped keys and values",
+      "PASS get client data accepts unknown future members",
+      "PASS bootstrap authority required",
+      "PASS login blocked before two keys",
+      "PASS registration rejects origin",
+      "PASS registration rejects challenge",
+      "PASS registration rejects type",
+      "PASS registration rejects cross origin",
+      "PASS registration rejects top origin",
+      "PASS registration rejects UV",
+      "PASS registration rejects UP",
+      "PASS registration rejects reserved flags",
+      "PASS registration rejects extension flags",
+      "PASS registration rejects BS without BE",
+      "PASS registration rejects backup eligible",
+      "PASS registration rejects AT missing",
+      "PASS registration rejects RP hash",
+      "PASS registration rejects credential ID",
+      "PASS registration rejects COSE algorithm",
+      "PASS registration rejects COSE curve",
+      "PASS registration rejects COSE point",
+      "PASS registration rejects attestation format",
+      "PASS registration rejects nonempty attestation",
+      "PASS registration succeeds after invalid attempts",
+      "PASS registration replay rejected",
+      "PASS one key cannot log in",
+      "PASS same key under another ID rejected",
+      "PASS second distinct key enrolled",
+      "PASS bootstrap permanently closes",
+      "PASS authentication rejects wrong origin",
+      "PASS authentication rejects wrong challenge",
+      "PASS authentication rejects wrong type",
+      "PASS authentication rejects cross origin",
+      "PASS authentication rejects missing UV",
+      "PASS authentication rejects missing UP",
+      "PASS authentication rejects AT",
+      "PASS authentication rejects ED",
+      "PASS authentication rejects RP hash",
+      "PASS authentication rejects zero counter",
+      "PASS authentication rejects same counter",
+      "PASS authentication rejects user handle",
+      "PASS authentication rejects backup eligibility",
+      "PASS authentication rejects signature",
+      "PASS authentication rejects truncated DER",
+      "PASS authentication rejects trailing DER",
+      "PASS authentication rejects unknown ID",
+      "PASS authentication rejects raw ID mismatch",
+      "PASS authentication rejects envelope type",
+      "PASS authentication rejects client extension",
+      "PASS authentication rejects missing extension result",
+      "PASS authentication rejects oversize client",
+      "PASS authentication rejects noncanonical encoding",
+      "PASS authentication rejects bad JSON",
+      "PASS authentication rejects auth trailing",
+      "PASS valid assertion issues hashed session",
+      "PASS authentication replay rejected",
+      "PASS second authenticator can log in and logout",
+      "PASS expired challenge rejected",
+      "PASS concurrent replay has exactly one winner and one session",
+      "PASS concurrent different challenges enforce counter CAS",
+      "PASS expired session rejected",
+      "PASS new enrollment needs live session",
+      "PASS lost device revocation invalidates every session and pending challenge",
+      "PASS owner recovery revokes all state without enabling login",
+      "PASS trusted owner recovery requires two fresh enrollments",
+      "PASS pending bootstrap enrollment cannot exceed initial two slots",
+      "PASS enrollment completion rechecks session logout",
+      "PASS UV session authorizes additional independent key",
+      "PASS session insert failure rolls back challenge and counter atomically",
+      "PASS expiry is rechecked after asynchronous signature verification",
+      "PASS CBOR rejects duplicate keys",
+      "PASS CBOR rejects indefinite",
+      "PASS CBOR rejects truncated",
+      "PASS CBOR rejects nonminimal",
+      "PASS CBOR trailing attestation rejected"
+    ],
+    "workerd": [
+      "PASS create client data rejects type missing",
+      "PASS create client data rejects type empty",
+      "PASS create client data rejects type wrong string",
+      "PASS create client data rejects type number",
+      "PASS create client data rejects type boolean",
+      "PASS create client data rejects type null",
+      "PASS create client data rejects type array",
+      "PASS create client data rejects type object",
+      "PASS create client data rejects challenge missing",
+      "PASS create client data rejects challenge empty",
+      "PASS create client data rejects challenge wrong string",
+      "PASS create client data rejects challenge number",
+      "PASS create client data rejects challenge boolean",
+      "PASS create client data rejects challenge null",
+      "PASS create client data rejects challenge array",
+      "PASS create client data rejects challenge object",
+      "PASS create client data rejects origin missing",
+      "PASS create client data rejects origin empty",
+      "PASS create client data rejects origin wrong string",
+      "PASS create client data rejects origin number",
+      "PASS create client data rejects origin boolean",
+      "PASS create client data rejects origin null",
+      "PASS create client data rejects origin array",
+      "PASS create client data rejects origin object",
+      "PASS create client data rejects crossOrigin true",
+      "PASS create client data rejects crossOrigin string true",
+      "PASS create client data rejects crossOrigin string false",
+      "PASS create client data rejects crossOrigin empty string",
+      "PASS create client data rejects crossOrigin zero",
+      "PASS create client data rejects crossOrigin one",
+      "PASS create client data rejects crossOrigin null",
+      "PASS create client data rejects crossOrigin array",
+      "PASS create client data rejects crossOrigin object",
+      "PASS create client data rejects tokenBinding string",
+      "PASS create client data rejects tokenBinding null",
+      "PASS create client data rejects tokenBinding boolean",
+      "PASS create client data rejects tokenBinding number",
+      "PASS create client data rejects tokenBinding array",
+      "PASS create client data rejects tokenBinding object",
+      "PASS create client data rejects tokenBinding present binding",
+      "PASS create client data rejects tokenBinding supported binding",
+      "PASS create client data rejects topOrigin string",
+      "PASS create client data rejects topOrigin null",
+      "PASS create client data rejects topOrigin boolean",
+      "PASS create client data rejects topOrigin number",
+      "PASS create client data rejects topOrigin array",
+      "PASS create client data rejects topOrigin object",
+      "PASS create client data rejects topOrigin present binding",
+      "PASS create client data rejects topOrigin supported binding",
+      "PASS create client data rejects duplicate type matching",
+      "PASS create client data rejects duplicate type invalid then valid",
+      "PASS create client data rejects duplicate type escaped key",
+      "PASS create client data rejects duplicate challenge matching",
+      "PASS create client data rejects duplicate challenge invalid then valid",
+      "PASS create client data rejects duplicate challenge escaped key",
+      "PASS create client data rejects duplicate origin matching",
+      "PASS create client data rejects duplicate origin invalid then valid",
+      "PASS create client data rejects duplicate origin escaped key",
+      "PASS create client data rejects duplicate crossOrigin matching",
+      "PASS create client data rejects duplicate crossOrigin invalid then valid",
+      "PASS create client data rejects duplicate crossOrigin escaped key",
+      "PASS create client data rejects duplicate tokenBinding matching",
+      "PASS create client data rejects duplicate topOrigin matching",
+      "PASS create client data rejects nested duplicate future member",
+      "PASS create client data rejects root null",
+      "PASS create client data rejects root array",
+      "PASS create client data rejects root string",
+      "PASS create client data rejects root number",
+      "PASS create client data rejects root boolean",
+      "PASS create client data rejects truncated JSON",
+      "PASS create client data rejects trailing JSON",
+      "PASS create client data rejects trailing comma",
+      "PASS create client data rejects JSON comment",
+      "PASS create client data rejects unescaped control",
+      "PASS create client data rejects UTF-8 overlong",
+      "PASS create client data rejects UTF-8 surrogate",
+      "PASS create client data rejects UTF-8 truncated",
+      "PASS create client data rejects UTF-8 continuation",
+      "PASS create client data rejects UTF-8 invalid byte",
+      "PASS create client data rejects UTF-8 BOM",
+      "PASS create client data rejects UTF-16 encoding",
+      "PASS create client data rejects excessive JSON nesting",
+      "PASS create client data accepts false crossOrigin",
+      "PASS create client data accepts missing crossOrigin",
+      "PASS create client data accepts whitespace and member order",
+      "PASS create client data accepts escaped keys and values",
+      "PASS create client data accepts unknown future members",
+      "PASS get client data rejects type missing",
+      "PASS get client data rejects type empty",
+      "PASS get client data rejects type wrong string",
+      "PASS get client data rejects type number",
+      "PASS get client data rejects type boolean",
+      "PASS get client data rejects type null",
+      "PASS get client data rejects type array",
+      "PASS get client data rejects type object",
+      "PASS get client data rejects challenge missing",
+      "PASS get client data rejects challenge empty",
+      "PASS get client data rejects challenge wrong string",
+      "PASS get client data rejects challenge number",
+      "PASS get client data rejects challenge boolean",
+      "PASS get client data rejects challenge null",
+      "PASS get client data rejects challenge array",
+      "PASS get client data rejects challenge object",
+      "PASS get client data rejects origin missing",
+      "PASS get client data rejects origin empty",
+      "PASS get client data rejects origin wrong string",
+      "PASS get client data rejects origin number",
+      "PASS get client data rejects origin boolean",
+      "PASS get client data rejects origin null",
+      "PASS get client data rejects origin array",
+      "PASS get client data rejects origin object",
+      "PASS get client data rejects crossOrigin true",
+      "PASS get client data rejects crossOrigin string true",
+      "PASS get client data rejects crossOrigin string false",
+      "PASS get client data rejects crossOrigin empty string",
+      "PASS get client data rejects crossOrigin zero",
+      "PASS get client data rejects crossOrigin one",
+      "PASS get client data rejects crossOrigin null",
+      "PASS get client data rejects crossOrigin array",
+      "PASS get client data rejects crossOrigin object",
+      "PASS get client data rejects tokenBinding string",
+      "PASS get client data rejects tokenBinding null",
+      "PASS get client data rejects tokenBinding boolean",
+      "PASS get client data rejects tokenBinding number",
+      "PASS get client data rejects tokenBinding array",
+      "PASS get client data rejects tokenBinding object",
+      "PASS get client data rejects tokenBinding present binding",
+      "PASS get client data rejects tokenBinding supported binding",
+      "PASS get client data rejects topOrigin string",
+      "PASS get client data rejects topOrigin null",
+      "PASS get client data rejects topOrigin boolean",
+      "PASS get client data rejects topOrigin number",
+      "PASS get client data rejects topOrigin array",
+      "PASS get client data rejects topOrigin object",
+      "PASS get client data rejects topOrigin present binding",
+      "PASS get client data rejects topOrigin supported binding",
+      "PASS get client data rejects duplicate type matching",
+      "PASS get client data rejects duplicate type invalid then valid",
+      "PASS get client data rejects duplicate type escaped key",
+      "PASS get client data rejects duplicate challenge matching",
+      "PASS get client data rejects duplicate challenge invalid then valid",
+      "PASS get client data rejects duplicate challenge escaped key",
+      "PASS get client data rejects duplicate origin matching",
+      "PASS get client data rejects duplicate origin invalid then valid",
+      "PASS get client data rejects duplicate origin escaped key",
+      "PASS get client data rejects duplicate crossOrigin matching",
+      "PASS get client data rejects duplicate crossOrigin invalid then valid",
+      "PASS get client data rejects duplicate crossOrigin escaped key",
+      "PASS get client data rejects duplicate tokenBinding matching",
+      "PASS get client data rejects duplicate topOrigin matching",
+      "PASS get client data rejects nested duplicate future member",
+      "PASS get client data rejects root null",
+      "PASS get client data rejects root array",
+      "PASS get client data rejects root string",
+      "PASS get client data rejects root number",
+      "PASS get client data rejects root boolean",
+      "PASS get client data rejects truncated JSON",
+      "PASS get client data rejects trailing JSON",
+      "PASS get client data rejects trailing comma",
+      "PASS get client data rejects JSON comment",
+      "PASS get client data rejects unescaped control",
+      "PASS get client data rejects UTF-8 overlong",
+      "PASS get client data rejects UTF-8 surrogate",
+      "PASS get client data rejects UTF-8 truncated",
+      "PASS get client data rejects UTF-8 continuation",
+      "PASS get client data rejects UTF-8 invalid byte",
+      "PASS get client data rejects UTF-8 BOM",
+      "PASS get client data rejects UTF-16 encoding",
+      "PASS get client data rejects excessive JSON nesting",
+      "PASS get client data accepts false crossOrigin",
+      "PASS get client data accepts missing crossOrigin",
+      "PASS get client data accepts whitespace and member order",
+      "PASS get client data accepts escaped keys and values",
+      "PASS get client data accepts unknown future members",
+      "PASS bootstrap authority required",
+      "PASS login blocked before two keys",
+      "PASS registration rejects origin",
+      "PASS registration rejects challenge",
+      "PASS registration rejects type",
+      "PASS registration rejects cross origin",
+      "PASS registration rejects top origin",
+      "PASS registration rejects UV",
+      "PASS registration rejects UP",
+      "PASS registration rejects reserved flags",
+      "PASS registration rejects extension flags",
+      "PASS registration rejects BS without BE",
+      "PASS registration rejects backup eligible",
+      "PASS registration rejects AT missing",
+      "PASS registration rejects RP hash",
+      "PASS registration rejects credential ID",
+      "PASS registration rejects COSE algorithm",
+      "PASS registration rejects COSE curve",
+      "PASS registration rejects COSE point",
+      "PASS registration rejects attestation format",
+      "PASS registration rejects nonempty attestation",
+      "PASS registration succeeds after invalid attempts",
+      "PASS registration replay rejected",
+      "PASS one key cannot log in",
+      "PASS same key under another ID rejected",
+      "PASS second distinct key enrolled",
+      "PASS bootstrap permanently closes",
+      "PASS authentication rejects wrong origin",
+      "PASS authentication rejects wrong challenge",
+      "PASS authentication rejects wrong type",
+      "PASS authentication rejects cross origin",
+      "PASS authentication rejects missing UV",
+      "PASS authentication rejects missing UP",
+      "PASS authentication rejects AT",
+      "PASS authentication rejects ED",
+      "PASS authentication rejects RP hash",
+      "PASS authentication rejects zero counter",
+      "PASS authentication rejects same counter",
+      "PASS authentication rejects user handle",
+      "PASS authentication rejects backup eligibility",
+      "PASS authentication rejects signature",
+      "PASS authentication rejects truncated DER",
+      "PASS authentication rejects trailing DER",
+      "PASS authentication rejects unknown ID",
+      "PASS authentication rejects raw ID mismatch",
+      "PASS authentication rejects envelope type",
+      "PASS authentication rejects client extension",
+      "PASS authentication rejects missing extension result",
+      "PASS authentication rejects oversize client",
+      "PASS authentication rejects noncanonical encoding",
+      "PASS authentication rejects bad JSON",
+      "PASS authentication rejects auth trailing",
+      "PASS valid assertion issues hashed session",
+      "PASS authentication replay rejected",
+      "PASS second authenticator can log in and logout",
+      "PASS expired challenge rejected",
+      "PASS concurrent replay has exactly one winner and one session",
+      "PASS concurrent different challenges enforce counter CAS",
+      "PASS expired session rejected",
+      "PASS new enrollment needs live session",
+      "PASS lost device revocation invalidates every session and pending challenge",
+      "PASS owner recovery revokes all state without enabling login",
+      "PASS trusted owner recovery requires two fresh enrollments",
+      "PASS pending bootstrap enrollment cannot exceed initial two slots",
+      "PASS enrollment completion rechecks session logout",
+      "PASS UV session authorizes additional independent key",
+      "PASS session insert failure rolls back challenge and counter atomically",
+      "PASS expiry is rechecked after asynchronous signature verification",
+      "PASS CBOR rejects duplicate keys",
+      "PASS CBOR rejects indefinite",
+      "PASS CBOR rejects truncated",
+      "PASS CBOR rejects nonminimal",
+      "PASS CBOR trailing attestation rejected"
+    ],
+    "repro": [
+      "PASS two fresh packages have identical complete inventory",
+      "PASS both inventories and exact public scope verify fail-closed configuration",
+      "PASS generated prerequisite equals verified source projection",
+      "PASS all fifteen generated SQL hashes equal original manifest",
+      "PASS private tooling, SQL, inventory and keys never become assets",
+      "PASS inventory tampering is detected"
+    ]
+  },
+  "attempts": {
+    "browser": {
+      "sandbox": "Three startup attempts; final evidence .local-c1-package-step2db2b-5MJn66; no ceremonies executed",
+      "owner": "21 checks passed, zero failures and no setupError in .local-c1-package-step2db2b-rarnbZ/result.json; exit 0 separately owner-reported"
+    },
+    "management": "Original 14 checks passed; expanded 17 checks passed; final-v2 barrier timed out because profiling runtime had instrumentation disabled; final-v3 restores instrumented runtime and all 17 pass"
+  },
+  "browserSandboxFailure": {
+    "executionEnvironment": "Codex sandbox; earlier attempt",
+    "evidenceDirectory": ".local-c1-package-step2db2b-5MJn66",
+    "result": {
+      "origin": "http://localhost:64721",
+      "node": "v24.20.0",
+      "versions": {},
+      "checks": [],
+      "failures": [],
+      "setupError": "Error: BLOCKED: Chrome DevTools port unavailable",
+      "samples": [],
+      "browserSamples": [],
+      "ceremonySamples": [],
+      "blocked": [
+        "physical security key",
+        "platform authenticator",
+        "Firefox",
+        "WebKit",
+        "deployed Worker CPU / Free qualification"
+      ],
+      "cpuCaveat": "hostDriverCpuMs covers Node driver only; neither browser latency nor host wall time is deployed Worker CPU",
+      "installedChromeVersion": "155.0.8059.40",
+      "plannedBlockedTests": [
+        "localhost is a browser secure context",
+        "browser ES256 none registration persists credential ID and EC public key",
+        "browser registration challenge replay rejected",
+        "second distinct virtual authenticator enrollment",
+        "browser signature verifies and creates usable session",
+        "authentication and session survive Worker restart",
+        "browser assertion replay rejected",
+        "browser challenge mismatch rejected",
+        "expired browser challenge rejected",
+        "browser-derived invalid origin rejected",
+        "browser-derived invalid RP hash rejected",
+        "browser-derived missing UP rejected",
+        "virtual authenticator signed missing UV rejected",
+        "browser signature tampering rejected",
+        "virtual authenticator counter rollback rejected",
+        "logout rejects old session",
+        "revoke-all restart rejects old sessions and pending browser challenges",
+        "shared-account get allowance exhaustion across callers",
+        "rate window rollover admits and resets count",
+        "backward rate window fails closed without changing bucket",
+        "credential revocation rejects sessions pending assertions and two-key gate"
+      ],
+      "chromeLog": "[1015/155609.965:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win.cc:108] CreateFile: Access is denied. (0x5)\r\n[12636:15248:1015/155610.348:FATAL:mojo\\public\\cpp\\platform\\platform_channel.cc:112] Check failed: . : Access is denied. (0x5)\r\n[1015/155610.348:ERROR:third_party\\crashpad\\crashpad\\client\\crashpad_client_win.cc:144] crash server failed to launch, self-terminating\r\n"
+    }
+  },
+  "browserVerification": {
+    "executionEnvironment": "Owner normal Windows PowerShell, outside Codex",
+    "evidenceDirectory": ".local-c1-package-step2db2b-rarnbZ",
+    "resultSha256": "cb8786147089770c52eff8f5eedb0dfd53a556c3869d0d9c5a57440c38c351a2",
+    "chromeLogSha256": "da1ac977f34e33d628bfee29b71114ec521d0e13ef470d5a0e76d6b63128bbb4",
+    "secureContextCheckPassed": true,
+    "checks": 21,
+    "failures": 0,
+    "setupError": "absent in saved result",
+    "ownerReportedProcessExit": 0,
+    "exitEvidence": "Owner transcript reports C1 BROWSER TEST EXIT: 0; saved result.json has no process-exit field",
+    "devToolsEvidence": "chrome.log websocket endpoint matches chrome-profile/DevToolsActivePort",
+    "virtualAuthenticator": {
+      "source": "Inspected scripts/test-webauthn-browser.mjs; raw CDP command transcript not saved",
+      "protocol": "ctap2",
+      "ctap2Version": "ctap2_1",
+      "transport": "usb",
+      "hasResidentKey": true,
+      "hasUserVerification": true,
+      "isUserVerified": true,
+      "automaticPresenceSimulation": true,
+      "requestedResidentKey": "discouraged",
+      "assertionSelection": "stored credential ID allow-list",
+      "devices": "Two distinct virtual authenticators; second removed after enrollment"
+    },
+    "databaseInspection": {
+      "method": "Disposable copy of owner D1 SQLite and WAL/SHM; original database not opened for writing",
+      "integrity": "ok",
+      "account": {
+        "epoch": 3,
+        "closed": 1,
+        "key_epoch": 1
+      },
+      "credentials": {
+        "total": 2,
+        "revoked": 1
+      },
+      "activeKeys": 1,
+      "sessionRows": 7,
+      "challengeRows": 22,
+      "guardRows": 0,
+      "events": [
+        {
+          "kind": "credential-revoked",
+          "n": 1
+        },
+        {
+          "kind": "logout",
+          "n": 1
+        },
+        {
+          "kind": "revoke-all",
+          "n": 1
+        }
+      ]
+    },
+    "requestSummary": [
+      {
+        "operation": "/begin",
+        "status": 200,
+        "n": 22,
+        "incompleteMetadataSamples": 0,
+        "hostWallMs": {
+          "p50": 13.598899999999958,
+          "p95": 56.064600000000155,
+          "max": 116.52919999999995
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 16,
+          "max": 16
+        },
+        "statements": {
+          "p50": 5,
+          "p95": 5,
+          "max": 5
+        },
+        "rowsRead": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsWritten": {
+          "p50": 6,
+          "p95": 7,
+          "max": 7
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 1,
+          "max": 2
+        },
+        "browserRequestMs": {
+          "p50": 16.19999999552965,
+          "p95": 61,
+          "max": 118.90000000596046
+        }
+      },
+      {
+        "operation": "/finish",
+        "status": 200,
+        "n": 9,
+        "incompleteMetadataSamples": 0,
+        "hostWallMs": {
+          "p50": 18.787099999999555,
+          "p95": 99.35739999999987,
+          "max": 99.35739999999987
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 16,
+          "max": 16
+        },
+        "statements": {
+          "p50": 8,
+          "p95": 8,
+          "max": 8
+        },
+        "rowsRead": {
+          "p50": 16,
+          "p95": 16,
+          "max": 16
+        },
+        "rowsWritten": {
+          "p50": 8,
+          "p95": 9,
+          "max": 9
+        },
+        "d1DurationMs": {
+          "p50": 1,
+          "p95": 19,
+          "max": 19
+        },
+        "browserRequestMs": {
+          "p50": 23.69999999552965,
+          "p95": 103.5,
+          "max": 103.5
+        }
+      },
+      {
+        "operation": "/finish",
+        "status": 400,
+        "n": 12,
+        "incompleteMetadataSamples": 0,
+        "hostWallMs": {
+          "p50": 12.358000000000175,
+          "p95": 42.43809999999985,
+          "max": 42.43809999999985
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 47,
+          "max": 47
+        },
+        "statements": {
+          "p50": 3,
+          "p95": 3,
+          "max": 3
+        },
+        "rowsRead": {
+          "p50": 6,
+          "p95": 6,
+          "max": 6
+        },
+        "rowsWritten": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 2,
+          "max": 2
+        },
+        "browserRequestMs": {
+          "p50": 15.100000001490116,
+          "p95": 45.100000001490116,
+          "max": 45.100000001490116
+        }
+      },
+      {
+        "operation": "/session",
+        "status": 200,
+        "n": 2,
+        "incompleteMetadataSamples": 0,
+        "hostWallMs": {
+          "p50": 32.1561999999999,
+          "p95": 79.18339999999989,
+          "max": 79.18339999999989
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 15,
+          "max": 15
+        },
+        "statements": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsRead": {
+          "p50": 6,
+          "p95": 7,
+          "max": 7
+        },
+        "rowsWritten": {
+          "p50": 1,
+          "p95": 2,
+          "max": 2
+        },
+        "d1DurationMs": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        },
+        "browserRequestMs": {
+          "p50": 34.899999998509884,
+          "p95": 82.10000000149012,
+          "max": 82.10000000149012
+        }
+      },
+      {
+        "operation": "/logout",
+        "status": 200,
+        "n": 1,
+        "incompleteMetadataSamples": 0,
+        "hostWallMs": {
+          "p50": 10.458099999999831,
+          "p95": 10.458099999999831,
+          "max": 10.458099999999831
+        },
+        "hostDriverCpuMs": {
+          "p50": 16,
+          "p95": 16,
+          "max": 16
+        },
+        "statements": {
+          "p50": 5,
+          "p95": 5,
+          "max": 5
+        },
+        "rowsRead": {
+          "p50": 8,
+          "p95": 8,
+          "max": 8
+        },
+        "rowsWritten": {
+          "p50": 7,
+          "p95": 7,
+          "max": 7
+        },
+        "d1DurationMs": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        },
+        "browserRequestMs": {
+          "p50": 12.899999998509884,
+          "p95": 12.899999998509884,
+          "max": 12.899999998509884
+        }
+      },
+      {
+        "operation": "/session",
+        "status": 400,
+        "n": 3,
+        "incompleteMetadataSamples": 0,
+        "hostWallMs": {
+          "p50": 8.922499999999673,
+          "p95": 54.74070000000029,
+          "max": 54.74070000000029
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 16,
+          "max": 16
+        },
+        "statements": {
+          "p50": 2,
+          "p95": 2,
+          "max": 2
+        },
+        "rowsRead": {
+          "p50": 4,
+          "p95": 4,
+          "max": 4
+        },
+        "rowsWritten": {
+          "p50": 1,
+          "p95": 1,
+          "max": 1
+        },
+        "d1DurationMs": {
+          "p50": 1,
+          "p95": 2,
+          "max": 2
+        },
+        "browserRequestMs": {
+          "p50": 11.399999998509884,
+          "p95": 58.19999999552965,
+          "max": 58.19999999552965
+        }
+      },
+      {
+        "operation": "/revoke-all",
+        "status": 200,
+        "n": 1,
+        "incompleteMetadataSamples": 0,
+        "hostWallMs": {
+          "p50": 9.648400000000038,
+          "p95": 9.648400000000038,
+          "max": 9.648400000000038
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 5,
+          "p95": 5,
+          "max": 5
+        },
+        "rowsRead": {
+          "p50": 9,
+          "p95": 9,
+          "max": 9
+        },
+        "rowsWritten": {
+          "p50": 6,
+          "p95": 6,
+          "max": 6
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "browserRequestMs": {
+          "p50": 12,
+          "p95": 12,
+          "max": 12
+        }
+      },
+      {
+        "operation": "/begin",
+        "status": 400,
+        "n": 3,
+        "incompleteMetadataSamples": 1,
+        "hostWallMs": {
+          "p50": 13.450900000000729,
+          "p95": 109.04110000000037,
+          "max": 109.04110000000037
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 1,
+          "p95": 5,
+          "max": 5
+        },
+        "rowsRead": {
+          "p50": 2,
+          "p95": 3,
+          "max": 3
+        },
+        "rowsWritten": {
+          "p50": 0,
+          "p95": 1,
+          "max": 1
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "browserRequestMs": {
+          "p50": 16.30000000447035,
+          "p95": 111.59999999403954,
+          "max": 111.59999999403954
+        }
+      },
+      {
+        "operation": "/revoke-credential",
+        "status": 200,
+        "n": 1,
+        "incompleteMetadataSamples": 0,
+        "hostWallMs": {
+          "p50": 9.119299999999384,
+          "p95": 9.119299999999384,
+          "max": 9.119299999999384
+        },
+        "hostDriverCpuMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "statements": {
+          "p50": 6,
+          "p95": 6,
+          "max": 6
+        },
+        "rowsRead": {
+          "p50": 13,
+          "p95": 13,
+          "max": 13
+        },
+        "rowsWritten": {
+          "p50": 8,
+          "p95": 8,
+          "max": 8
+        },
+        "d1DurationMs": {
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "browserRequestMs": {
+          "p50": 11.399999998509884,
+          "p95": 11.399999998509884,
+          "max": 11.399999998509884
+        }
+      }
+    ],
+    "ceremonySummary": [
+      {
+        "kind": "create",
+        "n": 2,
+        "hostCeremonyWallMs": {
+          "p50": 6.9965000000001965,
+          "p95": 13.527700000000095,
+          "max": 13.527700000000095
+        }
+      },
+      {
+        "kind": "get",
+        "n": 17,
+        "hostCeremonyWallMs": {
+          "p50": 5.673099999999977,
+          "p95": 62.72540000000026,
+          "max": 62.72540000000026
+        }
+      }
+    ],
+    "method": "Nearest-rank p50/p95/max, all recorded samples including cold startup and negative requests, grouped by route/status. /finish successes mix registration and authentication. Browser fetch timers include loopback request and JSON response parsing. Adapter hostWallMs begins after request buffering and covers workerd dispatch/body consumption; excludes browser transport and ceremony. Ceremony timing covers navigator credential operation plus CDP evaluate round-trip; excludes begin/finish HTTP. Sample counts are small and unequal, not an isolated load benchmark. hostDriverCpuMs is quantized Node CPU, excludes Chrome/workerd. D1 values are returned local metadata; statements are application submission attempts, not internal D1 transactions/retries/rollback/exact execution. One failed begin batch has incomplete metadata. Test admission remains enabled; rate-limit bucket writes on denied authentication are intentional and not partial authentication commits."
+  },
+  "acceptanceReconciliation": {
+    "base": 828,
+    "baseEvidence": ".local-c1-package-step2db2b-acceptance/summary.json",
+    "extendedExecuted": 83,
+    "extendedAdditional": 18,
+    "extendedAdditionalNames": [
+      "SQLite packaged Worker Free synthetic database allocation stays below 500MB",
+      "SQLite packaged Worker Free query cap covers repeated authenticated reads and assets",
+      "SQLite packaged Worker Free remaining private routes deny invalid commands within query cap",
+      "SQLite packaged Worker Free PBKDF2 login benchmark retains secure work factor",
+      "SQLite packaged Worker Free quota and runtime errors never serve protected data or assets",
+      "SQLite packaged Worker Free mutation quota failure creates no partial portal session",
+      "SQLite packaged Worker Free next asset request observes missing schema guard without a cache",
+      "SQLite packaged Worker Free next request observes marker and synthetic inventory changes",
+      "SQLite packaged Worker Free prepared deployment rejects Production and wrong branch before D1",
+      "workerd packaged Worker/D1 Free synthetic database allocation stays below 500MB",
+      "workerd packaged Worker/D1 Free query cap covers repeated authenticated reads and assets",
+      "workerd packaged Worker/D1 Free remaining private routes deny invalid commands within query cap",
+      "workerd packaged Worker/D1 Free PBKDF2 login benchmark retains secure work factor",
+      "workerd packaged Worker/D1 Free quota and runtime errors never serve protected data or assets",
+      "workerd packaged Worker/D1 Free mutation quota failure creates no partial portal session",
+      "workerd packaged Worker/D1 Free next asset request observes missing schema guard without a cache",
+      "workerd packaged Worker/D1 Free next request observes marker and synthetic inventory changes",
+      "workerd packaged Worker/D1 Free prepared deployment rejects Production and wrong branch before D1"
+    ],
+    "migrationLedger": 111,
+    "deploymentGuards": 19,
+    "reproducibility": 6,
+    "reproEvidence": ".local-c1-package-step2db2b-regression/repro.log",
+    "distinctTotal": 982,
+    "supplementalEvidenceDirectory": ".local-c1-package-step2db2b-reconciliation",
+    "formula": "828 + 18 + 111 + 19 + 6 = 982; do not add all 83 extended checks or add reproducibility twice",
+    "otherSuiteResults": {
+      "browser": 21,
+      "management": 17,
+      "persistentD1": 65,
+      "nodeValidator": 247,
+      "workerdValidator": 247
+    },
+    "countingPolicy": "Separate execution modes; semantic coverage overlaps. No aggregate unique-security-test claim. Migration pins count files, not additional acceptance cases. 248 account-stepup checks are already inside base 828."
+  },
+  "reconciliation": {
+    "checkpoint": "418d1f55312f5f08ada588d90feb615883a31c30",
+    "status": "CONDITIONAL PASS",
+    "scope": "Evidence/report reconciliation plus normalization of one CRLF terminator in management test; no semantic authentication, browser or management test changes",
+    "supplementalExits": [
+      {
+        "exit": 0,
+        "suite": "migrations"
+      },
+      {
+        "exit": 0,
+        "suite": "guards"
+      },
+      {
+        "exit": 0,
+        "suite": "extended"
+      }
+    ],
+    "eligibleFiles": [
+      "scripts/webauthn-d1-worker.mjs",
+      "scripts/test-webauthn-d1-management.mjs",
+      "scripts/test-webauthn-browser.mjs",
+      "docs/quantum-yijing-c1-step2db2b-measurements.json",
+      "docs/quantum-yijing-c1-u3-b2b-step-2d-b2b-report.md"
+    ],
+    "sourceSha256": {
+      "scripts/webauthn-d1-worker.mjs": "39a8691235d8ac5f9580215e380e8d9ae781e494a04a20634421fc22370b1125",
+      "scripts/test-webauthn-d1-management.mjs": "fd1771bf885922a153592857794d5ffc959b420ea50a1917f69cdedf0a459b9e",
+      "scripts/test-webauthn-browser.mjs": "687655ee544f760aeb7c73bd3b3e8c834de6b7dc542842e87728f0ecf9de98f0",
+      "scripts/webauthn-d1-schema.sql": "e1598bd4eb2171ac074a50666064d55d8ba64ed91deb8177bbe92764f390095c"
+    },
+    "limitations": [
+      "physical or platform authenticators not tested",
+      "Firefox/WebKit not tested",
+      "real alternate-origin/RP browser ceremonies and registration-negative coverage incomplete",
+      "no deployed Cloudflare CPU/billing/quota qualification",
+      "no production readiness",
+      "no raw CDP transcript or historical source hashes in owner result; configuration verified against current harness"
+    ],
+    "whitespaceCorrection": "Normalized one CRLF terminator in otherwise LF management script; no trailing spaces/tabs and no semantic change"
+  }
+}

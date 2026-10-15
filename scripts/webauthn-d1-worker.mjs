@@ -36,7 +36,7 @@ export class D1Passkeys {
   if(!limit)throw Error('scope');
   const r=await this.query(`INSERT INTO rate_bucket(scope,window,hits) VALUES(?,CAST(${dbNow}/60000 AS INTEGER),1)
    ON CONFLICT(scope) DO UPDATE SET window=excluded.window,hits=CASE WHEN rate_bucket.window=excluded.window THEN rate_bucket.hits+1 ELSE 1 END
-   WHERE rate_bucket.window<>excluded.window OR rate_bucket.hits<? RETURNING hits`,scope,limit);
+   WHERE rate_bucket.window<excluded.window OR (rate_bucket.window=excluded.window AND rate_bucket.hits<?) RETURNING hits`,scope,limit);
   if(!r.results.length)throw Error('admission');
  }
  // Offline only. Natural expiry plus grace protects every live row. Fixed 100

@@ -81,6 +81,29 @@ try{
    await sql('UPDATE rate_bucket SET window=window-1');await call(path,x);assert.equal((await one('SELECT hits FROM rate_bucket WHERE scope=?',scope)).hits,1);
   }await clearRates();
  });
+ await test('all five backward admission windows fail closed and preserve buckets',async()=>{
+  for(const [scope,path,x,limit] of [['get','/begin',{kind:'get'},60],['create','/begin',{kind:'create',authority:'wrong'},20],['finish','/finish',{challenge:'wrong',response:{}},120],['control','/logout',{session:'wrong'},30],['session','/session',{session:'wrong'},120]]){
+   for(const hits of [0,limit]){
+    await clearRates();await sql('INSERT INTO rate_bucket VALUES(?,?,?)',scope,rateWindow+10,hits);
+    const before=await one('SELECT * FROM rate_bucket WHERE scope=?',scope);
+    const out=await call(path,x,'backward window '+scope);assert.equal(out.status,400);assert.equal(out.metrics.statements,1);
+    assert.deepEqual(await one('SELECT * FROM rate_bucket WHERE scope=?',scope),before);
+   }
+  }await clearRates();
+ });
+ await test('shared account exhaustion cannot be escaped with caller-controlled authority',async()=>{
+  await clearRates();await sql("INSERT INTO rate_bucket VALUES('get',?,59)",rateWindow);
+  await begin();await bad('/begin',{kind:'get',authority:'different-synthetic-caller'});
+  assert.equal((await one("SELECT hits FROM rate_bucket WHERE scope='get'")).hits,60);
+  assert.equal((await one('SELECT count(*) n FROM rate_bucket')).n,1);await clearRates();
+ });
+ await test('revoke-all persists across restart rejecting old sessions and unused challenges',async()=>{
+  const s=await login(),c=await begin(),r=await response(a,c,{count:++count});
+  await ok('/revoke-all',{session:s});await mf.dispose();mf=new Miniflare(config());db=await mf.getD1Database('SYNTHETIC_PASSKEY_DB');
+  await bad('/session',{session:s});await reject(c,r);
+  assert.equal((await one('SELECT used FROM challenge WHERE hash=?',await digest(c.challenge))).used,0);
+  await login();await clearRates();
+ });
  await test('forced authentication-first then revoke invalidates issued session',async()=>{
   const s=await login(),c=await begin(),r=await response(a,c,{count:++count}),g=arm(1),pending=call('/finish',{challenge:c.challenge,response:r},'forced auth first');
   try{await reached(g);g.release();const out=await pending;assert.equal(out.status,200);await ok('/revoke-all',{session:s});await bad('/session',{session:out.result});}finally{g.release();}
@@ -170,8 +193,18 @@ try{
   for(let i=0;i<10;i++)await ok('/local-cleanup',{},'growth cleanup '+n);
   growth.push({insertedPerTable:n,seeded,sessions:(await one('SELECT count(*) n FROM session')).n,challenges:(await one('SELECT count(*) n FROM challenge')).n});
  }
- await test('credential revocation invalidates all sessions and pending challenges',async()=>{
-  await clearRates();const s=await login(),c=await begin();await ok('/revoke-credential',{session:s,id:a.id});await bad('/session',{session:s});await reject(c,await response(a,c,{count:++count}));await bad('/begin',{kind:'get'});
+ await test('credential revocation rejects racing authentication sessions and pending challenges',async()=>{
+  await mf.dispose();mf=new Miniflare(config());db=await mf.getD1Database('SYNTHETIC_PASSKEY_DB');
+  await clearRates();const s=await login(),c=await begin(),r=await response(a,c,{count:++count}),g=arm(1);
+  const pending=call('/finish',{challenge:c.challenge,response:r},'credential revoke racing auth');
+  try{
+   await reached(g);
+   // The authentication retains its captured hold; let the real revocation
+   // dispatcher commit without joining that already-reached barrier.
+   gate=null;await ok('/revoke-credential',{session:s,id:a.id});g.release();
+   assert.equal((await pending).status,400);
+  }finally{g.release();}
+  await bad('/session',{session:s});await reject(c,r);await bad('/begin',{kind:'get'});
  });
  await test('offline reset is constant-size, rotates key epoch, and needs two fresh keys',async()=>{
   const capability=tokenForTest(),c=await one('SELECT key_epoch FROM account');
