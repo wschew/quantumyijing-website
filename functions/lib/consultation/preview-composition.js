@@ -67,10 +67,10 @@ export async function composePreviewServices(env,config,manifest,{mockDelivery}=
  // This is a trusted deployment dependency, never request JSON. Persistent transport is U3-B.
  if(mockDelivery?.kind!=='EncryptedPersistentSyntheticMock'||mockDelivery.databaseId!==config.databaseId||typeof mockDelivery.send!=='function')fail();
  const {db,origin,keys,policies}=contract;
- const identity=createCustomerIdentity({db,origin}),qyAuth=createConsultationAuth({db,origin});
+ const identity=createCustomerIdentity({db,origin}),qyAuth=createConsultationAuth({db,origin,adminSecret:env.CONSULTATION_ADMIN_SECRET});
  const stepup=createAccountStepup({db,origin,keys,mockDelivery:message=>mockDelivery.send(message),prepareMockDelivery:mockDelivery.prepare??null});
  const contacts=createCustomerContact({db,origin,keyProvider:keys.contact.provider,fingerprintKeyProvider:keys.lookup.provider,challengeKeyProvider:keys.challenge.provider,activeKeyId:keys.contact.activeKeyId,activeFingerprintKeyId:keys.lookup.activeKeyId,activeChallengeKeyId:keys.challenge.activeKeyId});
- const workflow=createConsultationWorkflow({db,origin,keys,stepup,contacts,productId:config.productId,practitionerId:config.practitionerId,policies,countryCodes:config.countryCodes,bookingPolicy:policies.booking});
+ const workflow=createConsultationWorkflow({db,origin,keys,stepup,contacts,productId:config.productId,practitionerId:config.practitionerId,policies,countryCodes:config.countryCodes,bookingPolicy:{...policies.booking,text:config.policies.booking.text}});
  const services=Object.freeze({identity,qyAuth,stepup,contacts,workflow,lifecycle:createWorkflowLifecycle({db,origin,keys,stepup}),preferences:createAppointmentPreferences({db,origin,stepup}),availability:createAvailability({db,origin,practitionerId:config.practitionerId}),meetings:createMeetingManagement({db,origin,keys,stepup}),customerSearch:createCustomerSearch({db,origin})});
  // Future mounting MUST call this for every request; startup validation alone is insufficient.
  return Object.freeze({services,assertEnabled:()=>validatePreviewContract(env,config,manifest)});

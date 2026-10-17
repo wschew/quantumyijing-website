@@ -5,6 +5,14 @@ function text(value,min,max){if(typeof value!=='string'||value.trim().length<min
 export function validatePrivateIntake(input,{now,customerId,contact,policies,countryCodes}) {
  instant(now);
  if(!Number.isSafeInteger(customerId)||customerId<1||contact?.customerId!==customerId||contact.verified!==true||!Number.isSafeInteger(contact.expiresAt)||contact.expiresAt<=now)fail();
+ return validatePayload(input,{now,contact,policies,countryCodes});
+}
+export function validateGuestIntake(input,{now,contact,policies,countryCodes}) {
+ instant(now);
+ if(contact?.verified!==false)fail();
+ return validatePayload(input,{now,contact,policies,countryCodes});
+}
+function validatePayload(input,{now,contact,policies,countryCodes}) {
  const allowed=['fullName','calculationGender','birthDate','birthTimePrecision','birthTime','birthCity','birthCountry','questions','reportChannel','selfBooking','adultAcknowledged','privacyAcknowledgement','futureCalculationsConsent','marketingConsent'];
  if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!allowed.includes(k)))fail();
  if(input.selfBooking!==true||input.adultAcknowledged!==true||!isAdult(input.birthDate,now))fail();

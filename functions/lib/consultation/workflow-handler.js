@@ -1,3 +1,4 @@
+import {appointmentErrorCodes} from './appointment-availability.js';
 ﻿// Local/isolated Preview mounting only. No Pages endpoint is created by this module.
 import {normalizeContact} from './contact-policy.js';
 import {requestAllowed} from './customer-request-security.js';
@@ -70,6 +71,6 @@ export function createWorkflowHandler({origin,workflow,stepup,contacts,identity,
    if(captures&&path==='qy/payment/finance-review'&&mutation)return response(200,{ok:true,...await captures.recordFinanceReview(request,input)});
    if(path==='qy/payment/reconcile'&&mutation&&captureAdapterConfigured)return response(200,{ok:true,...await workflow.reconcilePayment(request,input)});
    return response(404,{ok:false,error:'Operation unavailable.'});
-  }catch{return response(409,{ok:false,error:'Authorization, expiry, validation or version conflict. No automatic retry.'});}
+  }catch(error){if(appointmentErrorCodes.has(error.code))return response(409,{ok:false,code:error.code});return response(409,{ok:false,error:'Authorization, expiry, validation or version conflict. No automatic retry.'});}
  };
 }

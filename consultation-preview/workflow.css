@@ -10,3 +10,8 @@ main{max-width:1080px;margin:auto;padding:28px 20px 36px}.page-eyebrow{font-size
 
 /* U1: compact journey, case summaries and structured management forms. */
 .journey{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding-left:22px}.journey li{padding:6px;color:#617086}.journey .current-step{color:var(--blue);font-weight:700;background:#eef7ff;border-radius:5px}.completed-step{color:#17603b!important}.case-summary{display:grid;grid-template-columns:minmax(120px,1fr) minmax(0,2fr);gap:7px 16px;margin:0 0 12px}.case-summary dt{font-weight:600;color:var(--navy)}.case-summary dd{margin:0;overflow-wrap:anywhere}.record{padding:16px;border:1px solid var(--border);border-radius:8px;margin:12px 0;background:#fff}#case-management{border-left:3px solid var(--blue)}#case-filter{max-width:300px}@media(max-width:600px){.journey{grid-template-columns:1fr 1fr}.case-summary{grid-template-columns:1fr;gap:3px}.case-summary dd{margin-bottom:8px}}
+
+/* Private customer offer only. */
+#guest-offer .offer-final-price{font-size:1.5rem;color:var(--navy)}
+#guest-offer #guest-accept{display:block;min-width:180px;margin-top:16px}
+#guest-offer details{margin:16px 0}#guest-offer summary{cursor:pointer;font-weight:600}

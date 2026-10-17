@@ -1,7 +1,7 @@
 // Isolated, deny-by-default consultation auth service. No public route is wired.
 // db must be a server-owned D1-compatible binding; origin must come from trusted configuration.
 // This module never reads ADMIN_TOKEN, coach/affiliate credentials or portal sessions.
-import {randomSecret,tokenHash,equalHash,passwordHash,validPassword} from './auth-crypto.js';
+import {randomSecret,tokenHash,equalHash} from './auth-crypto.js';
 import {instant} from './foundation.js';
 export const COOKIE_NAME='__Host-QY_CONSULTATION';
 export const SESSION_MS=8*60*60*1000;
@@ -30,7 +30,7 @@ function mutationRequest(request,origin) {
  return request.method==='POST' && sameOrigin(request,origin) &&
   (request.headers.get('content-type')||'').split(';')[0].trim().toLowerCase()==='application/json';
 }
-export function createConsultationAuth({db,origin,clock=()=>Date.now()}) {
+export function createConsultationAuth({db,origin,adminSecret,clock=()=>Date.now()}) {
  const url=new URL(origin);
  if(url.protocol!=='https:'||url.origin!==origin||url.username||url.password) throw Error('Trusted HTTPS origin required');
  if(!db||typeof db.prepare!=='function'||typeof db.batch!=='function') throw Error('Dedicated authentication binding required');
@@ -66,6 +66,8 @@ export function createConsultationAuth({db,origin,clock=()=>Date.now()}) {
  async function login(request,{username,password}) {
   if(!mutationRequest(request,origin)) return response(403,{ok:false,error:'Request rejected.'});
   try {
+   // Dedicated 256-bit C1 secret only; no password fallback or account creation.
+   if(typeof adminSecret!=='string'||!TOKEN_PATTERN.test(adminSecret))return unavailable();
    const time=now();
    // Atomic reservation bounds concurrent guessing. Unknown usernames share this bucket.
    const reserved=await db.prepare(`UPDATE consultation_auth_control SET
@@ -78,11 +80,14 @@ export function createConsultationAuth({db,origin,clock=()=>Date.now()}) {
     return denied();
    }
    const account=await db.prepare('SELECT * FROM consultation_auth_account WHERE id=1 AND enabled=1').first();
-   // Same expensive hash for wrong usernames; no default credential or account creation.
-   const salt=account?.password_salt||'0'.repeat(64);
-   const calculated=validPassword(password)?await passwordHash(password,salt):null;
+   // Fixed-size digests keep native timing-safe comparison independent of input length.
+   const candidate=typeof password==='string'&&TOKEN_PATTERN.test(password)?password:'0'.repeat(64);
+   const calculated=await tokenHash(candidate),expected=await tokenHash(adminSecret);
+   const bytes=value=>Uint8Array.from(value.match(/../g),pair=>parseInt(pair,16));
+   const matches=typeof crypto.subtle.timingSafeEqual==='function'
+    ?crypto.subtle.timingSafeEqual(bytes(calculated),bytes(expected)):equalHash(calculated,expected);
    const usernameValid=typeof username==='string'&&username===account?.username;
-   if(!account||!usernameValid||!equalHash(calculated,account.password_hash)) {
+   if(!account||!usernameValid||!TOKEN_PATTERN.test(password||'')||!matches) {
     // One fixed summary row; blocked requests do not write failure/audit rows.
     await db.prepare(`UPDATE consultation_auth_control SET failure_count=min(failure_count+1,1000000000),last_failed_at=${DATABASE_NOW} WHERE id=1`).run();
     return denied();
@@ -101,7 +106,17 @@ export function createConsultationAuth({db,origin,clock=()=>Date.now()}) {
     db.prepare('UPDATE consultation_auth_control SET attempts=0,window_started_at=?,locked_until=0 WHERE id=1').bind(time)
    ]);
    return response(200,{ok:true,csrfToken:csrf,expiresAt:time+SESSION_MS},{'set-cookie':cookie(token,SESSION_MS/1000)});
-  } catch(error) { return authorizationFailure(error)?denied():unavailable(); }
+  } catch(error) {
+   if(origin==='https://c1-bazi-consultation-develop.qy-c1-consultation-preview.pages.dev'&&!authorizationFailure(error)) {
+    // Inspect privately; emit only a fixed category, never the exception or its stack.
+    const message=typeof error?.message==='string'?error.message:'';
+    const category=/iteration counts above|PBKDF2.*(?:unsupported|not supported|limit|restrict)/i.test(message)?'pbkdf2_runtime_restriction'
+     :/exceededCpu|CPU.*(?:limit|exhaust)|exceeded.*(?:resource|memory)|out of memory/i.test(message)?'cpu_resource_limit'
+     :/D1_ERROR|D1_EXEC_ERROR|SQLITE_|\bD1\b/i.test(message)?'d1_error':'unknown';
+    console.error('C1_PREVIEW_LOGIN_FAILURE:'+category);
+   }
+   return authorizationFailure(error)?denied():unavailable();
+  }
  }
  async function revoke(request,all) {
   const auth=await authorize(request,{stateChanging:true});

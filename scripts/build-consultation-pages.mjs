@@ -25,7 +25,7 @@ export async function buildPackage(output,esbuildPath){
  const publicPath=resolve(output,'public'),offline=resolve(output,'offline');
  mkdirSync(publicPath,{recursive:true});mkdirSync(offline);
  writeFileSync(resolve(publicPath,'_worker.js'),bundle.outputFiles[0].contents);
- for(const name of ['customer.html','qy.html','workflow-ui.js','workflow.css','academy-logo.png']){
+ for(const name of ['customer.html','qy.html','workflow-ui.js','guest-booking-ui.js','workflow.css','academy-logo.png']){
   if(name.endsWith('.html')){
    let html=readFileSync(new URL('consultation-preview/'+name,root),'utf8').replace('data-page=','data-deployment="preview" data-page=');
    html=html.replace(/<button id="local-customer-login"[^>]*>.*?<\/button>/,'');
@@ -37,6 +37,11 @@ export async function buildPackage(output,esbuildPath){
  const projection=compatibilityDDL();
  writeFileSync(resolve(offline,'000-isolated-prerequisites.sql'),projection.statements.join('\n')+'\n'+canonical(readFileSync(new URL(manifest.prerequisites[0].path,root))));
  for(const m of manifest.migrations)writeFileSync(resolve(offline,String(m.ordinal).padStart(3,'0')+'-'+m.path.split('/').at(-1)),canonical(readFileSync(new URL(m.path,root))));
+ copyFileSync(new URL('database/additive/c1-consultation-selfservice.sql',root),resolve(offline,'017-selfservice-additive.sql'));
+ copyFileSync(new URL('database/additive/c1-consultation-pricing.sql',root),resolve(offline,'018-pricing-additive.sql'));
+ copyFileSync(new URL('database/additive/c1-consultation-invitations.sql',root),resolve(offline,'019-invitations-additive.sql'));
+ copyFileSync(new URL('database/additive/c1-consultation-individual-offers.sql',root),resolve(offline,'020-individual-offers-additive.sql'));
+ copyFileSync(new URL('database/additive/c1-consultation-guest.sql',root),resolve(offline,'016-guest-additive.sql'));
  writeFileSync(resolve(offline,'migration-manifest.json'),JSON.stringify(manifest,null,2)+'\n');
  writeFileSync(resolve(offline,'schema-provenance.json'),JSON.stringify(projection.provenance,null,2)+'\n');
  copyFileSync(new URL('consultation-pages/config.template.json',root),resolve(offline,'config.template.json'));

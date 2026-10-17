@@ -1,7 +1,7 @@
 // Deployment identity, not customer authorization. No network or activation.
 export const PAGES_PROJECT='qy-c1-consultation-preview';
 export const PREVIEW_BRANCH='c1-bazi-consultation-development';
-export const PREVIEW_ORIGIN='https://'+PREVIEW_BRANCH+'.'+PAGES_PROJECT+'.pages.dev';
+export const PREVIEW_ORIGIN='https://c1-bazi-consultation-develop.'+PAGES_PROJECT+'.pages.dev';
 export function requirePagesPreview(env,config){
  if(env.CONSULTATION_DEPLOYMENT_SLOT!=='preview'||env.CF_PAGES!=='1'||
   env.CF_PAGES_BRANCH!==PREVIEW_BRANCH||config.isolatedPreviewProject!==PAGES_PROJECT||

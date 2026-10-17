@@ -130,7 +130,7 @@ export function priceAt({issuedAt,promotion=null}) {
  }
  return Object.freeze({regularPriceSen,sellingPriceSen,currency:'MYR',promotionId,promotionVersion});
 }
-export async function issueOffer({id,bookingId,customerId,practitionerId,startAt,issuedAt,policyVersion,policyHash,promotion=null}) {
+export async function issueOffer({id,bookingId,customerId,practitionerId,startAt,issuedAt,policyVersion,policyHash,promotion=null,finalPriceSen=null}) {
  instant(startAt);
  instant(issuedAt);
  if (startAt-issuedAt < 72*HOUR) throw Error('72-hour lead time required');
@@ -139,8 +139,10 @@ export async function issueOffer({id,bookingId,customerId,practitionerId,startAt
  if (!Number.isSafeInteger(customerId) || customerId < 1 || !Number.isSafeInteger(practitionerId) || practitionerId < 1 ||
      typeof policyHash !== 'string' || !/^[a-f0-9]{64}$/.test(policyHash)) throw Error('Invalid offer identity/policy');
  policyVersion=text(policyVersion,1,80,'policy version');
+ const base=priceAt({issuedAt,promotion});
+ if(finalPriceSen!==null&&(!Number.isSafeInteger(finalPriceSen)||finalPriceSen<=0||finalPriceSen>base.sellingPriceSen))throw Error('Invalid final price');
  const snapshot={id,bookingId,customerId,practitionerId,startAt,endAt:instant(startAt+SESSION),
-  issuedAt,expiresAt:instant(issuedAt+48*HOUR),policyVersion,policyHash,...priceAt({issuedAt,promotion})};
+  issuedAt,expiresAt:instant(issuedAt+48*HOUR),policyVersion,policyHash,...base,...(finalPriceSen===null?{}:{basePriceSen:base.sellingPriceSen,sellingPriceSen:finalPriceSen})};
  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(snapshot)));
  const snapshotHash=[...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
  return Object.freeze({...snapshot,snapshotHash,state:'Issued'});

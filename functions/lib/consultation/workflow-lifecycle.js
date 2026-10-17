@@ -31,7 +31,7 @@ export function createWorkflowLifecycle({db,origin,keys,stepup}){
    [...(changes.state?[changes.state]:[]),...(changes.freeUsed!==undefined?[changes.freeUsed?1:0]:[]),...(changes.terminalAt!==undefined?[changes.terminalAt]:[]),row.id,row.row_version,row.state,...auth.values,...values]);
  }
  async function retention(plan,row,auth,basis,terminalAt){
-  const current=await stmt(db,'SELECT i.id,i.revision FROM consultation_customer_intakes i JOIN consultation_workflow_intakes w ON w.intake_id=i.id WHERE w.booking_id=?',[row.id]).first();if(!current)reject();
+  const current=await stmt(db,'SELECT i.id,i.revision FROM consultation_customer_intakes i JOIN consultation_all_workflow_intakes w ON w.intake_id=i.id WHERE w.booking_id=?',[row.id]).first();if(!current)reject();
   const deadline=intakeRetention({status:basis,terminalAt});
   plan.push(stmt(db,`UPDATE consultation_customer_intakes SET revision=revision+1,retention_basis=?,retention_until=?,terminal_at=?,updated_at=? WHERE id=? AND revision=? AND completed_at IS NULL`,[basis,deadline,terminalAt,terminalAt,current.id,current.revision]),audit(row.id,'RetentionUpdated',auth));
  }
@@ -83,7 +83,7 @@ export function createWorkflowLifecycle({db,origin,keys,stepup}){
    const target=row.state==='Offered'?'OfferExpired':'ExceptionReview';
    const plan=[version(row,auth,`AND EXISTS(SELECT 1 FROM consultation_offers WHERE id=? AND expires_at<=${DB_NOW} AND state=?)`,[offer.id,row.state==='Offered'?'Issued':'Accepted'],{state:target,...(target==='OfferExpired'?{terminalAt:now}:{})}),audit(row.id,target,auth)];
    if(target==='OfferExpired'){
-    plan.push(stmt(db,"UPDATE consultation_offers SET state='Expired' WHERE id=? AND state='Issued'",[offer.id]),audit(row.id,target,auth),stmt(db,"UPDATE consultation_slot_reservations SET state='Released' WHERE offer_id=? AND state='Held'",[offer.id]),audit(row.id,target,auth));
+    plan.push(stmt(db,"UPDATE consultation_offers SET state='Expired' WHERE id=? AND state='Issued'",[offer.id]),audit(row.id,target,auth),stmt(db,"UPDATE consultation_slot_reservations SET state='Released' WHERE offer_id=? AND state='Held'",[offer.id]),stmt(db,`INSERT INTO consultation_workflow_lifecycle_events VALUES(CASE WHEN changes()=1 OR EXISTS(SELECT 1 FROM consultation_individual_offer_prices WHERE offer_id=?) THEN ? ELSE NULL END,?,'OfferExpired','QY',?,NULL,${DB_NOW})`,[offer.id,crypto.randomUUID(),row.id,auth.principal.sessionId]));
     await retention(plan,row,auth,'FinalExpired',now);
    }
    plan.push(await command(input));await db.batch(plan);return Object.freeze({id:row.id,state:target,rowVersion:row.row_version+1});

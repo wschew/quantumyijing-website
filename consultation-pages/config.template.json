@@ -2,7 +2,7 @@
   "environment": "preview",
   "syntheticOnly": true,
   "isolatedPreviewProject": "qy-c1-consultation-preview",
-  "origin": "https://c1-bazi-consultation-development.qy-c1-consultation-preview.pages.dev",
+  "origin": "https://c1-bazi-consultation-develop.qy-c1-consultation-preview.pages.dev",
   "databaseId": "OWNER_REVIEW_REQUIRED",
   "expectedDatabaseId": "OWNER_REVIEW_REQUIRED",
   "manifestSha256": "FROM_PACKAGE_INVENTORY",
